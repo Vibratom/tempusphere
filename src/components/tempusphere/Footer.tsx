@@ -6,13 +6,13 @@ import Link from "next/link";
 import { PlatformLink } from "./PlatformLink";
 
 const platforms = [
-    { name: 'Axiom', category: 'Calculators', icon: Calculator, href: '#', color: 'bg-blue-500 hover:bg-blue-600' },
-    { name: 'Cadence', category: 'Music', icon: Music, href: '#', color: 'bg-purple-500 hover:bg-purple-600' },
-    { name: 'Lumina', category: 'Blog', icon: PenSquare, href: '#', color: 'bg-green-500 hover:bg-green-600' },
-    { name: 'NexusPlay', category: 'Games', icon: Gamepad2, href: '#', color: 'bg-red-500 hover:bg-red-600' },
-    { name: 'Stillpoint', category: 'Meditation', icon: Leaf, href: '#', color: 'bg-yellow-500 hover:bg-yellow-600' },
-    { name: 'Uniform', category: 'Converters', icon: Combine, href: '#', color: 'bg-cyan-500 hover:bg-cyan-600' },
-    { name: 'Tempusphere', category: 'Clock', icon: Clock, href: '#', color: 'bg-orange-500 hover:bg-orange-600' },
+    { name: 'Axiom', category: 'Calculators', icon: Calculator, href: 'https://axiom.vibratomstudios.com', color: 'bg-blue-500 hover:bg-blue-600' },
+    { name: 'Cadence', category: 'Music', icon: Music, href: 'https://cadence.vibratomstudios.com', color: 'bg-purple-500 hover:bg-purple-600' },
+    { name: 'Lumina', category: 'Blog', icon: PenSquare, href: 'https://lumina.vibratomstudios.com', color: 'bg-green-500 hover:bg-green-600' },
+    { name: 'NexusPlay', category: 'Games', icon: Gamepad2, href: 'https://nexusplay.vibratomstudios.com', color: 'bg-red-500 hover:bg-red-600' },
+    { name: 'Stillpoint', category: 'Meditation', icon: Leaf, href: 'https://stillpoint.vibratomstudios.com', color: 'bg-yellow-500 hover:bg-yellow-600' },
+    { name: 'Uniform', category: 'Converters', icon: Combine, href: 'https://uniform.vibratomstudios.com', color: 'bg-cyan-500 hover:bg-cyan-600' },
+    { name: 'Tempusphere', category: 'Clock', icon: Clock, href: '/', color: 'bg-orange-500 hover:bg-orange-600' },
 ];
 
 export function Footer() {
@@ -35,7 +35,7 @@ export function Footer() {
                 </section>
 
                 <section className="mb-12">
-                     <Link href="#" className="text-lg text-pink-400 hover:text-pink-300 hover:underline">
+                     <Link href="https://www.vibratomstudios.com" target="_blank" rel="noopener noreferrer" className="text-lg text-pink-400 hover:text-pink-300 hover:underline">
                         Visit our main site at VibratomStudios.com
                     </Link>
                 </section>

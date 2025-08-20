@@ -12,8 +12,10 @@ interface PlatformLinkProps {
 }
 
 export function PlatformLink({ name, category, icon: Icon, href, color }: PlatformLinkProps) {
+    const isExternal = href.startsWith('http');
+    
     return (
-        <Link href={href}>
+        <Link href={href} target={isExternal ? "_blank" : "_self"} rel={isExternal ? "noopener noreferrer" : ""}>
             <div className={cn(
                 "group flex items-center justify-between p-4 rounded-lg text-white transition-all duration-300 transform hover:scale-105",
                 color
