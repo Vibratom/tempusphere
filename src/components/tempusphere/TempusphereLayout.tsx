@@ -140,6 +140,8 @@ function AppContent() {
       </header>
   );
 
+  const showSidebar = (layout === 'sidebar-left' || layout === 'sidebar-right') && !isMobile;
+
   const mainContent = (
     <div className={cn(
         "flex-grow flex flex-col items-center justify-center w-full",
@@ -156,8 +158,6 @@ function AppContent() {
     </div>
   );
   
-  const showSidebar = (layout === 'sidebar-left' || layout === 'sidebar-right') && !isMobile;
-
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
         <div className={cn("flex flex-1", layout === 'sidebar-right' ? "flex-row-reverse" : "flex-row")}>
