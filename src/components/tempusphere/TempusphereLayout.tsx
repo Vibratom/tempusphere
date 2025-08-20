@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -117,10 +118,10 @@ function AppContent() {
             </Tooltip>
         </TooltipProvider>
       </header>
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+      <main className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
         <PrimaryClock />
-        <Separator />
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Separator className="w-full max-w-5xl"/>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-5xl">
           <TooltipProvider>
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
             <Tooltip>
