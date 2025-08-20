@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: 'Tempusphere',
   description: 'A modern, customizable clock application.',
   icons: {
-    icon: '/logo.webp',
+    icon: '/logo.webp?v=1',
   },
 };
 
