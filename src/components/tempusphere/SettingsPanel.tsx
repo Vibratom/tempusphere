@@ -11,6 +11,7 @@ import { Moon, Sun, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Slider } from '../ui/slider';
 import Image from 'next/image';
+import { ScrollArea } from '../ui/scroll-area';
 
 const colorPresets = [
   { name: 'Blue', value: '141 15% 54%' },
@@ -19,12 +20,11 @@ const colorPresets = [
   { name: 'Purple', value: '262 84% 60%' },
 ];
 
-const backgroundPresets = [
-    { name: 'Cosmic', url: '/backgrounds/cosmic.webp', hint: 'galaxy stars' },
-    { name: 'Forest', url: '/backgrounds/forest.webp', hint: 'forest trees' },
-    { name: 'City', url: '/backgrounds/city.webp', hint: 'city skyline' },
-    { name: 'Abstract', url: '/backgrounds/abstract.webp', hint: 'abstract pattern' },
-];
+const backgroundPresets = Array.from({ length: 100 }, (_, i) => ({
+    name: `Image ${i + 1}`,
+    url: `/backgrounds/${i + 1}.webp`,
+    hint: 'abstract pattern'
+}));
 
 export function SettingsPanel() {
   const {
@@ -108,6 +108,32 @@ export function SettingsPanel() {
         </div>
       </div>
       
+      <div className="grid grid-cols-2 gap-4 items-start">
+        <Label>Background Image</Label>
+        <div className="flex flex-col gap-2">
+            <ScrollArea className="h-48">
+              <div className="grid grid-cols-4 gap-2 pr-4">
+                  {backgroundPresets.map(preset => (
+                      <button key={preset.name} onClick={() => setBackgroundImage(preset.url)} className="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary data-[selected=true]:border-primary" data-selected={backgroundImage === preset.url}>
+                          <Image src={preset.url} alt={preset.name} layout="fill" objectFit="cover" data-ai-hint={preset.hint} unoptimized/>
+                      </button>
+                  ))}
+              </div>
+            </ScrollArea>
+            <div className="flex gap-2 items-center">
+                <Input id="bg-upload" type="file" onChange={handleImageUpload} accept="image/*" className="hidden"/>
+                <Button asChild variant="outline">
+                    <label htmlFor="bg-upload"><ImageIcon className="mr-2"/> Upload</label>
+                </Button>
+                {backgroundImage && (
+                    <Button variant="ghost" size="icon" onClick={() => setBackgroundImage(null)}>
+                    <Trash2 />
+                    </Button>
+                )}
+            </div>
+        </div>
+      </div>
+
       <div className="space-y-2">
         <h3 className="font-semibold">General Clock Settings</h3>
         <Separator />
@@ -168,32 +194,8 @@ export function SettingsPanel() {
       <div className="grid grid-cols-2 gap-4 items-center">
         <Label>Clock Size</Label>
         <div className="flex items-center gap-2">
-          <Slider value={[clockSize]} onValueValueChange={(value) => setClockSize(value[0])} min={50} max={150} step={10} />
+          <Slider value={[clockSize]} onValueChange={(value) => setClockSize(value[0])} min={50} max={150} step={10} />
           <span>{clockSize}%</span>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4 items-start">
-        <Label>Background Image</Label>
-        <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-2 gap-2">
-                {backgroundPresets.map(preset => (
-                    <button key={preset.name} onClick={() => setBackgroundImage(preset.url)} className="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary data-[selected=true]:border-primary" data-selected={backgroundImage === preset.url}>
-                        <Image src={preset.url} alt={preset.name} layout="fill" objectFit="cover" data-ai-hint={preset.hint} unoptimized/>
-                    </button>
-                ))}
-            </div>
-            <div className="flex gap-2 items-center">
-                <Input id="bg-upload" type="file" onChange={handleImageUpload} accept="image/*" className="hidden"/>
-                <Button asChild variant="outline">
-                    <label htmlFor="bg-upload"><ImageIcon className="mr-2"/> Upload</label>
-                </Button>
-                {backgroundImage && (
-                    <Button variant="ghost" size="icon" onClick={() => setBackgroundImage(null)}>
-                    <Trash2 />
-                    </Button>
-                )}
-            </div>
         </div>
       </div>
 

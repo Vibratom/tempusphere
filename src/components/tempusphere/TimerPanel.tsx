@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -8,6 +8,11 @@ import { playSound } from '@/lib/sounds';
 import { Play, Pause, Square } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+
+let timerHandle = {
+  startStop: () => {},
+  reset: () => {},
+};
 
 const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
@@ -20,7 +25,7 @@ interface TimerPanelProps {
     fullscreen?: boolean;
 }
 
-export function TimerPanel({ fullscreen = false }: TimerPanelProps) {
+function TimerPanelInternal({ fullscreen = false }: TimerPanelProps, ref: any) {
     const [duration, setDuration] = useState(300); // 5 minutes in seconds
     const [timeLeft, setTimeLeft] = useState(duration);
     const [isRunning, setIsRunning] = useState(false);
@@ -77,6 +82,18 @@ export function TimerPanel({ fullscreen = false }: TimerPanelProps) {
         setTimeLeft(duration);
     };
 
+    useImperativeHandle(ref, () => ({
+        startStop: handleStartStop,
+        reset: handleReset,
+    }));
+
+    useEffect(() => {
+        timerHandle = {
+            startStop: handleStartStop,
+            reset: handleReset,
+        };
+    }, [handleStartStop, handleReset]);
+
     const { hours, minutes, seconds } = formatTime(timeLeft);
     const progress = duration > 0 ? (timeLeft / duration) * 100 : 0;
     const isEditing = !isRunning && timeLeft === duration;
@@ -106,7 +123,7 @@ export function TimerPanel({ fullscreen = false }: TimerPanelProps) {
                 <Progress value={isRunning ? progress : 100} className="w-full max-w-md"/>
             </CardContent>
             <CardFooter className="flex justify-center gap-2">
-                <Button size="lg" onClick={handleStartStop} disabled={duration === 0}>
+                <Button id="timer-start-btn" size="lg" onClick={handleStartStop} disabled={duration === 0}>
                     {isRunning ? <Pause className="mr-2 h-5 w-5"/> : <Play className="mr-2 h-5 w-5"/>}
                     {isRunning ? 'Pause' : 'Start'}
                 </Button>
@@ -117,3 +134,6 @@ export function TimerPanel({ fullscreen = false }: TimerPanelProps) {
         </Container>
     );
 }
+
+const TimerPanel = forwardRef(TimerPanelInternal);
+export { TimerPanel, timerHandle };

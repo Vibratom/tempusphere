@@ -36,7 +36,7 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
 
     return {
       minHeight: `${height}rem`,
-      minWidth: `min(${width + 4}rem, 100%)`, 
+      maxWidth: `min(${width + 4}rem, 100%)`, 
     };
   }, [clockSize, clockScale, primaryClockMode, isClient]);
 
@@ -60,7 +60,7 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
     <Container 
         className={cn(
             "overflow-hidden flex items-center justify-center transition-all duration-300 relative bg-cover bg-center", 
-            fullscreen ? "w-full h-full bg-transparent" : "",
+            fullscreen ? "w-full h-full bg-transparent" : "w-full",
         )}
         style={!fullscreen ? {...containerStyle, backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none' } : {}}
     >

@@ -1,11 +1,21 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Play, Pause, Square, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+let stopwatchHandle: {
+  startStop: () => void;
+  lap: () => void;
+  reset: () => void;
+} = {
+  startStop: () => {},
+  lap: () => {},
+  reset: () => {},
+};
 
 const formatTime = (time: number) => {
   const minutes = Math.floor(time / 60000).toString().padStart(2, '0');
@@ -18,7 +28,7 @@ interface StopwatchPanelProps {
     fullscreen?: boolean;
 }
 
-export function StopwatchPanel({ fullscreen = false }: StopwatchPanelProps) {
+function StopwatchPanelInternal({ fullscreen = false }: StopwatchPanelProps, ref: any) {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState<number[]>([]);
@@ -41,23 +51,31 @@ export function StopwatchPanel({ fullscreen = false }: StopwatchPanelProps) {
     };
   }, [isRunning, time]);
 
-  const handleStartStop = () => {
-    setIsRunning(!isRunning);
-  };
-
-  const handleLap = () => {
-    setLaps([time, ...laps]);
-  };
-
+  const handleStartStop = () => setIsRunning(!isRunning);
+  const handleLap = () => setLaps([time, ...laps]);
   const handleReset = () => {
     setIsRunning(false);
     setTime(0);
     setLaps([]);
   };
 
+  useImperativeHandle(ref, () => ({
+    startStop: handleStartStop,
+    lap: handleLap,
+    reset: handleReset,
+  }));
+  
+  useEffect(() => {
+    stopwatchHandle = {
+        startStop: handleStartStop,
+        lap: handleLap,
+        reset: handleReset,
+    }
+  }, [handleStartStop, handleLap, handleReset])
+
+
   const Container = fullscreen ? 'div' : Card;
   const contentClass = fullscreen ? 'bg-transparent' : '';
-
 
   return (
       <Container className={cn('flex flex-col h-full', contentClass)}>
@@ -69,7 +87,7 @@ export function StopwatchPanel({ fullscreen = false }: StopwatchPanelProps) {
             {formatTime(time)}
             </p>
             <div className="flex gap-2">
-            <Button size="lg" onClick={handleStartStop}>
+            <Button id="stopwatch-start-btn" size="lg" onClick={handleStartStop}>
                 {isRunning ? <Pause className="mr-2 h-5 w-5"/> : <Play className="mr-2 h-5 w-5"/>}
                 {isRunning ? 'Pause' : 'Start'}
             </Button>
@@ -97,3 +115,6 @@ export function StopwatchPanel({ fullscreen = false }: StopwatchPanelProps) {
       </Container>
   );
 }
+
+const StopwatchPanel = forwardRef(StopwatchPanelInternal);
+export { StopwatchPanel, stopwatchHandle };
