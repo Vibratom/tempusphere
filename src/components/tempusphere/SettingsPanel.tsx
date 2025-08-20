@@ -120,7 +120,7 @@ export function SettingsPanel() {
     fullscreenSettings,
     setFullscreenSettings,
   } = useSettings();
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [extractedPalette, setExtractedPalette] = useState<string[]>([]);
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,30 +145,7 @@ export function SettingsPanel() {
         {backgroundImage && <ImageColorExtractor onPaletteChange={setExtractedPalette} />}
         <div className="p-4 space-y-6">
           <div className="space-y-2">
-            <h3 className="font-semibold">Appearance</h3>
-            <Separator />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <Label>Theme</Label>
-            <RadioGroup value={theme} onValueChange={setTheme} className="flex items-center">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="light" id="light" />
-                <Label htmlFor="light"><Sun className="inline-block mr-1 h-4 w-4"/>Light</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="dark" id="dark" />
-                <Label htmlFor="dark"><Moon className="inline-block mr-1 h-4 w-4"/>Dark</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="system" id="system" />
-                <Label htmlFor="system">System</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div className="space-y-2">
-              <h3 className="font-semibold">Colors & Background</h3>
+              <h3 className="font-semibold">Appearance</h3>
               <Separator />
           </div>
 

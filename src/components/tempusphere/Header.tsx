@@ -1,18 +1,25 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Expand, Settings, Home, Atom } from 'lucide-react';
+import { Expand, Settings, Home, Atom, Sun, Moon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose, SheetTrigger } from '../ui/sheet';
 import { SettingsPanel } from './SettingsPanel';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { useHotkeys } from '@/hooks/use-hotkeys';
+import { useTheme } from 'next-themes';
 
 export function Header() {
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const { theme, setTheme, resolvedTheme } = useTheme();
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
@@ -22,6 +29,10 @@ export function Header() {
         } else if (document.exitFullscreen) {
             document.exitFullscreen();
         }
+    };
+    
+    const toggleTheme = () => {
+        setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
     };
 
     useHotkeys([['f', toggleFullscreen]]);
@@ -77,6 +88,18 @@ export function Header() {
                             <p>Homepage</p>
                         </TooltipContent>
                     </Tooltip>
+                    {isClient && (
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" onClick={toggleTheme}>
+                                    {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Toggle Theme</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <SettingsSheet />
