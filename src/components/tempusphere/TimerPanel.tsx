@@ -112,11 +112,11 @@ function TimerPanelInternal({ fullscreen = false, glass = false }: TimerPanelPro
             <CardContent className={cn("flex-1 flex flex-col items-center justify-center gap-6 p-4", fullscreen && "pt-4")}>
                 {isEditing ? (
                     <div className="flex items-baseline justify-center gap-2 text-6xl md:text-7xl font-mono font-bold tracking-tighter">
-                        <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className="w-28 h-24 text-center text-6xl tabular-nums p-0"/>
+                        <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className="w-28 h-24 text-center bg-transparent border-none shadow-none focus-visible:ring-0 p-0 tabular-nums"/>
                         <span className="text-5xl md:text-6xl -translate-y-1">:</span>
-                        <Input type="number" min="0" max="59" value={formatTime(duration).minutes} onChange={handleMinutesChange} className="w-28 h-24 text-center text-6xl tabular-nums p-0"/>
+                        <Input type="number" min="0" max="59" value={formatTime(duration).minutes} onChange={handleMinutesChange} className="w-28 h-24 text-center bg-transparent border-none shadow-none focus-visible:ring-0 p-0 tabular-nums"/>
                         <span className="text-5xl md:text-6xl -translate-y-1">:</span>
-                        <Input type="number" min="0" max="59" value={formatTime(duration).seconds} onChange={handleSecondsChange} className="w-28 h-24 text-center text-6xl tabular-nums p-0"/>
+                        <Input type="number" min="0" max="59" value={formatTime(duration).seconds} onChange={handleSecondsChange} className="w-28 h-24 text-center bg-transparent border-none shadow-none focus-visible:ring-0 p-0 tabular-nums"/>
                     </div>
                 ) : (
                     <p className="text-6xl md:text-7xl font-mono font-bold tracking-tighter tabular-nums">
