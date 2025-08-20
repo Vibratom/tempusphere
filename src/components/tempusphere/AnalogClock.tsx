@@ -10,7 +10,8 @@ interface AnalogClockProps {
 
 export function AnalogClock({ className }: AnalogClockProps) {
   const time = useTime();
-  const { showSeconds } = useSettings();
+  const { showSeconds, backgroundImage } = useSettings();
+  const uniqueId = "analog-bg";
 
   const hours = time.getHours();
   const minutes = time.getMinutes();
@@ -24,7 +25,14 @@ export function AnalogClock({ className }: AnalogClockProps) {
   return (
     <div className={cn('relative w-64 h-64 mx-auto', className)}>
       <svg viewBox="0 0 200 200" className="w-full h-full">
-        <circle cx="100" cy="100" r="98" fill="hsl(var(--card))" stroke="hsl(var(--foreground))" strokeWidth="2" />
+        {backgroundImage && (
+            <defs>
+                <pattern id={uniqueId} patternUnits="userSpaceOnUse" width="200" height="200">
+                    <image href={backgroundImage} x="0" y="0" width="200" height="200" preserveAspectRatio="xMidYMid slice" />
+                </pattern>
+            </defs>
+        )}
+        <circle cx="100" cy="100" r="98" fill={backgroundImage ? `url(#${uniqueId})` : "hsl(var(--card))"} stroke="hsl(var(--foreground))" strokeWidth="2" />
         <circle cx="100" cy="100" r="4" fill="hsl(var(--primary))" />
 
         {/* Hour and minute markers */}

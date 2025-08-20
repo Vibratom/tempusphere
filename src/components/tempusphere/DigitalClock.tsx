@@ -12,7 +12,7 @@ interface DigitalClockProps {
 
 export function DigitalClock({ className }: DigitalClockProps) {
   const time = useTime();
-  const { hourFormat, showSeconds, primaryClockTimezone } = useSettings();
+  const { hourFormat, showSeconds, primaryClockTimezone, backgroundImage } = useSettings();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -29,13 +29,26 @@ export function DigitalClock({ className }: DigitalClockProps) {
   if (showSeconds) {
     options.second = '2-digit';
   }
-
-  // Ensure this only runs on the client
+  
   const timeString = isClient ? new Intl.DateTimeFormat('default', options).format(time) : '00:00:00';
 
+  const textBgStyle: React.CSSProperties = backgroundImage
+    ? {
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundClip: 'text',
+        WebkitBackgroundClip: 'text',
+        color: 'transparent',
+      }
+    : {};
+
   return (
-    <div className={cn('text-center', className)}>
-      <p className="text-6xl md:text-8xl font-bold tracking-tighter tabular-nums">
+    <div className={cn('text-center z-10', className)}>
+      <p 
+        className="text-6xl md:text-8xl font-bold tracking-tighter tabular-nums"
+        style={textBgStyle}
+      >
         {timeString}
       </p>
     </div>

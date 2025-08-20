@@ -7,7 +7,9 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Input } from '../ui/input';
+import { Slider } from '../ui/slider';
 
 const colorPresets = [
   { name: 'Blue', value: '141 15% 54%' },
@@ -28,6 +30,10 @@ export function SettingsPanel() {
     setPrimaryClockTimezone,
     primaryColor,
     setPrimaryColor,
+    backgroundImage,
+    setBackgroundImage,
+    clockSize,
+    setClockSize,
   } = useSettings();
   const { theme, setTheme } = useTheme();
 
@@ -35,6 +41,18 @@ export function SettingsPanel() {
     document.documentElement.style.setProperty('--primary', color);
     setPrimaryColor(color);
   };
+  
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBackgroundImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   return (
     <div className="p-4 space-y-6 max-w-2xl mx-auto">
@@ -132,6 +150,29 @@ export function SettingsPanel() {
             <Label htmlFor="utc">UTC</Label>
           </div>
         </RadioGroup>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4 items-center">
+        <Label>Clock Size</Label>
+        <div className="flex items-center gap-2">
+          <Slider value={[clockSize]} onValueChange={(value) => setClockSize(value[0])} min={50} max={150} step={10} />
+          <span>{clockSize}%</span>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4 items-center">
+        <Label>Background Image</Label>
+        <div className="flex gap-2 items-center">
+          <Input id="bg-upload" type="file" onChange={handleImageUpload} accept="image/*" className="hidden"/>
+          <Button asChild variant="outline">
+            <label htmlFor="bg-upload"><ImageIcon className="mr-2"/> Upload</label>
+          </Button>
+          {backgroundImage && (
+            <Button variant="ghost" size="icon" onClick={() => setBackgroundImage(null)}>
+              <Trash2 />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

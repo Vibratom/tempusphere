@@ -16,6 +16,10 @@ interface Settings {
   setPrimaryClockTimezone: Dispatch<SetStateAction<'local' | 'utc'>>;
   primaryColor: string;
   setPrimaryColor: Dispatch<SetStateAction<string>>;
+  backgroundImage: string | null;
+  setBackgroundImage: Dispatch<SetStateAction<string | null>>;
+  clockSize: number;
+  setClockSize: Dispatch<SetStateAction<number>>;
 }
 
 const SettingsContext = createContext<Settings | undefined>(undefined);
@@ -26,6 +30,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [primaryClockMode, setPrimaryClockMode] = useLocalStorage<'analog' | 'digital'>('settings:clockMode', 'digital');
   const [primaryClockTimezone, setPrimaryClockTimezone] = useLocalStorage<'local' | 'utc'>('settings:clockTimezone', 'local');
   const [primaryColor, setPrimaryColor] = useLocalStorage<string>('settings:primaryColor', '141 15% 54%');
+  const [backgroundImage, setBackgroundImage] = useLocalStorage<string | null>('settings:backgroundImage', null);
+  const [clockSize, setClockSize] = useLocalStorage<number>('settings:clockSize', 100);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -43,7 +49,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     primaryClockTimezone,
     setPrimaryClockTimezone,
     primaryColor,
-    setPrimaryColor
+    setPrimaryColor,
+    backgroundImage,
+    setBackgroundImage,
+    clockSize,
+    setClockSize,
   };
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
