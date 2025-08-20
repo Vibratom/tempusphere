@@ -9,7 +9,7 @@ import { Footer } from './Footer';
 import { useHotkeys } from '@/hooks/use-hotkeys';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Button } from '../ui/button';
-import { Expand, Settings, Home } from 'lucide-react';
+import { Expand, Settings, Home, Clock } from 'lucide-react';
 import { TabbedPanels } from './TabbedPanels';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose, SheetTrigger } from '../ui/sheet';
 import { SettingsPanel } from './SettingsPanel';
