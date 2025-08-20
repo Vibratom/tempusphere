@@ -54,8 +54,10 @@ export function StopwatchPanel({ fullscreen = false }: StopwatchPanelProps) {
     setLaps([]);
   };
 
-  const content = (
-      <>
+  const Container = fullscreen ? 'div' : Card;
+
+  return (
+      <Container className={fullscreen ? 'h-full flex flex-col' : ''}>
         <CardHeader>
             <CardTitle>Stopwatch</CardTitle>
         </CardHeader>
@@ -80,7 +82,7 @@ export function StopwatchPanel({ fullscreen = false }: StopwatchPanelProps) {
             <ScrollArea className="h-full w-full">
                 <div className="space-y-2 pr-4">
                     {laps.map((lap, index) => (
-                        <div key={index} className="flex justify-between p-2 rounded-lg bg-card border">
+                        <div key={index} className="flex justify-between p-2 rounded-lg bg-background/50 border">
                             <span className="font-medium text-muted-foreground">Lap {laps.length - index}</span>
                             <span className="font-mono">{formatTime(lap - (laps[index+1] || 0) )}</span>
                             <span className="font-mono font-semibold">{formatTime(lap)}</span>
@@ -89,8 +91,6 @@ export function StopwatchPanel({ fullscreen = false }: StopwatchPanelProps) {
                 </div>
             </ScrollArea>
         </CardFooter>
-      </>
+      </Container>
   );
-
-  return fullscreen ? <div className="bg-card rounded-lg border h-full flex flex-col">{content}</div> : <Card>{content}</Card>;
 }

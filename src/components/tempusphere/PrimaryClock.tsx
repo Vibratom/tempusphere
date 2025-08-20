@@ -42,16 +42,15 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
 
 
   if (!isClient) {
-    const SkeletonContainer = fullscreen ? 'div' : Card;
     return (
-        <SkeletonContainer className="overflow-hidden flex items-center justify-center transition-all duration-300" style={{minHeight: '14rem'}}>
-             <CardContent className="p-6 flex flex-col items-center justify-center">
+        <div className="overflow-hidden flex items-center justify-center transition-all duration-300 w-full h-full" style={{minHeight: '14rem'}}>
+             <div className="p-6 flex flex-col items-center justify-center">
                 <Skeleton className="w-80 h-24" />
                 <div className="text-muted-foreground mt-4 text-lg font-medium">
                    <Skeleton className="w-24 h-6" />
                 </div>
-            </CardContent>
-        </SkeletonContainer>
+            </div>
+        </div>
     )
   }
   
@@ -60,14 +59,13 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
   return (
     <Container 
         className={cn(
-            "overflow-hidden flex items-center justify-center transition-all duration-300 relative", 
+            "overflow-hidden flex items-center justify-center transition-all duration-300 relative w-full h-full", 
             !fullscreen && "bg-cover bg-center",
-            fullscreen && "bg-card/50 dark:bg-card/30 backdrop-blur-md rounded-lg border",
         )}
         style={{...containerStyle, backgroundImage: !fullscreen && backgroundImage ? `url(${backgroundImage})` : 'none' }}
     >
-      <CardContent 
-        className="p-6 flex flex-col items-center justify-center w-full h-full"
+      <div 
+        className={cn("p-6 flex flex-col items-center justify-center w-full h-full", !fullscreen && "relative")}
       >
         {!fullscreen && backgroundImage && <div className="absolute inset-0 bg-card/80 dark:bg-card/60 backdrop-blur-sm z-0" />}
         <div style={{ transform: `scale(${clockScale})`}} className="transition-transform duration-300 z-10">
@@ -77,7 +75,7 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
         <div className="text-muted-foreground mt-4 text-lg font-medium z-10">
           {primaryClockTimezone === 'local' ? 'Local Time' : 'UTC Time'}
         </div>
-      </CardContent>
+      </div>
     </Container>
   );
 }

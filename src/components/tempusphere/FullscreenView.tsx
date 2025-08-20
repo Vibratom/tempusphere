@@ -9,6 +9,7 @@ import { TimerPanel } from './TimerPanel';
 import { Button } from '../ui/button';
 import { Minimize } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Card, CardContent } from '../ui/card';
 
 interface FullscreenViewProps {
   onExit: () => void;
@@ -41,13 +42,15 @@ export function FullscreenView({ onExit }: FullscreenViewProps) {
           <Minimize className="h-5 w-5" />
         </Button>
       </div>
-      <main className={`flex-1 grid gap-4 md:gap-8 ${gridClasses[visibleComponents] || 'grid-cols-1'} p-4 md:p-8 relative z-10`}>
-        {fullscreenSettings.primaryClock && <PrimaryClock fullscreen />}
-        {fullscreenSettings.worldClocks && <WorldClocks fullscreen />}
-        {fullscreenSettings.alarms && <AlarmPanel fullscreen />}
-        {fullscreenSettings.stopwatch && <StopwatchPanel fullscreen />}
-        {fullscreenSettings.timer && <TimerPanel fullscreen />}
-      </main>
+      <Card className="flex-1 bg-card/50 dark:bg-card/30 backdrop-blur-md border-2 border-border/30 overflow-hidden relative z-10">
+        <CardContent className={`h-full grid gap-4 md:gap-8 ${gridClasses[visibleComponents] || 'grid-cols-1'} p-4 md:p-8`}>
+          {fullscreenSettings.primaryClock && <PrimaryClock fullscreen />}
+          {fullscreenSettings.worldClocks && <WorldClocks fullscreen />}
+          {fullscreenSettings.alarms && <AlarmPanel fullscreen />}
+          {fullscreenSettings.stopwatch && <StopwatchPanel fullscreen />}
+          {fullscreenSettings.timer && <TimerPanel fullscreen />}
+        </CardContent>
+      </Card>
     </div>
   );
 }

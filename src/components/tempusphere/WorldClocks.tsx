@@ -47,7 +47,7 @@ function WorldClockRow({ timezone, onRemove }: { timezone: string, onRemove: (tz
 
 
   return (
-      <div className="flex justify-between items-center p-3 rounded-lg bg-card border">
+      <div className="flex justify-between items-center p-3 rounded-lg bg-background/50 border">
         <div>
           <p className="font-semibold text-lg">{timezone.split('/').pop()?.replace(/_/g, ' ')}</p>
           <p className="text-sm text-muted-foreground">{isClient ? getOffset(timezone) : ''}</p>
@@ -88,12 +88,14 @@ export function WorldClocks({ fullscreen = false }: WorldClocksProps) {
     setSelectedClocks(selectedClocks.filter((t) => t !== tz));
   };
   
-  const content = (
-    <>
+  const Container = fullscreen ? 'div' : Card;
+  
+  return (
+    <Container className={fullscreen ? 'h-full flex flex-col' : ''}>
         <CardHeader>
             <CardTitle>World Clocks</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 flex flex-col">
             <div className="flex gap-2 mb-4">
             <Select value={newTimezone} onValueChange={setNewTimezone}>
                 <SelectTrigger>
@@ -111,12 +113,12 @@ export function WorldClocks({ fullscreen = false }: WorldClocksProps) {
             </Select>
             <Button onClick={addClock} disabled={!newTimezone}><Plus className="mr-2 h-4 w-4"/>Add</Button>
             </div>
-            <ScrollArea className="h-72">
-            <div className="space-y-4 pr-4">
+            <ScrollArea className="flex-1">
+            <div className="space-y-4 pr-4 h-full">
                 {isClient ? (
                     selectedClocks.length > 0 ? selectedClocks.map((tz) => (
                     <WorldClockRow key={tz} timezone={tz} onRemove={removeClock} />
-                    )) : <p className="text-muted-foreground text-center pt-8">No world clocks added.</p>
+                    )) : <div className="flex items-center justify-center h-full"><p className="text-muted-foreground text-center">No world clocks added.</p></div>
                 ) : (
                     <div className="space-y-4">
                         <Skeleton className="h-16 w-full" />
@@ -127,8 +129,6 @@ export function WorldClocks({ fullscreen = false }: WorldClocksProps) {
             </div>
             </ScrollArea>
         </CardContent>
-    </>
+    </Container>
   );
-
-  return fullscreen ? <div className="bg-card rounded-lg border h-full flex flex-col">{content}</div> : <Card>{content}</Card>;
 }

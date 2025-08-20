@@ -89,13 +89,15 @@ export function AlarmPanel({ fullscreen = false }: AlarmPanelProps) {
       }
     });
   }, [time, alarms, notificationPermission, toast]);
+  
+  const Container = fullscreen ? 'div' : Card;
 
-  const content = (
-    <>
+  return (
+    <Container className={fullscreen ? 'h-full flex flex-col' : ''}>
        <CardHeader>
         <CardTitle>Alarms</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col">
         {notificationPermission !== 'granted' && (
             <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 mb-4">
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">Enable notifications for a better experience.</p>
@@ -115,10 +117,10 @@ export function AlarmPanel({ fullscreen = false }: AlarmPanelProps) {
           </Select>
           <Button onClick={addAlarm}><Plus className="mr-2 h-4 w-4"/>Add Alarm</Button>
         </div>
-        <ScrollArea className="h-72">
-            <div className="space-y-2 pr-4">
+        <ScrollArea className="flex-1">
+            <div className="space-y-2 pr-4 h-full">
             {alarms.length > 0 ? alarms.map((alarm) => (
-                <div key={alarm.id} className="flex justify-between items-center p-3 rounded-lg bg-card border data-[disabled=true]:opacity-50" data-disabled={!alarm.enabled}>
+                <div key={alarm.id} className="flex justify-between items-center p-3 rounded-lg bg-background/50 border data-[disabled=true]:opacity-50" data-disabled={!alarm.enabled}>
                 <div>
                     <p className="text-2xl font-mono font-semibold">{alarm.time}</p>
                     <p className="text-sm text-muted-foreground">{alarm.name}</p>
@@ -130,12 +132,10 @@ export function AlarmPanel({ fullscreen = false }: AlarmPanelProps) {
                     </Button>
                 </div>
                 </div>
-            )) : <p className="text-muted-foreground text-center pt-8">No alarms set.</p>}
+            )) : <div className="flex items-center justify-center h-full"><p className="text-muted-foreground text-center">No alarms set.</p></div>}
             </div>
         </ScrollArea>
       </CardContent>
-    </>
+    </Container>
   );
-
-  return fullscreen ? <div className="bg-card rounded-lg border h-full flex flex-col">{content}</div> : <Card>{content}</Card>;
 }

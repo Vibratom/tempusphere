@@ -80,12 +80,14 @@ export function TimerPanel({ fullscreen = false }: TimerPanelProps) {
     const progress = duration > 0 ? (timeLeft / duration) * 100 : 0;
     const isEditing = !isRunning && timeLeft === duration;
 
-    const content = (
-        <>
+    const Container = fullscreen ? 'div' : Card;
+
+    return (
+        <Container className={fullscreen ? 'h-full flex flex-col' : ''}>
             <CardHeader>
                 <CardTitle>Countdown Timer</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center gap-6">
+            <CardContent className="flex-1 flex flex-col items-center justify-center gap-6">
                 {isEditing ? (
                     <div className="flex items-baseline justify-center gap-2 text-6xl md:text-7xl font-mono font-bold tracking-tighter">
                         <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className="w-28 h-24 text-center !text-6xl tabular-nums p-0"/>
@@ -110,8 +112,6 @@ export function TimerPanel({ fullscreen = false }: TimerPanelProps) {
                     <Square className="mr-2 h-5 w-5"/>Reset
                 </Button>
             </CardFooter>
-        </>
+        </Container>
     );
-    
-    return fullscreen ? <div className="bg-card rounded-lg border h-full flex flex-col">{content}</div> : <Card>{content}</Card>;
 }
