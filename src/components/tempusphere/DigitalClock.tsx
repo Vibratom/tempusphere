@@ -46,7 +46,7 @@ export function DigitalClock({ className }: DigitalClockProps) {
   return (
     <div className={cn('text-center z-10', className)}>
       <p 
-        className="text-6xl md:text-8xl font-bold tracking-tighter tabular-nums"
+        className="text-6xl md:text-8xl font-bold tracking-tighter tabular-nums bg-clip-text"
         style={textBgStyle}
       >
         {timeString}

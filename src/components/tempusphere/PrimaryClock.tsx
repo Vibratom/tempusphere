@@ -41,16 +41,16 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
   }, [clockSize, clockScale, primaryClockMode, isClient]);
 
 
-  if (!isClient) {
+  if (!isClient && !fullscreen) {
     return (
-        <div className="overflow-hidden flex items-center justify-center transition-all duration-300 w-full h-full" style={{minHeight: '14rem'}}>
-             <div className="p-6 flex flex-col items-center justify-center">
-                <Skeleton className="w-80 h-24" />
-                <div className="text-muted-foreground mt-4 text-lg font-medium">
-                   <Skeleton className="w-24 h-6" />
-                </div>
-            </div>
+      <Card className="overflow-hidden flex items-center justify-center transition-all duration-300 w-full" style={containerStyle}>
+        <div className="p-6 flex flex-col items-center justify-center">
+          <Skeleton className="w-80 h-24" />
+          <div className="text-muted-foreground mt-4 text-lg font-medium">
+              <Skeleton className="w-24 h-6" />
+          </div>
         </div>
+      </Card>
     )
   }
   
@@ -59,13 +59,17 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
   return (
     <Container 
         className={cn(
-            "overflow-hidden flex items-center justify-center transition-all duration-300 relative w-full h-full", 
-            !fullscreen && "bg-cover bg-center",
+            "overflow-hidden flex items-center justify-center transition-all duration-300 relative", 
+            fullscreen ? "w-full h-full" : "bg-cover bg-center",
         )}
-        style={{...containerStyle, backgroundImage: !fullscreen && backgroundImage ? `url(${backgroundImage})` : 'none' }}
+        style={!fullscreen ? {...containerStyle, backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none' } : {}}
     >
       <div 
-        className={cn("p-6 flex flex-col items-center justify-center w-full h-full", !fullscreen && "relative")}
+        className={cn(
+          "p-6 flex flex-col items-center justify-center w-full h-full", 
+          !fullscreen && "relative",
+          fullscreen && backgroundImage && "bg-transparent"
+        )}
       >
         {!fullscreen && backgroundImage && <div className="absolute inset-0 bg-card/80 dark:bg-card/60 backdrop-blur-sm z-0" />}
         <div style={{ transform: `scale(${clockScale})`}} className="transition-transform duration-300 z-10">
