@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useTime } from '@/hooks/use-time';
@@ -32,7 +33,7 @@ export function AnalogClock({ className }: AnalogClockProps) {
                 </pattern>
             </defs>
         )}
-        <circle cx="100" cy="100" r="98" fill={backgroundImage ? `url(#${uniqueId})` : "hsl(var(--card))"} stroke="hsl(var(--foreground))" strokeWidth="2" />
+        <circle cx="100" cy="100" r="98" fill={backgroundImage ? `url(#${uniqueId})` : "transparent"} stroke="hsl(var(--foreground))" strokeWidth="2" />
         <circle cx="100" cy="100" r="4" fill="hsl(var(--primary))" />
 
         {/* Hour and minute markers */}
