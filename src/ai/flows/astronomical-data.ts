@@ -8,12 +8,9 @@
 
 import { ai } from '@/ai/genkit';
 import {
-  AstronomicalDataInput,
   AstronomicalDataInputSchema,
-  AstronomicalDataOutput,
   AstronomicalDataOutputSchema,
 } from '@/ai/types';
-import { z } from 'zod';
 
 // We're defining a "flow" here, but it doesn't use a Genkit model.
 // It's a server-side function that we can call from our client components.
