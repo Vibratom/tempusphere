@@ -15,7 +15,11 @@ const formatTime = (totalSeconds: number) => {
     return { hours, minutes, seconds };
 };
 
-export function TimerPanel() {
+interface TimerPanelProps {
+    fullscreen?: boolean;
+}
+
+export function TimerPanel({ fullscreen = false }: TimerPanelProps) {
     const [duration, setDuration] = useState(300); // 5 minutes in seconds
     const [timeLeft, setTimeLeft] = useState(duration);
     const [isRunning, setIsRunning] = useState(false);
@@ -76,18 +80,18 @@ export function TimerPanel() {
     const progress = duration > 0 ? (timeLeft / duration) * 100 : 0;
     const isEditing = !isRunning && timeLeft === duration;
 
-    return (
-        <Card>
+    const content = (
+        <>
             <CardHeader>
                 <CardTitle>Countdown Timer</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center gap-6">
                 {isEditing ? (
-                    <div className="flex items-center gap-2 text-6xl md:text-7xl font-mono font-bold tracking-tighter">
+                    <div className="flex items-baseline justify-center gap-2 text-6xl md:text-7xl font-mono font-bold tracking-tighter">
                         <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className="w-28 h-24 text-center !text-6xl tabular-nums p-0"/>
-                        <span className="mb-2">:</span>
+                        <span className="text-5xl md:text-6xl -translate-y-1">:</span>
                         <Input type="number" min="0" max="59" value={formatTime(duration).minutes} onChange={handleMinutesChange} className="w-28 h-24 text-center !text-6xl tabular-nums p-0"/>
-                        <span className="mb-2">:</span>
+                        <span className="text-5xl md:text-6xl -translate-y-1">:</span>
                         <Input type="number" min="0" max="59" value={formatTime(duration).seconds} onChange={handleSecondsChange} className="w-28 h-24 text-center !text-6xl tabular-nums p-0"/>
                     </div>
                 ) : (
@@ -106,6 +110,8 @@ export function TimerPanel() {
                     <Square className="mr-2 h-5 w-5"/>Reset
                 </Button>
             </CardFooter>
-        </Card>
+        </>
     );
+    
+    return fullscreen ? <div className="bg-card rounded-lg border h-full flex flex-col">{content}</div> : <Card>{content}</Card>;
 }

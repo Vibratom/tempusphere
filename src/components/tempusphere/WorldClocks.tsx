@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -65,8 +64,11 @@ function WorldClockRow({ timezone, onRemove }: { timezone: string, onRemove: (tz
   );
 }
 
+interface WorldClocksProps {
+    fullscreen?: boolean;
+}
 
-export function WorldClocks() {
+export function WorldClocks({ fullscreen = false }: WorldClocksProps) {
   const [selectedClocks, setSelectedClocks] = useLocalStorage<string[]>('worldclocks:list', ['America/New_York', 'Europe/London', 'Asia/Tokyo']);
   const [newTimezone, setNewTimezone] = useState('');
   const [isClient, setIsClient] = useState(false);
@@ -85,46 +87,48 @@ export function WorldClocks() {
   const removeClock = (tz: string) => {
     setSelectedClocks(selectedClocks.filter((t) => t !== tz));
   };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>World Clocks</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex gap-2 mb-4">
-          <Select value={newTimezone} onValueChange={setNewTimezone}>
-            <SelectTrigger>
-              <SelectValue placeholder="Add a timezone" />
-            </SelectTrigger>
-            <SelectContent>
-              <ScrollArea className="h-72">
-                {timezones.filter(tz => !selectedClocks.includes(tz)).map((tz) => (
-                  <SelectItem key={tz} value={tz}>
-                    {tz.replace(/_/g, ' ')}
-                  </SelectItem>
-                ))}
-              </ScrollArea>
-            </SelectContent>
-          </Select>
-          <Button onClick={addClock} disabled={!newTimezone}><Plus className="mr-2 h-4 w-4"/>Add</Button>
-        </div>
-        <ScrollArea className="h-72">
-          <div className="space-y-4 pr-4">
-            {isClient ? (
-                selectedClocks.length > 0 ? selectedClocks.map((tz) => (
-                <WorldClockRow key={tz} timezone={tz} onRemove={removeClock} />
-                )) : <p className="text-muted-foreground text-center pt-8">No world clocks added.</p>
-            ) : (
-                <div className="space-y-4">
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                </div>
-            )}
-          </div>
-        </ScrollArea>
-      </CardContent>
-    </Card>
+  
+  const content = (
+    <>
+        <CardHeader>
+            <CardTitle>World Clocks</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="flex gap-2 mb-4">
+            <Select value={newTimezone} onValueChange={setNewTimezone}>
+                <SelectTrigger>
+                <SelectValue placeholder="Add a timezone" />
+                </SelectTrigger>
+                <SelectContent>
+                <ScrollArea className="h-72">
+                    {timezones.filter(tz => !selectedClocks.includes(tz)).map((tz) => (
+                    <SelectItem key={tz} value={tz}>
+                        {tz.replace(/_/g, ' ')}
+                    </SelectItem>
+                    ))}
+                </ScrollArea>
+                </SelectContent>
+            </Select>
+            <Button onClick={addClock} disabled={!newTimezone}><Plus className="mr-2 h-4 w-4"/>Add</Button>
+            </div>
+            <ScrollArea className="h-72">
+            <div className="space-y-4 pr-4">
+                {isClient ? (
+                    selectedClocks.length > 0 ? selectedClocks.map((tz) => (
+                    <WorldClockRow key={tz} timezone={tz} onRemove={removeClock} />
+                    )) : <p className="text-muted-foreground text-center pt-8">No world clocks added.</p>
+                ) : (
+                    <div className="space-y-4">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                    </div>
+                )}
+            </div>
+            </ScrollArea>
+        </CardContent>
+    </>
   );
+
+  return fullscreen ? <div className="bg-card rounded-lg border h-full flex flex-col">{content}</div> : <Card>{content}</Card>;
 }

@@ -21,7 +21,11 @@ interface Alarm {
   name: string;
 }
 
-export function AlarmPanel() {
+interface AlarmPanelProps {
+  fullscreen?: boolean;
+}
+
+export function AlarmPanel({ fullscreen = false }: AlarmPanelProps) {
   const [alarms, setAlarms] = useLocalStorage<Alarm[]>('alarms:list', []);
   const [newAlarmTime, setNewAlarmTime] = useState('07:00');
   const [newAlarmSound, setNewAlarmSound] = useState<AlarmSound>('Beep');
@@ -86,9 +90,9 @@ export function AlarmPanel() {
     });
   }, [time, alarms, notificationPermission, toast]);
 
-  return (
-    <Card>
-      <CardHeader>
+  const content = (
+    <>
+       <CardHeader>
         <CardTitle>Alarms</CardTitle>
       </CardHeader>
       <CardContent>
@@ -130,6 +134,8 @@ export function AlarmPanel() {
             </div>
         </ScrollArea>
       </CardContent>
-    </Card>
+    </>
   );
+
+  return fullscreen ? <div className="bg-card rounded-lg border h-full flex flex-col">{content}</div> : <Card>{content}</Card>;
 }

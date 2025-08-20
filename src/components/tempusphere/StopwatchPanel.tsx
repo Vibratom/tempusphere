@@ -13,7 +13,11 @@ const formatTime = (time: number) => {
   return `${minutes}:${seconds}.${milliseconds}`;
 };
 
-export function StopwatchPanel() {
+interface StopwatchPanelProps {
+    fullscreen?: boolean;
+}
+
+export function StopwatchPanel({ fullscreen = false }: StopwatchPanelProps) {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState<number[]>([]);
@@ -50,41 +54,43 @@ export function StopwatchPanel() {
     setLaps([]);
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Stopwatch</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col items-center justify-center gap-6">
-        <p className="text-6xl md:text-7xl font-mono font-bold tracking-tighter tabular-nums">
-          {formatTime(time)}
-        </p>
-        <div className="flex gap-2">
-          <Button size="lg" onClick={handleStartStop}>
-            {isRunning ? <Pause className="mr-2 h-5 w-5"/> : <Play className="mr-2 h-5 w-5"/>}
-            {isRunning ? 'Pause' : 'Start'}
-          </Button>
-          <Button size="lg" variant="secondary" onClick={handleLap} disabled={!isRunning && time === 0}>
-            <History className="mr-2 h-5 w-5"/>Lap
-          </Button>
-          <Button size="lg" variant="secondary" onClick={handleReset}>
-            <Square className="mr-2 h-5 w-5"/>Reset
-          </Button>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <ScrollArea className="h-48 w-full">
-            <div className="space-y-2 pr-4">
-                {laps.map((lap, index) => (
-                    <div key={index} className="flex justify-between p-2 rounded-lg bg-card border">
-                        <span className="font-medium text-muted-foreground">Lap {laps.length - index}</span>
-                        <span className="font-mono">{formatTime(lap - (laps[index+1] || 0) )}</span>
-                        <span className="font-mono font-semibold">{formatTime(lap)}</span>
-                    </div>
-                ))}
+  const content = (
+      <>
+        <CardHeader>
+            <CardTitle>Stopwatch</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center gap-6">
+            <p className="text-6xl md:text-7xl font-mono font-bold tracking-tighter tabular-nums">
+            {formatTime(time)}
+            </p>
+            <div className="flex gap-2">
+            <Button size="lg" onClick={handleStartStop}>
+                {isRunning ? <Pause className="mr-2 h-5 w-5"/> : <Play className="mr-2 h-5 w-5"/>}
+                {isRunning ? 'Pause' : 'Start'}
+            </Button>
+            <Button size="lg" variant="secondary" onClick={handleLap} disabled={!isRunning && time === 0}>
+                <History className="mr-2 h-5 w-5"/>Lap
+            </Button>
+            <Button size="lg" variant="secondary" onClick={handleReset}>
+                <Square className="mr-2 h-5 w-5"/>Reset
+            </Button>
             </div>
-        </ScrollArea>
-      </CardFooter>
-    </Card>
+        </CardContent>
+        <CardFooter className="flex-1 flex-col">
+            <ScrollArea className="h-full w-full">
+                <div className="space-y-2 pr-4">
+                    {laps.map((lap, index) => (
+                        <div key={index} className="flex justify-between p-2 rounded-lg bg-card border">
+                            <span className="font-medium text-muted-foreground">Lap {laps.length - index}</span>
+                            <span className="font-mono">{formatTime(lap - (laps[index+1] || 0) )}</span>
+                            <span className="font-mono font-semibold">{formatTime(lap)}</span>
+                        </div>
+                    ))}
+                </div>
+            </ScrollArea>
+        </CardFooter>
+      </>
   );
+
+  return fullscreen ? <div className="bg-card rounded-lg border h-full flex flex-col">{content}</div> : <Card>{content}</Card>;
 }
