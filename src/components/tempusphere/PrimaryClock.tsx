@@ -59,18 +59,17 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
   return (
     <Container 
         className={cn(
-            "overflow-hidden flex items-center justify-center transition-all duration-300 relative", 
-            fullscreen ? "w-full h-full bg-transparent" : "bg-cover bg-center",
+            "overflow-hidden flex items-center justify-center transition-all duration-300 relative bg-cover bg-center", 
+            fullscreen ? "w-full h-full bg-transparent" : "",
         )}
         style={!fullscreen ? {...containerStyle, backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none' } : {}}
     >
       <div 
         className={cn(
           "p-6 flex flex-col items-center justify-center w-full h-full", 
-          !fullscreen && "relative"
+          !fullscreen && backgroundImage && "bg-card/80 dark:bg-card/60 backdrop-blur-sm"
         )}
       >
-        {!fullscreen && backgroundImage && <div className="absolute inset-0 bg-card/80 dark:bg-card/60 backdrop-blur-sm z-0" />}
         <div style={{ transform: `scale(${clockScale})`}} className="transition-transform duration-300 z-10">
             {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
         </div>
