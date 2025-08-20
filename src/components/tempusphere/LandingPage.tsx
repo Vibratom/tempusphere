@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Footer } from "./Footer";
 import { Button } from "../ui/button";
 import { PrimaryClock } from "./PrimaryClock";
+import { Header } from "./Header";
 
 const features = [
     {
@@ -64,6 +65,7 @@ const features = [
 export function LandingPage() {
     return (
         <div className="min-h-screen w-full bg-background flex flex-col">
+            <Header />
             <main className="flex-1">
                 <section className="py-20 md:py-32 text-center bg-background">
                     <div className="container mx-auto px-4 flex flex-col items-center">
