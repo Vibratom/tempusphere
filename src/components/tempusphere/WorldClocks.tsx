@@ -7,12 +7,12 @@ import { useTime } from '@/hooks/use-time';
 import { timezones } from '@/lib/timezones';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Plus, Globe } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Combobox } from '../ui/combobox';
 
 function WorldClockRow({ timezone, onRemove, glass }: { timezone: string, onRemove: (tz: string) => void; glass?: boolean; }) {
   const time = useTime();
@@ -34,6 +34,7 @@ function WorldClockRow({ timezone, onRemove, glass }: { timezone: string, onRemo
   }
 
   const getOffset = (tz: string) => {
+    if (tz === 'UTC') return 'UTC+0';
     try {
       const date = new Date();
       const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
@@ -93,6 +94,14 @@ export function WorldClocks({ fullscreen = false, glass = false }: WorldClocksPr
   
   const Container = fullscreen ? 'div' : Card;
   const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : '';
+  
+  const timezoneOptions = timezones
+    .filter(tz => !selectedClocks.includes(tz))
+    .map(tz => ({
+        value: tz,
+        label: tz.replace(/_/g, ' ')
+    }));
+
 
   return (
     <Container className={cn('flex flex-col h-full', containerClass)}>
@@ -101,21 +110,13 @@ export function WorldClocks({ fullscreen = false, glass = false }: WorldClocksPr
         </CardHeader>}
         <CardContent className={cn("flex-1 flex flex-col p-4", fullscreen && "p-4 pt-4")}>
             <div className="flex gap-2 mb-4">
-            <Select value={newTimezone} onValueChange={setNewTimezone}>
-                <SelectTrigger>
-                <SelectValue placeholder="Add a timezone" />
-                </SelectTrigger>
-                <SelectContent>
-                <ScrollArea className="h-72">
-                    {timezones.filter(tz => !selectedClocks.includes(tz)).map((tz) => (
-                    <SelectItem key={tz} value={tz}>
-                        {tz.replace(/_/g, ' ')}
-                    </SelectItem>
-                    ))}
-                </ScrollArea>
-                </SelectContent>
-            </Select>
-            <Button onClick={addClock} disabled={!newTimezone}><Plus className="mr-2 h-4 w-4"/>Add</Button>
+                <Combobox
+                    options={timezoneOptions}
+                    value={newTimezone}
+                    onChange={setNewTimezone}
+                    placeholder="Search for a timezone..."
+                />
+                <Button onClick={addClock} disabled={!newTimezone}><Plus className="mr-2 h-4 w-4"/>Add</Button>
             </div>
             <ScrollArea className="flex-1 -mr-4">
             <div className="space-y-4 pr-4 h-full">
