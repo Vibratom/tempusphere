@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -94,5 +95,14 @@ body {
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  .rdp-day_selected {
+    @apply bg-primary text-primary-foreground;
+  }
+  .rdp-day_selected:hover {
+      @apply bg-primary/90;
+  }
+  .rdp-day_today {
+    @apply bg-accent text-accent-foreground;
   }
 }
