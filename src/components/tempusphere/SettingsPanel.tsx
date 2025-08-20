@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Moon, Sun, Image as ImageIcon, Trash2, Layout, Sidebar, SidebarOpen, Minimize } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Slider } from '../ui/slider';
 import Image from 'next/image';
@@ -44,6 +44,8 @@ export function SettingsPanel() {
     setClockSize,
     fullscreenSettings,
     setFullscreenSettings,
+    layout,
+    setLayout
   } = useSettings();
   const { theme, setTheme } = useTheme();
 
@@ -68,10 +70,32 @@ export function SettingsPanel() {
   }
 
   return (
-    <div className="p-4 space-y-6 max-w-2xl mx-auto">
+    <div className="p-4 space-y-6">
       <div className="space-y-2">
         <h3 className="font-semibold">Appearance</h3>
         <Separator />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 items-center">
+        <Label>Layout</Label>
+        <RadioGroup value={layout} onValueChange={(v) => setLayout(v as any)} className="flex items-center gap-2">
+            <Label htmlFor="layout-default" className="border rounded-md p-2 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                <Layout className="w-8 h-8"/>
+                <RadioGroupItem value="default" id="layout-default" className="sr-only"/>
+            </Label>
+             <Label htmlFor="layout-sidebar-left" className="border rounded-md p-2 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                <Sidebar className="w-8 h-8"/>
+                <RadioGroupItem value="sidebar-left" id="layout-sidebar-left" className="sr-only"/>
+            </Label>
+             <Label htmlFor="layout-sidebar-right" className="border rounded-md p-2 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                <SidebarOpen className="w-8 h-8"/>
+                <RadioGroupItem value="sidebar-right" id="layout-sidebar-right" className="sr-only"/>
+            </Label>
+              <Label htmlFor="layout-minimal" className="border rounded-md p-2 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                <Minimize className="w-8 h-8"/>
+                <RadioGroupItem value="minimal" id="layout-minimal" className="sr-only"/>
+            </Label>
+        </RadioGroup>
       </div>
 
       <div className="grid grid-cols-2 gap-4 items-center">

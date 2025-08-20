@@ -32,8 +32,8 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
   }, []);
   
   const clockScale = isClient ? clockSize / 100 : 1;
-  const baseClockSize = primaryClockMode === 'analog' ? 256 : 0;
-  const analogClockStyle = primaryClockMode === 'analog' ? { width: `${baseClockSize * clockScale}px`, height: `${baseClockSize * clockScale}px` } : {};
+  const baseAnalogWidth = 256;
+  const analogClockStyle = primaryClockMode === 'analog' ? { width: `${baseAnalogWidth * clockScale}px`, height: `${baseAnalogWidth * clockScale}px` } : {};
 
 
   if (!isClient && !fullscreen) {
@@ -52,29 +52,26 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
   return (
     <Container 
         className={cn(
-            "overflow-hidden flex flex-col items-center justify-center transition-all duration-300 relative bg-cover bg-center p-6", 
-            fullscreen ? "w-full h-full bg-transparent" : "w-full"
+            "overflow-hidden flex flex-col items-center justify-center transition-all duration-300 relative bg-cover bg-center p-6 w-full", 
+            fullscreen ? "h-full bg-transparent" : "w-full"
         )}
     >
-      {backgroundImage && !fullscreen && (
-        <>
-          <div className="absolute inset-0 bg-cover bg-center" style={{backgroundImage: `url(${backgroundImage})`}}></div>
-          <div className="absolute inset-0 backdrop-blur-md bg-background/80"></div>
-        </>
-      )}
+        <div 
+          className="absolute inset-0 bg-cover bg-center" 
+          style={{backgroundImage: `url(${backgroundImage})`}}
+        ></div>
+        <div className="absolute inset-0 backdrop-blur-md bg-background/80"></div>
+        <div className="flex flex-col items-center justify-center h-full relative">
+            <div style={analogClockStyle} className="transition-all duration-300 flex items-center justify-center">
+                {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
+            </div>
 
-      <div className="flex flex-col items-center justify-center w-full h-full relative">
-        <div style={analogClockStyle} className="transition-all duration-300 flex items-center justify-center">
-          {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
+            <div className={cn(
+              "text-lg font-medium z-10 px-3 py-1 rounded-full mt-4 bg-black/20 text-white/90 backdrop-blur-sm"
+            )}>
+              {primaryClockTimezone === 'local' ? localTimezoneName : 'UTC Time'}
+            </div>
         </div>
-
-        <div className={cn(
-          "text-lg font-medium z-10 px-3 py-1 rounded-full mt-4",
-           backgroundImage ? "bg-black/20 text-white/90 backdrop-blur-sm" : "text-muted-foreground"
-        )}>
-          {primaryClockTimezone === 'local' ? localTimezoneName : 'UTC Time'}
-        </div>
-      </div>
     </Container>
   );
 }

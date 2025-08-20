@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { AppLogo } from "./AppLogo";
 import { Calculator, Music, Wind, BookOpen, Clock, Youtube, Subtitles, Twitter, Facebook, Instagram, Github, Mail } from "lucide-react";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const platforms = [
     { name: 'Axiom (Calculators)', icon: Calculator, href: '#', style: 'bg-blue-500 hover:bg-blue-600' },
@@ -22,6 +23,11 @@ const socialLinks = [
 ]
 
 export function Footer() {
+    const { layout } = useSettings();
+    if (layout === 'sidebar-left' || layout === 'sidebar-right') {
+        return null;
+    }
+    
     return (
         <footer className="bg-background border-t">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center text-muted-foreground">
