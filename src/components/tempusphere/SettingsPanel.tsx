@@ -22,7 +22,7 @@ const colorPresets = [
 
 const backgroundPresets = Array.from({ length: 100 }, (_, i) => ({
     name: `Image ${i + 1}`,
-    url: `/backgrounds/${i + 1}.webp`,
+    url: `/${i + 1}.webp`,
     hint: 'abstract pattern'
 }));
 
