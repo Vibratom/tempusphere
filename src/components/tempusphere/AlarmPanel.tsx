@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { differenceInSeconds, parse } from 'date-fns';
+import { RadialProgress } from './RadialProgress';
 
 interface Alarm {
   id: string;
@@ -91,19 +92,22 @@ export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProp
     const sortedAlarms = enabledAlarms
       .map(alarm => {
         const alarmTime = parse(alarm.time, 'HH:mm', new Date());
-        if (alarmTime < now) {
-          // If alarm time is in the past, it's for tomorrow
-          alarmTime.setDate(alarmTime.getDate() + 1);
+        let diff = differenceInSeconds(alarmTime, now);
+        if (diff < -60) { // allow for a 1-minute grace period before pushing to next day
+           alarmTime.setDate(alarmTime.getDate() + 1);
         }
-        return { ...alarm, dateTime: alarmTime };
+        return { ...alarm, dateTime: alarmTime, diff: differenceInSeconds(alarmTime, now) };
       })
       .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
       
-    return sortedAlarms[0];
+    const upcoming = sortedAlarms.filter(a => a.diff >= 0);
+    return upcoming.length > 0 ? upcoming[0] : sortedAlarms[0];
   }
 
   const nextAlarm = getNextAlarm();
   const countdown = nextAlarm ? differenceInSeconds(nextAlarm.dateTime, time) : 0;
+  const totalCountdown = nextAlarm ? differenceInSeconds(nextAlarm.dateTime, new Date(nextAlarm.dateTime.getTime() - 24*60*60*1000)) : 0;
+  
 
   useEffect(() => {
     const currentTime = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
@@ -132,10 +136,16 @@ export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProp
     return (
         <div className={containerClass}>
             {nextAlarm ? (
-                <div className="text-center">
-                    <p className="text-muted-foreground">{nextAlarm.name}</p>
-                    <p className="text-5xl md:text-7xl font-bold font-mono tabular-nums">{nextAlarm.time}</p>
-                    <p className="text-2xl md:text-3xl font-mono tabular-nums text-primary">{formatCountdown(countdown)}</p>
+                <div className="relative flex items-center justify-center">
+                  <RadialProgress 
+                    progress={100 - (countdown / (24 * 60 * 60)) * 100}
+                    className="w-64 h-64 md:w-80 md:h-80"
+                  />
+                  <div className="absolute text-center">
+                      <p className="text-muted-foreground">{nextAlarm.name}</p>
+                      <p className="text-5xl md:text-7xl font-bold font-mono tabular-nums">{nextAlarm.time}</p>
+                      <p className="text-2xl md:text-3xl font-mono tabular-nums text-primary">{formatCountdown(countdown)}</p>
+                  </div>
                 </div>
             ) : (
                 <div className="flex flex-col items-center justify-center text-center text-muted-foreground">

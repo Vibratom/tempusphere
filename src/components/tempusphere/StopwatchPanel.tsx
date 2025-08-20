@@ -5,9 +5,11 @@ import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 're
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Play, Pause, Square, History } from 'lucide-react';
+import { Play, Pause, Square, History, Watch, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { AnalogStopwatch } from './AnalogStopwatch';
 
 let stopwatchHandle: {
   startStop: () => void;
@@ -31,12 +33,15 @@ interface StopwatchPanelProps {
     glass?: boolean;
 }
 
+type StopwatchViewMode = 'digital' | 'analog';
+
 function StopwatchPanelInternal({ fullscreen = false, glass = false }: StopwatchPanelProps, ref: any) {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState<number[]>([]);
   const timerRef = useRef<number>();
   const startTimeRef = useRef<number>(0);
+  const [viewMode, setViewMode] = useLocalStorage<StopwatchViewMode>('stopwatch:view', 'digital');
 
   useEffect(() => {
     if (isRunning) {
@@ -62,6 +67,10 @@ function StopwatchPanelInternal({ fullscreen = false, glass = false }: Stopwatch
     setLaps([]);
   };
 
+  const toggleViewMode = () => {
+    setViewMode(prev => prev === 'digital' ? 'analog' : 'digital');
+  }
+
   useImperativeHandle(ref, () => ({
     startStop: handleStartStop,
     lap: handleLap,
@@ -82,13 +91,29 @@ function StopwatchPanelInternal({ fullscreen = false, glass = false }: Stopwatch
 
   return (
       <Container className={cn('flex flex-col h-full', containerClass)}>
-        {!fullscreen && <CardHeader>
+        <CardHeader className={cn(fullscreen ? 'hidden' : 'flex', "flex-row items-center justify-between")}>
             <CardTitle>Stopwatch</CardTitle>
-        </CardHeader>}
+             <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={toggleViewMode}>
+                    {viewMode === 'digital' ? <Watch className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Toggle View</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+        </CardHeader>
         <CardContent className={cn("flex flex-col items-center justify-center flex-grow gap-6 p-4", fullscreen && "pt-4")}>
-            <p className="text-6xl md:text-7xl font-mono font-bold tracking-tighter tabular-nums">
-            {formatTime(time)}
-            </p>
+            {viewMode === 'digital' ? (
+              <p className="text-6xl md:text-7xl font-mono font-bold tracking-tighter tabular-nums">
+                {formatTime(time)}
+              </p>
+            ) : (
+               <AnalogStopwatch time={time} />
+            )}
             <div className="flex gap-2">
             <TooltipProvider>
               <Tooltip>
