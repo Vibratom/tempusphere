@@ -9,8 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTime } from '@/hooks/use-time';
-import { playSound, alarmSounds, type AlarmSound } from '@/lib/sounds';
-import { Bell, BellOff, Plus, Trash2, Volume2, AlarmClock } from 'lucide-react';
+import { playSound, stopAllSounds, alarmSounds, type AlarmSound } from '@/lib/sounds';
+import { Plus, Trash2, Volume2, AlarmClock, Square } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -44,6 +44,7 @@ export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProp
   const [newAlarmSound, setNewAlarmSound] = useState<string>(alarmSounds[0].name);
   const [newAlarmName, setNewAlarmName] = useState('Alarm');
   const [notificationPermission, setNotificationPermission] = useState('default');
+  const [isPreviewing, setIsPreviewing] = useState(false);
 
   const triggeredAlarms = useRef<Set<string>>(new Set());
   const time = useTime();
@@ -52,6 +53,10 @@ export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProp
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
         setNotificationPermission(Notification.permission);
+    }
+    // Cleanup sounds on component unmount
+    return () => {
+      stopAllSounds();
     }
   }, []);
 
@@ -126,6 +131,16 @@ export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProp
       }
     });
   }, [time, alarms, notificationPermission, toast]);
+
+  const handlePreview = () => {
+    if(isPreviewing) {
+        stopAllSounds();
+        setIsPreviewing(false);
+    } else {
+        setIsPreviewing(true);
+        playSound(newAlarmSound, () => setIsPreviewing(false));
+    }
+  }
   
   const Container = fullscreen ? 'div' : Card;
   const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg flex flex-col items-center justify-center p-6' : 'flex flex-col items-center justify-center p-6') : 'flex flex-col h-full';
@@ -180,8 +195,8 @@ export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProp
                 ))}
                 </SelectContent>
             </Select>
-            <Button variant="outline" size="icon" onClick={() => playSound(newAlarmSound)}>
-                <Volume2 className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={handlePreview}>
+                {isPreviewing ? <Square className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </Button>
           </div>
           <Button onClick={addAlarm}><Plus className="mr-2 h-4 w-4"/>Add Alarm</Button>
