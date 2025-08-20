@@ -14,7 +14,7 @@ import { Expand, Menu, Settings } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { cn } from '@/lib/utils';
 import { TABS, TabbedPanels } from './TabbedPanels';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose } from '../ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose } from '../ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SettingsPanel } from './SettingsPanel';
 
@@ -145,7 +145,7 @@ function AppContent() {
         <div className="flex-1 flex justify-center items-center w-full">
             <PrimaryClock />
         </div>
-        {layout !== 'minimal' && (
+        {layout === 'default' && (
             <div className="w-full max-w-5xl flex-1 flex flex-col">
                 <TabbedPanels activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
