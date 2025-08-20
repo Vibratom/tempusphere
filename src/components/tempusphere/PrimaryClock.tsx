@@ -60,15 +60,14 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
     <Container 
         className={cn(
             "overflow-hidden flex items-center justify-center transition-all duration-300 relative", 
-            fullscreen ? "w-full h-full" : "bg-cover bg-center",
+            fullscreen ? "w-full h-full bg-transparent" : "bg-cover bg-center",
         )}
         style={!fullscreen ? {...containerStyle, backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none' } : {}}
     >
       <div 
         className={cn(
           "p-6 flex flex-col items-center justify-center w-full h-full", 
-          !fullscreen && "relative",
-          fullscreen && backgroundImage && "bg-transparent"
+          !fullscreen && "relative"
         )}
       >
         {!fullscreen && backgroundImage && <div className="absolute inset-0 bg-card/80 dark:bg-card/60 backdrop-blur-sm z-0" />}

@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Plus } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Skeleton } from '../ui/skeleton';
+import { cn } from '@/lib/utils';
 
 function WorldClockRow({ timezone, onRemove }: { timezone: string, onRemove: (tz: string) => void; }) {
   const time = useTime();
@@ -91,7 +92,7 @@ export function WorldClocks({ fullscreen = false }: WorldClocksProps) {
   const Container = fullscreen ? 'div' : Card;
   
   return (
-    <Container className={fullscreen ? 'h-full flex flex-col' : ''}>
+    <Container className={cn(fullscreen ? 'h-full flex flex-col bg-transparent' : '')}>
         <CardHeader>
             <CardTitle>World Clocks</CardTitle>
         </CardHeader>

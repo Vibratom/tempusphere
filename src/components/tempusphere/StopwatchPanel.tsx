@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Play, Pause, Square, History } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const formatTime = (time: number) => {
   const minutes = Math.floor(time / 60000).toString().padStart(2, '0');
@@ -57,7 +58,7 @@ export function StopwatchPanel({ fullscreen = false }: StopwatchPanelProps) {
   const Container = fullscreen ? 'div' : Card;
 
   return (
-      <Container className={fullscreen ? 'h-full flex flex-col' : ''}>
+      <Container className={cn(fullscreen ? 'h-full flex flex-col bg-transparent' : '')}>
         <CardHeader>
             <CardTitle>Stopwatch</CardTitle>
         </CardHeader>

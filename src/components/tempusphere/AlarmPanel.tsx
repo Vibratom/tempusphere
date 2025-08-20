@@ -12,6 +12,7 @@ import { playSound, alarmSounds, type AlarmSound } from '@/lib/sounds';
 import { Bell, BellOff, Plus, Trash2, Volume2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface Alarm {
   id: string;
@@ -93,7 +94,7 @@ export function AlarmPanel({ fullscreen = false }: AlarmPanelProps) {
   const Container = fullscreen ? 'div' : Card;
 
   return (
-    <Container className={fullscreen ? 'h-full flex flex-col' : ''}>
+    <Container className={cn(fullscreen ? 'h-full flex flex-col bg-transparent' : '')}>
        <CardHeader>
         <CardTitle>Alarms</CardTitle>
       </CardHeader>
