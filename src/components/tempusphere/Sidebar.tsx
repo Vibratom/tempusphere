@@ -8,7 +8,7 @@ import { AlarmPanel } from "./AlarmPanel";
 import { StopwatchPanel } from "./StopwatchPanel";
 import { TimerPanel } from "./TimerPanel";
 import { TABS } from "./TabbedPanels";
-import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { Globe, AlarmClock, Timer, Hourglass, Settings } from 'lucide-react';
 import { Separator } from "../ui/separator";
 
