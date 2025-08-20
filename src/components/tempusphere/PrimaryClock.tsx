@@ -74,7 +74,10 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
             {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
         </div>
 
-        <div className="text-lg font-medium z-10 mt-4 px-3 py-1 rounded-full bg-black/20 text-white/90 backdrop-blur-sm">
+        <div className={cn(
+          "text-lg font-medium z-10 mt-4 px-3 py-1 rounded-full",
+           backgroundImage ? "bg-black/20 text-white/90 backdrop-blur-sm" : "text-muted-foreground"
+        )}>
           {primaryClockTimezone === 'local' ? 'Local Time' : 'UTC Time'}
         </div>
       </div>
