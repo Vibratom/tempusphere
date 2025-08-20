@@ -23,15 +23,21 @@ export function TimerPanel() {
 
     const handleHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const h = parseInt(e.target.value) || 0;
-        setDuration(h * 3600 + (duration % 3600));
+        const currentMinutes = Math.floor((duration % 3600) / 60);
+        const currentSeconds = duration % 60;
+        setDuration(h * 3600 + currentMinutes * 60 + currentSeconds);
     };
     const handleMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const m = parseInt(e.target.value) || 0;
-        setDuration(Math.floor(duration/3600)*3600 + m * 60 + (duration % 60));
+        const currentHours = Math.floor(duration / 3600);
+        const currentSeconds = duration % 60;
+        setDuration(currentHours * 3600 + m * 60 + currentSeconds);
     };
     const handleSecondsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const s = parseInt(e.target.value) || 0;
-        setDuration(Math.floor(duration/60)*60 + s);
+        const currentHours = Math.floor(duration / 3600);
+        const currentMinutes = Math.floor((duration % 3600) / 60);
+        setDuration(currentHours * 3600 + currentMinutes * 60 + s);
     };
 
     useEffect(() => {
@@ -45,10 +51,11 @@ export function TimerPanel() {
             timerRef.current = setInterval(() => {
                 setTimeLeft((prev) => prev - 1);
             }, 1000);
-        } else if (timeLeft === 0 && isRunning) {
+        } else if (timeLeft <= 0 && isRunning) {
             setIsRunning(false);
             playSound('Chime');
             clearInterval(timerRef.current);
+            setTimeLeft(0);
         }
         return () => clearInterval(timerRef.current);
     }, [isRunning, timeLeft]);
@@ -66,7 +73,7 @@ export function TimerPanel() {
     };
 
     const { hours, minutes, seconds } = formatTime(timeLeft);
-    const progress = (timeLeft / duration) * 100;
+    const progress = duration > 0 ? (timeLeft / duration) * 100 : 0;
     const isEditing = !isRunning && timeLeft === duration;
 
     return (
@@ -77,9 +84,11 @@ export function TimerPanel() {
             <CardContent className="flex flex-col items-center justify-center gap-6">
                 {isEditing ? (
                     <div className="flex items-center gap-2 text-6xl md:text-7xl font-mono font-bold tracking-tighter">
-                        <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className="w-28 h-24 text-center text-6xl"/>:
-                        <Input type="number" min="0" max="59" value={formatTime(duration).minutes} onChange={handleMinutesChange} className="w-28 h-24 text-center text-6xl"/>:
-                        <Input type="number" min="0" max="59" value={formatTime(duration).seconds} onChange={handleSecondsChange} className="w-28 h-24 text-center text-6xl"/>
+                        <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className="w-28 h-24 text-center text-6xl tabular-nums p-0"/>
+                        <span className="mb-2">:</span>
+                        <Input type="number" min="0" max="59" value={formatTime(duration).minutes} onChange={handleMinutesChange} className="w-28 h-24 text-center text-6xl tabular-nums p-0"/>
+                        <span className="mb-2">:</span>
+                        <Input type="number" min="0" max="59" value={formatTime(duration).seconds} onChange={handleSecondsChange} className="w-28 h-24 text-center text-6xl tabular-nums p-0"/>
                     </div>
                 ) : (
                     <p className="text-6xl md:text-7xl font-mono font-bold tracking-tighter tabular-nums">
