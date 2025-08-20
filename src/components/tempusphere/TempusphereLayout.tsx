@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { PrimaryClock } from '@/components/tempusphere/PrimaryClock';
 import { AlarmPanel } from '@/components/tempusphere/AlarmPanel';
@@ -20,20 +20,37 @@ import { Footer } from './Footer';
 function AppContent() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => setIsFullscreen(false));
+        document.documentElement.requestFullscreen().catch((err) => {
+            console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        });
     } else {
-        document.exitFullscreen().then(() => setIsFullscreen(false));
+        document.exitFullscreen();
     }
   };
 
+  const exitFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    }
+  };
+
+
   if (isFullscreen) {
-    return <FullscreenView onExit={() => {
-        if (document.exitFullscreen) {
-            document.exitFullscreen().then(() => setIsFullscreen(false));
-        }
-    }}/>
+    return <FullscreenView onExit={exitFullscreen}/>
   }
 
   return (
