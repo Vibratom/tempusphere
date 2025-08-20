@@ -20,10 +20,10 @@ const colorPresets = [
 ];
 
 const backgroundPresets = [
-    { name: 'Cosmic', url: 'https://placehold.co/1200x800.png', hint: 'galaxy stars' },
-    { name: 'Forest', url: 'https://placehold.co/1200x800.png', hint: 'forest trees' },
-    { name: 'City', url: 'https://placehold.co/1200x800.png', hint: 'city skyline' },
-    { name: 'Abstract', url: 'https://placehold.co/1200x800.png', hint: 'abstract pattern' },
+    { name: 'Cosmic', url: '/backgrounds/cosmic.jpg', hint: 'galaxy stars' },
+    { name: 'Forest', url: '/backgrounds/forest.jpg', hint: 'forest trees' },
+    { name: 'City', url: '/backgrounds/city.jpg', hint: 'city skyline' },
+    { name: 'Abstract', url: '/backgrounds/abstract.jpg', hint: 'abstract pattern' },
 ];
 
 export function SettingsPanel() {
@@ -168,7 +168,7 @@ export function SettingsPanel() {
       <div className="grid grid-cols-2 gap-4 items-center">
         <Label>Clock Size</Label>
         <div className="flex items-center gap-2">
-          <Slider value={[clockSize]} onValueChange={(value) => setClockSize(value[0])} min={50} max={150} step={10} />
+          <Slider value={[clockSize]} onValueValueChange={(value) => setClockSize(value[0])} min={50} max={150} step={10} />
           <span>{clockSize}%</span>
         </div>
       </div>
@@ -179,7 +179,7 @@ export function SettingsPanel() {
             <div className="grid grid-cols-2 gap-2">
                 {backgroundPresets.map(preset => (
                     <button key={preset.name} onClick={() => setBackgroundImage(preset.url)} className="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary data-[selected=true]:border-primary" data-selected={backgroundImage === preset.url}>
-                        <Image src={preset.url} alt={preset.name} layout="fill" objectFit="cover" data-ai-hint={preset.hint} />
+                        <Image src={preset.url} alt={preset.name} layout="fill" objectFit="cover" data-ai-hint={preset.hint} unoptimized/>
                     </button>
                 ))}
             </div>
