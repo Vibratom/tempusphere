@@ -104,6 +104,8 @@ function TimerPanelInternal({ fullscreen = false, glass = false }: TimerPanelPro
     const Container = fullscreen ? 'div' : Card;
     const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : '';
 
+    const inputClasses = "w-28 h-24 text-6xl md:text-7xl font-mono font-bold tracking-tighter text-center bg-transparent border-none shadow-none focus-visible:ring-0 p-0 tabular-nums";
+
     return (
         <Container className={cn('flex flex-col h-full', containerClass)}>
             {!fullscreen && <CardHeader>
@@ -111,12 +113,12 @@ function TimerPanelInternal({ fullscreen = false, glass = false }: TimerPanelPro
             </CardHeader>}
             <CardContent className={cn("flex-1 flex flex-col items-center justify-center gap-6 p-4", fullscreen && "pt-4")}>
                 {isEditing ? (
-                    <div className="flex items-baseline justify-center gap-2 text-6xl md:text-7xl font-mono font-bold tracking-tighter">
-                        <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className="w-28 h-24 text-center bg-transparent border-none shadow-none focus-visible:ring-0 p-0 tabular-nums"/>
-                        <span className="text-5xl md:text-6xl -translate-y-1">:</span>
-                        <Input type="number" min="0" max="59" value={formatTime(duration).minutes} onChange={handleMinutesChange} className="w-28 h-24 text-center bg-transparent border-none shadow-none focus-visible:ring-0 p-0 tabular-nums"/>
-                        <span className="text-5xl md:text-6xl -translate-y-1">:</span>
-                        <Input type="number" min="0" max="59" value={formatTime(duration).seconds} onChange={handleSecondsChange} className="w-28 h-24 text-center bg-transparent border-none shadow-none focus-visible:ring-0 p-0 tabular-nums"/>
+                    <div className="flex items-center justify-center font-mono font-bold tracking-tighter">
+                        <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className={inputClasses}/>
+                        <span className="text-5xl md:text-6xl">:</span>
+                        <Input type="number" min="0" max="59" value={formatTime(duration).minutes} onChange={handleMinutesChange} className={inputClasses}/>
+                        <span className="text-5xl md:text-6xl">:</span>
+                        <Input type="number" min="0" max="59" value={formatTime(duration).seconds} onChange={handleSecondsChange} className={inputClasses}/>
                     </div>
                 ) : (
                     <p className="text-6xl md:text-7xl font-mono font-bold tracking-tighter tabular-nums">
