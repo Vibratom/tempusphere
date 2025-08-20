@@ -19,22 +19,19 @@ export function PrimaryClock() {
   const clockScale = isClient ? clockSize / 100 : 1;
 
   const containerStyle = useMemo(() => {
-    // Base height in rem, corresponds to min-h-[14rem]
+    if (!isClient) return { minHeight: '14rem' };
+
     const baseHeight = 14; 
-    // Base width for analog clock is 16rem (w-64), digital is wider
     const baseWidth = primaryClockMode === 'analog' ? 16 : 24;
 
     const scaledHeight = baseHeight * clockScale;
     const scaledWidth = baseWidth * clockScale;
 
-    // We only want to expand, not shrink below the minimum.
     const height = Math.max(baseHeight, scaledHeight);
     const width = Math.max(baseWidth, scaledWidth);
 
-
     return {
       minHeight: `${height}rem`,
-      // Add some padding to the width to avoid edges touching
       minWidth: `min(${width + 4}rem, 100%)`, 
     };
   }, [clockSize, clockScale, primaryClockMode, isClient]);
@@ -45,19 +42,23 @@ export function PrimaryClock() {
         <Card className="overflow-hidden flex items-center justify-center transition-all duration-300" style={{minHeight: '14rem'}}>
             <CardContent className="p-6 flex flex-col items-center justify-center">
                  <Skeleton className="w-80 h-24" />
-                 <Skeleton className="w-24 h-6 mt-4" />
+                 <div className="text-muted-foreground mt-4 text-lg font-medium">
+                    <Skeleton className="w-24 h-6" />
+                 </div>
             </CardContent>
         </Card>
     )
   }
 
   return (
-    <Card className="overflow-hidden flex items-center justify-center transition-all duration-300" style={containerStyle}>
+    <Card 
+        className="overflow-hidden flex items-center justify-center transition-all duration-300 relative bg-cover bg-center" 
+        style={{...containerStyle, backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none' }}
+    >
       <CardContent 
-        className="p-6 flex flex-col items-center justify-center relative bg-cover bg-center"
-        style={{ backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none' }}
+        className="p-6 flex flex-col items-center justify-center w-full h-full"
       >
-        {backgroundImage && <div className="absolute inset-0 bg-card/50 backdrop-blur-sm" />}
+        {backgroundImage && <div className="absolute inset-0 bg-card/80 dark:bg-card/60 backdrop-blur-sm z-0" />}
         <div style={{ transform: `scale(${clockScale})`}} className="transition-transform duration-300 z-10">
             {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
         </div>
