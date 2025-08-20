@@ -104,10 +104,10 @@ function TimerPanelInternal({ fullscreen = false }: TimerPanelProps, ref: any) {
 
     return (
         <Container className={cn('flex flex-col h-full', contentClass)}>
-            <CardHeader>
+            {!fullscreen && <CardHeader>
                 <CardTitle>Countdown Timer</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col items-center justify-center gap-6">
+            </CardHeader>}
+            <CardContent className={cn("flex-1 flex flex-col items-center justify-center gap-6", fullscreen && "pt-4")}>
                 {isEditing ? (
                     <div className="flex items-baseline justify-center gap-2 text-6xl md:text-7xl font-mono font-bold tracking-tighter">
                         <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className="w-28 h-24 text-center text-6xl tabular-nums p-0"/>

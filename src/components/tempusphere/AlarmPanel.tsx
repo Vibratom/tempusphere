@@ -96,10 +96,10 @@ export function AlarmPanel({ fullscreen = false }: AlarmPanelProps) {
 
   return (
     <Container className={cn('flex flex-col h-full', contentClass)}>
-       <CardHeader>
+       {!fullscreen && <CardHeader>
         <CardTitle>Alarms</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
+      </CardHeader>}
+      <CardContent className={cn("flex-1 flex flex-col", fullscreen && "p-0 pt-4")}>
         {notificationPermission !== 'granted' && (
             <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 mb-4">
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">Enable notifications for a better experience.</p>

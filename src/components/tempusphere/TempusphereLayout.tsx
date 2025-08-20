@@ -11,7 +11,6 @@ import { SettingsPanel } from '@/components/tempusphere/SettingsPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Globe, AlarmClock, Timer, Hourglass, Settings, Expand } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '../ui/button';
 import { FullscreenView } from './FullscreenView';
 import { AppLogo } from './AppLogo';
@@ -42,7 +41,7 @@ function AppContent() {
       document.exitFullscreen();
     }
   };
-
+  
   const onExitFullscreen = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen();
@@ -65,6 +64,7 @@ function AppContent() {
     }],
     ['Alt+5', () => setActiveTab(TABS[4])],
     [' ', (e) => {
+        if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
         if (activeTab === 'stopwatch') {
             e.preventDefault();
             stopwatchHandle.startStop();
@@ -125,57 +125,50 @@ function AppContent() {
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="world-clocks" className="flex gap-2 items-center"><Globe size={16}/> World Clocks</TabsTrigger>
+                <TabsTrigger value="world-clocks" className="flex-col md:flex-row h-auto gap-1 py-2"><Globe/> World Clocks</TabsTrigger>
               </TooltipTrigger>
               <TooltipContent><p>Alt + 1</p></TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="alarms" className="flex gap-2 items-center"><AlarmClock size={16}/> Alarms</TabsTrigger>
+                <TabsTrigger value="alarms" className="flex-col md:flex-row h-auto gap-1 py-2"><AlarmClock/> Alarms</TabsTrigger>
               </TooltipTrigger>
               <TooltipContent><p>Alt + 2</p></TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="stopwatch" className="flex gap-2 items-center"><Hourglass size={16}/> Stopwatch</TabsTrigger>
+                <TabsTrigger value="stopwatch" className="flex-col md:flex-row h-auto gap-1 py-2"><Hourglass/> Stopwatch</TabsTrigger>
               </TooltipTrigger>
               <TooltipContent><p>Alt + 3</p></TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="timer" className="flex gap-2 items-center"><Timer size={16}/> Timer</TabsTrigger>
+                <TabsTrigger value="timer" className="flex-col md:flex-row h-auto gap-1 py-2"><Timer/> Timer</TabsTrigger>
               </TooltipTrigger>
               <TooltipContent><p>Alt + 4</p></TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="settings" className="flex gap-2 items-center"><Settings size={16}/> Settings</TabsTrigger>
+                <TabsTrigger value="settings" className="flex-col md:flex-row h-auto gap-1 py-2"><Settings/> Settings</TabsTrigger>
               </TooltipTrigger>
               <TooltipContent><p>Alt + 5</p></TooltipContent>
             </Tooltip>
           </TabsList>
           </TooltipProvider>
-          <TabsContent value="world-clocks" className="animation-fade-in">
+          <TabsContent value="world-clocks" className="animation-fade-in mt-4">
             <WorldClocks />
           </TabsContent>
-          <TabsContent value="alarms" className="animation-fade-in">
+          <TabsContent value="alarms" className="animation-fade-in mt-4">
             <AlarmPanel />
           </TabsContent>
-          <TabsContent value="stopwatch" className="animation-fade-in">
+          <TabsContent value="stopwatch" className="animation-fade-in mt-4">
             <StopwatchPanel />
           </TabsContent>
-          <TabsContent value="timer" className="animation-fade-in">
+          <TabsContent value="timer" className="animation-fade-in mt-4">
             <TimerPanel />
           </TabsContent>
-          <TabsContent value="settings" className="animation-fade-in">
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Settings</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                      <SettingsPanel />
-                  </CardContent>
-              </Card>
+          <TabsContent value="settings" className="animation-fade-in mt-4">
+             <SettingsPanel />
           </TabsContent>
         </Tabs>
       </main>

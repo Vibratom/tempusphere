@@ -95,10 +95,10 @@ export function WorldClocks({ fullscreen = false }: WorldClocksProps) {
   
   return (
     <Container className={cn('flex flex-col h-full', contentClass)}>
-        <CardHeader>
+        {!fullscreen && <CardHeader>
             <CardTitle>World Clocks</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 flex flex-col">
+        </CardHeader>}
+        <CardContent className={cn("flex-1 flex flex-col", fullscreen && "p-0 pt-4")}>
             <div className="flex gap-2 mb-4">
             <Select value={newTimezone} onValueChange={setNewTimezone}>
                 <SelectTrigger>

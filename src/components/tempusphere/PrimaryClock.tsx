@@ -61,20 +61,20 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
         className={cn(
             "overflow-hidden flex items-center justify-center transition-all duration-300 relative bg-cover bg-center", 
             fullscreen ? "w-full h-full bg-transparent" : "w-full",
+            !fullscreen && backgroundImage && "bg-background/80 backdrop-blur-md"
         )}
         style={!fullscreen ? {...containerStyle, backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none' } : {}}
     >
       <div 
         className={cn(
           "p-6 flex flex-col items-center justify-center w-full h-full", 
-          !fullscreen && backgroundImage && "bg-card/80 dark:bg-card/60 backdrop-blur-sm"
         )}
       >
         <div style={{ transform: `scale(${clockScale})`}} className="transition-transform duration-300 z-10">
             {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
         </div>
 
-        <div className="text-muted-foreground mt-4 text-lg font-medium z-10">
+        <div className="text-lg font-medium z-10 mt-4 px-3 py-1 rounded-full bg-black/20 text-white/90 backdrop-blur-sm">
           {primaryClockTimezone === 'local' ? 'Local Time' : 'UTC Time'}
         </div>
       </div>

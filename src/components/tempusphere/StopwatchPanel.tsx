@@ -80,10 +80,10 @@ function StopwatchPanelInternal({ fullscreen = false }: StopwatchPanelProps, ref
 
   return (
       <Container className={cn('flex flex-col h-full', contentClass)}>
-        <CardHeader>
+        {!fullscreen && <CardHeader>
             <CardTitle>Stopwatch</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center gap-6">
+        </CardHeader>}
+        <CardContent className={cn("flex flex-col items-center justify-center gap-6", fullscreen && "pt-4")}>
             <p className="text-6xl md:text-7xl font-mono font-bold tracking-tighter tabular-nums">
             {formatTime(time)}
             </p>
