@@ -3,7 +3,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Clock, Expand, Settings, Home, Atom } from 'lucide-react';
+import Image from 'next/image';
+import { Expand, Settings, Home, Atom } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose, SheetTrigger } from '../ui/sheet';
 import { SettingsPanel } from './SettingsPanel';
@@ -50,7 +51,7 @@ export function Header() {
         <header className="flex h-16 shrink-0 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 sticky top-0 z-30">
             <div className="flex items-center gap-3 mr-auto">
                 <Link href="/" className="flex items-center gap-2 font-bold tracking-tighter text-xl">
-                    <Clock />
+                    <Image src="/logo.webp" alt="Tempusphere Logo" width={24} height={24} />
                     Tempusphere
                 </Link>
             </div>
