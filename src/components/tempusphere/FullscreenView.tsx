@@ -43,8 +43,8 @@ export function FullscreenView({ onExit }: FullscreenViewProps) {
         </Button>
       </div>
       <div className="flex-1 overflow-hidden relative z-10">
-        <Card className="h-full bg-card/50 dark:bg-card/30 backdrop-blur-md border-2 border-border/30 overflow-hidden">
-          <CardContent className={`h-full grid gap-4 md:gap-8 ${gridClasses[visibleComponents] || 'grid-cols-1'} p-4 md:p-8`}>
+        <Card className="h-full bg-transparent border-0 shadow-none overflow-hidden">
+          <CardContent className={`h-full grid gap-4 md:gap-8 ${gridClasses[visibleComponents] || 'grid-cols-1'} p-0`}>
             {fullscreenSettings.primaryClock && <PrimaryClock fullscreen />}
             {fullscreenSettings.worldClocks && <WorldClocks fullscreen />}
             {fullscreenSettings.alarms && <AlarmPanel fullscreen />}

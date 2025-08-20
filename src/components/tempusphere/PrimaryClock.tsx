@@ -44,12 +44,12 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
   if (!isClient && !fullscreen) {
     return (
       <Card className="overflow-hidden flex items-center justify-center transition-all duration-300 w-full" style={containerStyle}>
-        <div className="p-6 flex flex-col items-center justify-center">
+        <CardContent className="p-6 flex flex-col items-center justify-center">
           <Skeleton className="w-80 h-24" />
           <div className="text-muted-foreground mt-4 text-lg font-medium">
               <Skeleton className="w-24 h-6" />
           </div>
-        </div>
+        </CardContent>
       </Card>
     )
   }
