@@ -29,7 +29,12 @@ interface CalendarEvent {
 
 const eventColors = ['blue', 'green', 'red', 'purple', 'orange', 'yellow', 'pink'];
 
-export function CalendarPanel() {
+interface CalendarPanelProps {
+    fullscreen?: boolean;
+    glass?: boolean;
+}
+
+export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPanelProps) {
   const [events, setEvents] = useLocalStorage<CalendarEvent[]>('calendar:events', []);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [newEventTitle, setNewEventTitle] = useState('');
@@ -79,12 +84,15 @@ export function CalendarPanel() {
     )
   }
 
+  const Container = fullscreen ? 'div' : Card;
+  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : '';
+
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
+    <Container className={cn('h-full flex flex-col', containerClass)}>
+      {!fullscreen && <CardHeader>
         <CardTitle>Personal Calendar</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col md:flex-row gap-4">
+      </CardHeader>}
+      <CardContent className="flex-1 flex flex-col md:flex-row gap-4 p-4">
         <div className="flex justify-center">
             <Calendar
                 mode="single"
@@ -161,7 +169,6 @@ export function CalendarPanel() {
           </ScrollArea>
         </div>
       </CardContent>
-    </Card>
+    </Container>
   );
 }
-

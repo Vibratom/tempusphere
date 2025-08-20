@@ -10,7 +10,9 @@ import { TimerPanel } from './TimerPanel';
 import { Button } from '../ui/button';
 import { Minimize } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent } from '../ui/card';
+import { ConverterPanel } from './ConverterPanel';
+import { ConferencePlanner } from './ConferencePlanner';
+import { CalendarPanel } from './CalendarPanel';
 
 interface FullscreenViewProps {
   onExit: () => void;
@@ -22,16 +24,18 @@ export function FullscreenView({ onExit }: FullscreenViewProps) {
   const visibleComponents = Object.values(fullscreenSettings).filter(Boolean);
   const count = visibleComponents.length;
 
-  const gridSetup = {
+  const gridSetup: Record<number, string> = {
     1: "grid-cols-1 grid-rows-1",
     2: "grid-cols-1 md:grid-cols-2 grid-rows-2 md:grid-rows-1",
     3: "grid-cols-1 md:grid-cols-3 grid-rows-3 md:grid-rows-1",
     4: "grid-cols-1 md:grid-cols-2 grid-rows-4 md:grid-rows-2",
-    5: "grid-cols-1 md:grid-cols-3 grid-rows-5 md:grid-rows-2",
+    5: "grid-cols-1 md:grid-cols-3 grid-rows-5 md:grid-rows-2", // Custom layout for 5
     6: "grid-cols-1 md:grid-cols-3 grid-rows-6 md:grid-rows-2",
+    7: "grid-cols-1 md:grid-cols-4 grid-rows-7 md:grid-rows-2", // Custom layout for 7
+    8: "grid-cols-1 md:grid-cols-4 grid-rows-8 md:grid-rows-2",
   };
 
-  const gridClass = gridSetup[count as keyof typeof gridSetup] || "grid-cols-1 grid-rows-1";
+  const gridClass = gridSetup[count] || "grid-cols-1 grid-rows-1";
   
   const glassEffect = !!backgroundImage;
 
@@ -57,6 +61,9 @@ export function FullscreenView({ onExit }: FullscreenViewProps) {
         {fullscreenSettings.alarms && <AlarmPanel fullscreen glass={glassEffect} />}
         {fullscreenSettings.stopwatch && <StopwatchPanel fullscreen glass={glassEffect} />}
         {fullscreenSettings.timer && <TimerPanel fullscreen glass={glassEffect} />}
+        {fullscreenSettings.converter && <ConverterPanel />}
+        {fullscreenSettings.planner && <ConferencePlanner />}
+        {fullscreenSettings.calendar && <CalendarPanel />}
       </div>
     </div>
   );

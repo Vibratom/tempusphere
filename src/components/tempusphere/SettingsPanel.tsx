@@ -280,6 +280,18 @@ export function SettingsPanel() {
             <Label htmlFor="fs-timer">Show Timer</Label>
             <Switch id="fs-timer" checked={fullscreenSettings.timer} onCheckedChange={(c) => handleFullscreenSettingChange('timer', c)} />
           </div>
+           <div className="grid grid-cols-2 gap-4 items-center">
+            <Label htmlFor="fs-converter">Show Converter</Label>
+            <Switch id="fs-converter" checked={fullscreenSettings.converter} onCheckedChange={(c) => handleFullscreenSettingChange('converter', c)} />
+          </div>
+           <div className="grid grid-cols-2 gap-4 items-center">
+            <Label htmlFor="fs-planner">Show Planner</Label>
+            <Switch id="fs-planner" checked={fullscreenSettings.planner} onCheckedChange={(c) => handleFullscreenSettingChange('planner', c)} />
+          </div>
+           <div className="grid grid-cols-2 gap-4 items-center">
+            <Label htmlFor="fs-calendar">Show Calendar</Label>
+            <Switch id="fs-calendar" checked={fullscreenSettings.calendar} onCheckedChange={(c) => handleFullscreenSettingChange('calendar', c)} />
+          </div>
         </div>
       </ScrollArea>
   );

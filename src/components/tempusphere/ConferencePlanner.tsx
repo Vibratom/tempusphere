@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import { Loader, Plus, Wand2, X } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { cn } from '@/lib/utils';
 
 // Define the structure for a suggestion
 interface Suggestion {
@@ -107,8 +108,12 @@ function findMeetingTimes(timezones: string[]): SuggestionOutput {
   };
 }
 
+interface ConferencePlannerProps {
+    fullscreen?: boolean;
+    glass?: boolean;
+}
 
-export function ConferencePlanner() {
+export function ConferencePlanner({ fullscreen = false, glass = false }: ConferencePlannerProps) {
   const [targetTzs, setTargetTzs] = useState<string[]>(['America/New_York', 'Europe/London', 'Asia/Tokyo']);
   const [newTargetTz, setNewTargetTz] = useState('');
   const [suggestions, setSuggestions] = useState<SuggestionOutput | null>(null);
@@ -141,13 +146,17 @@ export function ConferencePlanner() {
     }
     setIsLoading(false);
   }
+  
+  const Container = fullscreen ? 'div' : Card;
+  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : '';
+
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
+    <Container className={cn("h-full flex flex-col", containerClass)}>
+      {!fullscreen && <CardHeader>
         <CardTitle>Conference Planner</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-4">
+      </CardHeader>}
+      <CardContent className="flex-1 flex flex-col gap-4 p-4">
         <div className="p-4 border rounded-lg space-y-2">
             <h4 className="font-semibold">Meeting Timezones</h4>
             <div className="flex gap-2">
@@ -203,6 +212,6 @@ export function ConferencePlanner() {
             </div>
         </ScrollArea>
       </CardContent>
-    </Card>
+    </Container>
   );
 }

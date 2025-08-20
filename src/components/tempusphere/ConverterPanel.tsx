@@ -45,7 +45,12 @@ function getLocalTime(date: Date, time: string, timeZone: string): Date {
     return new Date(tempDate.getTime() - offset);
 }
 
-export function ConverterPanel() {
+interface ConverterPanelProps {
+  fullscreen?: boolean;
+  glass?: boolean;
+}
+
+export function ConverterPanel({ fullscreen = false, glass = false }: ConverterPanelProps) {
   const [sourceDate, setSourceDate] = useState<Date>(new Date());
   const [sourceTime, setSourceTime] = useState('12:00');
   const [sourceTz, setSourceTz] = useState('UTC');
@@ -67,13 +72,17 @@ export function ConverterPanel() {
   const availableTargetTzs = timezones.filter(tz => !targetTzs.includes(tz) && tz !== sourceTz).map(tz => ({ value: tz, label: tz.replace(/_/g, ' ') }));
 
   const baseDate = getLocalTime(sourceDate, sourceTime, sourceTz);
+  
+  const Container = fullscreen ? 'div' : Card;
+  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : '';
+
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
+    <Container className={cn('h-full flex flex-col', containerClass)}>
+      {!fullscreen && <CardHeader>
         <CardTitle>Time Zone Converter</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-4">
+      </CardHeader>}
+      <CardContent className="flex-1 flex flex-col gap-4 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg">
            <Popover>
               <PopoverTrigger asChild>
@@ -143,6 +152,6 @@ export function ConverterPanel() {
             </div>
         </ScrollArea>
       </CardContent>
-    </Card>
+    </Container>
   );
 }

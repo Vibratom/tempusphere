@@ -13,6 +13,9 @@ export interface FullscreenSettings {
   alarms: boolean;
   stopwatch: boolean;
   timer: boolean;
+  converter: boolean;
+  planner: boolean;
+  calendar: boolean;
 }
 
 interface Settings {
@@ -66,6 +69,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     alarms: false,
     stopwatch: false,
     timer: false,
+    converter: false,
+    planner: false,
+    calendar: false,
   });
   const { resolvedTheme } = useTheme();
 
