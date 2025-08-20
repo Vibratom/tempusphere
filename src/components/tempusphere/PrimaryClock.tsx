@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSettings } from '@/contexts/SettingsContext';
@@ -23,9 +24,9 @@ export function PrimaryClock() {
         ) : (
           <Skeleton className="w-64 h-24" />
         )}
-        <p className="text-muted-foreground mt-4 text-lg font-medium">
+        <div className="text-muted-foreground mt-4 text-lg font-medium">
           {isClient ? (primaryClockTimezone === 'local' ? 'Local Time' : 'UTC Time') : <Skeleton className="w-24 h-6" />}
-        </p>
+        </div>
       </CardContent>
     </Card>
   );
