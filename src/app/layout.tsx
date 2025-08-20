@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'Tempusphere',
-  description: 'A modern, customizable clock application.',
+  title: 'Tempusphere - The Ultimate Time Management Dashboard',
+  description: 'Tempusphere is a modern, customizable clock application with world clocks, alarms, stopwatch, timer, time zone converter, conference planner, and a personal calendar. Your all-in-one productivity and time tool.',
 };
 
 export default function RootLayout({

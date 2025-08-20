@@ -2,17 +2,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
+import { SettingsProvider } from '@/contexts/SettingsContext';
 import { PrimaryClock } from '@/components/tempusphere/PrimaryClock';
 import { FullscreenView } from './FullscreenView';
 import { Footer } from './Footer';
 import { useHotkeys } from '@/hooks/use-hotkeys';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Button } from '../ui/button';
-import { Expand, Settings } from 'lucide-react';
+import { Expand, Settings, Home } from 'lucide-react';
 import { TabbedPanels } from './TabbedPanels';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose, SheetTrigger } from '../ui/sheet';
 import { SettingsPanel } from './SettingsPanel';
+import Link from 'next/link';
 
 
 function AppContent() {
@@ -90,10 +91,23 @@ function AppContent() {
   const header = (
      <header className="flex h-16 shrink-0 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 sticky top-0 z-30">
         <div className="flex items-center gap-3 mr-auto">
-          <h1 className="text-2xl font-bold tracking-tighter">Tempusphere</h1>
+          <Link href="/" className="flex items-center gap-2 font-bold tracking-tighter text-xl">
+            <Clock/>
+            Tempusphere
+          </Link>
         </div>
         <div className="flex items-center gap-2">
             <TooltipProvider>
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button asChild variant="outline" size="icon">
+                          <Link href="/"><Home className="h-5 w-5" /></Link>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Homepage</p>
+                    </TooltipContent>
+                </Tooltip>
                  <Tooltip>
                     <TooltipTrigger asChild>
                         <SettingsSheet/>

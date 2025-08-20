@@ -1,7 +1,7 @@
-'use client';
 
-import { TempusphereLayout } from '@/components/tempusphere/TempusphereLayout';
+'use client';
+import { LandingPage } from '@/components/tempusphere/LandingPage';
 
 export default function Home() {
-  return <TempusphereLayout />;
+  return <LandingPage />;
 }
