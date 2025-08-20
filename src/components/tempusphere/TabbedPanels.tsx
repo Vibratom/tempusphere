@@ -12,7 +12,6 @@ import { useHotkeys } from "@/hooks/use-hotkeys";
 import { stopwatchHandle } from "./StopwatchPanel";
 import { timerHandle } from "./TimerPanel";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
-import { Card } from "../ui/card";
 import { Separator } from "../ui/separator";
 
 export const TABS = ['world-clocks', 'alarms', 'stopwatch', 'timer', 'settings'];
@@ -47,12 +46,14 @@ export function TabbedPanels({ activeTab, setActiveTab }: TabbedPanelsProps) {
         }
     }],
     ['L', (e) => {
+        if (document.activeElement?.tagName === 'INPUT') return;
         if (activeTab === 'stopwatch') {
             e.preventDefault();
             stopwatchHandle.lap();
         }
     }],
      ['R', (e) => {
+        if (document.activeElement?.tagName === 'INPUT') return;
         if (activeTab === 'stopwatch') {
             e.preventDefault();
             stopwatchHandle.reset();
@@ -65,61 +66,57 @@ export function TabbedPanels({ activeTab, setActiveTab }: TabbedPanelsProps) {
   ]);
     
     return (
-        <>
-        <Separator className="w-full max-w-5xl my-4"/>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-5xl">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-5xl flex-1 flex flex-col">
           <TooltipProvider>
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto">
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="world-clocks" className="flex-col md:flex-row h-auto gap-1 py-2"><Globe/> World Clocks</TabsTrigger>
+                <TabsTrigger value="world-clocks" className="flex-col md:flex-row h-auto gap-2 py-2"><Globe/><span>World Clocks</span></TabsTrigger>
               </TooltipTrigger>
               <TooltipContent><p>Alt + 1</p></TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="alarms" className="flex-col md:flex-row h-auto gap-1 py-2"><AlarmClock/> Alarms</TabsTrigger>
+                <TabsTrigger value="alarms" className="flex-col md:flex-row h-auto gap-2 py-2"><AlarmClock/><span>Alarms</span></TabsTrigger>
               </TooltipTrigger>
               <TooltipContent><p>Alt + 2</p></TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="stopwatch" className="flex-col md:flex-row h-auto gap-1 py-2"><Hourglass/> Stopwatch</TabsTrigger>
+                <TabsTrigger value="stopwatch" className="flex-col md:flex-row h-auto gap-2 py-2"><Hourglass/><span>Stopwatch</span></TabsTrigger>
               </TooltipTrigger>
               <TooltipContent><p>Alt + 3</p></TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="timer" className="flex-col md:flex-row h-auto gap-1 py-2"><Timer/> Timer</TabsTrigger>
+                <TabsTrigger value="timer" className="flex-col md:flex-row h-auto gap-2 py-2"><Timer/><span>Timer</span></TabsTrigger>
               </TooltipTrigger>
               <TooltipContent><p>Alt + 4</p></TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="settings" className="flex-col md:flex-row h-auto gap-1 py-2"><Settings/> Settings</TabsTrigger>
+                <TabsTrigger value="settings" className="flex-col md:flex-row h-auto gap-2 py-2"><Settings/><span>Settings</span></TabsTrigger>
               </TooltipTrigger>
               <TooltipContent><p>Alt + 5</p></TooltipContent>
             </Tooltip>
           </TabsList>
           </TooltipProvider>
-          <TabsContent value="world-clocks" className="animation-fade-in mt-4">
+          <Separator className="w-full my-4"/>
+          <TabsContent value="world-clocks" className="animation-fade-in flex-1">
             <WorldClocks />
           </TabsContent>
-          <TabsContent value="alarms" className="animation-fade-in mt-4">
+          <TabsContent value="alarms" className="animation-fade-in flex-1">
             <AlarmPanel />
           </TabsContent>
-          <TabsContent value="stopwatch" className="animation-fade-in mt-4">
+          <TabsContent value="stopwatch" className="animation-fade-in flex-1">
             <StopwatchPanel />
           </TabsContent>
-          <TabsContent value="timer" className="animation-fade-in mt-4">
+          <TabsContent value="timer" className="animation-fade-in flex-1">
             <TimerPanel />
           </TabsContent>
-          <TabsContent value="settings" className="animation-fade-in mt-4">
-             <Card>
-                <SettingsPanel />
-             </Card>
+          <TabsContent value="settings" className="animation-fade-in flex-1">
+             <SettingsPanel />
           </TabsContent>
         </Tabs>
-        </>
     )
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
@@ -25,6 +26,10 @@ interface Settings {
   setPrimaryClockTimezone: Dispatch<SetStateAction<'local' | 'utc'>>;
   primaryColor: string;
   setPrimaryColor: Dispatch<SetStateAction<string>>;
+  accentColor: string;
+  setAccentColor: Dispatch<SetStateAction<string>>;
+  backgroundColor: string;
+  setBackgroundColor: Dispatch<SetStateAction<string>>;
   backgroundImage: string | null;
   setBackgroundImage: Dispatch<SetStateAction<string | null>>;
   clockSize: number;
@@ -43,6 +48,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [primaryClockMode, setPrimaryClockMode] = useLocalStorage<'analog' | 'digital'>('settings:clockMode', 'digital');
   const [primaryClockTimezone, setPrimaryClockTimezone] = useLocalStorage<'local' | 'utc'>('settings:clockTimezone', 'local');
   const [primaryColor, setPrimaryColor] = useLocalStorage<string>('settings:primaryColor', '141 15% 54%');
+  const [accentColor, setAccentColor] = useLocalStorage<string>('settings:accentColor', '5 41% 49%');
+  const [backgroundColor, setBackgroundColor] = useLocalStorage<string>('settings:backgroundColor', '210 20% 96%');
   const [backgroundImage, setBackgroundImage] = useLocalStorage<string | null>('settings:backgroundImage', null);
   const [clockSize, setClockSize] = useLocalStorage<number>('settings:clockSize', 100);
   const [fullscreenSettings, setFullscreenSettings] = useLocalStorage<FullscreenSettings>('settings:fullscreen', {
@@ -58,8 +65,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
         document.documentElement.style.setProperty('--primary', primaryColor);
+        document.documentElement.style.setProperty('--accent', accentColor);
+        document.documentElement.style.setProperty('--background', backgroundColor);
     }
-  }, [primaryColor]);
+  }, [primaryColor, accentColor, backgroundColor]);
 
   const value = {
     hourFormat,
@@ -72,6 +81,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setPrimaryClockTimezone,
     primaryColor,
     setPrimaryColor,
+    accentColor,
+    setAccentColor,
+    backgroundColor,
+    setBackgroundColor,
     backgroundImage,
     setBackgroundImage,
     clockSize,

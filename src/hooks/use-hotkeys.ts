@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useCallback } from 'react';
@@ -8,6 +9,10 @@ export const useHotkeys = (hotkeys: Hotkey[]) => {
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       hotkeys.forEach(([key, handler]) => {
+        if (event.target instanceof HTMLElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName) && event.key !== 'Escape') {
+          return;
+        }
+
         const keyCombination = key.split('+');
         const isCtrl = keyCombination.includes('Ctrl');
         const isAlt = keyCombination.includes('Alt');
