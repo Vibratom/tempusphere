@@ -5,6 +5,14 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 
 type HourFormat = '12h' | '24h';
 
+export interface FullscreenSettings {
+  primaryClock: boolean;
+  worldClocks: boolean;
+  alarms: boolean;
+  stopwatch: boolean;
+  timer: boolean;
+}
+
 interface Settings {
   hourFormat: HourFormat;
   setHourFormat: Dispatch<SetStateAction<HourFormat>>;
@@ -20,6 +28,8 @@ interface Settings {
   setBackgroundImage: Dispatch<SetStateAction<string | null>>;
   clockSize: number;
   setClockSize: Dispatch<SetStateAction<number>>;
+  fullscreenSettings: FullscreenSettings;
+  setFullscreenSettings: Dispatch<SetStateAction<FullscreenSettings>>;
 }
 
 const SettingsContext = createContext<Settings | undefined>(undefined);
@@ -32,6 +42,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [primaryColor, setPrimaryColor] = useLocalStorage<string>('settings:primaryColor', '141 15% 54%');
   const [backgroundImage, setBackgroundImage] = useLocalStorage<string | null>('settings:backgroundImage', null);
   const [clockSize, setClockSize] = useLocalStorage<number>('settings:clockSize', 100);
+  const [fullscreenSettings, setFullscreenSettings] = useLocalStorage<FullscreenSettings>('settings:fullscreen', {
+    primaryClock: true,
+    worldClocks: true,
+    alarms: false,
+    stopwatch: false,
+    timer: false,
+  });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -54,6 +71,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setBackgroundImage,
     clockSize,
     setClockSize,
+    fullscreenSettings,
+    setFullscreenSettings,
   };
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

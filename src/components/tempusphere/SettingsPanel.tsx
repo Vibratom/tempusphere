@@ -1,6 +1,6 @@
 'use client';
 
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettings, FullscreenSettings } from '@/contexts/SettingsContext';
 import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -34,6 +34,8 @@ export function SettingsPanel() {
     setBackgroundImage,
     clockSize,
     setClockSize,
+    fullscreenSettings,
+    setFullscreenSettings,
   } = useSettings();
   const { theme, setTheme } = useTheme();
 
@@ -53,6 +55,9 @@ export function SettingsPanel() {
     }
   };
 
+  const handleFullscreenSettingChange = (key: keyof FullscreenSettings, value: boolean) => {
+    setFullscreenSettings(prev => ({...prev, [key]: value}));
+  }
 
   return (
     <div className="p-4 space-y-6 max-w-2xl mx-auto">
@@ -173,6 +178,32 @@ export function SettingsPanel() {
             </Button>
           )}
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="font-semibold">Full Screen Mode</h3>
+        <Separator />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 items-center">
+        <Label htmlFor="fs-primary-clock">Show Primary Clock</Label>
+        <Switch id="fs-primary-clock" checked={fullscreenSettings.primaryClock} onCheckedChange={(c) => handleFullscreenSettingChange('primaryClock', c)} />
+      </div>
+      <div className="grid grid-cols-2 gap-4 items-center">
+        <Label htmlFor="fs-world-clocks">Show World Clocks</Label>
+        <Switch id="fs-world-clocks" checked={fullscreenSettings.worldClocks} onCheckedChange={(c) => handleFullscreenSettingChange('worldClocks', c)} />
+      </div>
+      <div className="grid grid-cols-2 gap-4 items-center">
+        <Label htmlFor="fs-alarms">Show Alarms</Label>
+        <Switch id="fs-alarms" checked={fullscreenSettings.alarms} onCheckedChange={(c) => handleFullscreenSettingChange('alarms', c)} />
+      </div>
+      <div className="grid grid-cols-2 gap-4 items-center">
+        <Label htmlFor="fs-stopwatch">Show Stopwatch</Label>
+        <Switch id="fs-stopwatch" checked={fullscreenSettings.stopwatch} onCheckedChange={(c) => handleFullscreenSettingChange('stopwatch', c)} />
+      </div>
+      <div className="grid grid-cols-2 gap-4 items-center">
+        <Label htmlFor="fs-timer">Show Timer</Label>
+        <Switch id="fs-timer" checked={fullscreenSettings.timer} onCheckedChange={(c) => handleFullscreenSettingChange('timer', c)} />
       </div>
     </div>
   );
