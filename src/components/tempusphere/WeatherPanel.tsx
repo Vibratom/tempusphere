@@ -47,13 +47,17 @@ export function WeatherPanel({ fullscreen = false, glass = false }: WeatherPanel
         const { latitude, longitude } = position.coords;
         try {
           const result = await getWeatherData({ latitude, longitude });
+           if (result.forecast?.startsWith('Error')) {
+            throw new Error(result.forecast);
+          }
           setData(result);
-        } catch (err) {
-          setError('Could not fetch weather data.');
+        } catch (err: any) {
+          const errorMessage = err.message || 'Could not fetch weather data.';
+          setError(errorMessage);
           console.error(err);
           toast({
             title: 'Error',
-            description: 'Failed to fetch weather data.',
+            description: errorMessage,
             variant: 'destructive',
           });
         } finally {
