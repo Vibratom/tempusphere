@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Plus } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
+import { Skeleton } from '../ui/skeleton';
 
 function WorldClockRow({ timezone, onRemove }: { timezone: string, onRemove: (tz: string) => void; }) {
   const time = useTime();
@@ -67,6 +69,11 @@ function WorldClockRow({ timezone, onRemove }: { timezone: string, onRemove: (tz
 export function WorldClocks() {
   const [selectedClocks, setSelectedClocks] = useLocalStorage<string[]>('worldclocks:list', ['America/New_York', 'Europe/London', 'Asia/Tokyo']);
   const [newTimezone, setNewTimezone] = useState('');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const addClock = () => {
     if (newTimezone && !selectedClocks.includes(newTimezone)) {
@@ -104,9 +111,17 @@ export function WorldClocks() {
         </div>
         <ScrollArea className="h-72">
           <div className="space-y-4 pr-4">
-            {selectedClocks.length > 0 ? selectedClocks.map((tz) => (
-              <WorldClockRow key={tz} timezone={tz} onRemove={removeClock} />
-            )) : <p className="text-muted-foreground text-center pt-8">No world clocks added.</p>}
+            {isClient ? (
+                selectedClocks.length > 0 ? selectedClocks.map((tz) => (
+                <WorldClockRow key={tz} timezone={tz} onRemove={removeClock} />
+                )) : <p className="text-muted-foreground text-center pt-8">No world clocks added.</p>
+            ) : (
+                <div className="space-y-4">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                </div>
+            )}
           </div>
         </ScrollArea>
       </CardContent>
