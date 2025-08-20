@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Play, Pause, Square, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 let stopwatchHandle: {
   startStop: () => void;
@@ -87,16 +88,39 @@ function StopwatchPanelInternal({ fullscreen = false }: StopwatchPanelProps, ref
             {formatTime(time)}
             </p>
             <div className="flex gap-2">
-            <Button id="stopwatch-start-btn" size="lg" onClick={handleStartStop}>
-                {isRunning ? <Pause className="mr-2 h-5 w-5"/> : <Play className="mr-2 h-5 w-5"/>}
-                {isRunning ? 'Pause' : 'Start'}
-            </Button>
-            <Button size="lg" variant="secondary" onClick={handleLap} disabled={!isRunning && time === 0}>
-                <History className="mr-2 h-5 w-5"/>Lap
-            </Button>
-            <Button size="lg" variant="secondary" onClick={handleReset}>
-                <Square className="mr-2 h-5 w-5"/>Reset
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button id="stopwatch-start-btn" size="lg" onClick={handleStartStop}>
+                      {isRunning ? <Pause className="mr-2 h-5 w-5"/> : <Play className="mr-2 h-5 w-5"/>}
+                      {isRunning ? 'Pause' : 'Start'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Space</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                 <TooltipTrigger asChild>
+                    <Button size="lg" variant="secondary" onClick={handleLap} disabled={!isRunning && time === 0}>
+                        <History className="mr-2 h-5 w-5"/>Lap
+                    </Button>
+                 </TooltipTrigger>
+                 <TooltipContent>
+                    <p>L</p>
+                 </TooltipContent>
+              </Tooltip>
+               <Tooltip>
+                 <TooltipTrigger asChild>
+                    <Button size="lg" variant="secondary" onClick={handleReset}>
+                        <Square className="mr-2 h-5 w-5"/>Reset
+                    </Button>
+                 </TooltipTrigger>
+                 <TooltipContent>
+                    <p>R</p>
+                 </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             </div>
         </CardContent>
         <CardFooter className="flex-1 flex-col">

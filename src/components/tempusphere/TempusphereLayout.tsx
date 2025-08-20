@@ -17,6 +17,7 @@ import { FullscreenView } from './FullscreenView';
 import { AppLogo } from './AppLogo';
 import { Footer } from './Footer';
 import { useHotkeys } from '@/hooks/use-hotkeys';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const TABS = ['world-clocks', 'alarms', 'stopwatch', 'timer', 'settings'];
 
@@ -103,21 +104,57 @@ function AppContent() {
           <h1 className="text-xl font-semibold tracking-tighter">Tempusphere</h1>
         </div>
         <div className="flex-1" />
-        <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
-          <Expand className="h-5 w-5" />
-        </Button>
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
+                        <Expand className="h-5 w-5" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Fullscreen (F)</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <PrimaryClock />
         <Separator />
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TooltipProvider>
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
-            <TabsTrigger value="world-clocks" className="flex gap-2 items-center"><Globe size={16}/> World Clocks</TabsTrigger>
-            <TabsTrigger value="alarms" className="flex gap-2 items-center"><AlarmClock size={16}/> Alarms</TabsTrigger>
-            <TabsTrigger value="stopwatch" className="flex gap-2 items-center"><Hourglass size={16}/> Stopwatch</TabsTrigger>
-            <TabsTrigger value="timer" className="flex gap-2 items-center"><Timer size={16}/> Timer</TabsTrigger>
-            <TabsTrigger value="settings" className="flex gap-2 items-center"><Settings size={16}/> Settings</TabsTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="world-clocks" className="flex gap-2 items-center"><Globe size={16}/> World Clocks</TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent><p>Alt + 1</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="alarms" className="flex gap-2 items-center"><AlarmClock size={16}/> Alarms</TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent><p>Alt + 2</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="stopwatch" className="flex gap-2 items-center"><Hourglass size={16}/> Stopwatch</TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent><p>Alt + 3</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="timer" className="flex gap-2 items-center"><Timer size={16}/> Timer</TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent><p>Alt + 4</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="settings" className="flex gap-2 items-center"><Settings size={16}/> Settings</TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent><p>Alt + 5</p></TooltipContent>
+            </Tooltip>
           </TabsList>
+          </TooltipProvider>
           <TabsContent value="world-clocks" className="animation-fade-in">
             <WorldClocks />
           </TabsContent>

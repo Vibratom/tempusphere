@@ -8,6 +8,7 @@ import { playSound } from '@/lib/sounds';
 import { Play, Pause, Square } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 let timerHandle = {
   startStop: () => {},
@@ -123,13 +124,29 @@ function TimerPanelInternal({ fullscreen = false }: TimerPanelProps, ref: any) {
                 <Progress value={isRunning ? progress : 100} className="w-full max-w-md"/>
             </CardContent>
             <CardFooter className="flex justify-center gap-2">
-                <Button id="timer-start-btn" size="lg" onClick={handleStartStop} disabled={duration === 0}>
-                    {isRunning ? <Pause className="mr-2 h-5 w-5"/> : <Play className="mr-2 h-5 w-5"/>}
-                    {isRunning ? 'Pause' : 'Start'}
-                </Button>
-                <Button size="lg" variant="secondary" onClick={handleReset} disabled={isEditing}>
-                    <Square className="mr-2 h-5 w-5"/>Reset
-                </Button>
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button id="timer-start-btn" size="lg" onClick={handleStartStop} disabled={duration === 0}>
+                                {isRunning ? <Pause className="mr-2 h-5 w-5"/> : <Play className="mr-2 h-5 w-5"/>}
+                                {isRunning ? 'Pause' : 'Start'}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                           <p>Space</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <Button size="lg" variant="secondary" onClick={handleReset} disabled={isEditing}>
+                                <Square className="mr-2 h-5 w-5"/>Reset
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                           <p>R</p>
+                        </TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
             </CardFooter>
         </Container>
     );
