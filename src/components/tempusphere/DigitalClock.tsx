@@ -30,12 +30,13 @@ export function DigitalClock({ className }: DigitalClockProps) {
     options.second = '2-digit';
   }
 
-  const timeString = new Intl.DateTimeFormat('default', options).format(time);
+  // Ensure this only runs on the client
+  const timeString = isClient ? new Intl.DateTimeFormat('default', options).format(time) : '00:00:00';
 
   return (
     <div className={cn('text-center', className)}>
       <p className="text-6xl md:text-8xl font-bold tracking-tighter tabular-nums">
-        {isClient ? timeString : '00:00:00'}
+        {timeString}
       </p>
     </div>
   );

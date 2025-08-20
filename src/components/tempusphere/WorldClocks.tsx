@@ -11,8 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Plus } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 
-function WorldClockRow({ timezone }: { timezone: string }) {
-  const [selectedClocks, setSelectedClocks] = useLocalStorage<string[]>('worldclocks:list', ['America/New_York', 'Europe/London', 'Asia/Tokyo']);
+function WorldClockRow({ timezone, onRemove }: { timezone: string, onRemove: (tz: string) => void; }) {
   const time = useTime();
   const { hourFormat, showSeconds } = useSettings();
   const [isClient, setIsClient] = useState(false);
@@ -20,15 +19,12 @@ function WorldClockRow({ timezone }: { timezone: string }) {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  const removeClock = (tz: string) => {
-    setSelectedClocks(selectedClocks.filter((t) => t !== tz));
-  };
   
   const formatOptions: Intl.DateTimeFormatOptions = {
     hour: 'numeric',
     minute: '2-digit',
     hour12: hourFormat === '12h',
+    timeZone: timezone,
   };
   if (showSeconds) {
     formatOptions.second = '2-digit';
@@ -53,10 +49,10 @@ function WorldClockRow({ timezone }: { timezone: string }) {
           <p className="text-sm text-muted-foreground">{isClient ? getOffset(timezone) : ''}</p>
         </div>
         <div className="flex items-center gap-4">
-            <p className="text-2xl font-mono font-semibold">
-              {isClient ? new Intl.DateTimeFormat('default', { ...formatOptions, timeZone: timezone }).format(time) : '00:00:00'}
+            <p className="text-2xl font-mono font-semibold tabular-nums">
+              {isClient ? new Intl.DateTimeFormat('default', formatOptions).format(time) : '00:00:00'}
             </p>
-            <Button variant="ghost" size="icon" onClick={() => removeClock(timezone)}>
+            <Button variant="ghost" size="icon" onClick={() => onRemove(timezone)}>
                 <X className="h-4 w-4" />
             </Button>
         </div>
@@ -74,6 +70,10 @@ export function WorldClocks() {
       setSelectedClocks([...selectedClocks, newTimezone].sort());
       setNewTimezone('');
     }
+  };
+
+  const removeClock = (tz: string) => {
+    setSelectedClocks(selectedClocks.filter((t) => t !== tz));
   };
 
   return (
@@ -102,7 +102,7 @@ export function WorldClocks() {
         <ScrollArea className="h-72">
           <div className="space-y-4 pr-4">
             {selectedClocks.length > 0 ? selectedClocks.map((tz) => (
-              <WorldClockRow key={tz} timezone={tz} />
+              <WorldClockRow key={tz} timezone={tz} onRemove={removeClock} />
             )) : <p className="text-muted-foreground text-center pt-8">No world clocks added.</p>}
           </div>
         </ScrollArea>
