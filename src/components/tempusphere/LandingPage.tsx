@@ -5,6 +5,7 @@ import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Sca
 import Link from "next/link";
 import { Footer } from "./Footer";
 import { Button } from "../ui/button";
+import { PrimaryClock } from "./PrimaryClock";
 
 const features = [
     {
@@ -65,7 +66,10 @@ export function LandingPage() {
         <div className="min-h-screen w-full bg-background flex flex-col">
             <main className="flex-1">
                 <section className="py-20 md:py-32 text-center bg-background">
-                    <div className="container mx-auto px-4">
+                    <div className="container mx-auto px-4 flex flex-col items-center">
+                        <div className="mb-8">
+                            <PrimaryClock />
+                        </div>
                         <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4">Welcome to Tempusphere</h1>
                         <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
                             Your all-in-one solution for time management. From world clocks to conference planning, Tempusphere provides the tools you need to stay organized and productive across timezones.
