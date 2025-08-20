@@ -85,33 +85,45 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
   }
 
   const Container = fullscreen ? 'div' : Card;
-  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : '';
+  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg flex items-center justify-center p-4' : 'flex items-center justify-center p-4') : '';
+
+  const calendarComponent = (
+     <Calendar
+        mode="single"
+        selected={selectedDate}
+        onSelect={setSelectedDate}
+        className={cn("rounded-md border", fullscreen && 'shadow-lg')}
+        modifiers={{ withEvents: dayWithEventsModifier }}
+        components={{
+            DayContent: (props) => (
+                <div className="relative w-full h-full">
+                    <p>{props.date.getDate()}</p>
+                    <EventDots date={props.date}/>
+                </div>
+            ),
+        }}
+        modifiersClassNames={{
+            withEvents: 'has-events'
+        }}
+    />
+  )
+
+  if (fullscreen) {
+    return (
+        <Container className={cn('h-full flex flex-col', containerClass)}>
+            {calendarComponent}
+        </Container>
+    )
+  }
 
   return (
     <Container className={cn('h-full flex flex-col', containerClass)}>
-      {!fullscreen && <CardHeader>
+      <CardHeader>
         <CardTitle>Personal Calendar</CardTitle>
-      </CardHeader>}
+      </CardHeader>
       <CardContent className="flex-1 flex flex-col md:flex-row gap-4 p-4">
         <div className="flex justify-center">
-            <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="rounded-md border"
-                modifiers={{ withEvents: dayWithEventsModifier }}
-                components={{
-                    DayContent: (props) => (
-                        <div className="relative w-full h-full">
-                            <p>{props.date.getDate()}</p>
-                            <EventDots date={props.date}/>
-                        </div>
-                    ),
-                }}
-                modifiersClassNames={{
-                    withEvents: 'has-events'
-                }}
-            />
+            {calendarComponent}
         </div>
         <div className="flex-1 flex flex-col gap-4">
           <div className="p-4 border rounded-lg space-y-3">

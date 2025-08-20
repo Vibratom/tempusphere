@@ -14,6 +14,7 @@ import { Bell, BellOff, Plus, Trash2, Volume2, AlarmClock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { differenceInSeconds, parse } from 'date-fns';
 
 interface Alarm {
   id: string;
@@ -26,6 +27,14 @@ interface Alarm {
 interface AlarmPanelProps {
   fullscreen?: boolean;
   glass?: boolean;
+}
+
+const formatCountdown = (seconds: number) => {
+    if(seconds < 0) return "00:00:00";
+    const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+    const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
 }
 
 export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProps) {
@@ -72,6 +81,29 @@ export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProp
   const removeAlarm = (id: string) => {
     setAlarms(alarms.filter((alarm) => alarm.id !== id));
   };
+  
+  const getNextAlarm = () => {
+    const now = new Date();
+    const enabledAlarms = alarms.filter(a => a.enabled);
+
+    if (enabledAlarms.length === 0) return null;
+
+    const sortedAlarms = enabledAlarms
+      .map(alarm => {
+        const alarmTime = parse(alarm.time, 'HH:mm', new Date());
+        if (alarmTime < now) {
+          // If alarm time is in the past, it's for tomorrow
+          alarmTime.setDate(alarmTime.getDate() + 1);
+        }
+        return { ...alarm, dateTime: alarmTime };
+      })
+      .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+      
+    return sortedAlarms[0];
+  }
+
+  const nextAlarm = getNextAlarm();
+  const countdown = nextAlarm ? differenceInSeconds(nextAlarm.dateTime, time) : 0;
 
   useEffect(() => {
     const currentTime = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
@@ -94,7 +126,27 @@ export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProp
   }, [time, alarms, notificationPermission, toast]);
   
   const Container = fullscreen ? 'div' : Card;
-  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : '';
+  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg flex flex-col items-center justify-center p-6' : 'flex flex-col items-center justify-center p-6') : 'flex flex-col h-full';
+
+  if(fullscreen) {
+    return (
+        <div className={containerClass}>
+            {nextAlarm ? (
+                <div className="text-center">
+                    <p className="text-muted-foreground">{nextAlarm.name}</p>
+                    <p className="text-5xl md:text-7xl font-bold font-mono tabular-nums">{nextAlarm.time}</p>
+                    <p className="text-2xl md:text-3xl font-mono tabular-nums text-primary">{formatCountdown(countdown)}</p>
+                </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center text-center text-muted-foreground">
+                    <AlarmClock className="w-16 h-16 mb-4" />
+                    <h3 className="text-xl font-semibold">No Upcoming Alarms</h3>
+                    <p className="text-sm">All alarms are disabled or none are set.</p>
+                </div>
+            )}
+        </div>
+    )
+  }
 
   return (
     <Container className={cn('flex flex-col h-full', containerClass)}>
