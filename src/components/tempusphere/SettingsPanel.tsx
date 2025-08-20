@@ -119,7 +119,7 @@ export function SettingsPanel() {
   const isDark = resolvedTheme === 'dark';
 
   return (
-      <ScrollArea className="h-full">
+      <ScrollArea className="h-full flex-1">
         <div className="p-4 space-y-6">
           <div className="space-y-2">
             <h3 className="font-semibold">Appearance</h3>

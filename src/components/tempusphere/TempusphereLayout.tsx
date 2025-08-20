@@ -14,7 +14,7 @@ import { Expand, Menu, Settings } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { cn } from '@/lib/utils';
 import { TABS, TabbedPanels } from './TabbedPanels';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose } from '../ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SettingsPanel } from './SettingsPanel';
 
@@ -26,6 +26,7 @@ function AppContent() {
   const [isClient, setIsClient] = useState(false);
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -73,17 +74,22 @@ function AppContent() {
   }
   
   const SettingsSheet = () => (
-     <Sheet>
+     <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
         <SheetTrigger asChild>
              <Button variant="outline" size="icon">
                 <Settings className="h-5 w-5" />
             </Button>
         </SheetTrigger>
-        <SheetContent className="p-0">
+        <SheetContent className="p-0 flex flex-col">
             <SheetHeader className="p-4 border-b">
                 <SheetTitle>Settings</SheetTitle>
             </SheetHeader>
             <SettingsPanel />
+             <SheetFooter className="p-4 border-t mt-auto">
+                <SheetClose asChild>
+                    <Button>Done</Button>
+                </SheetClose>
+            </SheetFooter>
         </SheetContent>
     </Sheet>
   )
@@ -132,21 +138,23 @@ function AppContent() {
   );
 
   const mainContent = (
-      <main className={cn(
-            "flex-grow flex flex-col items-center justify-center gap-4 p-4 md:gap-8 md:p-8",
-        )}>
-            <div className="flex-1 flex justify-center items-center w-full">
-                <PrimaryClock />
+    <main className={cn(
+        "flex-grow flex flex-col items-center justify-center gap-4 p-4 md:gap-8 md:p-8",
+        layout === 'minimal' && 'py-8'
+    )}>
+        <div className="flex-1 flex justify-center items-center w-full">
+            <PrimaryClock />
+        </div>
+        {layout !== 'minimal' && (
+            <div className="w-full max-w-5xl flex-1 flex flex-col">
+                <TabbedPanels activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
-            {layout !== 'minimal' && (
-                  <div className="w-full max-w-5xl flex-1 flex flex-col">
-                    <TabbedPanels activeTab={activeTab} setActiveTab={setActiveTab} />
-                </div>
-            )}
-        </main>
-  )
+        )}
+    </main>
+  );
   
   const showSidebar = (layout === 'sidebar-left' || layout === 'sidebar-right') && !isMobile;
+  const showHeader = !showSidebar;
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
@@ -155,13 +163,13 @@ function AppContent() {
                 <Sidebar header={header} activeTab={activeTab} setActiveTab={setActiveTab} />
             )}
             <div className="flex-1 flex flex-col overflow-y-auto">
-                 { !showSidebar && header }
-                 { mainContent }
-                 <Footer />
+                {showHeader && header}
+                {mainContent}
+                <Footer />
             </div>
         </div>
     </div>
-  )
+  );
 }
 
 export function TempusphereLayout() {
