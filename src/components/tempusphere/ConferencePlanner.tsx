@@ -8,13 +8,110 @@ import { Combobox } from '../ui/combobox';
 import { Button } from '../ui/button';
 import { Loader, Plus, Wand2, X } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
-import { suggestMeetingTimes, SuggestMeetingTimesOutput } from '@/ai/flows/suggest-meeting-times';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+
+// Define the structure for a suggestion
+interface Suggestion {
+  times: Record<string, string>; // e.g., { 'America/New_York': '10:00 (Today)', 'Europe/London': '15:00 (Today)' }
+  isIdeal: boolean;
+  score: number;
+}
+
+// Define the output structure, mirroring the old AI output for consistency
+interface SuggestionOutput {
+  summary: string;
+  suggestions: Suggestion[];
+}
+
+const BUSINESS_HOURS_START = 8; // 8 AM
+const BUSINESS_HOURS_END = 18; // 6 PM
+
+// The core logic for finding meeting times
+function findMeetingTimes(timezones: string[]): SuggestionOutput {
+  const suggestions: Suggestion[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start from the beginning of the day
+
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Iterate through each hour of the next 48 hours to find slots
+  for (let i = 0; i < 48; i++) {
+    const baseDate = new Date(today.getTime() + i * 60 * 60 * 1000);
+
+    const times: Record<string, string> = {};
+    let score = 0;
+    let idealCount = 0;
+
+    timezones.forEach(tz => {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false,
+      });
+
+      const parts = formatter.formatToParts(baseDate);
+      const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+      
+      const dayFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' });
+      const localDate = new Date(baseDate.toLocaleString('en-US', { timeZone: tz }));
+      
+      let dayRelation = 'Today';
+      const todayInTz = new Date(new Date().toLocaleString('en-US', {timeZone: tz}));
+
+      if (localDate.getDate() > todayInTz.getDate()) {
+        dayRelation = 'Tomorrow';
+      } else if (localDate.getDate() < todayInTz.getDate()) {
+        dayRelation = 'Yesterday';
+      }
+      
+      times[tz] = `${String(hour).padStart(2, '0')}:00 (${dayRelation})`;
+
+      // Scoring logic
+      if (hour >= BUSINESS_HOURS_START && hour < BUSINESS_HOURS_END) {
+        score += 2; // High score for business hours
+        idealCount++;
+      } else if (hour >= 7 && hour < 22) {
+        score += 1; // Lower score for reasonable hours
+      }
+    });
+
+    // Only add suggestions if at least one person is in reasonable hours
+    if (score > timezones.length / 2) {
+      suggestions.push({
+        times,
+        isIdeal: idealCount === timezones.length,
+        score,
+      });
+    }
+  }
+
+  // Deduplicate and sort suggestions
+  const uniqueSuggestions = suggestions.reduce((acc, current) => {
+    const timeKey = Object.values(current.times).join('-');
+    const existing = acc.find(s => Object.values(s.times).join('-') === timeKey);
+    if (!existing || current.score > existing.score) {
+        acc = acc.filter(s => Object.values(s.times).join('-') !== timeKey);
+        acc.push(current);
+    }
+    return acc;
+  }, [] as Suggestion[]);
+  
+  uniqueSuggestions.sort((a, b) => b.score - a.score);
+  
+  const topSuggestions = uniqueSuggestions.slice(0, 5);
+
+  return {
+    summary: 'Here are the best times we found based on an 8am-6pm workday.',
+    suggestions: topSuggestions,
+  };
+}
+
 
 export function ConferencePlanner() {
   const [targetTzs, setTargetTzs] = useState<string[]>(['America/New_York', 'Europe/London', 'Asia/Tokyo']);
   const [newTargetTz, setNewTargetTz] = useState('');
-  const [suggestions, setSuggestions] = useState<SuggestMeetingTimesOutput | null>(null);
+  const [suggestions, setSuggestions] = useState<SuggestionOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -31,12 +128,12 @@ export function ConferencePlanner() {
   
   const availableTargetTzs = timezones.filter(tz => !targetTzs.includes(tz)).map(tz => ({ value: tz, label: tz.replace(/_/g, ' ') }));
 
-  const handleSuggestTimes = async () => {
+  const handleSuggestTimes = () => {
     setIsLoading(true);
     setError(null);
     setSuggestions(null);
     try {
-        const result = await suggestMeetingTimes({ timezones: targetTzs });
+        const result = findMeetingTimes(targetTzs);
         setSuggestions(result);
     } catch (err) {
         setError('Could not get suggestions. Please try again.');
@@ -48,7 +145,7 @@ export function ConferencePlanner() {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle>AI Conference Planner</CardTitle>
+        <CardTitle>Conference Planner</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4">
         <div className="p-4 border rounded-lg space-y-2">
