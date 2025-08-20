@@ -15,9 +15,19 @@ interface PrimaryClockProps {
 export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
   const { primaryClockMode, primaryClockTimezone, clockSize, backgroundImage } = useSettings();
   const [isClient, setIsClient] = useState(false);
+  const [localTimezoneName, setLocalTimezoneName] = useState('Local Time');
 
   useEffect(() => {
     setIsClient(true);
+    if (typeof window !== 'undefined') {
+        try {
+            const tzName = Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, ' ');
+            setLocalTimezoneName(tzName);
+        } catch (e) {
+            console.error("Could not determine local timezone", e);
+            setLocalTimezoneName('Local Time');
+        }
+    }
   }, []);
   
   const clockScale = isClient ? clockSize / 100 : 1;
@@ -61,13 +71,14 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
         className={cn(
             "overflow-hidden flex items-center justify-center transition-all duration-300 relative bg-cover bg-center", 
             fullscreen ? "w-full h-full bg-transparent" : "w-full",
-            !fullscreen && backgroundImage && "bg-background/80 backdrop-blur-md"
+            !fullscreen && backgroundImage && "bg-background/80"
         )}
         style={!fullscreen ? {...containerStyle, backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none' } : {}}
     >
       <div 
         className={cn(
-          "p-6 flex flex-col items-center justify-center w-full h-full", 
+          "p-6 flex flex-col items-center justify-center w-full h-full",
+          !fullscreen && backgroundImage && "backdrop-blur-md"
         )}
       >
         <div style={{ transform: `scale(${clockScale})`}} className="transition-transform duration-300 z-10">
@@ -78,7 +89,7 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
           "text-lg font-medium z-10 mt-4 px-3 py-1 rounded-full",
            backgroundImage ? "bg-black/20 text-white/90 backdrop-blur-sm" : "text-muted-foreground"
         )}>
-          {primaryClockTimezone === 'local' ? 'Local Time' : 'UTC Time'}
+          {primaryClockTimezone === 'local' ? localTimezoneName : 'UTC Time'}
         </div>
       </div>
     </Container>
