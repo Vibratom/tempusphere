@@ -16,7 +16,7 @@ export function PrimaryClock() {
     setIsClient(true);
   }, []);
   
-  const clockScale = clockSize / 100;
+  const clockScale = isClient ? clockSize / 100 : 1;
 
   const containerStyle = useMemo(() => {
     // Base height in rem, corresponds to min-h-[14rem]
@@ -37,8 +37,19 @@ export function PrimaryClock() {
       // Add some padding to the width to avoid edges touching
       minWidth: `min(${width + 4}rem, 100%)`, 
     };
-  }, [clockSize, clockScale, primaryClockMode]);
+  }, [clockSize, clockScale, primaryClockMode, isClient]);
 
+
+  if (!isClient) {
+    return (
+        <Card className="overflow-hidden flex items-center justify-center transition-all duration-300" style={{minHeight: '14rem'}}>
+            <CardContent className="p-6 flex flex-col items-center justify-center">
+                 <Skeleton className="w-80 h-24" />
+                 <Skeleton className="w-24 h-6 mt-4" />
+            </CardContent>
+        </Card>
+    )
+  }
 
   return (
     <Card className="overflow-hidden flex items-center justify-center transition-all duration-300" style={containerStyle}>
@@ -48,15 +59,11 @@ export function PrimaryClock() {
       >
         {backgroundImage && <div className="absolute inset-0 bg-card/50 backdrop-blur-sm" />}
         <div style={{ transform: `scale(${clockScale})`}} className="transition-transform duration-300 z-10">
-            {isClient ? (
-              primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />
-            ) : (
-              primaryClockMode === 'analog' ? <Skeleton className="w-64 h-64 rounded-full" /> : <Skeleton className="w-80 h-24" />
-            )}
+            {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
         </div>
 
         <div className="text-muted-foreground mt-4 text-lg font-medium z-10">
-          {isClient ? (primaryClockTimezone === 'local' ? 'Local Time' : 'UTC Time') : <Skeleton className="w-24 h-6" />}
+          {primaryClockTimezone === 'local' ? 'Local Time' : 'UTC Time'}
         </div>
       </CardContent>
     </Card>
