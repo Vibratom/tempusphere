@@ -1,0 +1,12 @@
+diff --git a/node_modules/react-color-extractor/package.json b/node_modules/react-color-extractor/package.json
+index 548544e..802b1ad 100644
+--- a/node_modules/react-color-extractor/package.json
++++ b/node_modules/react-color-extractor/package.json
+@@ -21,6 +21,6 @@
+     "url": "https://github.com/nitin42/react-color-extractor/issues"
+   },
+   "peerDependencies": {
+-    "react": "^16.3.2"
++    "react": ">= 16.3.2"
+   }
+ }

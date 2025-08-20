@@ -13,6 +13,9 @@ import { Input } from '../ui/input';
 import { Slider } from '../ui/slider';
 import Image from 'next/image';
 import { ScrollArea } from '../ui/scroll-area';
+import { useState, useEffect } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { FastAverageColor } from 'fast-average-color';
 
 const backgroundPresets = Array.from({ length: 100 }, (_, i) => ({
     name: `Image ${i + 1}`,
@@ -70,6 +73,27 @@ function hslToHex(hsl: string): string {
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
+const ImageColorExtractor = ({ onPaletteChange }: { onPaletteChange: (palette: string[]) => void }) => {
+    const { backgroundImage } = useSettings();
+
+    useEffect(() => {
+        if (backgroundImage) {
+            const fac = new FastAverageColor();
+            fac.getColorAsync(backgroundImage, { algorithm: 'dominant' })
+                .then(color => {
+                    if (color) {
+                        onPaletteChange([color.hex]);
+                    }
+                })
+                .catch(e => {
+                    console.error('Error extracting color:', e);
+                });
+        }
+    }, [backgroundImage, onPaletteChange]);
+
+    return null;
+};
+
 
 export function SettingsPanel() {
   const {
@@ -97,6 +121,7 @@ export function SettingsPanel() {
     setFullscreenSettings,
   } = useSettings();
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const [extractedPalette, setExtractedPalette] = useState<string[]>([]);
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -117,6 +142,7 @@ export function SettingsPanel() {
 
   return (
       <ScrollArea className="h-full flex-1">
+        {backgroundImage && <ImageColorExtractor onPaletteChange={setExtractedPalette} />}
         <div className="p-4 space-y-6">
           <div className="space-y-2">
             <h3 className="font-semibold">Appearance</h3>
@@ -146,24 +172,6 @@ export function SettingsPanel() {
               <Separator />
           </div>
 
-          <div className="grid grid-cols-2 gap-4 items-center">
-              <Label>Primary</Label>
-              <Input type="color" value={hslToHex(primaryColor)} onChange={(e) => setPrimaryColor(hexToHsl(e.target.value))} className="p-1 h-10"/>
-          </div>
-           <div className="grid grid-cols-2 gap-4 items-center">
-              <Label>Accent</Label>
-              <Input type="color" value={hslToHex(accentColor)} onChange={(e) => setAccentColor(hexToHsl(e.target.value))} className="p-1 h-10"/>
-          </div>
-           <div className="grid grid-cols-2 gap-4 items-center">
-              <Label>Background</Label>
-               <Input 
-                type="color" 
-                value={hslToHex(isDark ? darkBackgroundColor : lightBackgroundColor)} 
-                onChange={(e) => isDark ? setDarkBackgroundColor(hexToHsl(e.target.value)) : setLightBackgroundColor(hexToHsl(e.target.value))} 
-                className="p-1 h-10"
-              />
-          </div>
-          
           <div className="grid grid-cols-2 gap-4 items-start">
             <Label>Background Image</Label>
             <div className="flex flex-col gap-2">
@@ -189,6 +197,51 @@ export function SettingsPanel() {
                 </div>
             </div>
           </div>
+          
+           {backgroundImage && extractedPalette.length > 0 && (
+                <div className="grid grid-cols-2 gap-4 items-start">
+                    <Label>Image Palette</Label>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex flex-wrap gap-2">
+                            {extractedPalette.map((color, index) => (
+                                <Popover key={index}>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            className="w-8 h-8 rounded-full border-2"
+                                            style={{ backgroundColor: color }}
+                                            aria-label={`Color swatch ${color}`}
+                                        />
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-2">
+                                        <div className="flex flex-col gap-1">
+                                            <Button size="sm" variant="ghost" onClick={() => setPrimaryColor(hexToHsl(color))}>Set as Primary</Button>
+                                            <Button size="sm" variant="ghost" onClick={() => setAccentColor(hexToHsl(color))}>Set as Accent</Button>
+                                            <Button size="sm" variant="ghost" onClick={() => isDark ? setDarkBackgroundColor(hexToHsl(color)) : setLightBackgroundColor(hexToHsl(color))}>Set as Background</Button>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Extracted from the background image. Click a color to apply it.</p>
+                    </div>
+                </div>
+            )}
+
+          <div className="grid grid-cols-2 gap-4 items-center">
+              <Label>Manual Colors</Label>
+              <div className="flex gap-2">
+                <Input type="color" value={hslToHex(primaryColor)} onChange={(e) => setPrimaryColor(hexToHsl(e.target.value))} className="p-1 h-10 w-full" aria-label="Primary color picker"/>
+                <Input type="color" value={hslToHex(accentColor)} onChange={(e) => setAccentColor(hexToHsl(e.target.value))} className="p-1 h-10 w-full" aria-label="Accent color picker"/>
+                <Input 
+                  type="color" 
+                  value={hslToHex(isDark ? darkBackgroundColor : lightBackgroundColor)} 
+                  onChange={(e) => isDark ? setDarkBackgroundColor(hexToHsl(e.target.value)) : setLightBackgroundColor(hexToHsl(e.target.value))} 
+                  className="p-1 h-10 w-full"
+                  aria-label="Background color picker"
+                />
+              </div>
+          </div>
+          
 
           <div className="space-y-2">
             <h3 className="font-semibold">General Clock Settings</h3>
