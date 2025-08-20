@@ -10,12 +10,20 @@ import { Button } from '@/components/ui/button';
 import { Moon, Sun, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Slider } from '../ui/slider';
+import Image from 'next/image';
 
 const colorPresets = [
   { name: 'Blue', value: '141 15% 54%' },
   { name: 'Orange', value: '5 41% 49%' },
   { name: 'Green', value: '145 63% 42%' },
   { name: 'Purple', value: '262 84% 60%' },
+];
+
+const backgroundPresets = [
+    { name: 'Cosmic', url: 'https://placehold.co/1200x800.png', hint: 'galaxy stars' },
+    { name: 'Forest', url: 'https://placehold.co/1200x800.png', hint: 'forest trees' },
+    { name: 'City', url: 'https://placehold.co/1200x800.png', hint: 'city skyline' },
+    { name: 'Abstract', url: 'https://placehold.co/1200x800.png', hint: 'abstract pattern' },
 ];
 
 export function SettingsPanel() {
@@ -165,18 +173,27 @@ export function SettingsPanel() {
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-4 items-center">
+      <div className="grid grid-cols-2 gap-4 items-start">
         <Label>Background Image</Label>
-        <div className="flex gap-2 items-center">
-          <Input id="bg-upload" type="file" onChange={handleImageUpload} accept="image/*" className="hidden"/>
-          <Button asChild variant="outline">
-            <label htmlFor="bg-upload"><ImageIcon className="mr-2"/> Upload</label>
-          </Button>
-          {backgroundImage && (
-            <Button variant="ghost" size="icon" onClick={() => setBackgroundImage(null)}>
-              <Trash2 />
-            </Button>
-          )}
+        <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-2 gap-2">
+                {backgroundPresets.map(preset => (
+                    <button key={preset.name} onClick={() => setBackgroundImage(preset.url)} className="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary data-[selected=true]:border-primary" data-selected={backgroundImage === preset.url}>
+                        <Image src={preset.url} alt={preset.name} layout="fill" objectFit="cover" data-ai-hint={preset.hint} />
+                    </button>
+                ))}
+            </div>
+            <div className="flex gap-2 items-center">
+                <Input id="bg-upload" type="file" onChange={handleImageUpload} accept="image/*" className="hidden"/>
+                <Button asChild variant="outline">
+                    <label htmlFor="bg-upload"><ImageIcon className="mr-2"/> Upload</label>
+                </Button>
+                {backgroundImage && (
+                    <Button variant="ghost" size="icon" onClick={() => setBackgroundImage(null)}>
+                    <Trash2 />
+                    </Button>
+                )}
+            </div>
         </div>
       </div>
 

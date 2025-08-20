@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
+import { SettingsProvider } from '@/contexts/SettingsContext';
 import { PrimaryClock } from '@/components/tempusphere/PrimaryClock';
 import { AlarmPanel } from '@/components/tempusphere/AlarmPanel';
 import { WorldClocks } from '@/components/tempusphere/WorldClocks';
@@ -9,41 +9,38 @@ import { StopwatchPanel } from '@/components/tempusphere/StopwatchPanel';
 import { TimerPanel } from '@/components/tempusphere/TimerPanel';
 import { SettingsPanel } from '@/components/tempusphere/SettingsPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Globe, AlarmClock, Timer, Hourglass, Settings, Expand, Minimize } from 'lucide-react';
+import { Globe, AlarmClock, Timer, Hourglass, Settings, Expand } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '../ui/button';
 import { FullscreenView } from './FullscreenView';
+import { AppLogo } from './AppLogo';
+import { Footer } from './Footer';
 
 function AppContent() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-        setIsFullscreen(true);
+        document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => setIsFullscreen(false));
     } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-            setIsFullscreen(false);
-        }
+        document.exitFullscreen().then(() => setIsFullscreen(false));
     }
   };
 
   if (isFullscreen) {
     return <FullscreenView onExit={() => {
         if (document.exitFullscreen) {
-            document.exitFullscreen();
-            setIsFullscreen(false);
+            document.exitFullscreen().then(() => setIsFullscreen(false));
         }
     }}/>
   }
 
   return (
-    <div className="min-h-screen w-full bg-background">
+    <div className="min-h-screen w-full bg-background flex flex-col">
       <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 lg:px-6 sticky top-0 z-30">
         <div className="flex items-center gap-2">
-          <Clock className="h-6 w-6" />
+          <AppLogo className="h-6 w-6" />
           <h1 className="text-xl font-semibold tracking-tighter">Tempusphere</h1>
         </div>
         <div className="flex-1" />
@@ -86,6 +83,7 @@ function AppContent() {
           </TabsContent>
         </Tabs>
       </main>
+      <Footer />
     </div>
   )
 }
