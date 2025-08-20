@@ -1,8 +1,10 @@
+
 'use client';
 
 import { useTime } from '@/hooks/use-time';
 import { useSettings } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 interface DigitalClockProps {
   className?: string;
@@ -11,6 +13,11 @@ interface DigitalClockProps {
 export function DigitalClock({ className }: DigitalClockProps) {
   const time = useTime();
   const { hourFormat, showSeconds, primaryClockTimezone } = useSettings();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const options: Intl.DateTimeFormatOptions = {
     hour: 'numeric',
@@ -28,7 +35,7 @@ export function DigitalClock({ className }: DigitalClockProps) {
   return (
     <div className={cn('text-center', className)}>
       <p className="text-6xl md:text-8xl font-bold tracking-tighter tabular-nums">
-        {timeString}
+        {isClient ? timeString : '00:00:00'}
       </p>
     </div>
   );
