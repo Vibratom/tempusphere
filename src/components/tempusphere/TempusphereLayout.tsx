@@ -131,7 +131,7 @@ function AppContent() {
       </header>
   );
 
-  const MainContent = () => (
+  const mainContent = (
       <main className={cn(
             "flex-grow flex flex-col items-center justify-center gap-4 p-4 md:gap-8 md:p-8",
         )}>
@@ -145,16 +145,18 @@ function AppContent() {
             )}
         </main>
   )
+  
+  const showSidebar = (layout === 'sidebar-left' || layout === 'sidebar-right') && !isMobile;
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
         <div className={cn("flex flex-1", layout === 'sidebar-right' ? "flex-row-reverse" : "flex-row")}>
-            {(layout === 'sidebar-left' || layout === 'sidebar-right') && !isMobile && (
+            {showSidebar && (
                 <Sidebar header={header} activeTab={activeTab} setActiveTab={setActiveTab} />
             )}
             <div className="flex-1 flex flex-col overflow-y-auto">
-                 { (layout !== 'sidebar-left' && layout !== 'sidebar-right') || isMobile ? header : null }
-                <MainContent />
+                 { !showSidebar && header }
+                 { mainContent }
                  <Footer />
             </div>
         </div>
