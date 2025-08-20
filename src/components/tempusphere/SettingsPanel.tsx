@@ -20,10 +20,10 @@ const colorPresets = [
 ];
 
 const backgroundPresets = [
-    { name: 'Cosmic', url: '/backgrounds/cosmic.jpg', hint: 'galaxy stars' },
-    { name: 'Forest', url: '/backgrounds/forest.jpg', hint: 'forest trees' },
-    { name: 'City', url: '/backgrounds/city.jpg', hint: 'city skyline' },
-    { name: 'Abstract', url: '/backgrounds/abstract.jpg', hint: 'abstract pattern' },
+    { name: 'Cosmic', url: '/backgrounds/cosmic.webp', hint: 'galaxy stars' },
+    { name: 'Forest', url: '/backgrounds/forest.webp', hint: 'forest trees' },
+    { name: 'City', url: '/backgrounds/city.webp', hint: 'city skyline' },
+    { name: 'Abstract', url: '/backgrounds/abstract.webp', hint: 'abstract pattern' },
 ];
 
 export function SettingsPanel() {
