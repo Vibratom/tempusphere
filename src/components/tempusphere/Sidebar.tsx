@@ -36,7 +36,7 @@ export function Sidebar({ header, activeTab, setActiveTab, onTabChange }: Sideba
                     <TabsTrigger value="timer" className="flex-col h-auto gap-1 py-2"><Timer className="w-5 h-5" /> <span className="text-xs">Timer</span></TabsTrigger>
                 </TabsList>
                 <Separator orientation="vertical" className="mx-4"/>
-                <div className="flex-1">
+                <div className="flex-1 overflow-hidden">
                     <TabsContent value="world-clocks" className="animation-fade-in h-full mt-0">
                         <WorldClocks />
                     </TabsContent>
