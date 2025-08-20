@@ -14,7 +14,7 @@ import { timerHandle } from "./TimerPanel";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 import { Separator } from "../ui/separator";
 
-export const TABS = ['world-clocks', 'alarms', 'stopwatch', 'timer', 'settings'];
+export const TABS = ['world-clocks', 'alarms', 'stopwatch', 'timer'];
 
 interface TabbedPanelsProps {
     activeTab: string;
@@ -68,7 +68,7 @@ export function TabbedPanels({ activeTab, setActiveTab }: TabbedPanelsProps) {
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-5xl flex-1 flex flex-col">
           <TooltipProvider>
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
             <Tooltip>
               <TooltipTrigger asChild>
                 <TabsTrigger value="world-clocks" className="flex-col md:flex-row h-auto gap-2 py-2"><Globe/><span>World Clocks</span></TabsTrigger>
@@ -93,12 +93,6 @@ export function TabbedPanels({ activeTab, setActiveTab }: TabbedPanelsProps) {
               </TooltipTrigger>
               <TooltipContent><p>Alt + 4</p></TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <TabsTrigger value="settings" className="flex-col md:flex-row h-auto gap-2 py-2"><Settings/><span>Settings</span></TabsTrigger>
-              </TooltipTrigger>
-              <TooltipContent><p>Alt + 5</p></TooltipContent>
-            </Tooltip>
           </TabsList>
           </TooltipProvider>
           <Separator className="w-full my-4"/>
@@ -113,9 +107,6 @@ export function TabbedPanels({ activeTab, setActiveTab }: TabbedPanelsProps) {
           </TabsContent>
           <TabsContent value="timer" className="animation-fade-in flex-1">
             <TimerPanel />
-          </TabsContent>
-          <TabsContent value="settings" className="animation-fade-in flex-1">
-             <SettingsPanel />
           </TabsContent>
         </Tabs>
     )

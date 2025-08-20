@@ -13,24 +13,14 @@ import { Input } from '../ui/input';
 import { Slider } from '../ui/slider';
 import Image from 'next/image';
 import { ScrollArea } from '../ui/scroll-area';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Card } from '../ui/card';
-import { cn } from '@/lib/utils';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const backgroundPresets = Array.from({ length: 100 }, (_, i) => ({
     name: `Image ${i + 1}`,
     url: `/${i + 1}.webp`,
     hint: 'abstract pattern'
 }));
+
 
 function hexToHsl(hex: string): string {
     hex = hex.replace(/^#/, '');
@@ -124,8 +114,7 @@ export function SettingsPanel() {
   }
 
   return (
-    <Card>
-      <ScrollArea className="h-[75vh]">
+      <ScrollArea className="h-full">
         <div className="p-4 space-y-6">
           <div className="space-y-2">
             <h3 className="font-semibold">Appearance</h3>
@@ -330,6 +319,5 @@ export function SettingsPanel() {
           </div>
         </div>
       </ScrollArea>
-    </Card>
   );
 }
