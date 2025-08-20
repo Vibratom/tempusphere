@@ -84,11 +84,11 @@ export function TimerPanel() {
             <CardContent className="flex flex-col items-center justify-center gap-6">
                 {isEditing ? (
                     <div className="flex items-center gap-2 text-6xl md:text-7xl font-mono font-bold tracking-tighter">
-                        <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className="w-28 h-24 text-center text-6xl tabular-nums p-0"/>
+                        <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className="w-28 h-24 text-center !text-6xl tabular-nums p-0"/>
                         <span className="mb-2">:</span>
-                        <Input type="number" min="0" max="59" value={formatTime(duration).minutes} onChange={handleMinutesChange} className="w-28 h-24 text-center text-6xl tabular-nums p-0"/>
+                        <Input type="number" min="0" max="59" value={formatTime(duration).minutes} onChange={handleMinutesChange} className="w-28 h-24 text-center !text-6xl tabular-nums p-0"/>
                         <span className="mb-2">:</span>
-                        <Input type="number" min="0" max="59" value={formatTime(duration).seconds} onChange={handleSecondsChange} className="w-28 h-24 text-center text-6xl tabular-nums p-0"/>
+                        <Input type="number" min="0" max="59" value={formatTime(duration).seconds} onChange={handleSecondsChange} className="w-28 h-24 text-center !text-6xl tabular-nums p-0"/>
                     </div>
                 ) : (
                     <p className="text-6xl md:text-7xl font-mono font-bold tracking-tighter tabular-nums">
