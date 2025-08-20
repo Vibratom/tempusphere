@@ -41,15 +41,15 @@ export function Footer() {
                             </Button>
                         ))}
                     </div>
-                    <p>Visit our main site at <a href="https://VibratomStudios.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">VibratomStudios.com</a></p>
+                    <p>Visit our main site at <a href="https://vibratomstudios.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">vibratomstudios.com</a></p>
                 </div>
                 <Separator className="my-8" />
                 <div className="mb-8">
                     <h4 className="text-xl font-semibold mb-2 text-foreground">Have a feature request or suggestion?</h4>
                     <p className="mb-2">We'd love to hear from you!</p>
-                    <a href="mailto:nexusplay@vibratomstudios.com" className="inline-flex items-center text-primary hover:underline">
+                    <a href="mailto:tempusphere@vibratomstudios.com" className="inline-flex items-center text-primary hover:underline">
                         <Mail className="mr-2 h-4 w-4" />
-                        nexusplay@vibratomstudios.com
+                        tempusphere@vibratomstudios.com
                     </a>
                 </div>
                 <div className="flex justify-center items-center space-x-4">
