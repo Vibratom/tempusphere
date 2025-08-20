@@ -38,7 +38,7 @@ export function Combobox({ options, value, onChange, placeholder = "Select an op
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className="w-full justify-between"
         >
           {value
             ? options.find((option) => option.value === value)?.label
@@ -46,7 +46,7 @@ export function Combobox({ options, value, onChange, placeholder = "Select an op
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandList>
@@ -57,8 +57,8 @@ export function Combobox({ options, value, onChange, placeholder = "Select an op
                     <CommandItem
                     key={option.value}
                     value={option.value}
-                    onSelect={(currentValue) => {
-                        onChange(currentValue === value ? "" : currentValue)
+                    onSelect={() => {
+                        onChange(option.value === value ? "" : option.value)
                         setOpen(false)
                     }}
                     >

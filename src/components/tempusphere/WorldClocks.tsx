@@ -93,7 +93,7 @@ export function WorldClocks({ fullscreen = false, glass = false }: WorldClocksPr
   };
   
   const Container = fullscreen ? 'div' : Card;
-  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg p-4' : 'p-4') : '';
+  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg flex flex-col p-4' : 'flex flex-col p-4') : '';
   
   const timezoneOptions = timezones
     .filter(tz => !selectedClocks.includes(tz))
@@ -108,7 +108,7 @@ export function WorldClocks({ fullscreen = false, glass = false }: WorldClocksPr
         {!fullscreen && <CardHeader>
             <CardTitle>World Clocks</CardTitle>
         </CardHeader>}
-        <CardContent className={cn("flex-1 flex flex-col p-0", !fullscreen && "p-4 pt-0")}>
+        <CardContent className={cn("flex-1 flex flex-col p-0", !fullscreen && "p-4 pt-0", fullscreen && "gap-4")}>
             {!fullscreen && <div className="flex gap-2 mb-4">
                 <Combobox
                     options={timezoneOptions}
