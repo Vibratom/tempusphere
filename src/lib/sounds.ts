@@ -3,13 +3,27 @@
 
 import * as Tone from 'tone';
 
-export const alarmSounds = ['Beep', 'Synth', 'Triangle', 'Chime', 'Digital'] as const;
-export type AlarmSound = (typeof alarmSounds)[number];
+export interface AlarmSound {
+  name: string;
+  type: 'synth' | 'file';
+  path?: string; // for file type
+}
+
+export const alarmSounds: AlarmSound[] = [
+  { name: 'Beep', type: 'synth' },
+  { name: 'Synth', type: 'synth' },
+  { name: 'Triangle', type: 'synth' },
+  { name: 'Chime', type: 'synth' },
+  { name: 'Digital', type: 'synth' },
+  { name: 'My Sound 1', type: 'file', path: '/sounds/alarm1.mp3' },
+  { name: 'My Sound 2', type: 'file', path: '/sounds/alarm2.mp3' },
+];
 
 let synth: Tone.Synth | null = null;
 let triangleSynth: Tone.Synth | null = null;
 let metalSynth: Tone.MetalSynth | null = null;
 let polySynth: Tone.PolySynth | null = null;
+const players: Record<string, Tone.Player> = {};
 
 if (typeof window !== 'undefined') {
   synth = new Tone.Synth().toDestination();
@@ -39,15 +53,39 @@ if (typeof window !== 'undefined') {
       release: 0.1
     }
   }).toDestination();
+
+  // Pre-load file-based sounds
+  alarmSounds.forEach(sound => {
+    if (sound.type === 'file' && sound.path) {
+      players[sound.name] = new Tone.Player(sound.path).toDestination();
+    }
+  });
 }
 
-export const playSound = (sound: AlarmSound) => {
+export const playSound = (soundName: string) => {
   if (Tone.context.state !== 'running') {
     Tone.context.resume();
   }
 
+  const sound = alarmSounds.find(s => s.name === soundName);
+  if (!sound) return;
+
   const now = Tone.now();
-  switch (sound) {
+
+  if (sound.type === 'file') {
+    const player = players[sound.name];
+    if (player && player.loaded) {
+      player.start(now);
+    } else if (player) {
+      // If not loaded, try to load it and play
+      player.load(player.buffer.url).then(() => {
+        player.start(now);
+      }).catch(e => console.error("Error loading sound:", e));
+    }
+    return;
+  }
+
+  switch (sound.name) {
     case 'Beep':
       synth?.triggerAttackRelease('C5', '8n', now);
       break;

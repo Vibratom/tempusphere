@@ -20,7 +20,7 @@ import { RadialProgress } from './RadialProgress';
 interface Alarm {
   id: string;
   time: string; // HH:MM
-  sound: AlarmSound;
+  sound: string; // Sound name
   enabled: boolean;
   name: string;
 }
@@ -41,7 +41,7 @@ const formatCountdown = (seconds: number) => {
 export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProps) {
   const [alarms, setAlarms] = useLocalStorage<Alarm[]>('alarms:list', []);
   const [newAlarmTime, setNewAlarmTime] = useState('07:00');
-  const [newAlarmSound, setNewAlarmSound] = useState<AlarmSound>('Beep');
+  const [newAlarmSound, setNewAlarmSound] = useState<string>(alarmSounds[0].name);
   const [newAlarmName, setNewAlarmName] = useState('Alarm');
   const [notificationPermission, setNotificationPermission] = useState('default');
 
@@ -106,9 +106,7 @@ export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProp
 
   const nextAlarm = getNextAlarm();
   const countdown = nextAlarm ? differenceInSeconds(nextAlarm.dateTime, time) : 0;
-  const totalCountdown = nextAlarm ? differenceInSeconds(nextAlarm.dateTime, new Date(nextAlarm.dateTime.getTime() - 24*60*60*1000)) : 0;
   
-
   useEffect(() => {
     const currentTime = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
     
@@ -170,17 +168,22 @@ export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProp
                 <Button size="sm" onClick={requestNotificationPermission}>Enable</Button>
             </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2 mb-4">
           <Input type="time" value={newAlarmTime} onChange={(e) => setNewAlarmTime(e.target.value)} />
           <Input placeholder="Alarm name" value={newAlarmName} onChange={(e) => setNewAlarmName(e.target.value)} />
-          <Select value={newAlarmSound} onValueChange={(val) => setNewAlarmSound(val as AlarmSound)}>
-            <SelectTrigger><Volume2 className="inline-block mr-2 h-4 w-4"/>{newAlarmSound}</SelectTrigger>
-            <SelectContent>
-              {alarmSounds.map((sound) => (
-                <SelectItem key={sound} value={sound}>{sound}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            <Select value={newAlarmSound} onValueChange={(val) => setNewAlarmSound(val)}>
+                <SelectTrigger><span className="truncate">{newAlarmSound}</span></SelectTrigger>
+                <SelectContent>
+                {alarmSounds.map((sound) => (
+                    <SelectItem key={sound.name} value={sound.name}>{sound.name}</SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" onClick={() => playSound(newAlarmSound)}>
+                <Volume2 className="h-4 w-4" />
+            </Button>
+          </div>
           <Button onClick={addAlarm}><Plus className="mr-2 h-4 w-4"/>Add Alarm</Button>
         </div>
         <ScrollArea className="flex-1 -mr-4">
