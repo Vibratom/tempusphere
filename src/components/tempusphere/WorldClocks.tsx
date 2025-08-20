@@ -90,9 +90,11 @@ export function WorldClocks({ fullscreen = false }: WorldClocksProps) {
   };
   
   const Container = fullscreen ? 'div' : Card;
+  const contentClass = fullscreen ? 'bg-transparent' : '';
+
   
   return (
-    <Container className={cn(fullscreen ? 'h-full flex flex-col bg-transparent' : '')}>
+    <Container className={cn('flex flex-col h-full', contentClass)}>
         <CardHeader>
             <CardTitle>World Clocks</CardTitle>
         </CardHeader>

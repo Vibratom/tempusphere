@@ -36,22 +36,21 @@ export function FullscreenView({ onExit }: FullscreenViewProps) {
         )}
         style={{backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none'}}
     >
-      {backgroundImage && <div className="absolute inset-0 bg-background/80 dark:bg-background/60 backdrop-blur-sm z-0" />}
+      <div className="absolute inset-0 bg-background/80 dark:bg-background/60 backdrop-blur-sm z-0" />
       <div className="flex-shrink-0 flex justify-end relative z-10">
         <Button variant="ghost" size="icon" onClick={onExit}>
           <Minimize className="h-5 w-5" />
         </Button>
       </div>
-      <div className="flex-1 overflow-hidden relative z-10">
-        <Card className="h-full bg-transparent border-0 shadow-none overflow-hidden">
-          <CardContent className={`h-full grid gap-4 md:gap-8 ${gridClasses[visibleComponents] || 'grid-cols-1'} p-0`}>
-            {fullscreenSettings.primaryClock && <PrimaryClock fullscreen />}
-            {fullscreenSettings.worldClocks && <WorldClocks fullscreen />}
-            {fullscreenSettings.alarms && <AlarmPanel fullscreen />}
-            {fullscreenSettings.stopwatch && <StopwatchPanel fullscreen />}
-            {fullscreenSettings.timer && <TimerPanel fullscreen />}
-          </CardContent>
-        </Card>
+      <div className={cn(
+          "flex-1 overflow-hidden relative z-10 grid gap-4 md:gap-8 h-full p-0",
+           gridClasses[visibleComponents] || 'grid-cols-1'
+      )}>
+        {fullscreenSettings.primaryClock && <PrimaryClock fullscreen />}
+        {fullscreenSettings.worldClocks && <WorldClocks fullscreen />}
+        {fullscreenSettings.alarms && <AlarmPanel fullscreen />}
+        {fullscreenSettings.stopwatch && <StopwatchPanel fullscreen />}
+        {fullscreenSettings.timer && <TimerPanel fullscreen />}
       </div>
     </div>
   );

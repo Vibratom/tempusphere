@@ -82,9 +82,10 @@ export function TimerPanel({ fullscreen = false }: TimerPanelProps) {
     const isEditing = !isRunning && timeLeft === duration;
 
     const Container = fullscreen ? 'div' : Card;
+    const contentClass = fullscreen ? 'bg-transparent' : '';
 
     return (
-        <Container className={cn(fullscreen ? 'h-full flex flex-col bg-transparent' : '')}>
+        <Container className={cn('flex flex-col h-full', contentClass)}>
             <CardHeader>
                 <CardTitle>Countdown Timer</CardTitle>
             </CardHeader>
