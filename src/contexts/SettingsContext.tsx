@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, ReactNode, Dispatch, SetStateAction } from 'react';
+import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 type HourFormat = '12h' | '24h';
@@ -14,8 +14,8 @@ interface Settings {
   setPrimaryClockMode: Dispatch<SetStateAction<'analog' | 'digital'>>;
   primaryClockTimezone: 'local' | 'utc';
   setPrimaryClockTimezone: Dispatch<SetStateAction<'local' | 'utc'>>;
-  theme: string;
-  setTheme: Dispatch<SetStateAction<string>>;
+  primaryColor: string;
+  setPrimaryColor: Dispatch<SetStateAction<string>>;
 }
 
 const SettingsContext = createContext<Settings | undefined>(undefined);
@@ -25,7 +25,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [showSeconds, setShowSeconds] = useLocalStorage<boolean>('settings:showSeconds', true);
   const [primaryClockMode, setPrimaryClockMode] = useLocalStorage<'analog' | 'digital'>('settings:clockMode', 'digital');
   const [primaryClockTimezone, setPrimaryClockTimezone] = useLocalStorage<'local' | 'utc'>('settings:clockTimezone', 'local');
-  const [theme, setTheme] = useLocalStorage<string>('settings:theme', 'system');
+  const [primaryColor, setPrimaryColor] = useLocalStorage<string>('settings:primaryColor', '141 15% 54%');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        document.documentElement.style.setProperty('--primary', primaryColor);
+    }
+  }, [primaryColor]);
 
   const value = {
     hourFormat,
@@ -36,8 +42,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setPrimaryClockMode,
     primaryClockTimezone,
     setPrimaryClockTimezone,
-    theme,
-    setTheme
+    primaryColor,
+    setPrimaryColor
   };
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

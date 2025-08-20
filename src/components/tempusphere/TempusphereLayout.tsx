@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 export function TempusphereLayout() {
   return (
     <SettingsProvider>
-      <div className="min-h-screen w-full">
+      <div className="min-h-screen w-full bg-background">
         <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 lg:px-6 sticky top-0 z-30">
           <div className="flex items-center gap-2">
             <Clock className="h-6 w-6" />
@@ -33,19 +33,19 @@ export function TempusphereLayout() {
               <TabsTrigger value="timer" className="flex gap-2 items-center"><Timer size={16}/> Timer</TabsTrigger>
               <TabsTrigger value="settings" className="flex gap-2 items-center"><Settings size={16}/> Settings</TabsTrigger>
             </TabsList>
-            <TabsContent value="world-clocks">
+            <TabsContent value="world-clocks" className="animation-fade-in">
               <WorldClocks />
             </TabsContent>
-            <TabsContent value="alarms">
+            <TabsContent value="alarms" className="animation-fade-in">
               <AlarmPanel />
             </TabsContent>
-            <TabsContent value="stopwatch">
+            <TabsContent value="stopwatch" className="animation-fade-in">
               <StopwatchPanel />
             </TabsContent>
-            <TabsContent value="timer">
+            <TabsContent value="timer" className="animation-fade-in">
               <TimerPanel />
             </TabsContent>
-            <TabsContent value="settings">
+            <TabsContent value="settings" className="animation-fade-in">
                 <Card>
                     <CardHeader>
                         <CardTitle>Settings</CardTitle>
