@@ -6,7 +6,6 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useTheme } from 'next-themes';
 
 type HourFormat = '12h' | '24h';
-type LayoutMode = 'default' | 'sidebar-left' | 'sidebar-right' | 'minimal';
 
 export interface FullscreenSettings {
   primaryClock: boolean;
@@ -39,8 +38,6 @@ interface Settings {
   setClockSize: Dispatch<SetStateAction<number>>;
   fullscreenSettings: FullscreenSettings;
   setFullscreenSettings: Dispatch<SetStateAction<FullscreenSettings>>;
-  layout: LayoutMode;
-  setLayout: Dispatch<SetStateAction<LayoutMode>>;
 }
 
 const SettingsContext = createContext<Settings | undefined>(undefined);
@@ -70,7 +67,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     stopwatch: false,
     timer: false,
   });
-  const [layout, setLayout] = useLocalStorage<LayoutMode>('settings:layout', 'default');
   const { resolvedTheme } = useTheme();
 
 
@@ -112,8 +108,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setClockSize,
     fullscreenSettings,
     setFullscreenSettings,
-    layout,
-    setLayout
   };
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
