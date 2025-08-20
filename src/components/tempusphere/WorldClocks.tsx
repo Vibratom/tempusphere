@@ -42,6 +42,9 @@ function WorldClockRow({ timezone, onRemove }: { timezone: string, onRemove: (tz
     }
   };
 
+  const timeString = isClient ? new Intl.DateTimeFormat('default', formatOptions).format(time) : '00:00:00';
+
+
   return (
       <div className="flex justify-between items-center p-3 rounded-lg bg-card border">
         <div>
@@ -50,7 +53,7 @@ function WorldClockRow({ timezone, onRemove }: { timezone: string, onRemove: (tz
         </div>
         <div className="flex items-center gap-4">
             <p className="text-2xl font-mono font-semibold tabular-nums">
-              {isClient ? new Intl.DateTimeFormat('default', formatOptions).format(time) : '00:00:00'}
+              {timeString}
             </p>
             <Button variant="ghost" size="icon" onClick={() => onRemove(timezone)}>
                 <X className="h-4 w-4" />
