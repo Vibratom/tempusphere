@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 import { PrimaryClock } from '@/components/tempusphere/PrimaryClock';
 import { FullscreenView } from './FullscreenView';
-import { AppLogo } from './AppLogo';
 import { Footer } from './Footer';
 import { useHotkeys } from '@/hooks/use-hotkeys';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
@@ -105,12 +104,16 @@ function AppContent() {
                         </Button>
                     </SheetTrigger>
                     <SheetContent side={layout === 'sidebar-left' ? 'left' : 'right'} className="p-0 w-full max-w-sm">
-                        <Sidebar header={<div className="h-16 border-b" />} activeTab={activeTab} setActiveTab={setActiveTab} onTabChange={() => setMobileMenuOpen(false)}/>
+                        <Sidebar 
+                            header={<div className="h-16 border-b flex items-center px-4"><h2 className="text-xl font-bold">Menu</h2></div>} 
+                            activeTab={activeTab} 
+                            setActiveTab={setActiveTab} 
+                            onTabChange={() => setMobileMenuOpen(false)}
+                        />
                     </SheetContent>
                 </Sheet>
             ) }
-          <AppLogo className="h-8 w-8" />
-          <h1 className="text-2xl font-bold tracking-tighter hidden md:block">Tempusphere</h1>
+          <h1 className="text-2xl font-bold tracking-tighter">Tempusphere</h1>
         </div>
         <div className="flex items-center gap-2">
             <TooltipProvider>
@@ -138,19 +141,19 @@ function AppContent() {
   );
 
   const mainContent = (
-    <main className={cn(
-        "flex-grow flex flex-col items-center justify-center gap-4 p-4 md:gap-8 md:p-8",
-        layout === 'minimal' && 'py-8'
+    <div className={cn(
+        "flex-grow flex flex-col items-center justify-center w-full",
+        (layout === 'minimal' || showSidebar) && 'py-8'
     )}>
-      <div className="flex-1 flex justify-center items-center w-full">
-          <PrimaryClock />
-      </div>
-      {layout === 'default' && (
-          <div className="w-full max-w-5xl flex-1 flex flex-col">
-              <TabbedPanels activeTab={activeTab} setActiveTab={setActiveTab} />
-          </div>
-      )}
-    </main>
+        <div className="flex-1 flex justify-center items-center w-full p-4 md:p-8">
+            <PrimaryClock />
+        </div>
+        {layout === 'default' && (
+            <div className="w-full max-w-5xl flex-1 flex flex-col p-4 md:p-8 pt-0 md:pt-0">
+                <TabbedPanels activeTab={activeTab} setActiveTab={setActiveTab} />
+            </div>
+        )}
+    </div>
   );
   
   const showSidebar = (layout === 'sidebar-left' || layout === 'sidebar-right') && !isMobile;
@@ -159,9 +162,13 @@ function AppContent() {
     <div className="min-h-screen w-full bg-background flex flex-col">
         <div className={cn("flex flex-1", layout === 'sidebar-right' ? "flex-row-reverse" : "flex-row")}>
             {showSidebar && (
-                <Sidebar header={header} activeTab={activeTab} setActiveTab={setActiveTab} />
+                <Sidebar 
+                    header={header} 
+                    activeTab={activeTab} 
+                    setActiveTab={setActiveTab} 
+                />
             )}
-            <div className="flex-1 flex flex-col overflow-y-auto">
+            <div className="flex-1 flex flex-col overflow-y-auto max-h-screen">
                 {!showSidebar && header}
                 {mainContent}
                 <Footer />
