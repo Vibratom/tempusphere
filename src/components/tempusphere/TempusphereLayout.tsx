@@ -13,14 +13,14 @@ import { Button } from '../ui/button';
 import { Expand, Menu, Settings } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { cn } from '@/lib/utils';
-import { TABS, TabbedPanels } from './TabbedPanels';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose } from '../ui/sheet';
+import { TabbedPanels } from './TabbedPanels';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose, SheetTrigger } from '../ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SettingsPanel } from './SettingsPanel';
 
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState(TABS[0]);
+  const [activeTab, setActiveTab] = useState('world-clocks');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { layout } = useSettings();
   const [isClient, setIsClient] = useState(false);
@@ -142,19 +142,18 @@ function AppContent() {
         "flex-grow flex flex-col items-center justify-center gap-4 p-4 md:gap-8 md:p-8",
         layout === 'minimal' && 'py-8'
     )}>
-        <div className="flex-1 flex justify-center items-center w-full">
-            <PrimaryClock />
-        </div>
-        {layout === 'default' && (
-            <div className="w-full max-w-5xl flex-1 flex flex-col">
-                <TabbedPanels activeTab={activeTab} setActiveTab={setActiveTab} />
-            </div>
-        )}
+      <div className="flex-1 flex justify-center items-center w-full">
+          <PrimaryClock />
+      </div>
+      {layout === 'default' && (
+          <div className="w-full max-w-5xl flex-1 flex flex-col">
+              <TabbedPanels activeTab={activeTab} setActiveTab={setActiveTab} />
+          </div>
+      )}
     </main>
   );
   
   const showSidebar = (layout === 'sidebar-left' || layout === 'sidebar-right') && !isMobile;
-  const showHeader = !showSidebar;
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
@@ -163,7 +162,7 @@ function AppContent() {
                 <Sidebar header={header} activeTab={activeTab} setActiveTab={setActiveTab} />
             )}
             <div className="flex-1 flex flex-col overflow-y-auto">
-                {showHeader && header}
+                {!showSidebar && header}
                 {mainContent}
                 <Footer />
             </div>
