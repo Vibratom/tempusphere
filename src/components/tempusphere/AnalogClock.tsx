@@ -24,15 +24,15 @@ export function AnalogClock({ className }: AnalogClockProps) {
   const secondDeg = seconds * 6 + milliseconds * 0.006;
 
   return (
-    <div className={cn('relative w-64 h-64 mx-auto', className)}>
+    <div className={cn('relative w-full h-full', className)}>
       <svg viewBox="0 0 200 200" className="w-full h-full">
-        {backgroundImage && (
-            <defs>
+        <defs>
+            {backgroundImage && (
                 <pattern id={uniqueId} patternUnits="userSpaceOnUse" width="200" height="200">
                     <image href={backgroundImage} x="0" y="0" width="200" height="200" preserveAspectRatio="xMidYMid slice" />
                 </pattern>
-            </defs>
-        )}
+            )}
+        </defs>
         <circle cx="100" cy="100" r="98" fill={backgroundImage ? `url(#${uniqueId})` : "transparent"} stroke="hsl(var(--foreground))" strokeWidth="2" />
         <circle cx="100" cy="100" r="4" fill="hsl(var(--primary))" />
 

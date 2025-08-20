@@ -32,10 +32,13 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
   }, []);
   
   const clockScale = isClient ? clockSize / 100 : 1;
+  const baseClockSize = primaryClockMode === 'analog' ? 256 : 0;
+  const analogClockStyle = primaryClockMode === 'analog' ? { width: `${baseClockSize * clockScale}px`, height: `${baseClockSize * clockScale}px` } : {};
+
 
   if (!isClient && !fullscreen) {
     return (
-      <Card className="flex items-center justify-center w-full max-w-3xl min-h-[16rem]">
+      <Card className="flex flex-col items-center justify-center w-full max-w-3xl min-h-[16rem]">
           <Skeleton className="w-80 h-24" />
           <div className="text-muted-foreground mt-4 text-lg font-medium">
               <Skeleton className="w-24 h-6" />
@@ -49,8 +52,8 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
   return (
     <Container 
         className={cn(
-            "overflow-hidden flex items-center justify-center transition-all duration-300 relative bg-cover bg-center", 
-            fullscreen ? "w-full h-full bg-transparent" : "w-full max-w-3xl"
+            "overflow-hidden flex flex-col items-center justify-center transition-all duration-300 relative bg-cover bg-center p-6", 
+            fullscreen ? "w-full h-full bg-transparent" : "w-full"
         )}
     >
       {backgroundImage && !fullscreen && (
@@ -60,13 +63,13 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
         </>
       )}
 
-      <div className="p-6 flex flex-col items-center justify-center w-full h-full relative">
-        <div style={{ transform: `scale(${clockScale})`}} className="transition-transform duration-300 z-10 p-4">
-            {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
+      <div className="flex flex-col items-center justify-center w-full h-full relative">
+        <div style={analogClockStyle} className="transition-all duration-300 flex items-center justify-center">
+          {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
         </div>
 
         <div className={cn(
-          "text-lg font-medium z-10 px-3 py-1 rounded-full",
+          "text-lg font-medium z-10 px-3 py-1 rounded-full mt-4",
            backgroundImage ? "bg-black/20 text-white/90 backdrop-blur-sm" : "text-muted-foreground"
         )}>
           {primaryClockTimezone === 'local' ? localTimezoneName : 'UTC Time'}
