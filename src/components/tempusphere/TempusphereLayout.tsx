@@ -9,7 +9,7 @@ import { StopwatchPanel } from '@/components/tempusphere/StopwatchPanel';
 import { TimerPanel } from '@/components/tempusphere/TimerPanel';
 import { SettingsPanel } from '@/components/tempusphere/SettingsPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Globe, AlarmClock, Timer, Hourglass } from 'lucide-react';
+import { Clock, Globe, AlarmClock, Timer, Hourglass, Menu } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export function TempusphereLayout() {
@@ -17,7 +17,7 @@ export function TempusphereLayout() {
     <SettingsProvider>
       <SidebarProvider>
         <div className="min-h-screen w-full">
-          <Sidebar>
+          <Sidebar collapsible="icon">
             <SidebarHeader>
               <h2 className="text-xl font-semibold">Settings</h2>
             </SidebarHeader>
@@ -32,7 +32,9 @@ export function TempusphereLayout() {
                 <h1 className="text-xl font-semibold tracking-tighter">Tempusphere</h1>
               </div>
               <div className="ml-auto">
-                <SidebarTrigger />
+                <SidebarTrigger>
+                  <Menu />
+                </SidebarTrigger>
               </div>
             </header>
             <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
