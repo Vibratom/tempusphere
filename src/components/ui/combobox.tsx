@@ -55,12 +55,17 @@ export function Combobox({ options, value, onChange, placeholder = "Select an op
                 <CommandGroup>
                 {options.map((option) => (
                     <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    onSelect={() => {
-                        onChange(option.value === value ? "" : option.value)
-                        setOpen(false)
-                    }}
+                        key={option.value}
+                        value={option.value}
+                        onSelect={(currentValue) => {
+                            // The `onSelect` callback from `cmdk` provides the `value` of the item.
+                            // We find the original option to ensure we use the correct case-sensitive value.
+                            const selectedOption = options.find(o => o.value.toLowerCase() === currentValue.toLowerCase());
+                            if (selectedOption) {
+                                onChange(selectedOption.value === value ? "" : selectedOption.value)
+                            }
+                            setOpen(false)
+                        }}
                     >
                     <Check
                         className={cn(
