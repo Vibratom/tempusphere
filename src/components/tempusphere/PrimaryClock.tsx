@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSettings } from '@/contexts/SettingsContext';
@@ -70,17 +71,18 @@ export function PrimaryClock({ fullscreen = false }: PrimaryClockProps) {
     <Container 
         className={cn(
             "overflow-hidden flex items-center justify-center transition-all duration-300 relative bg-cover bg-center", 
-            fullscreen ? "w-full h-full bg-transparent" : "w-full",
-            !fullscreen && backgroundImage && "bg-background/80"
+            fullscreen ? "w-full h-full bg-transparent" : "w-full"
         )}
-        style={!fullscreen ? {...containerStyle, backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none' } : {}}
+        style={!fullscreen ? containerStyle : {}}
     >
-      <div 
-        className={cn(
-          "p-6 flex flex-col items-center justify-center w-full h-full",
-          !fullscreen && backgroundImage && "backdrop-blur-md"
-        )}
-      >
+      {backgroundImage && !fullscreen && (
+        <>
+          <div className="absolute inset-0 bg-cover bg-center" style={{backgroundImage: `url(${backgroundImage})`}}></div>
+          <div className="absolute inset-0 backdrop-blur-md bg-background/80"></div>
+        </>
+      )}
+
+      <div className="p-6 flex flex-col items-center justify-center w-full h-full relative">
         <div style={{ transform: `scale(${clockScale})`}} className="transition-transform duration-300 z-10">
             {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
         </div>
