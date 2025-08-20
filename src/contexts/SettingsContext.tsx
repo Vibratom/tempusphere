@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useTheme } from 'next-themes';
 
 type HourFormat = '12h' | '24h';
 type LayoutMode = 'default' | 'sidebar-left' | 'sidebar-right' | 'minimal';
@@ -28,8 +29,10 @@ interface Settings {
   setPrimaryColor: Dispatch<SetStateAction<string>>;
   accentColor: string;
   setAccentColor: Dispatch<SetStateAction<string>>;
-  backgroundColor: string;
-  setBackgroundColor: Dispatch<SetStateAction<string>>;
+  lightBackgroundColor: string;
+  setLightBackgroundColor: Dispatch<SetStateAction<string>>;
+  darkBackgroundColor: string;
+  setDarkBackgroundColor: Dispatch<SetStateAction<string>>;
   backgroundImage: string | null;
   setBackgroundImage: Dispatch<SetStateAction<string | null>>;
   clockSize: number;
@@ -42,6 +45,13 @@ interface Settings {
 
 const SettingsContext = createContext<Settings | undefined>(undefined);
 
+// Helper function to get luminance from HSL string
+function getLuminance(hsl: string): number {
+    const [h, s, l] = hsl.match(/\d+/g)!.map(Number);
+    return l;
+}
+
+
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [hourFormat, setHourFormat] = useLocalStorage<HourFormat>('settings:hourFormat', '24h');
   const [showSeconds, setShowSeconds] = useLocalStorage<boolean>('settings:showSeconds', true);
@@ -49,7 +59,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [primaryClockTimezone, setPrimaryClockTimezone] = useLocalStorage<'local' | 'utc'>('settings:clockTimezone', 'local');
   const [primaryColor, setPrimaryColor] = useLocalStorage<string>('settings:primaryColor', '141 15% 54%');
   const [accentColor, setAccentColor] = useLocalStorage<string>('settings:accentColor', '5 41% 49%');
-  const [backgroundColor, setBackgroundColor] = useLocalStorage<string>('settings:backgroundColor', '210 20% 96%');
+  const [lightBackgroundColor, setLightBackgroundColor] = useLocalStorage<string>('settings:lightBackgroundColor', '210 20% 96%');
+  const [darkBackgroundColor, setDarkBackgroundColor] = useLocalStorage<string>('settings:darkBackgroundColor', '220 20% 10%');
   const [backgroundImage, setBackgroundImage] = useLocalStorage<string | null>('settings:backgroundImage', null);
   const [clockSize, setClockSize] = useLocalStorage<number>('settings:clockSize', 100);
   const [fullscreenSettings, setFullscreenSettings] = useLocalStorage<FullscreenSettings>('settings:fullscreen', {
@@ -60,15 +71,23 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     timer: false,
   });
   const [layout, setLayout] = useLocalStorage<LayoutMode>('settings:layout', 'default');
+  const { resolvedTheme } = useTheme();
 
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+        const isDark = resolvedTheme === 'dark';
+        const currentBgColor = isDark ? darkBackgroundColor : lightBackgroundColor;
+        const luminance = getLuminance(currentBgColor);
+        // Determine foreground color based on background luminance
+        const foregroundColor = luminance > 50 ? '224 71.4% 4.1%' : '210 20% 98%';
+
         document.documentElement.style.setProperty('--primary', primaryColor);
         document.documentElement.style.setProperty('--accent', accentColor);
-        document.documentElement.style.setProperty('--background', backgroundColor);
+        document.documentElement.style.setProperty('--background', currentBgColor);
+        document.documentElement.style.setProperty('--foreground', foregroundColor);
     }
-  }, [primaryColor, accentColor, backgroundColor]);
+  }, [primaryColor, accentColor, lightBackgroundColor, darkBackgroundColor, resolvedTheme]);
 
   const value = {
     hourFormat,
@@ -83,8 +102,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setPrimaryColor,
     accentColor,
     setAccentColor,
-    backgroundColor,
-    setBackgroundColor,
+    lightBackgroundColor,
+    setLightBackgroundColor,
+    darkBackgroundColor,
+    setDarkBackgroundColor,
     backgroundImage,
     setBackgroundImage,
     clockSize,

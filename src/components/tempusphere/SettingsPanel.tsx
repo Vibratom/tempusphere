@@ -47,6 +47,7 @@ function hexToHsl(hex: string): string {
 }
 
 function hslToHex(hsl: string): string {
+    if (!hsl) return '#000000';
     const [h, s, l] = hsl.match(/\d+/g)!.map(Number);
     const sDecimal = s / 100;
     const lDecimal = l / 100;
@@ -85,8 +86,10 @@ export function SettingsPanel() {
     setPrimaryColor,
     accentColor,
     setAccentColor,
-    backgroundColor,
-    setBackgroundColor,
+    lightBackgroundColor,
+    setLightBackgroundColor,
+    darkBackgroundColor,
+    setDarkBackgroundColor,
     backgroundImage,
     setBackgroundImage,
     clockSize,
@@ -96,7 +99,7 @@ export function SettingsPanel() {
     layout,
     setLayout
   } = useSettings();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -112,6 +115,8 @@ export function SettingsPanel() {
   const handleFullscreenSettingChange = (key: keyof FullscreenSettings, value: boolean) => {
     setFullscreenSettings(prev => ({...prev, [key]: value}));
   }
+  
+  const isDark = resolvedTheme === 'dark';
 
   return (
       <ScrollArea className="h-full">
@@ -198,7 +203,12 @@ export function SettingsPanel() {
           </div>
            <div className="grid grid-cols-2 gap-4 items-center">
               <Label>Background</Label>
-              <Input type="color" value={hslToHex(backgroundColor)} onChange={(e) => setBackgroundColor(hexToHsl(e.target.value))} className="p-1 h-10"/>
+               <Input 
+                type="color" 
+                value={hslToHex(isDark ? darkBackgroundColor : lightBackgroundColor)} 
+                onChange={(e) => isDark ? setDarkBackgroundColor(hexToHsl(e.target.value)) : setLightBackgroundColor(hexToHsl(e.target.value))} 
+                className="p-1 h-10"
+              />
           </div>
           
           <div className="grid grid-cols-2 gap-4 items-start">
