@@ -10,7 +10,7 @@ export function PrimaryClock() {
 
   return (
     <Card>
-      <CardContent className="p-6 flex flex-col items-center justify-center min-h-[20rem]">
+      <CardContent className="p-6 flex flex-col items-center justify-center min-h-[14rem]">
         {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
         <p className="text-muted-foreground mt-4 text-lg font-medium">
           {primaryClockTimezone === 'local' ? 'Local Time' : 'UTC Time'}
