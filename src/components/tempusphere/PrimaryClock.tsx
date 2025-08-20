@@ -63,7 +63,7 @@ export function PrimaryClock({ fullscreen = false, glass = false }: PrimaryClock
         )}
         <div className="flex flex-col items-center justify-center h-full relative">
             <div style={analogClockStyle} className="transition-all duration-300 flex items-center justify-center">
-                {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock />}
+                {primaryClockMode === 'digital' ? <DigitalClock /> : <AnalogClock timezone={primaryClockTimezone === 'utc' ? 'UTC' : undefined} />}
             </div>
 
             <div className={cn(

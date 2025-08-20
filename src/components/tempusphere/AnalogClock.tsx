@@ -7,17 +7,39 @@ import { useSettings } from '@/contexts/SettingsContext';
 
 interface AnalogClockProps {
   className?: string;
+  timezone?: string;
 }
 
-export function AnalogClock({ className }: AnalogClockProps) {
+export function AnalogClock({ className, timezone }: AnalogClockProps) {
   const time = useTime();
   const { showSeconds, backgroundImage } = useSettings();
-  const uniqueId = "analog-bg";
+  const uniqueId = `analog-bg-${timezone || 'local'}`.replace(/[^a-zA-Z0-9-]/g, '');
 
-  const hours = time.getHours();
-  const minutes = time.getMinutes();
-  const seconds = time.getSeconds();
-  const milliseconds = time.getMilliseconds();
+  let displayTime = time;
+  if (timezone) {
+    try {
+        const timeString = new Intl.DateTimeFormat('en-US', {
+            timeZone: timezone,
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            hour12: false,
+        }).format(time);
+        const [hours, minutes, seconds] = timeString.split(':').map(Number);
+
+        const tempDate = new Date();
+        tempDate.setHours(hours, minutes, seconds, time.getMilliseconds());
+        displayTime = tempDate;
+
+    } catch (e) {
+        console.error("Invalid timezone for analog clock", timezone);
+    }
+  }
+
+  const hours = displayTime.getHours();
+  const minutes = displayTime.getMinutes();
+  const seconds = displayTime.getSeconds();
+  const milliseconds = displayTime.getMilliseconds();
 
   const hourDeg = (hours % 12) * 30 + minutes * 0.5;
   const minuteDeg = minutes * 6 + seconds * 0.1;

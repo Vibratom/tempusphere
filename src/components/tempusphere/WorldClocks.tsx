@@ -8,13 +8,28 @@ import { timezones } from '@/lib/timezones';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Plus, Globe } from 'lucide-react';
+import { X, Plus, Globe, Clock, Watch } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Combobox } from '../ui/combobox';
+import { AnalogClock } from './AnalogClock';
 
-function WorldClockRow({ timezone, onRemove, glass }: { timezone: string, onRemove: (tz: string) => void; glass?: boolean; }) {
+type ClockMode = 'digital' | 'analog';
+
+function WorldClockRow({ 
+  timezone, 
+  mode,
+  onRemove, 
+  onToggleMode,
+  glass 
+}: { 
+  timezone: string, 
+  mode: ClockMode,
+  onRemove: (tz: string) => void; 
+  onToggleMode: (tz: string) => void;
+  glass?: boolean; 
+}) {
   const time = useTime();
   const { hourFormat, showSeconds } = useSettings();
   const [isClient, setIsClient] = useState(false);
@@ -48,17 +63,25 @@ function WorldClockRow({ timezone, onRemove, glass }: { timezone: string, onRemo
 
   const timeString = isClient ? new Intl.DateTimeFormat('default', formatOptions).format(time) : '00:00:00';
 
-
   return (
       <div className={cn("flex justify-between items-center p-3 rounded-lg border", glass ? 'bg-black/10 border-white/20' : 'bg-background/50')}>
         <div>
           <p className="font-semibold text-lg">{timezone.split('/').pop()?.replace(/_/g, ' ')}</p>
           <p className="text-sm text-muted-foreground">{isClient ? getOffset(timezone) : ''}</p>
         </div>
-        <div className="flex items-center gap-4">
-            <p className="text-2xl font-mono font-semibold tabular-nums">
-              {timeString}
-            </p>
+        <div className="flex items-center gap-2">
+            {mode === 'digital' ? (
+              <p className="text-2xl font-mono font-semibold tabular-nums w-48 text-right">
+                {timeString}
+              </p>
+            ) : (
+              <div className="w-20 h-20">
+                <AnalogClock timezone={timezone} />
+              </div>
+            )}
+            <Button variant="ghost" size="icon" onClick={() => onToggleMode(timezone)}>
+                {mode === 'digital' ? <Watch className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+            </Button>
             <Button variant="ghost" size="icon" onClick={() => onRemove(timezone)}>
                 <X className="h-4 w-4" />
             </Button>
@@ -74,6 +97,7 @@ interface WorldClocksProps {
 
 export function WorldClocks({ fullscreen = false, glass = false }: WorldClocksProps) {
   const [selectedClocks, setSelectedClocks] = useLocalStorage<string[]>('worldclocks:list', ['America/New_York', 'Europe/London', 'Asia/Tokyo']);
+  const [clockModes, setClockModes] = useLocalStorage<Record<string, ClockMode>>('worldclocks:modes', {});
   const [newTimezone, setNewTimezone] = useState('');
   const [isClient, setIsClient] = useState(false);
 
@@ -84,13 +108,21 @@ export function WorldClocks({ fullscreen = false, glass = false }: WorldClocksPr
   const addClock = () => {
     if (newTimezone && !selectedClocks.includes(newTimezone)) {
       setSelectedClocks([...selectedClocks, newTimezone].sort());
+      setClockModes(prev => ({...prev, [newTimezone]: 'digital'}));
       setNewTimezone('');
     }
   };
 
   const removeClock = (tz: string) => {
     setSelectedClocks(selectedClocks.filter((t) => t !== tz));
+    const newModes = {...clockModes};
+    delete newModes[tz];
+    setClockModes(newModes);
   };
+  
+  const toggleClockMode = (tz: string) => {
+    setClockModes(prev => ({...prev, [tz]: prev[tz] === 'digital' ? 'analog' : 'digital' }));
+  }
   
   const Container = fullscreen ? 'div' : Card;
   const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg flex flex-col p-4' : 'flex flex-col p-4') : '';
@@ -122,7 +154,14 @@ export function WorldClocks({ fullscreen = false, glass = false }: WorldClocksPr
             <div className="space-y-4 pr-4 h-full">
                 {isClient ? (
                     selectedClocks.length > 0 ? selectedClocks.map((tz) => (
-                    <WorldClockRow key={tz} timezone={tz} onRemove={removeClock} glass={glass} />
+                    <WorldClockRow 
+                      key={tz} 
+                      timezone={tz} 
+                      mode={clockModes[tz] || 'digital'}
+                      onRemove={removeClock} 
+                      onToggleMode={toggleClockMode}
+                      glass={glass} 
+                    />
                     )) : 
                     <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                       <Globe className="w-16 h-16 mb-4" />
