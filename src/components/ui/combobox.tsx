@@ -58,12 +58,7 @@ export function Combobox({ options, value, onChange, placeholder = "Select an op
                         key={option.value}
                         value={option.value}
                         onSelect={(currentValue) => {
-                            // The `onSelect` callback from `cmdk` provides the `value` of the item.
-                            // It's often lowercased, so we find the original option to get the correct case-sensitive value.
-                            const selectedOption = options.find(o => o.value.toLowerCase() === currentValue.toLowerCase());
-                            if (selectedOption) {
-                                onChange(selectedOption.value === value ? "" : selectedOption.value)
-                            }
+                            onChange(currentValue === value ? "" : currentValue)
                             setOpen(false)
                         }}
                     >
