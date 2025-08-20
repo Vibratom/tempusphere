@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
@@ -24,9 +25,10 @@ const formatTime = (totalSeconds: number) => {
 
 interface TimerPanelProps {
     fullscreen?: boolean;
+    glass?: boolean;
 }
 
-function TimerPanelInternal({ fullscreen = false }: TimerPanelProps, ref: any) {
+function TimerPanelInternal({ fullscreen = false, glass = false }: TimerPanelProps, ref: any) {
     const [duration, setDuration] = useState(300); // 5 minutes in seconds
     const [timeLeft, setTimeLeft] = useState(duration);
     const [isRunning, setIsRunning] = useState(false);
@@ -100,14 +102,14 @@ function TimerPanelInternal({ fullscreen = false }: TimerPanelProps, ref: any) {
     const isEditing = !isRunning && timeLeft === duration;
 
     const Container = fullscreen ? 'div' : Card;
-    const contentClass = fullscreen ? 'bg-transparent' : '';
+    const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : '';
 
     return (
-        <Container className={cn('flex flex-col h-full', contentClass)}>
+        <Container className={cn('flex flex-col h-full', containerClass)}>
             {!fullscreen && <CardHeader>
                 <CardTitle>Countdown Timer</CardTitle>
             </CardHeader>}
-            <CardContent className={cn("flex-1 flex flex-col items-center justify-center gap-6", fullscreen && "pt-4")}>
+            <CardContent className={cn("flex-1 flex flex-col items-center justify-center gap-6 p-4", fullscreen && "pt-4")}>
                 {isEditing ? (
                     <div className="flex items-baseline justify-center gap-2 text-6xl md:text-7xl font-mono font-bold tracking-tighter">
                         <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={handleHoursChange} className="w-28 h-24 text-center text-6xl tabular-nums p-0"/>
@@ -123,7 +125,7 @@ function TimerPanelInternal({ fullscreen = false }: TimerPanelProps, ref: any) {
                 )}
                 <Progress value={isRunning ? progress : 100} className="w-full max-w-md"/>
             </CardContent>
-            <CardFooter className="flex justify-center gap-2">
+            <CardFooter className="flex justify-center gap-2 p-4 pt-0">
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>

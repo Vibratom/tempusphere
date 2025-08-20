@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
@@ -27,9 +28,10 @@ const formatTime = (time: number) => {
 
 interface StopwatchPanelProps {
     fullscreen?: boolean;
+    glass?: boolean;
 }
 
-function StopwatchPanelInternal({ fullscreen = false }: StopwatchPanelProps, ref: any) {
+function StopwatchPanelInternal({ fullscreen = false, glass = false }: StopwatchPanelProps, ref: any) {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState<number[]>([]);
@@ -76,14 +78,14 @@ function StopwatchPanelInternal({ fullscreen = false }: StopwatchPanelProps, ref
 
 
   const Container = fullscreen ? 'div' : Card;
-  const contentClass = fullscreen ? 'bg-transparent' : '';
+  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : '';
 
   return (
-      <Container className={cn('flex flex-col h-full', contentClass)}>
+      <Container className={cn('flex flex-col h-full', containerClass)}>
         {!fullscreen && <CardHeader>
             <CardTitle>Stopwatch</CardTitle>
         </CardHeader>}
-        <CardContent className={cn("flex flex-col items-center justify-center gap-6", fullscreen && "pt-4")}>
+        <CardContent className={cn("flex flex-col items-center justify-center flex-grow gap-6 p-4", fullscreen && "pt-4")}>
             <p className="text-6xl md:text-7xl font-mono font-bold tracking-tighter tabular-nums">
             {formatTime(time)}
             </p>
@@ -123,11 +125,11 @@ function StopwatchPanelInternal({ fullscreen = false }: StopwatchPanelProps, ref
             </TooltipProvider>
             </div>
         </CardContent>
-        <CardFooter className="flex-1 flex-col">
+        {laps.length > 0 && <CardFooter className="flex-1 flex-col p-4 pt-0">
             <ScrollArea className="h-full w-full">
                 <div className="space-y-2 pr-4">
                     {laps.map((lap, index) => (
-                        <div key={index} className="flex justify-between p-2 rounded-lg bg-background/50 border">
+                        <div key={index} className={cn("flex justify-between p-2 rounded-lg border", glass ? 'bg-black/10 border-white/20' : 'bg-background/50')}>
                             <span className="font-medium text-muted-foreground">Lap {laps.length - index}</span>
                             <span className="font-mono">{formatTime(lap - (laps[index+1] || 0) )}</span>
                             <span className="font-mono font-semibold">{formatTime(lap)}</span>
@@ -135,7 +137,7 @@ function StopwatchPanelInternal({ fullscreen = false }: StopwatchPanelProps, ref
                     ))}
                 </div>
             </ScrollArea>
-        </CardFooter>
+        </CardFooter>}
       </Container>
   );
 }

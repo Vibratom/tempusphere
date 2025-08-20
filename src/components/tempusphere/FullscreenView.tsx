@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSettings } from '@/contexts/SettingsContext';
@@ -18,16 +19,21 @@ interface FullscreenViewProps {
 export function FullscreenView({ onExit }: FullscreenViewProps) {
   const { fullscreenSettings, backgroundImage } = useSettings();
 
-  const gridClasses: {[key: number]: string} = {
-    1: 'grid-cols-1 grid-rows-1',
-    2: 'grid-cols-1 md:grid-cols-2 grid-rows-2 md:grid-rows-1',
-    3: 'grid-cols-1 md:grid-cols-3 grid-rows-3 md:grid-rows-1',
-    4: 'grid-cols-1 md:grid-cols-2 grid-rows-4 md:grid-rows-2',
-    5: 'grid-cols-1 md:grid-cols-3 grid-rows-5 md:grid-rows-2', // This can be improved
-  }
-  
-  const visibleComponents = Object.values(fullscreenSettings).filter(Boolean).length;
+  const visibleComponents = Object.values(fullscreenSettings).filter(Boolean);
+  const count = visibleComponents.length;
 
+  const gridSetup = {
+    1: "grid-cols-1 grid-rows-1",
+    2: "grid-cols-1 md:grid-cols-2 grid-rows-2 md:grid-rows-1",
+    3: "grid-cols-1 md:grid-cols-3 grid-rows-3 md:grid-rows-1",
+    4: "grid-cols-1 md:grid-cols-2 grid-rows-4 md:grid-rows-2",
+    5: "grid-cols-1 md:grid-cols-3 grid-rows-5 md:grid-rows-2",
+    6: "grid-cols-1 md:grid-cols-3 grid-rows-6 md:grid-rows-2",
+  };
+
+  const gridClass = gridSetup[count as keyof typeof gridSetup] || "grid-cols-1 grid-rows-1";
+  
+  const glassEffect = !!backgroundImage;
 
   return (
     <div 
@@ -39,18 +45,18 @@ export function FullscreenView({ onExit }: FullscreenViewProps) {
       <div className="absolute inset-0 bg-background/80 dark:bg-background/60 backdrop-blur-sm z-0" />
       <div className="flex-shrink-0 flex justify-end relative z-10">
         <Button variant="ghost" size="icon" onClick={onExit}>
-          <Minimize className="h-5 w-5" />
+          <Minimize className="h-6 w-6" />
         </Button>
       </div>
       <div className={cn(
           "flex-1 overflow-hidden relative z-10 grid gap-4 md:gap-8 h-full p-0",
-           gridClasses[visibleComponents] || 'grid-cols-1'
+           gridClass
       )}>
-        {fullscreenSettings.primaryClock && <PrimaryClock fullscreen />}
-        {fullscreenSettings.worldClocks && <WorldClocks fullscreen />}
-        {fullscreenSettings.alarms && <AlarmPanel fullscreen />}
-        {fullscreenSettings.stopwatch && <StopwatchPanel fullscreen />}
-        {fullscreenSettings.timer && <TimerPanel fullscreen />}
+        {fullscreenSettings.primaryClock && <PrimaryClock fullscreen glass={glassEffect} />}
+        {fullscreenSettings.worldClocks && <WorldClocks fullscreen glass={glassEffect} />}
+        {fullscreenSettings.alarms && <AlarmPanel fullscreen glass={glassEffect} />}
+        {fullscreenSettings.stopwatch && <StopwatchPanel fullscreen glass={glassEffect} />}
+        {fullscreenSettings.timer && <TimerPanel fullscreen glass={glassEffect} />}
       </div>
     </div>
   );

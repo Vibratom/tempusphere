@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -9,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTime } from '@/hooks/use-time';
 import { playSound, alarmSounds, type AlarmSound } from '@/lib/sounds';
-import { Bell, BellOff, Plus, Trash2, Volume2 } from 'lucide-react';
+import { Bell, BellOff, Plus, Trash2, Volume2, AlarmClock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -24,9 +25,10 @@ interface Alarm {
 
 interface AlarmPanelProps {
   fullscreen?: boolean;
+  glass?: boolean;
 }
 
-export function AlarmPanel({ fullscreen = false }: AlarmPanelProps) {
+export function AlarmPanel({ fullscreen = false, glass = false }: AlarmPanelProps) {
   const [alarms, setAlarms] = useLocalStorage<Alarm[]>('alarms:list', []);
   const [newAlarmTime, setNewAlarmTime] = useState('07:00');
   const [newAlarmSound, setNewAlarmSound] = useState<AlarmSound>('Beep');
@@ -92,14 +94,14 @@ export function AlarmPanel({ fullscreen = false }: AlarmPanelProps) {
   }, [time, alarms, notificationPermission, toast]);
   
   const Container = fullscreen ? 'div' : Card;
-  const contentClass = fullscreen ? 'bg-transparent' : '';
+  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : '';
 
   return (
-    <Container className={cn('flex flex-col h-full', contentClass)}>
+    <Container className={cn('flex flex-col h-full', containerClass)}>
        {!fullscreen && <CardHeader>
         <CardTitle>Alarms</CardTitle>
       </CardHeader>}
-      <CardContent className={cn("flex-1 flex flex-col", fullscreen && "p-0 pt-4")}>
+      <CardContent className={cn("flex-1 flex flex-col p-4", fullscreen && "p-4 pt-4")}>
         {notificationPermission !== 'granted' && (
             <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 mb-4">
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">Enable notifications for a better experience.</p>
@@ -119,10 +121,10 @@ export function AlarmPanel({ fullscreen = false }: AlarmPanelProps) {
           </Select>
           <Button onClick={addAlarm}><Plus className="mr-2 h-4 w-4"/>Add Alarm</Button>
         </div>
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 -mr-4">
             <div className="space-y-2 pr-4 h-full">
             {alarms.length > 0 ? alarms.map((alarm) => (
-                <div key={alarm.id} className="flex justify-between items-center p-3 rounded-lg bg-background/50 border data-[disabled=true]:opacity-50" data-disabled={!alarm.enabled}>
+                <div key={alarm.id} className={cn("flex justify-between items-center p-3 rounded-lg border", glass ? "bg-black/10 border-white/20" : "bg-background/50", "data-[disabled=true]:opacity-50")} data-disabled={!alarm.enabled}>
                 <div>
                     <p className="text-2xl font-mono font-semibold">{alarm.time}</p>
                     <p className="text-sm text-muted-foreground">{alarm.name}</p>
@@ -134,7 +136,13 @@ export function AlarmPanel({ fullscreen = false }: AlarmPanelProps) {
                     </Button>
                 </div>
                 </div>
-            )) : <div className="flex items-center justify-center h-full"><p className="text-muted-foreground text-center">No alarms set.</p></div>}
+            )) : 
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+              <AlarmClock className="w-16 h-16 mb-4" />
+              <h3 className="text-xl font-semibold">No Alarms Set</h3>
+              <p className="text-sm">Add an alarm using the form above.</p>
+            </div>
+            }
             </div>
         </ScrollArea>
       </CardContent>

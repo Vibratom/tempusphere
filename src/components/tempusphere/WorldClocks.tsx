@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,12 +9,12 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Globe } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 
-function WorldClockRow({ timezone, onRemove }: { timezone: string, onRemove: (tz: string) => void; }) {
+function WorldClockRow({ timezone, onRemove, glass }: { timezone: string, onRemove: (tz: string) => void; glass?: boolean; }) {
   const time = useTime();
   const { hourFormat, showSeconds } = useSettings();
   const [isClient, setIsClient] = useState(false);
@@ -48,7 +49,7 @@ function WorldClockRow({ timezone, onRemove }: { timezone: string, onRemove: (tz
 
 
   return (
-      <div className="flex justify-between items-center p-3 rounded-lg bg-background/50 border">
+      <div className={cn("flex justify-between items-center p-3 rounded-lg border", glass ? 'bg-black/10 border-white/20' : 'bg-background/50')}>
         <div>
           <p className="font-semibold text-lg">{timezone.split('/').pop()?.replace(/_/g, ' ')}</p>
           <p className="text-sm text-muted-foreground">{isClient ? getOffset(timezone) : ''}</p>
@@ -67,9 +68,10 @@ function WorldClockRow({ timezone, onRemove }: { timezone: string, onRemove: (tz
 
 interface WorldClocksProps {
     fullscreen?: boolean;
+    glass?: boolean;
 }
 
-export function WorldClocks({ fullscreen = false }: WorldClocksProps) {
+export function WorldClocks({ fullscreen = false, glass = false }: WorldClocksProps) {
   const [selectedClocks, setSelectedClocks] = useLocalStorage<string[]>('worldclocks:list', ['America/New_York', 'Europe/London', 'Asia/Tokyo']);
   const [newTimezone, setNewTimezone] = useState('');
   const [isClient, setIsClient] = useState(false);
@@ -90,15 +92,14 @@ export function WorldClocks({ fullscreen = false }: WorldClocksProps) {
   };
   
   const Container = fullscreen ? 'div' : Card;
-  const contentClass = fullscreen ? 'bg-transparent' : '';
+  const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : '';
 
-  
   return (
-    <Container className={cn('flex flex-col h-full', contentClass)}>
+    <Container className={cn('flex flex-col h-full', containerClass)}>
         {!fullscreen && <CardHeader>
             <CardTitle>World Clocks</CardTitle>
         </CardHeader>}
-        <CardContent className={cn("flex-1 flex flex-col", fullscreen && "p-0 pt-4")}>
+        <CardContent className={cn("flex-1 flex flex-col p-4", fullscreen && "p-4 pt-4")}>
             <div className="flex gap-2 mb-4">
             <Select value={newTimezone} onValueChange={setNewTimezone}>
                 <SelectTrigger>
@@ -116,12 +117,17 @@ export function WorldClocks({ fullscreen = false }: WorldClocksProps) {
             </Select>
             <Button onClick={addClock} disabled={!newTimezone}><Plus className="mr-2 h-4 w-4"/>Add</Button>
             </div>
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 -mr-4">
             <div className="space-y-4 pr-4 h-full">
                 {isClient ? (
                     selectedClocks.length > 0 ? selectedClocks.map((tz) => (
-                    <WorldClockRow key={tz} timezone={tz} onRemove={removeClock} />
-                    )) : <div className="flex items-center justify-center h-full"><p className="text-muted-foreground text-center">No world clocks added.</p></div>
+                    <WorldClockRow key={tz} timezone={tz} onRemove={removeClock} glass={glass} />
+                    )) : 
+                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                      <Globe className="w-16 h-16 mb-4" />
+                      <h3 className="text-xl font-semibold">No World Clocks</h3>
+                      <p className="text-sm">Add a clock using the form above.</p>
+                    </div>
                 ) : (
                     <div className="space-y-4">
                         <Skeleton className="h-16 w-full" />
