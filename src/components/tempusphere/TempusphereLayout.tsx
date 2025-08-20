@@ -20,6 +20,11 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState(TABS[0]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { layout } = useSettings();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -34,7 +39,7 @@ function AppContent() {
       document.documentElement.requestFullscreen().catch((err) => {
         console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
       });
-    } else {
+    } else if (document.exitFullscreen) {
       document.exitFullscreen();
     }
   };
@@ -77,6 +82,14 @@ function AppContent() {
         </TooltipProvider>
       </header>
   );
+
+  if (!isClient) {
+    return (
+      <div className="min-h-screen w-full bg-background flex flex-col">
+        {header}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
