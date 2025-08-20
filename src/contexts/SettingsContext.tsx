@@ -17,6 +17,7 @@ export interface FullscreenSettings {
   planner: boolean;
   calendar: boolean;
   sunMoon: boolean;
+  weather: boolean;
 }
 
 interface Settings {
@@ -74,6 +75,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     planner: false,
     calendar: false,
     sunMoon: false,
+    weather: false,
   });
   const { resolvedTheme } = useTheme();
 

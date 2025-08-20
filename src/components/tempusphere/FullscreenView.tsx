@@ -14,6 +14,7 @@ import { ConverterPanel } from './ConverterPanel';
 import { ConferencePlanner } from './ConferencePlanner';
 import { CalendarPanel } from './CalendarPanel';
 import { SunMoonPanel } from './SunMoonPanel';
+import { WeatherPanel } from './WeatherPanel';
 
 interface FullscreenViewProps {
   onExit: () => void;
@@ -35,6 +36,7 @@ export function FullscreenView({ onExit }: FullscreenViewProps) {
     7: "grid-cols-1 md:grid-cols-4 grid-rows-7 md:grid-rows-2", // Custom layout for 7
     8: "grid-cols-1 md:grid-cols-4 grid-rows-8 md:grid-rows-2",
     9: "grid-cols-1 md:grid-cols-3 grid-rows-9 md:grid-rows-3",
+    10: "grid-cols-1 md:grid-cols-4 grid-rows-10 md:grid-rows-3",
   };
 
   const gridClass = gridSetup[count] || "grid-cols-1 grid-rows-1";
@@ -67,6 +69,7 @@ export function FullscreenView({ onExit }: FullscreenViewProps) {
         {fullscreenSettings.planner && <ConferencePlanner fullscreen glass={glassEffect} />}
         {fullscreenSettings.calendar && <CalendarPanel fullscreen glass={glassEffect} />}
         {fullscreenSettings.sunMoon && <SunMoonPanel fullscreen glass={glassEffect} />}
+        {fullscreenSettings.weather && <WeatherPanel fullscreen glass={glassEffect} />}
       </div>
     </div>
   );
