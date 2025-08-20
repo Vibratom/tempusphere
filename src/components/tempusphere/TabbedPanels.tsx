@@ -8,7 +8,7 @@ import { StopwatchPanel } from "./StopwatchPanel"
 import { TimerPanel } from "./TimerPanel"
 import { ConverterPanel } from "./ConverterPanel";
 import { SettingsPanel } from "./SettingsPanel"
-import { Globe, AlarmClock, Timer, Hourglass, Settings, Scale, Users, CalendarDays, Sunrise, CloudSun } from 'lucide-react';
+import { Globe, AlarmClock, Timer, Hourglass, Settings, Scale, Users, CalendarDays } from 'lucide-react';
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { stopwatchHandle } from "./StopwatchPanel";
 import { timerHandle } from "./TimerPanel";
@@ -16,10 +16,8 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/
 import { Separator } from "../ui/separator";
 import { ConferencePlanner } from "./ConferencePlanner";
 import { CalendarPanel } from "./CalendarPanel";
-import { SunMoonPanel } from "./SunMoonPanel";
-import { WeatherPanel } from "./WeatherPanel";
 
-export const TABS = ['world-clocks', 'alarms', 'stopwatch', 'timer', 'converter', 'planner', 'calendar', 'sun-moon', 'weather'];
+export const TABS = ['world-clocks', 'alarms', 'stopwatch', 'timer', 'converter', 'planner', 'calendar'];
 
 interface TabbedPanelsProps {
     activeTab: string;
@@ -41,8 +39,6 @@ export function TabbedPanels({ activeTab, setActiveTab }: TabbedPanelsProps) {
     ['Alt+5', () => setActiveTab(TABS[4])],
     ['Alt+6', () => setActiveTab(TABS[5])],
     ['Alt+7', () => setActiveTab(TABS[6])],
-    ['Alt+8', () => setActiveTab(TABS[7])],
-    ['Alt+9', () => setActiveTab(TABS[8])],
     [' ', (e) => {
         if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
         if (activeTab === 'stopwatch') {
@@ -77,7 +73,7 @@ export function TabbedPanels({ activeTab, setActiveTab }: TabbedPanelsProps) {
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-5xl flex-1 flex flex-col">
           <TooltipProvider>
-          <TabsList className="grid w-full grid-cols-5 sm:grid-cols-9 h-auto">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 h-auto">
             <Tooltip>
               <TooltipTrigger asChild>
                 <TabsTrigger value="world-clocks" className="flex-col md:flex-row h-auto gap-2 py-2"><Globe/><span>World Clocks</span></TabsTrigger>
@@ -120,18 +116,6 @@ export function TabbedPanels({ activeTab, setActiveTab }: TabbedPanelsProps) {
               </TooltipTrigger>
               <TooltipContent><p>Alt + 7</p></TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <TabsTrigger value="sun-moon" className="flex-col md:flex-row h-auto gap-2 py-2"><Sunrise/><span>Sun & Moon</span></TabsTrigger>
-              </TooltipTrigger>
-              <TooltipContent><p>Alt + 8</p></TooltipContent>
-            </Tooltip>
-             <Tooltip>
-              <TooltipTrigger asChild>
-                <TabsTrigger value="weather" className="flex-col md:flex-row h-auto gap-2 py-2"><CloudSun/><span>Weather</span></TabsTrigger>
-              </TooltipTrigger>
-              <TooltipContent><p>Alt + 9</p></TooltipContent>
-            </Tooltip>
           </TabsList>
           </TooltipProvider>
           <Separator className="w-full my-4"/>
@@ -155,12 +139,6 @@ export function TabbedPanels({ activeTab, setActiveTab }: TabbedPanelsProps) {
           </TabsContent>
           <TabsContent value="calendar" className="animation-fade-in flex-1">
             <CalendarPanel />
-          </TabsContent>
-          <TabsContent value="sun-moon" className="animation-fade-in flex-1">
-            <SunMoonPanel />
-          </TabsContent>
-           <TabsContent value="weather" className="animation-fade-in flex-1">
-            <WeatherPanel />
           </TabsContent>
         </Tabs>
     )

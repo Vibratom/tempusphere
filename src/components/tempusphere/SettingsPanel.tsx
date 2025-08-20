@@ -292,14 +292,6 @@ export function SettingsPanel() {
             <Label htmlFor="fs-calendar">Show Calendar</Label>
             <Switch id="fs-calendar" checked={fullscreenSettings.calendar} onCheckedChange={(c) => handleFullscreenSettingChange('calendar', c)} />
           </div>
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <Label htmlFor="fs-sun-moon">Show Sun & Moon</Label>
-            <Switch id="fs-sun-moon" checked={fullscreenSettings.sunMoon} onCheckedChange={(c) => handleFullscreenSettingChange('sunMoon', c)} />
-          </div>
-           <div className="grid grid-cols-2 gap-4 items-center">
-            <Label htmlFor="fs-weather">Show Weather</Label>
-            <Switch id="fs-weather" checked={fullscreenSettings.weather} onCheckedChange={(c) => handleFullscreenSettingChange('weather', c)} />
-          </div>
         </div>
       </ScrollArea>
   );
