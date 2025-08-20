@@ -10,13 +10,16 @@ export interface AlarmSound {
 }
 
 export const alarmSounds: AlarmSound[] = [
-  { name: 'Beep', type: 'synth' },
-  { name: 'Synth', type: 'synth' },
-  { name: 'Triangle', type: 'synth' },
-  { name: 'Chime', type: 'synth' },
-  { name: 'Digital', type: 'synth' },
-  { name: 'My Sound 1', type: 'file', path: '/sounds/alarm1.mp3' },
-  { name: 'My Sound 2', type: 'file', path: '/sounds/alarm2.mp3' },
+  { name: 'Audio 1', type: 'file', path: '/sounds/1.ogg' },
+  { name: 'Audio 2', type: 'file', path: '/sounds/2.ogg' },
+  { name: 'Audio 3', type: 'file', path: '/sounds/3.ogg' },
+  { name: 'Audio 4', type: 'file', path: '/sounds/4.ogg' },
+  { name: 'Audio 5', type: 'file', path: '/sounds/5.ogg' },
+  { name: 'Audio 6', type: 'file', path: '/sounds/6.ogg' },
+  { name: 'Audio 7', type: 'file', path: '/sounds/7.ogg' },
+  { name: 'Audio 8', type: 'file', path: '/sounds/8.ogg' },
+  { name: 'Audio 9', type: 'file', path: '/sounds/9.ogg' },
+  { name: 'Audio 10', type: 'file', path: '/sounds/10.ogg' },
 ];
 
 let synth: Tone.Synth | null = null;
