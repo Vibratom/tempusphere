@@ -16,6 +16,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="google-adsense-account" content="ca-pub-7561051982920418" />
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7561051982920418" crossOrigin="anonymous"></script>
         <link rel="icon" href="/logo.webp?v=2" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
