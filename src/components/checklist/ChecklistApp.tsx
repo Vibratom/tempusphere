@@ -28,6 +28,8 @@ import { Calendar } from '../ui/calendar';
 import { format, formatDistanceToNow, isPast, startOfDay } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 
 
 type Priority = 'none' | 'low' | 'medium' | 'high';
@@ -57,6 +59,7 @@ interface NewTaskState {
 interface ListState {
     filter: string;
     sortBy: SortBy;
+    showCompleted: boolean;
 }
 
 const findTask = (tasks: Task[], taskId: string): Task | null => {
@@ -74,14 +77,14 @@ const findParent = (tasks: Task[], taskId: string): {parent: Task, tasks: Task[]
         const found = findParent(task.subtasks, taskId);
         if (found) return found;
     }
-    return null;
+    return { parent: null, tasks: tasks };
 }
 
 export function ChecklistApp() {
   const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV4', []);
   const [newListName, setNewListName] = useState('');
   const [newTaskState, setNewTaskState] = useState<Record<string, NewTaskState>>({});
-  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV2', {});
+  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV3', {});
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -157,7 +160,7 @@ export function ChecklistApp() {
   };
   
   const handleListStateChange = (id: string, part: Partial<ListState>) => {
-      setListStates(prev => ({ ...prev, [id]: { ...(prev[id] || { filter: '', sortBy: 'manual' }), ...part }}));
+      setListStates(prev => ({ ...prev, [id]: { ...(prev[id] || { filter: '', sortBy: 'manual', showCompleted: false }), ...part }}));
   }
 
   const addList = () => {
@@ -187,10 +190,19 @@ export function ChecklistApp() {
   };
 
   const toggleTask = (listId: string, taskId: string) => {
-    setLists(lists.map(list => list.id === listId
-        ? { ...list, tasks: findAndModifyTask(list.tasks, taskId, (task) => ({...task, completed: !task.completed})) }
-        : list
-    ));
+    setLists(lists.map(list => {
+      if (list.id === listId) {
+        let newTasks = findAndModifyTask(list.tasks, taskId, (task) => {
+          const newCompleted = !task.completed;
+          const updateSubtasks = (subtasks: Task[]): Task[] => {
+            return subtasks.map(st => ({ ...st, completed: newCompleted, subtasks: updateSubtasks(st.subtasks) }));
+          };
+          return { ...task, completed: newCompleted, subtasks: updateSubtasks(task.subtasks) };
+        });
+        return { ...list, tasks: newTasks };
+      }
+      return list;
+    }));
   };
   
   const setTaskPriority = (listId: string, taskId: string, priority: Priority) => {
@@ -217,16 +229,7 @@ export function ChecklistApp() {
     const { source, destination, draggableId, type } = result;
     if (!destination) return;
   
-    if (type === 'LIST') {
-      const reorderedLists = Array.from(lists);
-      const [removed] = reorderedLists.splice(source.index, 1);
-      reorderedLists.splice(destination.index, 0, removed);
-      setLists(reorderedLists);
-      return;
-    }
-  
-    // Handle task dragging
-    const listId = type.split('-')[1];
+    const listId = source.droppableId.split('-')[1]
     const list = lists.find(l => l.id === listId);
     if (!list) return;
   
@@ -237,47 +240,47 @@ export function ChecklistApp() {
       return result;
     };
   
-    // If source and destination are the same droppable
-    if (source.droppableId === destination.droppableId) {
-      if(source.droppableId === `tasks-${listId}-0`) { // Top-level tasks
-        const newTasks = reorder(list.tasks, source.index, destination.index);
-        setLists(lists.map(l => l.id === listId ? {...l, tasks: newTasks} : l));
-      } else { // Sub-tasks
-        const parentId = source.droppableId.split('-')[2];
-        const newTasks = findAndModifyTask(list.tasks, parentId, (task) => ({
-            ...task,
-            subtasks: reorder(task.subtasks, source.index, destination.index)
+    let newTasks = [...list.tasks];
+
+    if (source.droppableId === destination.droppableId) { // Reordering within the same list
+      const parentId = source.droppableId.split('-')[2];
+      if (parentId === '0') { // Top-level
+        newTasks = reorder(newTasks, source.index, destination.index);
+      } else { // Sub-task level
+        newTasks = findAndModifyTask(newTasks, parentId, task => ({
+          ...task,
+          subtasks: reorder(task.subtasks, source.index, destination.index),
         }));
-        setLists(lists.map(l => l.id === listId ? {...l, tasks: newTasks} : l));
       }
-    } else { // Moving between different levels (e.g., subtask to main task)
-        let sourceTasks: Task[];
-        let destTasks: Task[];
-        const taskToMove = findTask(list.tasks, draggableId);
-        if(!taskToMove) return;
+    } else { // Moving between lists/levels
+      const taskToMove = findTask(list.tasks, draggableId);
+      if(!taskToMove) return;
 
-        // Remove from source
-        let newTasks = findAndModifyTask(list.tasks, draggableId, () => null);
+      // Remove from source
+      const sourceParentId = source.droppableId.split('-')[2];
+      if (sourceParentId === '0') {
+        newTasks = newTasks.filter(t => t.id !== draggableId);
+      } else {
+        newTasks = findAndModifyTask(newTasks, sourceParentId, task => ({
+          ...task,
+          subtasks: task.subtasks.filter(st => st.id !== draggableId),
+        }));
+      }
 
-        // Find parent of source
-        const sourceParentInfo = findParent(list.tasks, draggableId);
-        
-        // Add to destination
-        const destParentId = destination.droppableId.split('-')[2];
-        if(destination.droppableId === `tasks-${listId}-0`) { // Dropped at root
-            const newRootTasks = [...newTasks];
-            newRootTasks.splice(destination.index, 0, taskToMove);
-            newTasks = newRootTasks;
-        } else { // Dropped into a subtask list
-             newTasks = findAndModifyTask(newTasks, destParentId, (parentTask) => {
-                const newSubtasks = [...parentTask.subtasks];
-                newSubtasks.splice(destination.index, 0, taskToMove);
-                return {...parentTask, subtasks: newSubtasks};
-             });
-        }
-       setLists(lists.map(l => l.id === listId ? {...l, tasks: newTasks} : l));
+      // Add to destination
+      const destParentId = destination.droppableId.split('-')[2];
+      if (destParentId === '0') {
+        newTasks.splice(destination.index, 0, taskToMove);
+      } else {
+        newTasks = findAndModifyTask(newTasks, destParentId, task => {
+          const newSubtasks = [...task.subtasks];
+          newSubtasks.splice(destination.index, 0, taskToMove);
+          return { ...task, subtasks: newSubtasks };
+        });
+      }
     }
-    
+
+    setLists(lists.map(l => l.id === listId ? { ...l, tasks: newTasks } : l));
     handleListStateChange(listId, { sortBy: 'manual' });
   };
   
@@ -318,7 +321,7 @@ export function ChecklistApp() {
   }
 
   const getFilteredAndSortedTasks = (tasks: Task[], listId: string): Task[] => {
-    const state = listStates[listId] || { filter: '', sortBy: 'manual' };
+    const state = listStates[listId] || { filter: '', sortBy: 'manual', showCompleted: false };
     
     // Recursive sort function
     const sortTasks = (tasksToSort: Task[]): Task[] => {
@@ -347,15 +350,18 @@ export function ChecklistApp() {
     let processedTasks = sortTasks(tasks);
 
     // Recursive filter function
-    const filterTasks = (tasksToFilter: Task[]): Task[] => {
-        if (!state.filter) return tasksToFilter;
-        
+    const filterTasks = (tasksToFilter: Task[], isTopLevel = true): Task[] => {
         return tasksToFilter.reduce((acc, task) => {
-            const hasMatchingSubtask = task.subtasks && filterTasks(task.subtasks).length > 0;
-            if (task.text.toLowerCase().includes(state.filter.toLowerCase()) || hasMatchingSubtask) {
+            const subtasks = filterTasks(task.subtasks, false);
+            
+            const matchesFilter = !state.filter || task.text.toLowerCase().includes(state.filter.toLowerCase());
+            const hasVisibleSubtask = subtasks.length > 0;
+            const isVisible = !task.completed || state.showCompleted;
+
+            if ((matchesFilter || hasVisibleSubtask) && (isTopLevel ? isVisible : true)) {
                 acc.push({
                     ...task,
-                    subtasks: filterTasks(task.subtasks),
+                    subtasks,
                 });
             }
             return acc;
@@ -365,25 +371,26 @@ export function ChecklistApp() {
     return filterTasks(processedTasks);
   }
 
-  const renderTasks = (tasks: Task[], listId: string, parentDroppableId: string) => {
-    const listState = listStates[listId] || { filter: '', sortBy: 'manual' };
+  const renderTasks = (tasks: Task[], listId: string, parentId: string) => {
+    const listState = listStates[listId] || { filter: '', sortBy: 'manual', showCompleted: false };
     const isDragDisabled = listState.sortBy !== 'manual';
+    const droppableId = `tasks-${listId}-${parentId}`;
 
     return (
-      <Droppable droppableId={parentDroppableId} type={`TASK-${listId}`} isDropDisabled={isDragDisabled}>
-        {(provided) => (
-          <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-3">
+      <Droppable droppableId={droppableId} type={`TASK`} isDropDisabled={isDragDisabled}>
+        {(provided, snapshot) => (
+          <div ref={provided.innerRef} {...provided.droppableProps} className={cn("space-y-3", snapshot.isDraggingOver && 'bg-muted/50 rounded-md')}>
             {tasks.map((task, index) => (
               <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={isDragDisabled}>
                 {(provided, snapshot) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.draggableProps}
-                    className={cn('group/task', snapshot.isDragging && 'shadow-lg rounded-lg bg-background')}
+                    className={cn('group/task animation-fade-in', snapshot.isDragging && 'shadow-lg rounded-lg bg-background p-2')}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3 flex-1">
-                        {!isDragDisabled && <span {...provided.dragHandleProps} className="pt-1 cursor-grab opacity-30 group-hover/task:opacity-100"><GripVertical className="h-4 w-4"/></span>}
+                        {!isDragDisabled && <span {...provided.dragHandleProps} className="pt-1 cursor-grab opacity-30 group-hover/task:opacity-100 transition-opacity"><GripVertical className="h-4 w-4"/></span>}
                         <Checkbox id={`task-${task.id}`} checked={task.completed} onCheckedChange={() => toggleTask(listId, task.id)} className="mt-1" />
                         <div className="flex-1 space-y-1">
                           <label htmlFor={`task-${task.id}`} className={cn("text-sm font-medium leading-none cursor-pointer", task.completed && "line-through text-muted-foreground")}>
@@ -391,8 +398,8 @@ export function ChecklistApp() {
                             <DueDateDisplay dueDate={task.dueDate} />
                           </label>
                            {task.subtasks && task.subtasks.length > 0 && 
-                            <div className="pt-2">
-                                {renderTasks(task.subtasks, listId, `subtasks-${task.id}`)}
+                            <div className="pt-2 pl-4">
+                                {renderTasks(task.subtasks, listId, task.id)}
                             </div>
                           }
                           <div className={cn("flex items-center gap-2 transition-opacity duration-200", task.completed ? "opacity-0 h-0" : "opacity-0 group-hover/task:opacity-100")}>
@@ -466,97 +473,96 @@ export function ChecklistApp() {
       
       <DragDropContext onDragEnd={onDragEnd}>
         {lists.length > 0 ? (
-          <Droppable droppableId="all-lists" direction="horizontal" type="LIST">
-            {(provided) => (
-                <div 
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start"
-                >
-                {sortedLists.map((list, index) => {
-                    const { completed: completedTasks, total: totalTasks } = calculateProgress(list.tasks);
-                    const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-                    const isAllComplete = totalTasks > 0 && completedTasks === totalTasks;
-                    const listState = listStates[list.id] || { filter: '', sortBy: 'manual' };
-                    const finalTasks = getFilteredAndSortedTasks(list.tasks, list.id);
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
+            {sortedLists.map((list) => {
+                const { completed: completedTasks, total: totalTasks } = calculateProgress(list.tasks);
+                const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+                const isAllComplete = totalTasks > 0 && completedTasks === totalTasks;
+                const listState = listStates[list.id] || { filter: '', sortBy: 'manual', showCompleted: false };
+                const finalTasks = getFilteredAndSortedTasks(list.tasks, list.id);
 
-                    return (
-                        <Draggable key={list.id} draggableId={list.id} index={index}>
-                           {(provided, snapshot) => (
-                                <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                >
-                                <Card className={cn("flex flex-col transition-opacity", isAllComplete && "opacity-60", snapshot.isDragging && "shadow-2xl")}>
-                                    <CardHeader className="flex flex-row items-start justify-between cursor-grab" {...provided.dragHandleProps}>
-                                    <div>
-                                        <CardTitle>{list.title}</CardTitle>
-                                        {totalTasks > 0 && (
-                                            <p className="text-sm text-muted-foreground mt-1">
-                                            {completedTasks} / {totalTasks} completed
-                                            </p>
-                                        )}
-                                    </div>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This will permanently delete the "{list.title}" list and all its tasks. This action cannot be undone.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => removeList(list.id)}>Delete</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                    </CardHeader>
-                                    {totalTasks > 0 && 
-                                    <div className="px-6 pb-2">
-                                        <Progress value={progress} />
-                                    </div>
-                                    }
-                                    <CardContent className="flex-1 flex flex-col gap-4">
-                                    <div className="flex gap-2">
-                                        <Input
-                                        placeholder="Add a new task..."
-                                        value={newTaskState[list.id]?.text || ''}
-                                        onChange={(e) => handleNewTaskChange(list.id, { text: e.target.value })}
-                                        onKeyDown={(e) => e.key === 'Enter' && addTask(list.id)}
-                                        />
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button variant="outline" size="icon" className={cn(newTaskState[list.id]?.dueDate && 'text-primary')}>
-                                                    <CalendarIcon className="h-4 w-4"/>
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0">
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={newTaskState[list.id]?.dueDate}
-                                                    onSelect={(date) => handleNewTaskChange(list.id, { dueDate: date })}
-                                                    initialFocus
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-                                        <Button size="icon" onClick={() => addTask(list.id)}><Plus className="h-4 w-4"/></Button>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <div className="relative flex-1">
-                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                            <Input 
-                                                placeholder="Filter tasks..."
-                                                value={listState.filter}
-                                                onChange={(e) => handleListStateChange(list.id, { filter: e.target.value })}
-                                                className="pl-8"
+                return (
+                    <Draggable key={list.id} draggableId={list.id} index={lists.findIndex(l => l.id === list.id)}>
+                       {(provided, snapshot) => (
+                            <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                            >
+                            <Card className={cn("flex flex-col transition-opacity", isAllComplete && "opacity-60", snapshot.isDragging && "shadow-2xl")}>
+                                <CardHeader className="flex flex-row items-start justify-between cursor-grab" {...provided.dragHandleProps}>
+                                <div>
+                                    <CardTitle>{list.title}</CardTitle>
+                                    {totalTasks > 0 && (
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                        {completedTasks} / {totalTasks} completed
+                                        </p>
+                                    )}
+                                </div>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This will permanently delete the "{list.title}" list and all its tasks. This action cannot be undone.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => removeList(list.id)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                </CardHeader>
+                                {totalTasks > 0 && 
+                                <div className="px-6 pb-2">
+                                    <Progress value={progress} />
+                                </div>
+                                }
+                                <CardContent className="flex-1 flex flex-col gap-4">
+                                <div className="flex gap-2">
+                                    <Input
+                                    placeholder="Add a new task..."
+                                    value={newTaskState[list.id]?.text || ''}
+                                    onChange={(e) => handleNewTaskChange(list.id, { text: e.target.value })}
+                                    onKeyDown={(e) => e.key === 'Enter' && addTask(list.id)}
+                                    />
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" size="icon" className={cn(newTaskState[list.id]?.dueDate && 'text-primary')}>
+                                                <CalendarIcon className="h-4 w-4"/>
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0">
+                                            <Calendar
+                                                mode="single"
+                                                selected={newTaskState[list.id]?.dueDate}
+                                                onSelect={(date) => handleNewTaskChange(list.id, { dueDate: date })}
+                                                initialFocus
                                             />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Button size="icon" onClick={() => addTask(list.id)}><Plus className="h-4 w-4"/></Button>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                                    <div className="relative flex-1 w-full">
+                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input 
+                                            placeholder="Filter tasks..."
+                                            value={listState.filter}
+                                            onChange={(e) => handleListStateChange(list.id, { filter: e.target.value })}
+                                            className="pl-8"
+                                        />
+                                    </div>
+                                    <div className="flex w-full sm:w-auto items-center justify-between gap-2">
+                                        <div className="flex items-center space-x-2">
+                                            <Switch id={`show-completed-${list.id}`} checked={listState.showCompleted} onCheckedChange={(val) => handleListStateChange(list.id, { showCompleted: val })}/>
+                                            <Label htmlFor={`show-completed-${list.id}`} className="text-sm">Show Done</Label>
                                         </div>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -576,29 +582,27 @@ export function ChecklistApp() {
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
-                                    
-                                    <Separator />
-
-                                    <ScrollArea className="flex-1 h-64 -mr-4">
-                                        <div className="pr-4">
-                                        {finalTasks.length > 0 ? renderTasks(finalTasks, list.id, `tasks-${list.id}-0`) : (
-                                            <p className="text-sm text-muted-foreground text-center pt-4">
-                                                {list.tasks.length > 0 ? "No tasks match your filter." : "No tasks yet. Add one above!"}
-                                            </p>
-                                        )}
-                                        </div>
-                                    </ScrollArea>
-                                    </CardContent>
-                                </Card>
                                 </div>
-                           )}
-                        </Draggable>
-                    )
-                })}
-                {provided.placeholder}
-                </div>
-            )}
-            </Droppable>
+                                
+                                <Separator />
+
+                                <ScrollArea className="flex-1 h-64 -mr-4">
+                                    <div className="pr-4">
+                                    {finalTasks.length > 0 ? renderTasks(finalTasks, list.id, '0') : (
+                                        <p className="text-sm text-muted-foreground text-center pt-4">
+                                            {list.tasks.length > 0 ? "No tasks match your filter." : "No tasks yet. Add one above!"}
+                                        </p>
+                                    )}
+                                    </div>
+                                </ScrollArea>
+                                </CardContent>
+                            </Card>
+                            </div>
+                       )}
+                    </Draggable>
+                )
+            })}
+            </div>
         ) : (
             <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
                 <ListChecks className="w-16 h-16 mb-4" />
@@ -610,3 +614,5 @@ export function ChecklistApp() {
     </div>
   );
 }
+
+    
