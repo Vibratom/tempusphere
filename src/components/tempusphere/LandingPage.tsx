@@ -1,7 +1,7 @@
 
 'use client';
 
-import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Wand2 } from "lucide-react";
+import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Wand2, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { Footer } from "./Footer";
 import { Button } from "../ui/button";
@@ -50,6 +50,11 @@ const features = [
         description: 'Keep track of your personal events. Add, view, and manage your schedule right within the app.',
     },
     {
+        icon: <Briefcase className="w-8 h-8 text-primary" />,
+        title: 'Comprehensive Event Management',
+        description: 'Plan your day with a detailed calendar. Add events with specific times and descriptions to stay organized.',
+    },
+    {
         icon: <Settings className="w-8 h-8 text-primary" />,
         title: 'Deep Customization',
         description: 'Personalize the look and feel with color pickers, background images, and light/dark themes.',
@@ -74,7 +79,7 @@ export function LandingPage() {
                         </div>
                         <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4">Welcome to Tempusphere</h1>
                         <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-                            Your all-in-one solution for time management. From world clocks to conference planning, Tempusphere provides the tools you need to stay organized and productive across timezones.
+                            Your all-in-one solution for time management and event planning. From world clocks to a detailed personal calendar, Tempusphere provides the tools you need to stay organized and productive.
                         </p>
                         <Button asChild size="lg">
                             <Link href="/app">Launch App</Link>
