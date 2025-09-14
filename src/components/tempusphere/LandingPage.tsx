@@ -76,6 +76,7 @@ const otherPlatforms = [
     { name: 'Gridify', category: 'Spreadsheets', icon: Table, href: '#', color: 'bg-emerald-500 hover:bg-emerald-600' },
     { name: 'Epicure', category: 'Recipes', icon: UtensilsCrossed, href: '#', color: 'bg-yellow-500 hover:bg-yellow-600' },
     { name: 'NexusFlow', category: 'Projects', icon: KanbanSquare, href: '#', color: 'bg-rose-500 hover:bg-rose-600' },
+    { name: 'Checklist', category: 'To-Do List', icon: ListChecks, href: '#', color: 'bg-blue-500 hover:bg-blue-600' },
 ]
 
 
@@ -105,7 +106,7 @@ export function LandingPage() {
                         <p className="max-w-3xl mx-auto text-lg text-muted-foreground mb-8">
                             A collection of powerful utilities to help with daily tasks.
                         </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 max-w-5xl mx-auto">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-3 max-w-5xl mx-auto">
                             {otherPlatforms.map(p => <PlatformLink key={p.name} {...p} />)}
                         </div>
                     </div>
