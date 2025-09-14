@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell, Repeat, Palette, MoreVertical, Upload, Download } from 'lucide-react';
+import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell, Repeat, Palette, MoreVertical, Upload, Download, Star, Sparkles, CheckCircle2, FileText, Share2, AlertCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -86,6 +86,19 @@ const findTask = (tasks: Task[], taskId: string): Task | null => {
     }
     return null;
 }
+
+const featureList = [
+    { icon: <CheckCircle2 className="h-5 w-5 text-green-500" />, title: 'Full Task Management', description: 'Create, edit, delete, and complete tasks with ease.' },
+    { icon: <ListChecks className="h-5 w-5 text-blue-500" />, title: 'Sub-task Hierarchy', description: 'Break down complex tasks into smaller, manageable sub-tasks.' },
+    { icon: <GripVertical className="h-5 w-5 text-gray-500" />, title: 'Drag & Drop Reordering', description: 'Manually organize your tasks and sub-tasks exactly how you want them.' },
+    { icon: <ArrowDownUp className="h-5 w-5 text-purple-500" />, title: 'Advanced Sorting', description: 'Sort tasks by priority, due date, or creation date to focus on what matters most.' },
+    { icon: <Flag className="h-5 w-5 text-red-500" />, title: 'Task Priorities', description: 'Assign priorities (High, Medium, Low) to highlight important tasks.' },
+    { icon: <Repeat className="h-5 w-5 text-teal-500" />, title: 'Recurring Tasks', description: 'Set up daily recurring tasks for your habits and routines.' },
+    { icon: <Bell className="h-5 w-5 text-yellow-500" />, title: 'Task Reminders', description: 'Get browser notifications for tasks that are due today.' },
+    { icon: <CalendarIcon className="h-5 w-5 text-indigo-500" />, title: 'Calendar Integration', description: 'Tasks with a due date automatically appear in your main Tempusphere calendar.' },
+    { icon: <Palette className="h-5 w-5 text-pink-500" />, title: 'Custom List Themes', description: 'Personalize each checklist with a unique color theme for better organization.' },
+    { icon: <FileText className="h-5 w-5 text-orange-500" />, title: 'Human-Readable Export/Import', description: 'Backup and restore your data using a simple, editable .txt file format.' },
+];
 
 export function ChecklistApp() {
   const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV7', []);
@@ -989,8 +1002,25 @@ export function ChecklistApp() {
             </div>
         )}
       </DragDropContext>
+      
+       <Card className="mt-12">
+            <CardHeader>
+                <CardTitle>Features Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <ul className="space-y-4">
+                    {featureList.map((feature, index) => (
+                        <li key={index} className="flex items-start gap-4">
+                            <div className="flex-shrink-0 mt-1">{feature.icon}</div>
+                            <div>
+                                <h4 className="font-semibold">{feature.title}</h4>
+                                <p className="text-sm text-muted-foreground">{feature.description}</p>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            </CardContent>
+        </Card>
     </div>
   );
 }
-
-    
