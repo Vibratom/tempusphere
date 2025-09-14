@@ -1,7 +1,7 @@
 
 'use client';
 
-import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Landmark, BrainCircuit, DraftingCompass, KanbanSquare, FileText } from "lucide-react";
+import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Landmark, BrainCircuit, DraftingCompass, KanbanSquare, FileText, Table } from "lucide-react";
 import Link from "next/link";
 import { Footer } from "./Footer";
 import { Button } from "../ui/button";
@@ -53,8 +53,8 @@ const features = [
     },
     {
         icon: <CalendarDays className="w-5 h-5 text-primary" />,
-        title: 'Personal Calendar',
-        description: 'Keep track of your personal events with specific times and descriptions.',
+        title: 'Comprehensive Event Management',
+        description: 'A robust personal calendar to keep track of your events with specific times and descriptions.',
     },
     {
         icon: <Settings className="w-5 h-5 text-primary" />,
@@ -74,6 +74,7 @@ const otherPlatforms = [
     { name: 'Canvas', category: 'Whiteboard', icon: DraftingCompass, href: '#', color: 'bg-sky-500 hover:bg-sky-600' },
     { name: 'NexusFlow', category: 'Projects', icon: KanbanSquare, href: '#', color: 'bg-rose-500 hover:bg-rose-600' },
     { name: 'Scribe', category: 'Notes', icon: FileText, href: '#', color: 'bg-gray-500 hover:bg-gray-600' },
+    { name: 'Gridify', category: 'Spreadsheets', icon: Table, href: '#', color: 'bg-emerald-500 hover:bg-emerald-600' },
 ]
 
 
@@ -103,7 +104,7 @@ export function LandingPage() {
                         <p className="max-w-3xl mx-auto text-lg text-muted-foreground mb-8">
                             A collection of powerful utilities to help with daily tasks.
                         </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-3 max-w-4xl mx-auto">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-6 gap-3 max-w-4xl mx-auto">
                             {otherPlatforms.map(p => <PlatformLink key={p.name} {...p} />)}
                         </div>
                     </div>
