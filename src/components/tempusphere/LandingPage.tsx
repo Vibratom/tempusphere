@@ -10,59 +10,54 @@ import { Header } from "./Header";
 
 const features = [
     {
-        icon: <Clock className="w-8 h-8 text-primary" />,
+        icon: <Clock className="w-6 h-6 text-primary" />,
         title: 'Customizable Primary Clock',
-        description: 'Choose between analog and digital modes. Display local or UTC time with optional seconds, all tailored to your preference.',
+        description: 'Choose between analog and digital modes, local or UTC time, with optional seconds.',
     },
     {
-        icon: <Globe className="w-8 h-8 text-primary" />,
+        icon: <Globe className="w-6 h-6 text-primary" />,
         title: 'World Clock Dashboard',
-        description: 'Add and manage clocks for multiple cities and timezones. Your selections are saved locally for your convenience.',
+        description: 'Add and manage clocks for multiple timezones, saved locally for convenience.',
     },
     {
-        icon: <AlarmClock className="w-8 h-8 text-primary" />,
+        icon: <AlarmClock className="w-6 h-6 text-primary" />,
         title: 'Alarm System',
-        description: 'Set multiple alarms with custom names and sounds. Never miss an important event again.',
+        description: 'Set multiple alarms with custom names and a variety of sounds.',
     },
     {
-        icon: <Hourglass className="w-8 h-8 text-primary" />,
+        icon: <Hourglass className="w-6 h-6 text-primary" />,
         title: 'Precision Stopwatch',
-        description: 'A high-precision stopwatch with start, stop, lap, and reset functions, perfect for timing any activity.',
+        description: 'A high-precision stopwatch with start, stop, lap, and reset functions.',
     },
     {
-        icon: <Timer className="w-8 h-8 text-primary" />,
+        icon: <Timer className="w-6 h-6 text-primary" />,
         title: 'Countdown Timer',
-        description: 'Set a countdown for any duration. An alarm will sound when the time is up, ideal for focus sessions or reminders.',
+        description: 'Set a countdown for any duration. An alarm sounds when time is up.',
     },
     {
-        icon: <Scale className="w-8 h-8 text-primary" />,
+        icon: <Scale className="w-6 h-6 text-primary" />,
         title: 'Timezone Converter',
-        description: 'Easily convert any time and date from one timezone to multiple others simultaneously.',
+        description: 'Easily convert any time and date across multiple timezones simultaneously.',
     },
     {
-        icon: <Users className="w-8 h-8 text-primary" />,
+        icon: <Users className="w-6 h-6 text-primary" />,
         title: 'Conference Planner',
-        description: 'Find the ideal meeting time across several timezones, highlighting optimal slots during business hours.',
+        description: 'Find ideal meeting times across several timezones, highlighting business hours.',
     },
     {
-        icon: <CalendarDays className="w-8 h-8 text-primary" />,
+        icon: <CalendarDays className="w-6 h-6 text-primary" />,
         title: 'Personal Calendar',
-        description: 'Keep track of your personal events. Add, view, and manage your schedule right within the app.',
+        description: 'Keep track of your personal events with specific times and descriptions.',
     },
     {
-        icon: <Briefcase className="w-8 h-8 text-primary" />,
-        title: 'Comprehensive Event Management',
-        description: 'Plan your day with a detailed calendar. Add events with specific times and descriptions to stay organized.',
-    },
-    {
-        icon: <Settings className="w-8 h-8 text-primary" />,
+        icon: <Settings className="w-6 h-6 text-primary" />,
         title: 'Deep Customization',
-        description: 'Personalize the look and feel with color pickers, background images, and light/dark themes.',
+        description: 'Personalize the look with themes, background images, and custom colors.',
     },
     {
-        icon: <Expand className="w-8 h-8 text-primary" />,
+        icon: <Expand className="w-6 h-6 text-primary" />,
         title: 'Fullscreen Dashboard',
-        description: 'Enter a distraction-free fullscreen mode. You choose which panels are visible for a focused experience.',
+        description: 'A distraction-free, customizable view of your most important panels.',
     }
 ];
 
@@ -90,14 +85,16 @@ export function LandingPage() {
                 <section className="py-16 md:py-20 bg-secondary/30">
                     <div className="container mx-auto px-4">
                         <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">Features at a Glance</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                             {features.map((feature, index) => (
-                                <div key={index} className="bg-card p-6 rounded-lg shadow-sm border">
-                                    <div className="flex items-center gap-4 mb-3">
-                                        {feature.icon}
-                                        <h3 className="text-xl font-semibold">{feature.title}</h3>
+                                <div key={index} className="group relative flex items-start gap-4">
+                                    <div className="flex-shrink-0 mt-1 p-2 bg-background rounded-full border shadow-sm">
+                                      {feature.icon}
                                     </div>
-                                    <p className="text-muted-foreground text-sm">{feature.description}</p>
+                                    <div>
+                                        <h3 className="text-lg font-semibold">{feature.title}</h3>
+                                        <p className="text-muted-foreground text-sm mt-1">{feature.description}</p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
