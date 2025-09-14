@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp } from 'lucide-react';
+import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -25,11 +25,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
-import { format, formatDistanceToNow, isPast, startOfDay } from 'date-fns';
+import { format, formatDistanceToNow, isPast, startOfDay, isToday } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 
 type Priority = 'none' | 'low' | 'medium' | 'high';
@@ -71,36 +72,73 @@ const findTask = (tasks: Task[], taskId: string): Task | null => {
     return null;
 }
 
-const findParent = (tasks: Task[], taskId: string): {parent: Task, tasks: Task[]} | {parent: null, tasks: Task[]} | null => {
-    for (const task of tasks) {
-        if (task.subtasks.some(st => st.id === taskId)) return { parent: task, tasks: task.subtasks };
-        const found = findParent(task.subtasks, taskId);
-        if (found) return found;
-    }
-    return { parent: null, tasks: tasks };
-}
-
 export function ChecklistApp() {
   const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV4', []);
   const [newListName, setNewListName] = useState('');
   const [newTaskState, setNewTaskState] = useState<Record<string, NewTaskState>>({});
   const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV3', {});
   const [isClient, setIsClient] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState('default');
+  const [notifiedTasks, setNotifiedTasks] = useLocalStorage<string[]>('checklist:notifiedTasks', []);
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsClient(true);
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+        setNotificationPermission(Notification.permission);
+    }
   }, []);
 
-  const recursivelyUpdateTasks = (tasks: Task[], updater: (task: Task) => Task): Task[] => {
-    return tasks.map(task => {
-        const updatedTask = updater(task);
-        if (updatedTask.subtasks.length > 0) {
-            updatedTask.subtasks = recursivelyUpdateTasks(updatedTask.subtasks, updater);
-        }
-        return updatedTask;
+  // Reminder effect
+  useEffect(() => {
+    if (notificationPermission !== 'granted') return;
+
+    const checkReminders = () => {
+        const today = startOfDay(new Date());
+        lists.forEach(list => {
+            const findTasksDueToday = (tasks: Task[]) => {
+                tasks.forEach(task => {
+                    if (task.dueDate && !task.completed && !notifiedTasks.includes(task.id)) {
+                        const dueDate = startOfDay(new Date(task.dueDate));
+                        if (isToday(dueDate)) {
+                            new Notification('Task Due Today!', {
+                                body: `Your task "${task.text}" from the list "${list.title}" is due today.`,
+                                icon: '/logo.webp'
+                            });
+                            setNotifiedTasks(prev => [...prev, task.id]);
+                        }
+                    }
+                    if (task.subtasks.length > 0) {
+                        findTasksDueToday(task.subtasks);
+                    }
+                });
+            }
+            findTasksDueToday(list.tasks);
+        });
+        
+        // Clean up old notified tasks
+        const startOfYesterday = startOfDay(new Date(today.getTime() - 86400000));
+        setNotifiedTasks(prev => prev.filter(taskId => {
+            const task = findTask(lists.flatMap(l => l.tasks), taskId);
+            if (!task || !task.dueDate) return false;
+            return new Date(task.dueDate) >= startOfYesterday;
+        }));
+    };
+
+    // Check once on load, then every hour
+    checkReminders();
+    const intervalId = setInterval(checkReminders, 1000 * 60 * 60);
+
+    return () => clearInterval(intervalId);
+  }, [lists, notificationPermission, notifiedTasks, setNotifiedTasks]);
+  
+  const requestNotificationPermission = () => {
+    Notification.requestPermission().then((permission) => {
+      setNotificationPermission(permission);
+      toast({ title: 'Notification Permission', description: `Permission ${permission}.` });
     });
   };
-  
+
   const findAndModifyTask = (tasks: Task[], taskId: string, modifier: (task: Task) => Task | null): Task[] => {
     return tasks.reduce((acc, task) => {
         if (task.id === taskId) {
@@ -226,10 +264,10 @@ export function ChecklistApp() {
   };
 
   const onDragEnd: OnDragEndResponder = (result) => {
-    const { source, destination, draggableId, type } = result;
+    const { source, destination, draggableId } = result;
     if (!destination) return;
   
-    const listId = source.droppableId.split('-')[1]
+    const listId = source.droppableId.split('-')[1];
     const list = lists.find(l => l.id === listId);
     if (!list) return;
   
@@ -242,42 +280,30 @@ export function ChecklistApp() {
   
     let newTasks = [...list.tasks];
 
-    if (source.droppableId === destination.droppableId) { // Reordering within the same list
-      const parentId = source.droppableId.split('-')[2];
-      if (parentId === '0') { // Top-level
-        newTasks = reorder(newTasks, source.index, destination.index);
-      } else { // Sub-task level
-        newTasks = findAndModifyTask(newTasks, parentId, task => ({
-          ...task,
-          subtasks: reorder(task.subtasks, source.index, destination.index),
-        }));
-      }
-    } else { // Moving between lists/levels
-      const taskToMove = findTask(list.tasks, draggableId);
-      if(!taskToMove) return;
+    const taskToMove = findTask(list.tasks, draggableId);
+    if (!taskToMove) return;
 
-      // Remove from source
-      const sourceParentId = source.droppableId.split('-')[2];
-      if (sourceParentId === '0') {
-        newTasks = newTasks.filter(t => t.id !== draggableId);
-      } else {
-        newTasks = findAndModifyTask(newTasks, sourceParentId, task => ({
-          ...task,
-          subtasks: task.subtasks.filter(st => st.id !== draggableId),
-        }));
-      }
+    // Remove from source
+    const sourceParentId = source.droppableId.split('-')[2];
+    if (sourceParentId === '0') {
+      newTasks = newTasks.filter(t => t.id !== draggableId);
+    } else {
+      newTasks = findAndModifyTask(newTasks, sourceParentId, task => ({
+        ...task,
+        subtasks: task.subtasks.filter(st => st.id !== draggableId),
+      }));
+    }
 
-      // Add to destination
-      const destParentId = destination.droppableId.split('-')[2];
-      if (destParentId === '0') {
-        newTasks.splice(destination.index, 0, taskToMove);
-      } else {
-        newTasks = findAndModifyTask(newTasks, destParentId, task => {
-          const newSubtasks = [...task.subtasks];
-          newSubtasks.splice(destination.index, 0, taskToMove);
-          return { ...task, subtasks: newSubtasks };
-        });
-      }
+    // Add to destination
+    const destParentId = destination.droppableId.split('-')[2];
+    if (destParentId === '0') {
+      newTasks.splice(destination.index, 0, taskToMove);
+    } else {
+      newTasks = findAndModifyTask(newTasks, destParentId, task => {
+        const newSubtasks = [...task.subtasks];
+        newSubtasks.splice(destination.index, 0, taskToMove);
+        return { ...task, subtasks: newSubtasks };
+      });
     }
 
     setLists(lists.map(l => l.id === listId ? { ...l, tasks: newTasks } : l));
@@ -286,14 +312,7 @@ export function ChecklistApp() {
   
   const sortedLists = useMemo(() => {
     return [...lists].sort((a, b) => {
-      const aProgress = calculateProgress(a.tasks);
-      const bProgress = calculateProgress(b.tasks);
-      const aIsComplete = aProgress.total > 0 && aProgress.completed === aProgress.total;
-      const bIsComplete = bProgress.total > 0 && bProgress.completed === bProgress.total;
-
-      if (aIsComplete && !bIsComplete) return 1;
-      if (!aIsComplete && bIsComplete) return -1;
-      return 0;
+        return parseInt(a.id, 10) - parseInt(b.id, 10);
     });
   }, [lists]);
 
@@ -347,7 +366,7 @@ export function ChecklistApp() {
         return sorted.map(task => ({ ...task, subtasks: sortTasks(task.subtasks) }));
     };
 
-    let processedTasks = sortTasks(tasks);
+    let processedTasks = state.sortBy === 'manual' ? tasks : sortTasks(tasks);
 
     // Recursive filter function
     const filterTasks = (tasksToFilter: Task[], isTopLevel = true): Task[] => {
@@ -452,6 +471,17 @@ export function ChecklistApp() {
           <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Checklist</h1>
           <p className="text-lg text-muted-foreground mt-2">Organize your tasks and get things done.</p>
       </div>
+
+       {notificationPermission !== 'granted' && (
+            <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 mb-4 max-w-4xl mx-auto">
+                <div className="flex items-center gap-3">
+                    <Bell className="h-5 w-5 text-yellow-800 dark:text-yellow-200" />
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">Enable notifications to get reminders for tasks that are due today.</p>
+                </div>
+                <Button size="sm" onClick={requestNotificationPermission}>Enable</Button>
+            </div>
+        )}
+
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Create a New List</CardTitle>
@@ -482,124 +512,115 @@ export function ChecklistApp() {
                 const finalTasks = getFilteredAndSortedTasks(list.tasks, list.id);
 
                 return (
-                    <Draggable key={list.id} draggableId={list.id} index={lists.findIndex(l => l.id === list.id)}>
-                       {(provided, snapshot) => (
-                            <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                            >
-                            <Card className={cn("flex flex-col transition-opacity", isAllComplete && "opacity-60", snapshot.isDragging && "shadow-2xl")}>
-                                <CardHeader className="flex flex-row items-start justify-between cursor-grab" {...provided.dragHandleProps}>
-                                <div>
-                                    <CardTitle>{list.title}</CardTitle>
-                                    {totalTasks > 0 && (
-                                        <p className="text-sm text-muted-foreground mt-1">
-                                        {completedTasks} / {totalTasks} completed
-                                        </p>
-                                    )}
-                                </div>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                        <Trash2 className="h-4 w-4" />
+                    <Card key={list.id} className={cn("flex flex-col transition-opacity", isAllComplete && listState.showCompleted && "opacity-60")}>
+                        <CardHeader className="flex flex-row items-start justify-between">
+                        <div>
+                            <CardTitle>{list.title}</CardTitle>
+                            {totalTasks > 0 && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                {completedTasks} / {totalTasks} completed
+                                </p>
+                            )}
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently delete the "{list.title}" list and all its tasks. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => removeList(list.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                        </CardHeader>
+                        {totalTasks > 0 && 
+                        <div className="px-6 pb-2">
+                            <Progress value={progress} />
+                        </div>
+                        }
+                        <CardContent className="flex-1 flex flex-col gap-4">
+                        <div className="flex gap-2">
+                            <Input
+                            placeholder="Add a new task..."
+                            value={newTaskState[list.id]?.text || ''}
+                            onChange={(e) => handleNewTaskChange(list.id, { text: e.target.value })}
+                            onKeyDown={(e) => e.key === 'Enter' && addTask(list.id)}
+                            />
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" size="icon" className={cn(newTaskState[list.id]?.dueDate && 'text-primary')}>
+                                        <CalendarIcon className="h-4 w-4"/>
                                     </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                This will permanently delete the "{list.title}" list and all its tasks. This action cannot be undone.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => removeList(list.id)}>Delete</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                                </CardHeader>
-                                {totalTasks > 0 && 
-                                <div className="px-6 pb-2">
-                                    <Progress value={progress} />
-                                </div>
-                                }
-                                <CardContent className="flex-1 flex flex-col gap-4">
-                                <div className="flex gap-2">
-                                    <Input
-                                    placeholder="Add a new task..."
-                                    value={newTaskState[list.id]?.text || ''}
-                                    onChange={(e) => handleNewTaskChange(list.id, { text: e.target.value })}
-                                    onKeyDown={(e) => e.key === 'Enter' && addTask(list.id)}
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={newTaskState[list.id]?.dueDate}
+                                        onSelect={(date) => handleNewTaskChange(list.id, { dueDate: date })}
+                                        initialFocus
                                     />
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" size="icon" className={cn(newTaskState[list.id]?.dueDate && 'text-primary')}>
-                                                <CalendarIcon className="h-4 w-4"/>
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0">
-                                            <Calendar
-                                                mode="single"
-                                                selected={newTaskState[list.id]?.dueDate}
-                                                onSelect={(date) => handleNewTaskChange(list.id, { dueDate: date })}
-                                                initialFocus
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                    <Button size="icon" onClick={() => addTask(list.id)}><Plus className="h-4 w-4"/></Button>
-                                </div>
+                                </PopoverContent>
+                            </Popover>
+                            <Button size="icon" onClick={() => addTask(list.id)}><Plus className="h-4 w-4"/></Button>
+                        </div>
 
-                                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
-                                    <div className="relative flex-1 w-full">
-                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <Input 
-                                            placeholder="Filter tasks..."
-                                            value={listState.filter}
-                                            onChange={(e) => handleListStateChange(list.id, { filter: e.target.value })}
-                                            className="pl-8"
-                                        />
-                                    </div>
-                                    <div className="flex w-full sm:w-auto items-center justify-between gap-2">
-                                        <div className="flex items-center space-x-2">
-                                            <Switch id={`show-completed-${list.id}`} checked={listState.showCompleted} onCheckedChange={(val) => handleListStateChange(list.id, { showCompleted: val })}/>
-                                            <Label htmlFor={`show-completed-${list.id}`} className="text-sm">Show Done</Label>
-                                        </div>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" size="icon">
-                                                    <ArrowDownUp className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuRadioGroup value={listState.sortBy} onValueChange={(val) => handleListStateChange(list.id, { sortBy: val as SortBy })}>
-                                                    <DropdownMenuRadioItem value="manual">Manual</DropdownMenuRadioItem>
-                                                    <DropdownMenuRadioItem value="priority">Priority</DropdownMenuRadioItem>
-                                                    <DropdownMenuRadioItem value="dueDate">Due Date</DropdownMenuRadioItem>
-                                                    <DropdownMenuRadioItem value="createdAt">Creation Date</DropdownMenuRadioItem>
-                                                </DropdownMenuRadioGroup>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
-                                
-                                <Separator />
-
-                                <ScrollArea className="flex-1 h-64 -mr-4">
-                                    <div className="pr-4">
-                                    {finalTasks.length > 0 ? renderTasks(finalTasks, list.id, '0') : (
-                                        <p className="text-sm text-muted-foreground text-center pt-4">
-                                            {list.tasks.length > 0 ? "No tasks match your filter." : "No tasks yet. Add one above!"}
-                                        </p>
-                                    )}
-                                    </div>
-                                </ScrollArea>
-                                </CardContent>
-                            </Card>
+                        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                            <div className="relative flex-1 w-full">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Filter tasks..."
+                                    value={listState.filter}
+                                    onChange={(e) => handleListStateChange(list.id, { filter: e.target.value })}
+                                    className="pl-8"
+                                />
                             </div>
-                       )}
-                    </Draggable>
+                            <div className="flex w-full sm:w-auto items-center justify-between gap-2">
+                                <div className="flex items-center space-x-2">
+                                    <Switch id={`show-completed-${list.id}`} checked={listState.showCompleted} onCheckedChange={(val) => handleListStateChange(list.id, { showCompleted: val })}/>
+                                    <Label htmlFor={`show-completed-${list.id}`} className="text-sm">Show Done</Label>
+                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="icon">
+                                            <ArrowDownUp className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuRadioGroup value={listState.sortBy} onValueChange={(val) => handleListStateChange(list.id, { sortBy: val as SortBy })}>
+                                            <DropdownMenuRadioItem value="manual">Manual</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value="priority">Priority</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value="dueDate">Due Date</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value="createdAt">Creation Date</DropdownMenuRadioItem>
+                                        </DropdownMenuRadioGroup>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                        
+                        <Separator />
+
+                        <ScrollArea className="flex-1 h-64 -mr-4">
+                            <div className="pr-4">
+                            {finalTasks.length > 0 ? renderTasks(finalTasks, list.id, '0') : (
+                                <p className="text-sm text-muted-foreground text-center pt-4">
+                                    {list.tasks.length > 0 ? "No tasks match your filter." : "No tasks yet. Add one above!"}
+                                </p>
+                            )}
+                            </div>
+                        </ScrollArea>
+                        </CardContent>
+                    </Card>
                 )
             })}
             </div>
