@@ -1,7 +1,7 @@
 
 'use client';
 
-import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Landmark, BrainCircuit } from "lucide-react";
+import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Landmark, BrainCircuit, DraftingCompass, KanbanSquare } from "lucide-react";
 import Link from "next/link";
 import { Footer } from "./Footer";
 import { Button } from "../ui/button";
@@ -71,6 +71,8 @@ const features = [
 const otherPlatforms = [
     { name: 'Momentum', category: 'Finance', icon: Landmark, href: '#', color: 'bg-indigo-500 hover:bg-indigo-600' },
     { name: 'EchoLearn', category: 'Education', icon: BrainCircuit, href: '#', color: 'bg-amber-500 hover:bg-amber-600' },
+    { name: 'Canvas', category: 'Whiteboard', icon: DraftingCompass, href: '#', color: 'bg-sky-500 hover:bg-sky-600' },
+    { name: 'NexusFlow', category: 'Projects', icon: KanbanSquare, href: '#', color: 'bg-rose-500 hover:bg-rose-600' },
 ]
 
 
@@ -100,7 +102,7 @@ export function LandingPage() {
                         <p className="max-w-3xl mx-auto text-lg text-muted-foreground mb-8">
                             A collection of powerful utilities to help with daily tasks.
                         </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3 max-w-md mx-auto">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 max-w-2xl mx-auto">
                             {otherPlatforms.map(p => <PlatformLink key={p.name} {...p} />)}
                         </div>
                     </div>
