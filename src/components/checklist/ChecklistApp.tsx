@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, ListChecks, GripVertical } from 'lucide-react';
+import { Plus, Trash2, ListChecks, Calendar as CalendarIcon } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -23,11 +23,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
+import { Calendar } from '../ui/calendar';
+import { format, formatDistanceToNow, isPast, startOfDay } from 'date-fns';
+
 
 interface Task {
   id: string;
   text: string;
   completed: boolean;
+  dueDate?: string; // ISO string
 }
 
 interface Checklist {
@@ -36,10 +41,43 @@ interface Checklist {
   tasks: Task[];
 }
 
+interface NewTaskState {
+    text: string;
+    dueDate?: Date;
+}
+
 export function ChecklistApp() {
   const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:lists', []);
   const [newListName, setNewListName] = useState('');
-  const [newTaskTexts, setNewTaskTexts] = useState<Record<string, string>>({});
+  const [newTaskState, setNewTaskState] = useState<Record<string, NewTaskState>>({});
+
+  const addTask = (listId: string) => {
+    const taskDetails = newTaskState[listId];
+    if (taskDetails && taskDetails.text.trim()) {
+      const newTask: Task = {
+        id: Date.now().toString(),
+        text: taskDetails.text.trim(),
+        completed: false,
+        dueDate: taskDetails.dueDate ? startOfDay(taskDetails.dueDate).toISOString() : undefined,
+      };
+      setLists(
+        lists.map((list) =>
+          list.id === listId ? { ...list, tasks: [...list.tasks, newTask] } : list
+        )
+      );
+      setNewTaskState({ ...newTaskState, [listId]: { text: '' } });
+    }
+  };
+
+  const handleNewTaskChange = (listId: string, part: Partial<NewTaskState>) => {
+    setNewTaskState(prev => ({
+        ...prev,
+        [listId]: {
+            ...(prev[listId] || { text: '' }),
+            ...part
+        }
+    }));
+  };
 
   const addList = () => {
     if (newListName.trim()) {
@@ -55,23 +93,6 @@ export function ChecklistApp() {
 
   const removeList = (listId: string) => {
     setLists(lists.filter((list) => list.id !== listId));
-  };
-
-  const addTask = (listId: string) => {
-    const taskText = newTaskTexts[listId]?.trim();
-    if (taskText) {
-      const newTask: Task = {
-        id: Date.now().toString(),
-        text: taskText,
-        completed: false,
-      };
-      setLists(
-        lists.map((list) =>
-          list.id === listId ? { ...list, tasks: [...list.tasks, newTask] } : list
-        )
-      );
-      setNewTaskTexts({ ...newTaskTexts, [listId]: '' });
-    }
   };
 
   const removeTask = (listId: string, taskId: string) => {
@@ -108,6 +129,21 @@ export function ChecklistApp() {
       return 0;
     });
   }, [lists]);
+
+  const DueDateDisplay = ({ dueDate }: { dueDate?: string }) => {
+    if (!dueDate) return null;
+    const date = new Date(dueDate);
+    const isOverdue = isPast(date) && !startOfDay(date).getTime() === startOfDay(new Date()).getTime();
+    
+    return (
+      <span className={cn(
+        "text-xs text-muted-foreground ml-2",
+        isOverdue && "text-destructive font-semibold"
+      )}>
+        (Due: {formatDistanceToNow(date, { addSuffix: true })})
+      </span>
+    )
+  }
 
   return (
     <div className="w-full max-w-5xl mx-auto">
@@ -182,10 +218,25 @@ export function ChecklistApp() {
                   <div className="flex gap-2">
                     <Input
                       placeholder="Add a new task..."
-                      value={newTaskTexts[list.id] || ''}
-                      onChange={(e) => setNewTaskTexts({ ...newTaskTexts, [list.id]: e.target.value })}
+                      value={newTaskState[list.id]?.text || ''}
+                      onChange={(e) => handleNewTaskChange(list.id, { text: e.target.value })}
                       onKeyDown={(e) => e.key === 'Enter' && addTask(list.id)}
                     />
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" size="icon" className={cn(newTaskState[list.id]?.dueDate && 'text-primary')}>
+                                <CalendarIcon className="h-4 w-4"/>
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={newTaskState[list.id]?.dueDate}
+                                onSelect={(date) => handleNewTaskChange(list.id, { dueDate: date })}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
                     <Button size="icon" onClick={() => addTask(list.id)}><Plus className="h-4 w-4"/></Button>
                   </div>
                   <Separator />
@@ -207,6 +258,7 @@ export function ChecklistApp() {
                                       )}
                                   >
                                       {task.text}
+                                      <DueDateDisplay dueDate={task.dueDate} />
                                   </label>
                               </div>
                               <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeTask(list.id, task.id)}>
