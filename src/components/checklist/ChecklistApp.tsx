@@ -267,44 +267,54 @@ export function ChecklistApp() {
     const { source, destination, draggableId } = result;
     if (!destination) return;
   
-    const listId = source.droppableId.split('-')[1];
+    const listId = destination.droppableId.split('-')[1];
     const list = lists.find(l => l.id === listId);
     if (!list) return;
   
-    const reorder = (list: Task[], startIndex: number, endIndex: number): Task[] => {
-      const result = Array.from(list);
-      const [removed] = result.splice(startIndex, 1);
-      result.splice(endIndex, 0, removed);
-      return result;
+    // Find the task being dragged
+    const findTaskAndPath = (tasks: Task[], taskId: string, path: string[] = []): { task: Task; path: string[] } | null => {
+        for (let i = 0; i < tasks.length; i++) {
+            const currentTask = tasks[i];
+            if (currentTask.id === taskId) return { task: currentTask, path: [...path, currentTask.id] };
+            const foundInSubtasks = findTaskAndPath(currentTask.subtasks, taskId, [...path, currentTask.id]);
+            if (foundInSubtasks) return foundInSubtasks;
+        }
+        return null;
     };
-  
-    let newTasks = [...list.tasks];
 
-    const taskToMove = findTask(list.tasks, draggableId);
-    if (!taskToMove) return;
+    const taskInfo = findTaskAndPath(list.tasks, draggableId);
+    if (!taskInfo) return;
+    const taskToMove = { ...taskInfo.task };
 
-    // Remove from source
-    const sourceParentId = source.droppableId.split('-')[2];
-    if (sourceParentId === '0') {
-      newTasks = newTasks.filter(t => t.id !== draggableId);
-    } else {
-      newTasks = findAndModifyTask(newTasks, sourceParentId, task => ({
-        ...task,
-        subtasks: task.subtasks.filter(st => st.id !== draggableId),
-      }));
-    }
+    // Function to remove task from its source
+    const removeTaskFromTree = (tasks: Task[], taskId: string): Task[] => {
+        return tasks.reduce((acc, task) => {
+            if (task.id === taskId) return acc;
+            acc.push({ ...task, subtasks: removeTaskFromTree(task.subtasks, taskId) });
+            return acc;
+        }, [] as Task[]);
+    };
 
-    // Add to destination
+    let newTasks = removeTaskFromTree(list.tasks, draggableId);
+
+    // Function to add task to its destination
+    const addTaskToTree = (tasks: Task[], parentId: string, taskToAdd: Task, index: number): Task[] => {
+        if (parentId === '0') {
+            tasks.splice(index, 0, taskToAdd);
+            return tasks;
+        }
+        return tasks.map(task => {
+            if (task.id === parentId) {
+                task.subtasks.splice(index, 0, taskToAdd);
+            } else {
+                task.subtasks = addTaskToTree(task.subtasks, parentId, taskToAdd, index);
+            }
+            return task;
+        });
+    };
+
     const destParentId = destination.droppableId.split('-')[2];
-    if (destParentId === '0') {
-      newTasks.splice(destination.index, 0, taskToMove);
-    } else {
-      newTasks = findAndModifyTask(newTasks, destParentId, task => {
-        const newSubtasks = [...task.subtasks];
-        newSubtasks.splice(destination.index, 0, taskToMove);
-        return { ...task, subtasks: newSubtasks };
-      });
-    }
+    newTasks = addTaskToTree(newTasks, destParentId, taskToMove, destination.index);
 
     setLists(lists.map(l => l.id === listId ? { ...l, tasks: newTasks } : l));
     handleListStateChange(listId, { sortBy: 'manual' });
@@ -319,7 +329,9 @@ export function ChecklistApp() {
   const DueDateDisplay = ({ dueDate }: { dueDate?: string }) => {
     if (!dueDate) return null;
     const date = new Date(dueDate);
-    const isOverdue = isPast(date) && startOfDay(date).getTime() !== startOfDay(new Date()).getTime();
+    const dateStartOfDay = startOfDay(date);
+    const todayStartOfDay = startOfDay(new Date());
+    const isOverdue = isPast(date) && dateStartOfDay.getTime() !== todayStartOfDay.getTime();
     
     return (
       <span className={cn(
