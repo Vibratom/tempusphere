@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, ListChecks, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Wand2, Loader } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -26,6 +26,8 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { format, formatDistanceToNow, isPast, startOfDay } from 'date-fns';
+import { generateChecklist } from '@/ai/flows/generate-checklist-flow';
+import { useToast } from '@/hooks/use-toast';
 
 
 interface Task {
@@ -50,6 +52,8 @@ export function ChecklistApp() {
   const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:lists', []);
   const [newListName, setNewListName] = useState('');
   const [newTaskState, setNewTaskState] = useState<Record<string, NewTaskState>>({});
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
 
   const addTask = (listId: string) => {
     const taskDetails = newTaskState[listId];
@@ -62,7 +66,7 @@ export function ChecklistApp() {
       };
       setLists(
         lists.map((list) =>
-          list.id === listId ? { ...list, tasks: [...list.tasks, newTask] } : list
+          list.id === listId ? { ...list, tasks: [newTask, ...list.tasks] } : list
         )
       );
       setNewTaskState({ ...newTaskState, [listId]: { text: '' } });
@@ -90,6 +94,35 @@ export function ChecklistApp() {
       setNewListName('');
     }
   };
+
+  const handleAiGenerate = async () => {
+    if (!newListName.trim()) return;
+    setIsGenerating(true);
+    try {
+        const result = await generateChecklist(newListName.trim());
+        const newTasks: Task[] = result.tasks.map(taskText => ({
+            id: Math.random().toString(36).substring(7),
+            text: taskText,
+            completed: false,
+        }));
+        const newList: Checklist = {
+            id: Date.now().toString(),
+            title: newListName.trim(),
+            tasks: newTasks,
+        };
+        setLists(prev => [...prev, newList]);
+        setNewListName('');
+    } catch (error) {
+        console.error("AI generation failed:", error);
+        toast({
+            title: "Generation Failed",
+            description: "Could not generate checklist. Please try again.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsGenerating(false);
+    }
+  }
 
   const removeList = (listId: string) => {
     setLists(lists.filter((list) => list.id !== listId));
@@ -126,14 +159,21 @@ export function ChecklistApp() {
       const bIsComplete = b.tasks.length > 0 && b.tasks.every(t => t.completed);
       if (aIsComplete && !bIsComplete) return 1;
       if (!aIsComplete && bIsComplete) return -1;
-      return 0;
+      // Sort by creation time (id) descending for new lists, otherwise keep order
+      return parseInt(b.id) - parseInt(a.id);
+    }).sort((a, b) => { // Secondary sort to move completed lists to bottom
+        const aIsComplete = a.tasks.length > 0 && a.tasks.every(t => t.completed);
+        const bIsComplete = b.tasks.length > 0 && b.tasks.every(t => t.completed);
+        if (aIsComplete && !bIsComplete) return 1;
+        if (!aIsComplete && bIsComplete) return -1;
+        return 0;
     });
   }, [lists]);
 
   const DueDateDisplay = ({ dueDate }: { dueDate?: string }) => {
     if (!dueDate) return null;
     const date = new Date(dueDate);
-    const isOverdue = isPast(date) && !startOfDay(date).getTime() === startOfDay(new Date()).getTime();
+    const isOverdue = isPast(date) && startOfDay(date).getTime() !== startOfDay(new Date()).getTime();
     
     return (
       <span className={cn(
@@ -156,16 +196,23 @@ export function ChecklistApp() {
           <CardTitle>Create a New List</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input
-              placeholder="E.g., Groceries, Work Tasks..."
+              placeholder="E.g., Plan a weekend camping trip..."
               value={newListName}
               onChange={(e) => setNewListName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addList()}
+              disabled={isGenerating}
             />
-            <Button onClick={addList}>
-              <Plus className="mr-2 h-4 w-4" /> Add List
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button onClick={addList} disabled={isGenerating || !newListName.trim()}>
+                <Plus className="mr-2 h-4 w-4" /> Add List
+              </Button>
+              <Button onClick={handleAiGenerate} disabled={isGenerating || !newListName.trim()}>
+                {isGenerating ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                Generate
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
