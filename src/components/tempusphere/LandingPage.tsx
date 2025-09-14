@@ -57,6 +57,11 @@ const features = [
         description: 'A robust personal calendar to keep track of your events with specific times and descriptions.',
     },
     {
+        icon: <ListChecks className="w-5 h-5 text-primary" />,
+        title: 'Advanced Checklist',
+        description: 'Organize tasks with sub-tasks, priorities, recurring items, and calendar integration.',
+    },
+    {
         icon: <Settings className="w-5 h-5 text-primary" />,
         title: 'Deep Customization',
         description: 'Personalize the look with themes, background images, and custom colors.',
@@ -92,7 +97,7 @@ export function LandingPage() {
                         </div>
                         <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4">Welcome to Tempusphere</h1>
                         <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-                            Your all-in-one solution for time management and event planning. From world clocks to a detailed personal calendar, Tempusphere provides the tools you need to stay organized and productive.
+                            Your all-in-one solution for time management. From world clocks to a detailed personal calendar, Tempusphere provides the tools you need to stay organized and productive.
                         </p>
                         <Button asChild size="lg">
                             <Link href="/app">Launch App</Link>
@@ -104,7 +109,7 @@ export function LandingPage() {
                     <div className="container mx-auto px-4 text-center">
                          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Other Tools</h2>
                         <p className="max-w-3xl mx-auto text-lg text-muted-foreground mb-8">
-                            A collection of powerful utilities to help with daily tasks.
+                            Tempusphere is part of a growing ecosystem of powerful utilities to help with daily tasks.
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
                             {otherPlatforms.map(p => <PlatformLink key={p.name} {...p} />)}

@@ -9,7 +9,7 @@ interface PlatformLinkProps {
     icon: React.ComponentType<LucideProps>;
     href: string;
     color: string;
-    description: string;
+    description?: string;
 }
 
 export function PlatformLink({ name, category, icon: Icon, href, color, description }: PlatformLinkProps) {
@@ -28,7 +28,7 @@ export function PlatformLink({ name, category, icon: Icon, href, color, descript
                         <span className="text-xs opacity-80">{category}</span>
                     </div>
                 </div>
-                <p className="text-sm opacity-90">{description}</p>
+                {description && <p className="text-sm opacity-90">{description}</p>}
             </div>
         </Link>
     );
