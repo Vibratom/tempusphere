@@ -16,52 +16,52 @@ import {
 
 const features = [
     {
-        icon: <Clock className="w-6 h-6 text-primary" />,
+        icon: <Clock className="w-5 h-5 text-primary" />,
         title: 'Customizable Primary Clock',
         description: 'Choose between analog and digital modes, local or UTC time, with optional seconds.',
     },
     {
-        icon: <Globe className="w-6 h-6 text-primary" />,
+        icon: <Globe className="w-5 h-5 text-primary" />,
         title: 'World Clock Dashboard',
         description: 'Add and manage clocks for multiple timezones, saved locally for convenience.',
     },
     {
-        icon: <AlarmClock className="w-6 h-6 text-primary" />,
+        icon: <AlarmClock className="w-5 h-5 text-primary" />,
         title: 'Alarm System',
         description: 'Set multiple alarms with custom names and a variety of sounds.',
     },
     {
-        icon: <Hourglass className="w-6 h-6 text-primary" />,
+        icon: <Hourglass className="w-5 h-5 text-primary" />,
         title: 'Precision Stopwatch',
         description: 'A high-precision stopwatch with start, stop, lap, and reset functions.',
     },
     {
-        icon: <Timer className="w-6 h-6 text-primary" />,
+        icon: <Timer className="w-5 h-5 text-primary" />,
         title: 'Countdown Timer',
         description: 'Set a countdown for any duration. An alarm sounds when time is up.',
     },
     {
-        icon: <Scale className="w-6 h-6 text-primary" />,
+        icon: <Scale className="w-5 h-5 text-primary" />,
         title: 'Timezone Converter',
         description: 'Easily convert any time and date across multiple timezones simultaneously.',
     },
     {
-        icon: <Users className="w-6 h-6 text-primary" />,
+        icon: <Users className="w-5 h-5 text-primary" />,
         title: 'Conference Planner',
         description: 'Find ideal meeting times across several timezones, highlighting business hours.',
     },
     {
-        icon: <CalendarDays className="w-6 h-6 text-primary" />,
+        icon: <CalendarDays className="w-5 h-5 text-primary" />,
         title: 'Personal Calendar',
         description: 'Keep track of your personal events with specific times and descriptions.',
     },
     {
-        icon: <Settings className="w-6 h-6 text-primary" />,
+        icon: <Settings className="w-5 h-5 text-primary" />,
         title: 'Deep Customization',
         description: 'Personalize the look with themes, background images, and custom colors.',
     },
     {
-        icon: <Expand className="w-6 h-6 text-primary" />,
+        icon: <Expand className="w-5 h-5 text-primary" />,
         title: 'Fullscreen Dashboard',
         description: 'A distraction-free, customizable view of your most important panels.',
     }
@@ -88,21 +88,21 @@ export function LandingPage() {
                     </div>
                 </section>
 
-                <section className="py-16 md:py-20 bg-secondary/30">
+                <section className="py-12 md:py-16 bg-secondary/30">
                     <div className="container mx-auto px-4">
-                        <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">Features at a Glance</h2>
+                        <h2 className="text-3xl md:text-4xl font-bold text-center mb-8">Features at a Glance</h2>
                         <Accordion type="single" collapsible className="w-full max-w-2xl mx-auto">
                             {features.map((feature, index) => (
                                 <AccordionItem key={index} value={`item-${index}`}>
-                                    <AccordionTrigger className="text-lg font-semibold hover:no-underline">
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex-shrink-0 p-2 bg-background rounded-full border shadow-sm">
+                                    <AccordionTrigger className="text-md font-semibold hover:no-underline py-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-shrink-0 p-1.5 bg-background rounded-full border shadow-sm">
                                                 {feature.icon}
                                             </div>
                                             <span>{feature.title}</span>
                                         </div>
                                     </AccordionTrigger>
-                                    <AccordionContent className="text-base text-muted-foreground pl-16">
+                                    <AccordionContent className="text-base text-muted-foreground pl-12">
                                         {feature.description}
                                     </AccordionContent>
                                 </AccordionItem>
