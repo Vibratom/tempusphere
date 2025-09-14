@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell, Repeat } from 'lucide-react';
+import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell, Repeat, Palette, MoreVertical } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -26,7 +26,7 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { format, formatDistanceToNow, isPast, startOfDay, isToday, addDays } from 'date-fns';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
@@ -47,10 +47,22 @@ interface Task {
   isRecurring?: boolean;
 }
 
+const listColors = [
+    { name: 'Default', value: 'hsl(var(--border))' },
+    { name: 'Blue', value: 'hsl(210, 80%, 60%)' },
+    { name: 'Green', value: 'hsl(140, 60%, 50%)' },
+    { name: 'Yellow', value: 'hsl(48, 90%, 50%)' },
+    { name: 'Orange', value: 'hsl(25, 90%, 55%)' },
+    { name: 'Red', value: 'hsl(0, 80%, 60%)' },
+    { name: 'Purple', value: 'hsl(270, 70%, 65%)' },
+    { name: 'Pink', value: 'hsl(330, 80%, 60%)' },
+];
+
 interface Checklist {
   id: string;
   title: string;
   tasks: Task[];
+  color?: string;
 }
 
 interface NewTaskState {
@@ -75,10 +87,10 @@ const findTask = (tasks: Task[], taskId: string): Task | null => {
 }
 
 export function ChecklistApp() {
-  const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV5', []);
+  const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV6', []);
   const [newListName, setNewListName] = useState('');
   const [newTaskState, setNewTaskState] = useState<Record<string, NewTaskState>>({});
-  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV4', {});
+  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV5', {});
   const [isClient, setIsClient] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [notifiedTasks, setNotifiedTasks] = useLocalStorage<string[]>('checklist:notifiedTasks', []);
@@ -210,6 +222,7 @@ export function ChecklistApp() {
         id: Date.now().toString(),
         title: newListName.trim(),
         tasks: [],
+        color: 'hsl(var(--border))'
       };
       setLists([...lists, newList]);
       setNewListName('');
@@ -222,6 +235,10 @@ export function ChecklistApp() {
     delete newStates[listId];
     setListStates(newStates);
   };
+
+  const setListColor = (listId: string, color: string) => {
+    setLists(lists.map(list => list.id === listId ? { ...list, color } : list));
+  }
 
   const removeTask = (listId: string, taskId: string) => {
     setLists(lists.map(list => list.id === listId
@@ -549,9 +566,10 @@ export function ChecklistApp() {
                 const isAllComplete = totalTasks > 0 && completedTasks === totalTasks;
                 const listState = listStates[list.id] || { filter: '', sortBy: 'manual', showCompleted: false };
                 const finalTasks = getFilteredAndSortedTasks(list.tasks, list.id);
+                const currentColor = list.color || 'hsl(var(--border))';
 
                 return (
-                    <Card key={list.id} className={cn("flex flex-col transition-opacity", isAllComplete && listState.showCompleted && "opacity-60")}>
+                    <Card key={list.id} className={cn("flex flex-col transition-opacity border-2", isAllComplete && listState.showCompleted && "opacity-60")} style={{ borderColor: currentColor }}>
                         <CardHeader className="flex flex-row items-start justify-between">
                         <div>
                             <CardTitle>{list.title}</CardTitle>
@@ -561,29 +579,62 @@ export function ChecklistApp() {
                                 </p>
                             )}
                         </div>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will permanently delete the "{list.title}" list and all its tasks. This action cannot be undone.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => removeList(list.id)}>Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <MoreVertical className="h-5 w-5" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>List Options</DropdownMenuLabel>
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <Palette className="mr-2 h-4 w-4" />
+                                        <span>Theme Color</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                    <DropdownMenuSubContent>
+                                        <DropdownMenuRadioGroup value={currentColor} onValueChange={(color) => setListColor(list.id, color)}>
+                                            {listColors.map(color => (
+                                                <DropdownMenuRadioItem key={color.name} value={color.value}>
+                                                    <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: color.value }}></div>
+                                                    {color.name}
+                                                </DropdownMenuRadioItem>
+                                            ))}
+                                        </DropdownMenuRadioGroup>
+                                    </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                </DropdownMenuSub>
+                                <DropdownMenuSeparator />
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete List
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This will permanently delete the "{list.title}" list and all its tasks. This action cannot be undone.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => removeList(list.id)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         </CardHeader>
                         {totalTasks > 0 && 
                         <div className="px-6 pb-2">
-                            <Progress value={progress} />
+                            <Progress value={progress} style={{
+                                // @ts-ignore
+                                '--primary': currentColor
+                            }}/>
                         </div>
                         }
                         <CardContent className="flex-1 flex flex-col gap-4">
@@ -687,3 +738,4 @@ export function ChecklistApp() {
   );
 }
 
+    
