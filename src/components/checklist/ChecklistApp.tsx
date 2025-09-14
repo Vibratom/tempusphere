@@ -1,16 +1,28 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, ListChecks } from 'lucide-react';
+import { Plus, Trash2, ListChecks, GripVertical } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
+import { Progress } from '../ui/progress';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Task {
   id: string;
@@ -36,7 +48,7 @@ export function ChecklistApp() {
         title: newListName.trim(),
         tasks: [],
       };
-      setLists([newList, ...lists]);
+      setLists([...lists, newList]);
       setNewListName('');
     }
   };
@@ -86,13 +98,23 @@ export function ChecklistApp() {
       )
     );
   };
+  
+  const sortedLists = useMemo(() => {
+    return [...lists].sort((a, b) => {
+      const aIsComplete = a.tasks.length > 0 && a.tasks.every(t => t.completed);
+      const bIsComplete = b.tasks.length > 0 && b.tasks.every(t => t.completed);
+      if (aIsComplete && !bIsComplete) return 1;
+      if (!aIsComplete && bIsComplete) return -1;
+      return 0;
+    });
+  }, [lists]);
 
   return (
     <div className="w-full max-w-5xl mx-auto">
-        <div className="flex flex-col items-center text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Checklist</h1>
-            <p className="text-lg text-muted-foreground mt-2">Organize your tasks and get things done.</p>
-        </div>
+      <div className="flex flex-col items-center text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Checklist</h1>
+          <p className="text-lg text-muted-foreground mt-2">Organize your tasks and get things done.</p>
+      </div>
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Create a New List</CardTitle>
@@ -114,57 +136,92 @@ export function ChecklistApp() {
 
       {lists.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {lists.map((list) => (
-            <Card key={list.id} className="flex flex-col">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{list.title}</CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => removeList(list.id)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col gap-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add a new task..."
-                    value={newTaskTexts[list.id] || ''}
-                    onChange={(e) => setNewTaskTexts({ ...newTaskTexts, [list.id]: e.target.value })}
-                    onKeyDown={(e) => e.key === 'Enter' && addTask(list.id)}
-                  />
-                  <Button size="icon" onClick={() => addTask(list.id)}><Plus className="h-4 w-4"/></Button>
-                </div>
-                <Separator />
-                <ScrollArea className="flex-1 h-48 -mr-4">
-                    <div className="space-y-3 pr-4">
-                    {list.tasks.length > 0 ? list.tasks.map((task) => (
-                        <div key={task.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <Checkbox
-                                    id={`task-${task.id}`}
-                                    checked={task.completed}
-                                    onCheckedChange={() => toggleTask(list.id, task.id)}
-                                />
-                                <label
-                                    htmlFor={`task-${task.id}`}
-                                    className={cn(
-                                        "text-sm font-medium leading-none",
-                                        task.completed ? "line-through text-muted-foreground" : ""
-                                    )}
-                                >
-                                    {task.text}
-                                </label>
-                            </div>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeTask(list.id, task.id)}>
-                                <Trash2 className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                        </div>
-                    )) : (
-                        <p className="text-sm text-muted-foreground text-center pt-4">No tasks yet. Add one above!</p>
+          {sortedLists.map((list) => {
+            const completedTasks = list.tasks.filter(t => t.completed).length;
+            const totalTasks = list.tasks.length;
+            const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+            const isAllComplete = totalTasks > 0 && completedTasks === totalTasks;
+
+            return (
+              <Card key={list.id} className={cn("flex flex-col transition-opacity", isAllComplete && "opacity-60")}>
+                <CardHeader className="flex flex-row items-start justify-between">
+                  <div>
+                    <CardTitle>{list.title}</CardTitle>
+                     {totalTasks > 0 && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {completedTasks} / {totalTasks} completed
+                        </p>
                     )}
-                    </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          ))}
+                  </div>
+                   <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                       <Button variant="ghost" size="icon">
+                          <Trash2 className="h-4 w-4" />
+                       </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete the "{list.title}" list and all its tasks. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => removeList(list.id)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                   </AlertDialog>
+                </CardHeader>
+                 {totalTasks > 0 && 
+                  <div className="px-6 pb-2">
+                    <Progress value={progress} />
+                  </div>
+                 }
+                <CardContent className="flex-1 flex flex-col gap-4">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add a new task..."
+                      value={newTaskTexts[list.id] || ''}
+                      onChange={(e) => setNewTaskTexts({ ...newTaskTexts, [list.id]: e.target.value })}
+                      onKeyDown={(e) => e.key === 'Enter' && addTask(list.id)}
+                    />
+                    <Button size="icon" onClick={() => addTask(list.id)}><Plus className="h-4 w-4"/></Button>
+                  </div>
+                  <Separator />
+                  <ScrollArea className="flex-1 h-48 -mr-4">
+                      <div className="space-y-3 pr-4">
+                      {list.tasks.length > 0 ? list.tasks.map((task) => (
+                          <div key={task.id} className="flex items-center justify-between group">
+                              <div className="flex items-center gap-3">
+                                  <Checkbox
+                                      id={`task-${task.id}`}
+                                      checked={task.completed}
+                                      onCheckedChange={() => toggleTask(list.id, task.id)}
+                                  />
+                                  <label
+                                      htmlFor={`task-${task.id}`}
+                                      className={cn(
+                                          "text-sm font-medium leading-none cursor-pointer",
+                                          task.completed ? "line-through text-muted-foreground" : ""
+                                      )}
+                                  >
+                                      {task.text}
+                                  </label>
+                              </div>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeTask(list.id, task.id)}>
+                                  <Trash2 className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                          </div>
+                      )) : (
+                          <p className="text-sm text-muted-foreground text-center pt-4">No tasks yet. Add one above!</p>
+                      )}
+                      </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       ) : (
         <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
