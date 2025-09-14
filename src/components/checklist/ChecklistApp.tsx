@@ -340,7 +340,7 @@ export function ChecklistApp() {
         const aProgress = calculateProgress(a.tasks);
         const bProgress = calculateProgress(b.tasks);
         const aIsDone = aProgress.total > 0 && aProgress.completed === aProgress.total;
-        const bIsDone = bProgress.total > 0 && bProgress.completed === bProgress.total;
+        const bIsDone = bProgress.total > 0 && bProgress.completed === b.total;
         if (aIsDone && !bIsDone) return 1;
         if (!aIsDone && bIsDone) return -1;
         return parseInt(a.id, 10) - parseInt(b.id, 10);
@@ -395,21 +395,22 @@ export function ChecklistApp() {
             default:
                 break;
         }
+        // Recursively sort subtasks
         return sorted.map(task => ({ ...task, subtasks: sortTasks(task.subtasks) }));
     };
 
     let processedTasks = state.sortBy === 'manual' ? tasks : sortTasks(tasks);
 
-    const filterTasks = (tasksToFilter: Task[], isTopLevel = true): Task[] => {
+    const filterTasks = (tasksToFilter: Task[]): Task[] => {
         return tasksToFilter.reduce((acc, task) => {
-            const subtasks = filterTasks(task.subtasks, false);
+            const subtasks = filterTasks(task.subtasks);
             const matchesFilter = !state.filter || task.text.toLowerCase().includes(state.filter.toLowerCase());
             const hasVisibleSubtask = subtasks.length > 0;
             
             let isVisible = !task.completed || state.showCompleted;
             if (task.isRecurring) isVisible = true;
 
-            if ((matchesFilter || hasVisibleSubtask) && (isTopLevel ? isVisible : true)) {
+            if (isVisible && (matchesFilter || hasVisibleSubtask)) {
                 acc.push({ ...task, subtasks });
             }
             return acc;
@@ -686,4 +687,3 @@ export function ChecklistApp() {
   );
 }
 
-    
