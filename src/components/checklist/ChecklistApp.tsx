@@ -59,22 +59,40 @@ interface ListState {
     sortBy: SortBy;
 }
 
+const findTask = (tasks: Task[], taskId: string): Task | null => {
+    for (const task of tasks) {
+        if (task.id === taskId) return task;
+        const found = findTask(task.subtasks, taskId);
+        if (found) return found;
+    }
+    return null;
+}
+
+const findParent = (tasks: Task[], taskId: string): {parent: Task, tasks: Task[]} | {parent: null, tasks: Task[]} | null => {
+    for (const task of tasks) {
+        if (task.subtasks.some(st => st.id === taskId)) return { parent: task, tasks: task.subtasks };
+        const found = findParent(task.subtasks, taskId);
+        if (found) return found;
+    }
+    return null;
+}
+
 export function ChecklistApp() {
-  const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV3', []);
+  const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV4', []);
   const [newListName, setNewListName] = useState('');
   const [newTaskState, setNewTaskState] = useState<Record<string, NewTaskState>>({});
-  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStates', {});
+  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV2', {});
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const recursivelyUpdateTasks = (tasks: Task[], listId: string, updater: (task: Task) => Task): Task[] => {
+  const recursivelyUpdateTasks = (tasks: Task[], updater: (task: Task) => Task): Task[] => {
     return tasks.map(task => {
         const updatedTask = updater(task);
         if (updatedTask.subtasks.length > 0) {
-            updatedTask.subtasks = recursivelyUpdateTasks(updatedTask.subtasks, listId, updater);
+            updatedTask.subtasks = recursivelyUpdateTasks(updatedTask.subtasks, updater);
         }
         return updatedTask;
     });
@@ -196,34 +214,72 @@ export function ChecklistApp() {
   };
 
   const onDragEnd: OnDragEndResponder = (result) => {
-    const { source, destination, type } = result;
+    const { source, destination, draggableId, type } = result;
     if (!destination) return;
-
-    if(type === 'LIST') {
-        const reorderedLists = Array.from(lists);
-        const [removed] = reorderedLists.splice(source.index, 1);
-        reorderedLists.splice(destination.index, 0, removed);
-        setLists(reorderedLists);
-        return;
+  
+    if (type === 'LIST') {
+      const reorderedLists = Array.from(lists);
+      const [removed] = reorderedLists.splice(source.index, 1);
+      reorderedLists.splice(destination.index, 0, removed);
+      setLists(reorderedLists);
+      return;
     }
-
-    if (type.startsWith('TASK-')) {
-        const listId = type.split('-')[1];
-        const list = lists.find(l => l.id === listId);
-        if(!list) return;
-
-        const reorder = (tasks: Task[], startIndex: number, endIndex: number): Task[] => {
-            const result = Array.from(tasks);
-            const [removed] = result.splice(startIndex, 1);
-            result.splice(endIndex, 0, removed);
-            return result;
-        };
-
+  
+    // Handle task dragging
+    const listId = type.split('-')[1];
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+  
+    const reorder = (list: Task[], startIndex: number, endIndex: number): Task[] => {
+      const result = Array.from(list);
+      const [removed] = result.splice(startIndex, 1);
+      result.splice(endIndex, 0, removed);
+      return result;
+    };
+  
+    // If source and destination are the same droppable
+    if (source.droppableId === destination.droppableId) {
+      if(source.droppableId === `tasks-${listId}-0`) { // Top-level tasks
         const newTasks = reorder(list.tasks, source.index, destination.index);
         setLists(lists.map(l => l.id === listId ? {...l, tasks: newTasks} : l));
-        handleListStateChange(listId, { sortBy: 'manual' });
+      } else { // Sub-tasks
+        const parentId = source.droppableId.split('-')[2];
+        const newTasks = findAndModifyTask(list.tasks, parentId, (task) => ({
+            ...task,
+            subtasks: reorder(task.subtasks, source.index, destination.index)
+        }));
+        setLists(lists.map(l => l.id === listId ? {...l, tasks: newTasks} : l));
+      }
+    } else { // Moving between different levels (e.g., subtask to main task)
+        let sourceTasks: Task[];
+        let destTasks: Task[];
+        const taskToMove = findTask(list.tasks, draggableId);
+        if(!taskToMove) return;
+
+        // Remove from source
+        let newTasks = findAndModifyTask(list.tasks, draggableId, () => null);
+
+        // Find parent of source
+        const sourceParentInfo = findParent(list.tasks, draggableId);
+        
+        // Add to destination
+        const destParentId = destination.droppableId.split('-')[2];
+        if(destination.droppableId === `tasks-${listId}-0`) { // Dropped at root
+            const newRootTasks = [...newTasks];
+            newRootTasks.splice(destination.index, 0, taskToMove);
+            newTasks = newRootTasks;
+        } else { // Dropped into a subtask list
+             newTasks = findAndModifyTask(newTasks, destParentId, (parentTask) => {
+                const newSubtasks = [...parentTask.subtasks];
+                newSubtasks.splice(destination.index, 0, taskToMove);
+                return {...parentTask, subtasks: newSubtasks};
+             });
+        }
+       setLists(lists.map(l => l.id === listId ? {...l, tasks: newTasks} : l));
     }
-  }
+    
+    handleListStateChange(listId, { sortBy: 'manual' });
+  };
   
   const sortedLists = useMemo(() => {
     return [...lists].sort((a, b) => {
@@ -261,47 +317,60 @@ export function ChecklistApp() {
       high: 'text-red-500',
   }
 
-  const getFilteredAndSortedTasks = (list: Checklist) => {
-    const state = listStates[list.id] || { filter: '', sortBy: 'manual' };
-    let filteredTasks = [...list.tasks];
-
-    // Filtering
-    if (state.filter) {
-        filteredTasks = filteredTasks.filter(task => 
-            task.text.toLowerCase().includes(state.filter.toLowerCase())
-        );
-    }
+  const getFilteredAndSortedTasks = (tasks: Task[], listId: string): Task[] => {
+    const state = listStates[listId] || { filter: '', sortBy: 'manual' };
     
-    // Sorting
-    switch (state.sortBy) {
-        case 'priority':
-            filteredTasks.sort((a, b) => priorityMap[b.priority] - priorityMap[a.priority]);
-            break;
-        case 'dueDate':
-            filteredTasks.sort((a, b) => {
-                if (!a.dueDate) return 1;
-                if (!b.dueDate) return -1;
-                return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-            });
-            break;
-        case 'createdAt':
-            filteredTasks.sort((a, b) => b.createdAt - a.createdAt);
-            break;
-        case 'manual':
-        default:
-             // Do nothing, respect manual order
-            break;
-    }
-    return filteredTasks;
+    // Recursive sort function
+    const sortTasks = (tasksToSort: Task[]): Task[] => {
+        let sorted = [...tasksToSort];
+        switch (state.sortBy) {
+            case 'priority':
+                sorted.sort((a, b) => priorityMap[b.priority] - priorityMap[a.priority]);
+                break;
+            case 'dueDate':
+                sorted.sort((a, b) => {
+                    if (!a.dueDate) return 1;
+                    if (!b.dueDate) return -1;
+                    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+                });
+                break;
+            case 'createdAt':
+                sorted.sort((a, b) => b.createdAt - a.createdAt);
+                break;
+            case 'manual':
+            default:
+                break; // Keep manual order
+        }
+        return sorted.map(task => ({ ...task, subtasks: sortTasks(task.subtasks) }));
+    };
+
+    let processedTasks = sortTasks(tasks);
+
+    // Recursive filter function
+    const filterTasks = (tasksToFilter: Task[]): Task[] => {
+        if (!state.filter) return tasksToFilter;
+        
+        return tasksToFilter.reduce((acc, task) => {
+            const hasMatchingSubtask = task.subtasks && filterTasks(task.subtasks).length > 0;
+            if (task.text.toLowerCase().includes(state.filter.toLowerCase()) || hasMatchingSubtask) {
+                acc.push({
+                    ...task,
+                    subtasks: filterTasks(task.subtasks),
+                });
+            }
+            return acc;
+        }, [] as Task[]);
+    };
+
+    return filterTasks(processedTasks);
   }
 
-  const renderTasks = (tasks: Task[], listId: string, level = 0) => {
+  const renderTasks = (tasks: Task[], listId: string, parentDroppableId: string) => {
     const listState = listStates[listId] || { filter: '', sortBy: 'manual' };
-    const droppableId = `tasks-${listId}-${level}`;
     const isDragDisabled = listState.sortBy !== 'manual';
 
     return (
-      <Droppable droppableId={droppableId} type={`TASK-${listId}-${level}`} isDropDisabled={isDragDisabled}>
+      <Droppable droppableId={parentDroppableId} type={`TASK-${listId}`} isDropDisabled={isDragDisabled}>
         {(provided) => (
           <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-3">
             {tasks.map((task, index) => (
@@ -310,23 +379,23 @@ export function ChecklistApp() {
                   <div
                     ref={provided.innerRef}
                     {...provided.draggableProps}
-                    className={cn(snapshot.isDragging && 'shadow-lg rounded-lg bg-background', `ml-${level * 4}`)}
+                    className={cn('group/task', snapshot.isDragging && 'shadow-lg rounded-lg bg-background')}
                   >
-                    <div className="flex items-start justify-between group">
+                    <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3 flex-1">
-                        {!isDragDisabled && <span {...provided.dragHandleProps} className="pt-1 cursor-grab opacity-50 group-hover:opacity-100"><GripVertical className="h-4 w-4"/></span>}
+                        {!isDragDisabled && <span {...provided.dragHandleProps} className="pt-1 cursor-grab opacity-30 group-hover/task:opacity-100"><GripVertical className="h-4 w-4"/></span>}
                         <Checkbox id={`task-${task.id}`} checked={task.completed} onCheckedChange={() => toggleTask(listId, task.id)} className="mt-1" />
-                        <div className="flex-1">
+                        <div className="flex-1 space-y-1">
                           <label htmlFor={`task-${task.id}`} className={cn("text-sm font-medium leading-none cursor-pointer", task.completed && "line-through text-muted-foreground")}>
                             {task.text}
                             <DueDateDisplay dueDate={task.dueDate} />
                           </label>
-                          {task.subtasks && task.subtasks.length > 0 && 
-                            <div className="mt-2">
-                                {renderTasks(task.subtasks, listId, level + 1)}
+                           {task.subtasks && task.subtasks.length > 0 && 
+                            <div className="pt-2">
+                                {renderTasks(task.subtasks, listId, `subtasks-${task.id}`)}
                             </div>
                           }
-                          <div className={cn("flex items-center gap-2 transition-opacity duration-200", task.completed ? "opacity-0" : "opacity-0 group-hover:opacity-100")}>
+                          <div className={cn("flex items-center gap-2 transition-opacity duration-200", task.completed ? "opacity-0 h-0" : "opacity-0 group-hover/task:opacity-100")}>
                             <Input 
                                 placeholder="Add sub-task..."
                                 value={newTaskState[task.id]?.text || ''}
@@ -338,7 +407,7 @@ export function ChecklistApp() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover/task:opacity-100 transition-opacity">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -409,7 +478,7 @@ export function ChecklistApp() {
                     const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
                     const isAllComplete = totalTasks > 0 && completedTasks === totalTasks;
                     const listState = listStates[list.id] || { filter: '', sortBy: 'manual' };
-                    const finalTasks = getFilteredAndSortedTasks(list);
+                    const finalTasks = getFilteredAndSortedTasks(list.tasks, list.id);
 
                     return (
                         <Draggable key={list.id} draggableId={list.id} index={index}>
@@ -512,7 +581,7 @@ export function ChecklistApp() {
 
                                     <ScrollArea className="flex-1 h-64 -mr-4">
                                         <div className="pr-4">
-                                        {finalTasks.length > 0 ? renderTasks(finalTasks, list.id) : (
+                                        {finalTasks.length > 0 ? renderTasks(finalTasks, list.id, `tasks-${list.id}-0`) : (
                                             <p className="text-sm text-muted-foreground text-center pt-4">
                                                 {list.tasks.length > 0 ? "No tasks match your filter." : "No tasks yet. Add one above!"}
                                             </p>
@@ -541,4 +610,3 @@ export function ChecklistApp() {
     </div>
   );
 }
-
