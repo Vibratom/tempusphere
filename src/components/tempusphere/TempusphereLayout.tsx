@@ -9,6 +9,7 @@ import { Footer } from './Footer';
 import { useHotkeys } from '@/hooks/use-hotkeys';
 import { TabbedPanels } from './TabbedPanels';
 import { Header } from './Header';
+import { CalendarProvider } from '@/contexts/CalendarContext';
 
 
 function AppContent() {

@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Calendar } from '../ui/calendar';
 import { format, parseISO, startOfDay } from 'date-fns';
@@ -20,15 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from '../ui/textarea';
-
-interface CalendarEvent {
-  id: string;
-  date: string; // ISO string for the date
-  time: string; // HH:MM
-  title: string;
-  description: string;
-  color: string;
-}
+import { useCalendar, CalendarEvent } from '@/contexts/CalendarContext';
 
 const eventColors = ['blue', 'green', 'red', 'purple', 'orange', 'yellow', 'pink'];
 
@@ -38,7 +29,7 @@ interface CalendarPanelProps {
 }
 
 export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPanelProps) {
-  const [events, setEvents] = useLocalStorage<CalendarEvent[]>('calendar:events', []);
+  const { events, addEvent, removeEvent } = useCalendar();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
   const [newEventTitle, setNewEventTitle] = useState('');
@@ -46,7 +37,7 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
   const [newEventDescription, setNewEventDescription] = useState('');
   const [newEventColor, setNewEventColor] = useState(eventColors[0]);
 
-  const addEvent = () => {
+  const handleAddEvent = () => {
     if (newEventTitle && selectedDate) {
       const newEvent: CalendarEvent = {
         id: Date.now().toString(),
@@ -56,15 +47,11 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
         description: newEventDescription,
         color: newEventColor,
       };
-      setEvents([...events, newEvent].sort((a,b) => a.time.localeCompare(b.time)));
+      addEvent(newEvent);
       setNewEventTitle('');
       setNewEventTime('12:00');
       setNewEventDescription('');
     }
-  };
-
-  const removeEvent = (id: string) => {
-    setEvents(events.filter((event) => event.id !== id));
   };
 
   const eventsByDay = events.reduce((acc, event) => {
@@ -180,7 +167,7 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
                             ))}
                         </SelectContent>
                     </Select>
-                    <Button onClick={addEvent} disabled={!newEventTitle || !selectedDate} className="w-full"><Plus className="mr-2 h-4 w-4"/>Add</Button>
+                    <Button onClick={handleAddEvent} disabled={!newEventTitle || !selectedDate} className="w-full"><Plus className="mr-2 h-4 w-4"/>Add</Button>
                 </div>
             </div>
           </div>

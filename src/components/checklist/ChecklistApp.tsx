@@ -31,6 +31,7 @@ import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hell
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useCalendar } from '@/contexts/CalendarContext';
 
 
 type Priority = 'none' | 'low' | 'medium' | 'high';
@@ -95,6 +96,7 @@ export function ChecklistApp() {
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [notifiedTasks, setNotifiedTasks] = useLocalStorage<string[]>('checklist:notifiedTasks', []);
   const { toast } = useToast();
+  const { addEvent, removeEvent } = useCalendar();
 
   useEffect(() => {
     setIsClient(true);
@@ -204,6 +206,16 @@ export function ChecklistApp() {
           return list;
         })
       );
+      if (newTask.dueDate) {
+          addEvent({
+              id: newTask.id,
+              date: newTask.dueDate,
+              time: '00:00', // Default time, could be improved
+              title: newTask.text,
+              description: `From checklist: ${lists.find(l => l.id === listId)?.title}`,
+              color: 'blue'
+          });
+      }
       setNewTaskState({ ...newTaskState, [parentId || listId]: { text: '' } });
     }
   };
@@ -230,6 +242,16 @@ export function ChecklistApp() {
   };
 
   const removeList = (listId: string) => {
+    const listToRemove = lists.find(list => list.id === listId);
+    if (listToRemove) {
+        const tasksToRemove = (tasks: Task[]) => {
+            tasks.forEach(task => {
+                if (task.dueDate) removeEvent(task.id);
+                if (task.subtasks) tasksToRemove(task.subtasks);
+            })
+        }
+        tasksToRemove(listToRemove.tasks);
+    }
     setLists(lists.filter((list) => list.id !== listId));
     const newStates = {...listStates};
     delete newStates[listId];
@@ -241,6 +263,10 @@ export function ChecklistApp() {
   }
 
   const removeTask = (listId: string, taskId: string) => {
+    const taskToRemove = findTask(lists.flatMap(l => l.tasks), taskId);
+    if(taskToRemove && taskToRemove.dueDate) {
+        removeEvent(taskId);
+    }
     setLists(lists.map(list => list.id === listId
         ? { ...list, tasks: findAndModifyTask(list.tasks, taskId, () => null) }
         : list
@@ -737,5 +763,3 @@ export function ChecklistApp() {
     </div>
   );
 }
-
-    
