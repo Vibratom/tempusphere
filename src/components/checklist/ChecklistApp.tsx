@@ -450,7 +450,7 @@ export function ChecklistApp() {
                                 {renderTasks(task.subtasks, listId, task.id)}
                             </div>
                           }
-                          <div className={cn("flex items-center gap-2 transition-opacity duration-200", (task.completed && !task.isRecurring) ? "opacity-0 h-0" : "opacity-0 group-hover/task:opacity-100")}>
+                          <div className={cn("flex items-center gap-2 transition-opacity duration-200 h-0 opacity-0 group-hover/task:h-auto group-hover/task:opacity-100", (task.completed && !task.isRecurring) ? "!opacity-0 !h-0" : "")}>
                             <Input 
                                 placeholder="Add sub-task..."
                                 value={newTaskState[task.id]?.text || ''}
@@ -593,28 +593,33 @@ export function ChecklistApp() {
                             onChange={(e) => handleNewTaskChange(list.id, { text: e.target.value })}
                             onKeyDown={(e) => e.key === 'Enter' && addTask(list.id)}
                             />
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
+                             <Popover>
+                                <PopoverTrigger asChild>
                                     <Button variant="outline" size="icon" className={cn((newTaskState[list.id]?.dueDate || newTaskState[list.id]?.isRecurring) && 'text-primary')}>
                                         <CalendarIcon className="h-4 w-4"/>
                                     </Button>
-                                </DropdownMenuTrigger>
-                                <PopoverContent className="w-auto p-0" asChild>
-                                     <DropdownMenuContent align="end">
-                                        <div className="p-2">
-                                        <DropdownMenuCheckboxItem checked={newTaskState[list.id]?.isRecurring} onCheckedChange={(checked) => handleNewTaskChange(list.id, { isRecurring: checked })}>
-                                            Daily Recurring
-                                        </DropdownMenuCheckboxItem>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="end">
+                                    <Calendar
+                                        mode="single"
+                                        selected={newTaskState[list.id]?.dueDate}
+                                        onSelect={(date) => handleNewTaskChange(list.id, { dueDate: date })}
+                                        initialFocus
+                                    />
+                                    <div className="p-4 border-t border-border">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={`recurring-${list.id}`} 
+                                                checked={newTaskState[list.id]?.isRecurring} 
+                                                onCheckedChange={(checked) => handleNewTaskChange(list.id, { isRecurring: checked as boolean })}
+                                            />
+                                            <label htmlFor={`recurring-${list.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                Daily Recurring
+                                            </label>
                                         </div>
-                                        <Calendar
-                                            mode="single"
-                                            selected={newTaskState[list.id]?.dueDate}
-                                            onSelect={(date) => handleNewTaskChange(list.id, { dueDate: date })}
-                                            initialFocus
-                                        />
-                                    </DropdownMenuContent>
+                                    </div>
                                 </PopoverContent>
-                            </DropdownMenu>
+                            </Popover>
                             <Button size="icon" onClick={() => addTask(list.id)}><Plus className="h-4 w-4"/></Button>
                         </div>
 
