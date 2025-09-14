@@ -1,7 +1,7 @@
 
 'use client';
 
-import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users } from "lucide-react";
+import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Landmark, BrainCircuit } from "lucide-react";
 import Link from "next/link";
 import { Footer } from "./Footer";
 import { Button } from "../ui/button";
@@ -13,6 +13,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import { PlatformLink } from "./PlatformLink";
 
 const features = [
     {
@@ -67,6 +68,11 @@ const features = [
     }
 ];
 
+const otherPlatforms = [
+    { name: 'Momentum', category: 'Finance', icon: Landmark, href: '#', color: 'bg-indigo-500 hover:bg-indigo-600' },
+    { name: 'EchoLearn', category: 'Education', icon: BrainCircuit, href: '#', color: 'bg-amber-500 hover:bg-amber-600' },
+]
+
 
 export function LandingPage() {
     return (
@@ -87,6 +93,18 @@ export function LandingPage() {
                         </Button>
                     </div>
                 </section>
+                
+                <section className="py-12 md:py-16">
+                    <div className="container mx-auto px-4 text-center">
+                         <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Other Tools</h2>
+                        <p className="max-w-3xl mx-auto text-lg text-muted-foreground mb-8">
+                            A collection of powerful utilities to help with daily tasks.
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3 max-w-md mx-auto">
+                            {otherPlatforms.map(p => <PlatformLink key={p.name} {...p} />)}
+                        </div>
+                    </div>
+                </section>
 
                 <section className="py-12 md:py-16 bg-secondary/30">
                     <div className="container mx-auto px-4">
@@ -101,6 +119,7 @@ export function LandingPage() {
                                             </div>
                                             <span>{feature.title}</span>
                                         </div>
+
                                     </AccordionTrigger>
                                     <AccordionContent className="text-base text-muted-foreground pl-12">
                                         {feature.description}

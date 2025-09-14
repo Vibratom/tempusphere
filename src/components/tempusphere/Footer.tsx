@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Calculator, Music, PenSquare, Gamepad2, Leaf, Combine, Clock, Mail, Landmark, BrainCircuit } from "lucide-react";
+import { Calculator, Music, PenSquare, Gamepad2, Leaf, Combine, Clock, Mail } from "lucide-react";
 import Link from "next/link";
 import { PlatformLink } from "./PlatformLink";
 
@@ -14,12 +14,6 @@ const vibratomPlatforms = [
     { name: 'Uniform', category: 'Converters', icon: Combine, href: 'https://uniform.vibratomstudios.com', color: 'bg-cyan-500 hover:bg-cyan-600' },
     { name: 'Tempusphere', category: 'Clock', icon: Clock, href: '/', color: 'bg-orange-500 hover:bg-orange-600' },
 ];
-
-const otherPlatforms = [
-    { name: 'Momentum', category: 'Finance', icon: Landmark, href: '#', color: 'bg-indigo-500 hover:bg-indigo-600' },
-    { name: 'EchoLearn', category: 'Education', icon: BrainCircuit, href: '#', color: 'bg-amber-500 hover:bg-amber-600' },
-]
-
 
 export function Footer() {
     return (
@@ -39,18 +33,6 @@ export function Footer() {
                     </Link>
                 </section>
                 
-                <hr className="border-gray-700 mb-12" />
-
-                <section className="mb-12">
-                    <h2 className="text-3xl font-bold text-white mb-3">Other Tools</h2>
-                    <p className="max-w-3xl mx-auto text-lg text-gray-400 mb-6">
-                        A collection of powerful utilities to help with daily tasks.
-                    </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3 max-w-md mx-auto">
-                        {otherPlatforms.map(p => <PlatformLink key={p.name} {...p} />)}
-                    </div>
-                </section>
-
                 <hr className="border-gray-700 mb-10" />
 
                 <section>
