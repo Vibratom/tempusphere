@@ -1,12 +1,18 @@
 
 'use client';
 
-import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Wand2, Briefcase } from "lucide-react";
+import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users } from "lucide-react";
 import Link from "next/link";
 import { Footer } from "./Footer";
 import { Button } from "../ui/button";
 import { PrimaryClock } from "./PrimaryClock";
 import { Header } from "./Header";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const features = [
     {
@@ -85,19 +91,23 @@ export function LandingPage() {
                 <section className="py-16 md:py-20 bg-secondary/30">
                     <div className="container mx-auto px-4">
                         <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">Features at a Glance</h2>
-                        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <Accordion type="single" collapsible className="w-full max-w-2xl mx-auto">
                             {features.map((feature, index) => (
-                                <div key={index} className="group relative flex items-start gap-4">
-                                    <div className="flex-shrink-0 mt-1 p-2 bg-background rounded-full border shadow-sm">
-                                      {feature.icon}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-semibold">{feature.title}</h3>
-                                        <p className="text-muted-foreground text-sm mt-1">{feature.description}</p>
-                                    </div>
-                                </div>
+                                <AccordionItem key={index} value={`item-${index}`}>
+                                    <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-shrink-0 p-2 bg-background rounded-full border shadow-sm">
+                                                {feature.icon}
+                                            </div>
+                                            <span>{feature.title}</span>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="text-base text-muted-foreground pl-16">
+                                        {feature.description}
+                                    </AccordionContent>
+                                </AccordionItem>
                             ))}
-                        </div>
+                        </Accordion>
                     </div>
                 </section>
             </main>
