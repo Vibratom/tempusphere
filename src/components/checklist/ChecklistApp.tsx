@@ -25,14 +25,13 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
-import { format, formatDistanceToNow, isPast, startOfDay, isToday, addDays } from 'date-fns';
+import { format, formatDistanceToNow, isPast, startOfDay, isToday, addDays, parseISO } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useCalendar } from '@/contexts/CalendarContext';
-import YAML from 'yaml';
 
 
 type Priority = 'none' | 'low' | 'medium' | 'high';
@@ -79,11 +78,6 @@ interface ListState {
     showCompleted: boolean;
 }
 
-interface BackupData {
-    lists: Checklist[];
-    listStates: Record<string, ListState>;
-}
-
 const findTask = (tasks: Task[], taskId: string): Task | null => {
     for (const task of tasks) {
         if (task.id === taskId) return task;
@@ -94,10 +88,10 @@ const findTask = (tasks: Task[], taskId: string): Task | null => {
 }
 
 export function ChecklistApp() {
-  const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV6', []);
+  const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV7', []);
   const [newListName, setNewListName] = useState('');
   const [newTaskState, setNewTaskState] = useState<Record<string, NewTaskState>>({});
-  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV5', {});
+  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV6', {});
   const [isClient, setIsClient] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [notifiedTasks, setNotifiedTasks] = useLocalStorage<string[]>('checklist:notifiedTasks', []);
@@ -446,7 +440,6 @@ export function ChecklistApp() {
             default:
                 break;
         }
-        // Recursively sort subtasks
         return sorted.map(task => ({ ...task, subtasks: sortTasks(task.subtasks) }));
     };
 
@@ -471,19 +464,152 @@ export function ChecklistApp() {
     return filterTasks(processedTasks);
   }
 
-  const handleExport = () => {
-    const data: BackupData = {
-        lists,
-        listStates
+  const exportToString = (): string => {
+    const taskToString = (task: Task, indent: string): string => {
+      let parts = [];
+      parts.push(`${indent}- [${task.completed && !task.isRecurring ? 'x' : ' '}] ${task.text}`);
+      
+      const details = [];
+      if (task.priority !== 'none') {
+        details.push(`Priority: ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}`);
+      }
+      if (task.dueDate) {
+        details.push(`Due: ${format(parseISO(task.dueDate), 'yyyy-MM-dd')}`);
+      }
+      if (task.isRecurring) {
+        details.push('Recurring');
+      }
+      
+      if (details.length > 0) {
+        parts.push(`(${details.join(') (')})`);
+      }
+      
+      let str = parts.join(' ');
+      
+      if (task.subtasks && task.subtasks.length > 0) {
+        str += '\n' + task.subtasks.map(st => taskToString(st, indent + '  ')).join('\n');
+      }
+      return str;
     };
-    const yamlString = `data:text/yaml;charset=utf-8,${encodeURIComponent(
-      YAML.stringify(data)
-    )}`;
+  
+    return lists.map(list => {
+      let title = `# ${list.title}`;
+      if (list.color && list.color !== 'hsl(var(--border))') {
+        title += ` (Theme: ${list.color})`;
+      }
+      const tasksStr = list.tasks.map(task => taskToString(task, '')).join('\n');
+      return `${title}\n${tasksStr}`;
+    }).join('\n---\n');
+  };
+  
+  const handleExport = () => {
+    const textData = exportToString();
+    const blob = new Blob([textData], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = yamlString;
-    link.download = "tempusphere_checklist_backup.yaml";
+    link.href = url;
+    link.download = "tempusphere_checklist_backup.txt";
     link.click();
-    toast({ title: 'Data Exported', description: 'Your checklists have been saved.' });
+    URL.revokeObjectURL(url);
+    toast({ title: 'Data Exported', description: 'Your checklists have been saved as a .txt file.' });
+  };
+  
+  const parseFromString = (text: string): { lists: Checklist[], listStates: Record<string, ListState> } => {
+    const newLists: Checklist[] = [];
+    const newListStates: Record<string, ListState> = {};
+  
+    const listChunks = text.split('\n---\n');
+  
+    listChunks.forEach(chunk => {
+      const lines = chunk.trim().split('\n').filter(line => line.trim() !== '');
+      if (lines.length === 0) return;
+  
+      const titleLine = lines[0];
+      const titleMatch = titleLine.match(/^#\s*(.*?)(?:\s\(Theme:\s(.*?)\))?$/);
+      if (!titleMatch) return;
+  
+      const listId = Date.now().toString() + Math.random();
+      const newList: Checklist = {
+        id: listId,
+        title: titleMatch[1],
+        color: titleMatch[2] || 'hsl(var(--border))',
+        tasks: [],
+      };
+      
+      newListStates[listId] = { filter: '', sortBy: 'manual', showCompleted: false };
+  
+      const parseTasks = (taskLines: string[], level = 0): [Task[], number] => {
+        const tasks: Task[] = [];
+        let i = 0;
+        while (i < taskLines.length) {
+          const line = taskLines[i];
+          const indent = (line.match(/^\s*/) || [''])[0].length;
+          const currentLevel = indent / 2;
+  
+          if (currentLevel < level) {
+            break; // End of sub-tasks for this level
+          }
+          
+          if (currentLevel === level) {
+            const taskMatch = line.match(/^\s*-\s*\[( |x)\]\s*(.*?)(?:\s*\((.*?)\))?$/);
+            if (taskMatch) {
+              const completed = taskMatch[1] === 'x';
+              let text = taskMatch[2].trim();
+              const details = taskMatch[3] || '';
+              
+              let priority: Priority = 'none';
+              let dueDate: string | undefined = undefined;
+              let isRecurring = false;
+              
+              const detailParts = details.split(') (');
+              detailParts.forEach(part => {
+                if (part.startsWith('Priority: ')) {
+                  priority = part.replace('Priority: ', '').toLowerCase() as Priority;
+                } else if (part.startsWith('Due: ')) {
+                  try {
+                    dueDate = startOfDay(new Date(part.replace('Due: ', ''))).toISOString();
+                  } catch (e) { /* ignore invalid date */ }
+                } else if (part === 'Recurring') {
+                  isRecurring = true;
+                }
+              });
+
+              const subTaskLines: string[] = [];
+              let j = i + 1;
+              while(j < taskLines.length && (taskLines[j].match(/^\s*/) || [''])[0].length / 2 > level) {
+                subTaskLines.push(taskLines[j]);
+                j++;
+              }
+              const [subtasks, consumed] = parseTasks(subTaskLines, level + 1);
+              
+              tasks.push({
+                id: Date.now().toString() + Math.random(),
+                text,
+                completed: completed && !isRecurring,
+                createdAt: Date.now(),
+                priority,
+                dueDate,
+                isRecurring,
+                subtasks,
+              });
+
+              i += 1 + consumed;
+            } else {
+              i++;
+            }
+          } else {
+            i++;
+          }
+        }
+        return [tasks, i];
+      };
+      
+      const [tasks] = parseTasks(lines.slice(1));
+      newList.tasks = tasks;
+      newLists.push(newList);
+    });
+  
+    return { lists: newLists, listStates: newListStates };
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -495,17 +621,19 @@ export function ChecklistApp() {
         try {
             const text = e.target?.result;
             if(typeof text !== 'string') throw new Error("Invalid file content");
-            const data: BackupData = YAML.parse(text);
+            
+            const { lists: importedLists, listStates: importedListStates } = parseFromString(text);
 
-            if (data.lists && data.listStates) {
-                // Here we would typically show a confirmation dialog
-                // For simplicity, we'll just overwrite.
-                setLists(data.lists);
-                setListStates(data.listStates);
+            if (importedLists.length > 0) {
+                setLists(importedLists);
+                setListStates(importedListStates);
                 
-                // Also update calendar events
                 setCalendarEvents([]);
-                const allTasks = data.lists.flatMap(l => l.tasks);
+                const allTasks = importedLists.flatMap(l => {
+                    const gatherTasks = (tasks: Task[]): Task[] => tasks.flatMap(t => [t, ...gatherTasks(t.subtasks)]);
+                    return gatherTasks(l.tasks);
+                });
+                
                 const tasksWithDueDate = allTasks.filter(t => t.dueDate);
                 tasksWithDueDate.forEach(task => {
                     addEvent({
@@ -518,9 +646,9 @@ export function ChecklistApp() {
                     });
                 })
 
-                toast({ title: 'Import Successful', description: 'Your checklist data has been restored.' });
+                toast({ title: 'Import Successful', description: 'Your checklist data has been restored from the .txt file.' });
             } else {
-                throw new Error("Invalid backup file format.");
+                throw new Error("Could not parse the backup file. Ensure it is a valid .txt backup.");
             }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Import Failed', description: (error as Error).message });
@@ -530,7 +658,6 @@ export function ChecklistApp() {
     if(importFileRef.current) importFileRef.current.value = ""; // Reset file input
   };
   
-
   const renderTasks = (tasks: Task[], listId: string, parentId: string) => {
     const listState = listStates[listId] || { filter: '', sortBy: 'manual', showCompleted: false };
     const isDragDisabled = listState.sortBy !== 'manual';
@@ -680,7 +807,7 @@ export function ChecklistApp() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-                <input type="file" ref={importFileRef} onChange={handleImport} accept=".yaml,.json" className="hidden" />
+                <input type="file" ref={importFileRef} onChange={handleImport} accept=".txt" className="hidden" />
             </CardContent>
         </Card>
       </div>
@@ -865,3 +992,5 @@ export function ChecklistApp() {
     </div>
   );
 }
+
+    
