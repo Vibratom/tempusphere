@@ -35,7 +35,7 @@ export function Footer() {
                 
                 <hr className="border-gray-700 mb-10" />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-center md:text-left">
                     <div className="space-y-4">
                          <h3 className="text-xl font-semibold text-white">Tempusphere</h3>
                          <p className="text-gray-400">Your all-in-one solution for time management. Built with privacy and customization in mind.</p>
@@ -48,10 +48,7 @@ export function Footer() {
                      <div className="space-y-4">
                         <h3 className="text-xl font-semibold text-white">Have a feature request?</h3>
                         <p className="text-gray-400">We'd love to hear from you! Email us with your ideas to help make Tempusphere even better.</p>
-                    </div>
-                    <div className="space-y-4 flex flex-col items-center md:items-end">
-                        <h3 className="text-xl font-semibold text-white">Get in Touch</h3>
-                        <a href="mailto:simplysub@vibratomstudios.com" className="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                        <a href="mailto:simplysub@vibratomstudios.com" className="inline-flex items-center justify-center md:justify-start gap-2 text-white hover:text-gray-300 transition-colors">
                             <Mail className="h-5 w-5" />
                             simplysub@vibratomstudios.com
                         </a>
