@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell } from 'lucide-react';
+import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell, Repeat } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -25,8 +25,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
-import { format, formatDistanceToNow, isPast, startOfDay, isToday } from 'date-fns';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { format, formatDistanceToNow, isPast, startOfDay, isToday, addDays } from 'date-fns';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
@@ -44,6 +44,7 @@ interface Task {
   dueDate?: string; // ISO string
   priority: Priority;
   subtasks: Task[];
+  isRecurring?: boolean;
 }
 
 interface Checklist {
@@ -55,6 +56,7 @@ interface Checklist {
 interface NewTaskState {
     text: string;
     dueDate?: Date;
+    isRecurring?: boolean;
 }
 
 interface ListState {
@@ -73,10 +75,10 @@ const findTask = (tasks: Task[], taskId: string): Task | null => {
 }
 
 export function ChecklistApp() {
-  const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV4', []);
+  const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV5', []);
   const [newListName, setNewListName] = useState('');
   const [newTaskState, setNewTaskState] = useState<Record<string, NewTaskState>>({});
-  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV3', {});
+  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV4', {});
   const [isClient, setIsClient] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [notifiedTasks, setNotifiedTasks] = useLocalStorage<string[]>('checklist:notifiedTasks', []);
@@ -176,6 +178,7 @@ export function ChecklistApp() {
         createdAt: Date.now(),
         dueDate: taskDetails.dueDate ? startOfDay(taskDetails.dueDate).toISOString() : undefined,
         priority: 'none',
+        isRecurring: taskDetails.isRecurring || false,
         subtasks: []
       };
       setLists(
@@ -231,6 +234,13 @@ export function ChecklistApp() {
     setLists(lists.map(list => {
       if (list.id === listId) {
         let newTasks = findAndModifyTask(list.tasks, taskId, (task) => {
+          if (task.isRecurring) {
+            return {
+              ...task,
+              dueDate: task.dueDate ? startOfDay(addDays(new Date(task.dueDate), 1)).toISOString() : undefined,
+              completed: false, // It never stays completed
+            };
+          }
           const newCompleted = !task.completed;
           const updateSubtasks = (subtasks: Task[]): Task[] => {
             return subtasks.map(st => ({ ...st, completed: newCompleted, subtasks: updateSubtasks(st.subtasks) }));
@@ -242,6 +252,13 @@ export function ChecklistApp() {
       return list;
     }));
   };
+
+  const setTaskRecurring = (listId: string, taskId: string, isRecurring: boolean) => {
+    setLists(lists.map(list => list.id === listId
+        ? { ...list, tasks: findAndModifyTask(list.tasks, taskId, (task) => ({...task, isRecurring})) }
+        : list
+    ));
+  }
   
   const setTaskPriority = (listId: string, taskId: string, priority: Priority) => {
     setLists(lists.map(list => list.id === listId
@@ -254,6 +271,7 @@ export function ChecklistApp() {
     let completed = 0;
     let total = 0;
     tasks.forEach(task => {
+        if(task.isRecurring) return;
         total++;
         if(task.completed) completed++;
         const subProgress = calculateProgress(task.subtasks);
@@ -271,7 +289,6 @@ export function ChecklistApp() {
     const list = lists.find(l => l.id === listId);
     if (!list) return;
   
-    // Find the task being dragged
     const findTaskAndPath = (tasks: Task[], taskId: string, path: string[] = []): { task: Task; path: string[] } | null => {
         for (let i = 0; i < tasks.length; i++) {
             const currentTask = tasks[i];
@@ -286,7 +303,6 @@ export function ChecklistApp() {
     if (!taskInfo) return;
     const taskToMove = { ...taskInfo.task };
 
-    // Function to remove task from its source
     const removeTaskFromTree = (tasks: Task[], taskId: string): Task[] => {
         return tasks.reduce((acc, task) => {
             if (task.id === taskId) return acc;
@@ -297,7 +313,6 @@ export function ChecklistApp() {
 
     let newTasks = removeTaskFromTree(list.tasks, draggableId);
 
-    // Function to add task to its destination
     const addTaskToTree = (tasks: Task[], parentId: string, taskToAdd: Task, index: number): Task[] => {
         if (parentId === '0') {
             tasks.splice(index, 0, taskToAdd);
@@ -322,6 +337,12 @@ export function ChecklistApp() {
   
   const sortedLists = useMemo(() => {
     return [...lists].sort((a, b) => {
+        const aProgress = calculateProgress(a.tasks);
+        const bProgress = calculateProgress(b.tasks);
+        const aIsDone = aProgress.total > 0 && aProgress.completed === aProgress.total;
+        const bIsDone = bProgress.total > 0 && bProgress.completed === bProgress.total;
+        if (aIsDone && !bIsDone) return 1;
+        if (!aIsDone && bIsDone) return -1;
         return parseInt(a.id, 10) - parseInt(b.id, 10);
     });
   }, [lists]);
@@ -331,7 +352,7 @@ export function ChecklistApp() {
     const date = new Date(dueDate);
     const dateStartOfDay = startOfDay(date);
     const todayStartOfDay = startOfDay(new Date());
-    const isOverdue = isPast(date) && dateStartOfDay.getTime() !== todayStartOfDay.getTime();
+    const isOverdue = isPast(date) && !isToday(date);
     
     return (
       <span className={cn(
@@ -354,7 +375,6 @@ export function ChecklistApp() {
   const getFilteredAndSortedTasks = (tasks: Task[], listId: string): Task[] => {
     const state = listStates[listId] || { filter: '', sortBy: 'manual', showCompleted: false };
     
-    // Recursive sort function
     const sortTasks = (tasksToSort: Task[]): Task[] => {
         let sorted = [...tasksToSort];
         switch (state.sortBy) {
@@ -373,27 +393,24 @@ export function ChecklistApp() {
                 break;
             case 'manual':
             default:
-                break; // Keep manual order
+                break;
         }
         return sorted.map(task => ({ ...task, subtasks: sortTasks(task.subtasks) }));
     };
 
     let processedTasks = state.sortBy === 'manual' ? tasks : sortTasks(tasks);
 
-    // Recursive filter function
     const filterTasks = (tasksToFilter: Task[], isTopLevel = true): Task[] => {
         return tasksToFilter.reduce((acc, task) => {
             const subtasks = filterTasks(task.subtasks, false);
-            
             const matchesFilter = !state.filter || task.text.toLowerCase().includes(state.filter.toLowerCase());
             const hasVisibleSubtask = subtasks.length > 0;
-            const isVisible = !task.completed || state.showCompleted;
+            
+            let isVisible = !task.completed || state.showCompleted;
+            if (task.isRecurring) isVisible = true;
 
             if ((matchesFilter || hasVisibleSubtask) && (isTopLevel ? isVisible : true)) {
-                acc.push({
-                    ...task,
-                    subtasks,
-                });
+                acc.push({ ...task, subtasks });
             }
             return acc;
         }, [] as Task[]);
@@ -424,7 +441,7 @@ export function ChecklistApp() {
                         {!isDragDisabled && <span {...provided.dragHandleProps} className="pt-1 cursor-grab opacity-30 group-hover/task:opacity-100 transition-opacity"><GripVertical className="h-4 w-4"/></span>}
                         <Checkbox id={`task-${task.id}`} checked={task.completed} onCheckedChange={() => toggleTask(listId, task.id)} className="mt-1" />
                         <div className="flex-1 space-y-1">
-                          <label htmlFor={`task-${task.id}`} className={cn("text-sm font-medium leading-none cursor-pointer", task.completed && "line-through text-muted-foreground")}>
+                          <label htmlFor={`task-${task.id}`} className={cn("text-sm font-medium leading-none cursor-pointer", task.completed && !task.isRecurring && "line-through text-muted-foreground")}>
                             {task.text}
                             <DueDateDisplay dueDate={task.dueDate} />
                           </label>
@@ -433,7 +450,7 @@ export function ChecklistApp() {
                                 {renderTasks(task.subtasks, listId, task.id)}
                             </div>
                           }
-                          <div className={cn("flex items-center gap-2 transition-opacity duration-200", task.completed ? "opacity-0 h-0" : "opacity-0 group-hover/task:opacity-100")}>
+                          <div className={cn("flex items-center gap-2 transition-opacity duration-200", (task.completed && !task.isRecurring) ? "opacity-0 h-0" : "opacity-0 group-hover/task:opacity-100")}>
                             <Input 
                                 placeholder="Add sub-task..."
                                 value={newTaskState[task.id]?.text || ''}
@@ -446,17 +463,26 @@ export function ChecklistApp() {
                         </div>
                       </div>
                       <div className="flex items-center gap-0.5 opacity-0 group-hover/task:opacity-100 transition-opacity">
+                        {task.isRecurring && <Repeat className="h-4 w-4 text-primary mr-1"/>}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
                                     <Flag className={cn("h-4 w-4", priorityColors[task.priority])} />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem onClick={() => setTaskPriority(listId, task.id, 'none')}>None</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setTaskPriority(listId, task.id, 'low')}><Flag className={cn("h-4 w-4 mr-2", priorityColors.low)}/>Low</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setTaskPriority(listId, task.id, 'medium')}><Flag className={cn("h-4 w-4 mr-2", priorityColors.medium)}/>Medium</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setTaskPriority(listId, task.id, 'high')}><Flag className={cn("h-4 w-4 mr-2", priorityColors.high)}/>High</DropdownMenuItem>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Options</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuCheckboxItem checked={task.isRecurring} onCheckedChange={(checked) => setTaskRecurring(listId, task.id, checked)}>
+                                    Daily Recurring
+                                </DropdownMenuCheckboxItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuRadioGroup value={task.priority} onValueChange={(p) => setTaskPriority(listId, task.id, p as Priority)}>
+                                    <DropdownMenuRadioItem value='none'>None</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value='low'><Flag className={cn("h-4 w-4 mr-2", priorityColors.low)}/>Low</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value='medium'><Flag className={cn("h-4 w-4 mr-2", priorityColors.medium)}/>Medium</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value='high'><Flag className={cn("h-4 w-4 mr-2", priorityColors.high)}/>High</DropdownMenuRadioItem>
+                                </DropdownMenuRadioGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeTask(listId, task.id)}>
@@ -475,7 +501,7 @@ export function ChecklistApp() {
     );
   };
   
-  if (!isClient) return null; // Prevent hydration mismatch with drag and drop
+  if (!isClient) return null;
 
   return (
     <div className="w-full max-w-7xl mx-auto">
@@ -567,21 +593,28 @@ export function ChecklistApp() {
                             onChange={(e) => handleNewTaskChange(list.id, { text: e.target.value })}
                             onKeyDown={(e) => e.key === 'Enter' && addTask(list.id)}
                             />
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" size="icon" className={cn(newTaskState[list.id]?.dueDate && 'text-primary')}>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon" className={cn((newTaskState[list.id]?.dueDate || newTaskState[list.id]?.isRecurring) && 'text-primary')}>
                                         <CalendarIcon className="h-4 w-4"/>
                                     </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={newTaskState[list.id]?.dueDate}
-                                        onSelect={(date) => handleNewTaskChange(list.id, { dueDate: date })}
-                                        initialFocus
-                                    />
+                                </DropdownMenuTrigger>
+                                <PopoverContent className="w-auto p-0" asChild>
+                                     <DropdownMenuContent align="end">
+                                        <div className="p-2">
+                                        <DropdownMenuCheckboxItem checked={newTaskState[list.id]?.isRecurring} onCheckedChange={(checked) => handleNewTaskChange(list.id, { isRecurring: checked })}>
+                                            Daily Recurring
+                                        </DropdownMenuCheckboxItem>
+                                        </div>
+                                        <Calendar
+                                            mode="single"
+                                            selected={newTaskState[list.id]?.dueDate}
+                                            onSelect={(date) => handleNewTaskChange(list.id, { dueDate: date })}
+                                            initialFocus
+                                        />
+                                    </DropdownMenuContent>
                                 </PopoverContent>
-                            </Popover>
+                            </DropdownMenu>
                             <Button size="icon" onClick={() => addTask(list.id)}><Plus className="h-4 w-4"/></Button>
                         </div>
 
