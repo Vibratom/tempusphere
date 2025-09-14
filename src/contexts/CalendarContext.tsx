@@ -24,7 +24,7 @@ interface CalendarContextType {
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
-  const [events, setEvents] = useLocalStorage<CalendarEvent[]>('calendar:events', []);
+  const [events, setEvents] = useLocalStorage<CalendarEvent[]>('calendar:eventsV2', []);
 
   const addEvent = (event: CalendarEvent) => {
     setEvents(prev => [...prev, event].sort((a,b) => a.time.localeCompare(b.time)));
@@ -56,3 +56,5 @@ export function useCalendar() {
   }
   return context;
 }
+
+    

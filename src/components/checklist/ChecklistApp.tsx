@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell, Repeat, Palette, MoreVertical } from 'lucide-react';
+import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell, Repeat, Palette, MoreVertical, Upload, Download } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -78,6 +78,11 @@ interface ListState {
     showCompleted: boolean;
 }
 
+interface BackupData {
+    lists: Checklist[];
+    listStates: Record<string, ListState>;
+}
+
 const findTask = (tasks: Task[], taskId: string): Task | null => {
     for (const task of tasks) {
         if (task.id === taskId) return task;
@@ -96,7 +101,9 @@ export function ChecklistApp() {
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [notifiedTasks, setNotifiedTasks] = useLocalStorage<string[]>('checklist:notifiedTasks', []);
   const { toast } = useToast();
-  const { addEvent, removeEvent } = useCalendar();
+  const { addEvent, removeEvent, setEvents: setCalendarEvents } = useCalendar();
+  const importFileRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     setIsClient(true);
@@ -463,6 +470,66 @@ export function ChecklistApp() {
     return filterTasks(processedTasks);
   }
 
+  const handleExport = () => {
+    const data: BackupData = {
+        lists,
+        listStates
+    };
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+      JSON.stringify(data, null, 2)
+    )}`;
+    const link = document.createElement("a");
+    link.href = jsonString;
+    link.download = "tempusphere_checklist_backup.json";
+    link.click();
+    toast({ title: 'Data Exported', description: 'Your checklists have been saved.' });
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const text = e.target?.result;
+            if(typeof text !== 'string') throw new Error("Invalid file content");
+            const data: BackupData = JSON.parse(text);
+
+            if (data.lists && data.listStates) {
+                // Here we would typically show a confirmation dialog
+                // For simplicity, we'll just overwrite.
+                setLists(data.lists);
+                setListStates(data.listStates);
+                
+                // Also update calendar events
+                setCalendarEvents([]);
+                const allTasks = data.lists.flatMap(l => l.tasks);
+                const tasksWithDueDate = allTasks.filter(t => t.dueDate);
+                tasksWithDueDate.forEach(task => {
+                    addEvent({
+                        id: task.id,
+                        date: task.dueDate!,
+                        time: '00:00',
+                        title: task.text,
+                        description: `From checklist`,
+                        color: 'blue'
+                    });
+                })
+
+                toast({ title: 'Import Successful', description: 'Your checklist data has been restored.' });
+            } else {
+                throw new Error("Invalid backup file format.");
+            }
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Import Failed', description: (error as Error).message });
+        }
+    };
+    reader.readAsText(file);
+    if(importFileRef.current) importFileRef.current.value = ""; // Reset file input
+  };
+  
+
   const renderTasks = (tasks: Task[], listId: string, parentId: string) => {
     const listState = listStates[listId] || { filter: '', sortBy: 'manual', showCompleted: false };
     const isDragDisabled = listState.sortBy !== 'manual';
@@ -563,26 +630,60 @@ export function ChecklistApp() {
                 <Button size="sm" onClick={requestNotificationPermission}>Enable</Button>
             </div>
         )}
-
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Create a New List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              placeholder="E.g., Plan a weekend camping trip..."
-              value={newListName}
-              onChange={(e) => setNewListName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addList()}
-            />
-            <Button onClick={addList} disabled={!newListName.trim()}>
-              <Plus className="mr-2 h-4 w-4" /> Add List
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
       
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <Card>
+            <CardHeader>
+            <CardTitle>Create a New List</CardTitle>
+            </CardHeader>
+            <CardContent>
+            <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                placeholder="E.g., Plan a weekend camping trip..."
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addList()}
+                />
+                <Button onClick={addList} disabled={!newListName.trim()}>
+                <Plus className="mr-2 h-4 w-4" /> Add List
+                </Button>
+            </div>
+            </CardContent>
+        </Card>
+         <Card>
+            <CardHeader>
+                <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="flex gap-2">
+                <Button variant="outline" onClick={handleExport} className="w-full">
+                    <Download className="mr-2 h-4 w-4" /> Export Data
+                </Button>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="outline" className="w-full">
+                            <Upload className="mr-2 h-4 w-4" /> Import Data
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Import Checklist Data</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will overwrite all your current checklists and their settings. This action cannot be undone. Please ensure you have a backup if needed.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => importFileRef.current?.click()}>
+                            Confirm and Import
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <input type="file" ref={importFileRef} onChange={handleImport} accept=".json" className="hidden" />
+            </CardContent>
+        </Card>
+      </div>
+
       <DragDropContext onDragEnd={onDragEnd}>
         {lists.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
@@ -763,3 +864,5 @@ export function ChecklistApp() {
     </div>
   );
 }
+
+    
