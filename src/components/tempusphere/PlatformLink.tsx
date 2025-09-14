@@ -17,12 +17,12 @@ export function PlatformLink({ name, category, icon: Icon, href, color }: Platfo
     return (
         <Link href={href} target={isExternal ? "_blank" : "_self"} rel={isExternal ? "noopener noreferrer" : ""}>
             <div className={cn(
-                "group flex h-full flex-col items-center justify-center p-4 rounded-lg text-white transition-all duration-300 transform hover:scale-105 hover:shadow-lg",
+                "group flex h-full flex-col items-center justify-center p-3 rounded-lg text-white transition-all duration-300 transform hover:scale-105 hover:shadow-lg",
                 color
             )}>
-                <Icon className="h-8 w-8 mb-2" />
-                <span className="font-semibold text-lg">{name}</span>
-                <span className="text-sm opacity-80">{category}</span>
+                <Icon className="h-7 w-7 mb-1.5" />
+                <span className="font-semibold text-base">{name}</span>
+                <span className="text-xs opacity-80">{category}</span>
             </div>
         </Link>
     );

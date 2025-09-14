@@ -67,9 +67,9 @@ export function LandingPage() {
         <div className="min-h-screen w-full bg-background flex flex-col">
             <Header />
             <main className="flex-1">
-                <section className="py-20 md:py-32 text-center bg-background">
+                <section className="py-16 md:py-24 text-center bg-background">
                     <div className="container mx-auto px-4 flex flex-col items-center">
-                        <div className="mb-8">
+                        <div className="mb-6">
                             <PrimaryClock />
                         </div>
                         <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4">Welcome to Tempusphere</h1>
@@ -82,17 +82,17 @@ export function LandingPage() {
                     </div>
                 </section>
 
-                <section className="py-20 md:py-24 bg-secondary/30">
+                <section className="py-16 md:py-20 bg-secondary/30">
                     <div className="container mx-auto px-4">
-                        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Features at a Glance</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">Features at a Glance</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {features.map((feature, index) => (
                                 <div key={index} className="bg-card p-6 rounded-lg shadow-sm border">
-                                    <div className="flex items-center gap-4 mb-4">
+                                    <div className="flex items-center gap-4 mb-3">
                                         {feature.icon}
                                         <h3 className="text-xl font-semibold">{feature.title}</h3>
                                     </div>
-                                    <p className="text-muted-foreground">{feature.description}</p>
+                                    <p className="text-muted-foreground text-sm">{feature.description}</p>
                                 </div>
                             ))}
                         </div>
