@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell, Repeat, Palette, MoreVertical, Upload, Download, Star, Sparkles, CheckCircle2, FileText, Share2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell, Repeat, Palette, MoreVertical, Upload, Download, Star, Sparkles, CheckCircle2, FileText, Share2, AlertCircle, Landmark, BrainCircuit, DraftingCompass, KanbanSquare, Table, UtensilsCrossed } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -32,6 +32,7 @@ import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useCalendar } from '@/contexts/CalendarContext';
+import { PlatformLink } from '../tempusphere/PlatformLink';
 
 
 type Priority = 'none' | 'low' | 'medium' | 'high';
@@ -99,6 +100,17 @@ const featureList = [
     { icon: <Palette className="h-5 w-5 text-pink-500" />, title: 'Custom List Themes', description: 'Personalize each checklist with a unique color theme for better organization.' },
     { icon: <FileText className="h-5 w-5 text-orange-500" />, title: 'Human-Readable Export/Import', description: 'Backup and restore your data using a simple, editable .txt file format.' },
 ];
+
+const otherPlatforms = [
+    { name: 'Momentum', category: 'Finance', icon: Landmark, href: '#', color: 'bg-indigo-500 hover:bg-indigo-600', description: 'Track expenses and manage budgets with ease.' },
+    { name: 'EchoLearn', category: 'Education', icon: BrainCircuit, href: '#', color: 'bg-amber-500 hover:bg-amber-600', description: 'Create and share interactive learning modules.' },
+    { name: 'Canvas', category: 'Whiteboard', icon: DraftingCompass, href: '#', color: 'bg-sky-500 hover:bg-sky-600', description: 'Collaborate visually with a digital whiteboard.' },
+    { name: 'Scribe', category: 'Notes', icon: FileText, href: '#', color: 'bg-gray-500 hover:bg-gray-600', description: 'A clean space for your thoughts and documents.' },
+    { name: 'Gridify', category: 'Spreadsheets', icon: Table, href: '#', color: 'bg-emerald-500 hover:bg-emerald-600', description: 'Organize and analyze data in spreadsheets.' },
+    { name: 'Epicure', category: 'Recipes', icon: UtensilsCrossed, href: '#', color: 'bg-yellow-500 hover:bg-yellow-600', description: 'Organize recipes and plan your meals.' },
+    { name: 'NexusFlow', category: 'Projects', icon: KanbanSquare, href: '#', color: 'bg-rose-500 hover:bg-rose-600', description: 'Manage projects with Kanban-style boards.' },
+    { name: 'Checklist', category: 'To-Do List', icon: ListChecks, href: '/checklist', color: 'bg-blue-500 hover:bg-blue-600', description: 'Simple checklists for daily tasks and goals.' },
+]
 
 export function ChecklistApp() {
   const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV7', []);
@@ -1003,6 +1015,20 @@ export function ChecklistApp() {
         )}
       </DragDropContext>
       
+       <Card className="mt-12">
+            <CardHeader>
+                <CardTitle>Other Tools</CardTitle>
+            </CardHeader>
+            <CardContent>
+                 <p className="max-w-3xl text-lg text-muted-foreground mb-8">
+                    Tempusphere is part of a growing ecosystem of powerful utilities to help with daily tasks.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {otherPlatforms.map(p => <PlatformLink key={p.name} {...p} />)}
+                </div>
+            </CardContent>
+        </Card>
+
        <Card className="mt-12">
             <CardHeader>
                 <CardTitle>Features Overview</CardTitle>
