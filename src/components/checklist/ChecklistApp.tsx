@@ -18,7 +18,6 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
@@ -32,6 +31,7 @@ import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useCalendar } from '@/contexts/CalendarContext';
+import YAML from 'yaml';
 
 
 type Priority = 'none' | 'low' | 'medium' | 'high';
@@ -475,12 +475,12 @@ export function ChecklistApp() {
         lists,
         listStates
     };
-    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-      JSON.stringify(data, null, 2)
+    const yamlString = `data:text/yaml;charset=utf-8,${encodeURIComponent(
+      YAML.stringify(data)
     )}`;
     const link = document.createElement("a");
-    link.href = jsonString;
-    link.download = "tempusphere_checklist_backup.json";
+    link.href = yamlString;
+    link.download = "tempusphere_checklist_backup.yaml";
     link.click();
     toast({ title: 'Data Exported', description: 'Your checklists have been saved.' });
   };
@@ -494,7 +494,7 @@ export function ChecklistApp() {
         try {
             const text = e.target?.result;
             if(typeof text !== 'string') throw new Error("Invalid file content");
-            const data: BackupData = JSON.parse(text);
+            const data: BackupData = YAML.parse(text);
 
             if (data.lists && data.listStates) {
                 // Here we would typically show a confirmation dialog
@@ -679,7 +679,7 @@ export function ChecklistApp() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-                <input type="file" ref={importFileRef} onChange={handleImport} accept=".json" className="hidden" />
+                <input type="file" ref={importFileRef} onChange={handleImport} accept=".yaml,.json" className="hidden" />
             </CardContent>
         </Card>
       </div>
@@ -864,5 +864,3 @@ export function ChecklistApp() {
     </div>
   );
 }
-
-    
