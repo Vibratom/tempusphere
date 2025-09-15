@@ -82,6 +82,7 @@ const deserializeObjects = (serialized: any[]): Promise<CanvasObject[]> => {
 export function CanvasView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   const [objects, setObjects] = useState<CanvasObject[]>([]);
   const [savedObjects, setSavedObjects] = useLocalStorage<any[]>('projects:canvasObjects-v2', []);
@@ -105,15 +106,28 @@ export function CanvasView() {
   const [isClient, setIsClient] = useState(false);
   const editingInputRef = useRef<HTMLInputElement>(null);
   
+  // Effect for initial loading from local storage
+  useEffect(() => {
+    setIsClient(true);
+    deserializeObjects(savedObjects).then(loadedObjects => {
+      setObjects(loadedObjects);
+      setHistory([loadedObjects]);
+      setHistoryIndex(0);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
   const updateCanvasState = (newObjects: CanvasObject[] | ((prev: CanvasObject[]) => CanvasObject[]), newHistoryEntry = true) => {
-    const updatedObjects = typeof newObjects === 'function' ? newObjects(objects) : newObjects;
-    setObjects(updatedObjects);
-
-    if (newHistoryEntry) {
-        const newHistory = history.slice(0, historyIndex + 1);
-        setHistory([...newHistory, updatedObjects]);
-        setHistoryIndex(newHistory.length);
-    }
+    const updater = typeof newObjects === 'function' ? newObjects : () => newObjects;
+    setObjects(prev => {
+        const updated = updater(prev);
+        if (newHistoryEntry) {
+            const newHistory = history.slice(0, historyIndex + 1);
+            setHistory([...newHistory, updated]);
+            setHistoryIndex(newHistory.length);
+        }
+        return updated;
+    });
   };
 
   const handleUndo = useCallback(() => {
@@ -131,19 +145,6 @@ export function CanvasView() {
         setObjects(history[newIndex]);
     }
   }, [history, historyIndex]);
-
-  // Effect for initial loading from local storage
-  useEffect(() => {
-    setIsClient(true);
-    if (savedObjects.length > 0) {
-      deserializeObjects(savedObjects).then(loadedObjects => {
-        setObjects(loadedObjects);
-        setHistory([loadedObjects]);
-        setHistoryIndex(0);
-      });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   
   // Effect for saving to local storage whenever objects change
   useEffect(() => {
@@ -159,6 +160,25 @@ export function CanvasView() {
       return canvas ? canvas.getContext('2d') : null;
   }
   
+  // Effect to handle canvas resizing
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = canvasContainerRef.current;
+    if (!canvas || !container) return;
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+        canvas.width = width;
+        canvas.height = height;
+      }
+    });
+
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+
   // Redraw canvas whenever objects, scale, or offset change
   useEffect(() => {
     const ctx = getCanvasContext();
@@ -302,7 +322,8 @@ export function CanvasView() {
   const handleMouseDown = (e: React.MouseEvent) => {
     const { x, y } = getCoords(e);
     
-    if (isPanning) {
+    if (e.buttons === 4 || isPanning) { // Middle mouse button or spacebar held
+        setIsPanning(true);
         setPanStart({ x: e.clientX - viewOffset.x, y: e.clientY - viewOffset.y });
         return;
     }
@@ -339,7 +360,7 @@ export function CanvasView() {
       pathWithStartPoint.y = bounds.minY;
       pathWithStartPoint.points = pathWithStartPoint.points.map(p => ({ x: p.x - bounds.minX, y: p.y - bounds.minY }));
 
-      updateCanvasState(prev => [...prev, pathWithStartPoint]);
+      setObjects(prev => [...prev, pathWithStartPoint]);
       setSelectedObjectId(pathWithStartPoint.id);
     } else if (tool === 'select') {
         const clickedObject = getObjectAtPosition(x, y);
@@ -378,28 +399,29 @@ export function CanvasView() {
     }
 
     if (isDrawing && tool === 'pencil') {
-      updateCanvasState(prev => prev.map(obj => {
+      setObjects(prev => prev.map(obj => {
         if (obj.id === selectedObjectId && obj.type === 'path') {
             const newPoints = [...obj.points, { x: x - obj.x, y: y - obj.y }];
             return { ...obj, points: newPoints };
         }
         return obj;
-      }), false);
+      }));
     } else if (isDragging && tool === 'select' && selectedObjectId) {
-        updateCanvasState(prev => prev.map(obj => {
+        setObjects(prev => prev.map(obj => {
             if(obj.id === selectedObjectId) {
                 return { ...obj, x: x - dragStart.x, y: y - dragStart.y };
             }
             return obj;
-        }), false);
+        }));
     }
   };
 
   const handleMouseUp = () => {
     if (isDrawing || isDragging) {
+        let needsHistoryEntry = true;
         const currentPath = objects.find(o => o.id === selectedObjectId);
         if (currentPath && currentPath.type === 'path' && currentPath.points.length > 1) {
-             updateCanvasState(prev => prev.map(obj => {
+             const newObjects = objects.map(obj => {
                 if (obj.id === selectedObjectId && obj.type === 'path') {
                     const bounds = getObjectBounds(obj);
                     return {
@@ -410,9 +432,12 @@ export function CanvasView() {
                     };
                 }
                 return obj;
-            }));
-        } else {
-             // Create history entry on mouse up for non-path or short-path objects
+            });
+            updateCanvasState(newObjects, true);
+            needsHistoryEntry = false;
+        } 
+        
+        if (needsHistoryEntry) {
             const newHistory = history.slice(0, historyIndex + 1);
             setHistory([...newHistory, objects]);
             setHistoryIndex(newHistory.length);
@@ -541,7 +566,7 @@ export function CanvasView() {
           }
           return obj;
       });
-      updateCanvasState(newObjects, false);
+      setObjects(newObjects);
   }
 
   const handleTextEditBlur = () => {
@@ -557,6 +582,13 @@ export function CanvasView() {
         const zoomIntensity = 0.1;
         const newScale = scale - e.deltaY * zoomIntensity * 0.1;
         setScale(Math.min(Math.max(0.1, newScale), 10));
+    } else {
+      // Allow vertical scroll to pan up/down
+      e.preventDefault();
+      setViewOffset(prev => ({
+        ...prev,
+        y: prev.y - e.deltaY,
+      }));
     }
   }
 
@@ -606,15 +638,14 @@ export function CanvasView() {
              </div>
             
             <div 
+              ref={canvasContainerRef}
               className="flex-1 w-full h-full bg-card relative"
               style={{ cursor: isPanning ? 'grabbing' : (tool === 'pencil' ? 'crosshair' : (tool === 'text' ? 'text' : 'default')) }}
               onWheel={handleWheel}
             >
               <canvas
                 ref={canvasRef}
-                width={1200}
-                height={780}
-                className="w-full h-full"
+                className="absolute top-0 left-0 w-full h-full"
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
@@ -649,5 +680,7 @@ export function CanvasView() {
     </div>
   );
 }
+
+    
 
     
