@@ -2,11 +2,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, useDragControls, useMotionValue, useTransform } from 'framer-motion';
+import { motion, useDragControls, useMotionValue } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
-import { Plus, Trash2, Zap, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { Plus, Trash2, Zap, ZoomIn, ZoomOut } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectsContext';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { cn } from '@/lib/utils';
@@ -46,7 +46,7 @@ const NodeComponent = ({ node, onUpdate, onUpdateText, onAddChild, onDelete, onC
     <motion.div
         layout
         initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1, x: node.x, y: node.y }}
+        animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.5 }}
         drag
         dragMomentum={false}
@@ -55,6 +55,7 @@ const NodeComponent = ({ node, onUpdate, onUpdateText, onAddChild, onDelete, onC
             node.id === 'root' ? 'bg-primary text-primary-foreground' : 'bg-card text-card-foreground border',
             isSelected && "ring-2 ring-accent"
         )}
+        style={{ x: node.x, y: node.y }}
         onDragEnd={(event, info) => {
             onUpdate(node.id, { x: node.x + info.offset.x, y: node.y + info.offset.y });
         }}
@@ -89,12 +90,11 @@ const NodeComponent = ({ node, onUpdate, onUpdateText, onAddChild, onDelete, onC
 };
 
 const Line = ({ fromNode, toNode }: { fromNode: Node, toNode: Node }) => {
-    const fromX = fromNode.x + 80; // center of the node
-    const fromY = fromNode.y + 25; // middle of the node
-    const toX = toNode.x + 80;
-    const toY = toNode.y + 25;
+    const fromX = fromNode.x + 88; // approx center of the node (160/2 + p-2)
+    const fromY = fromNode.y + 26; // approx middle
+    const toX = toNode.x + 88;
+    const toY = toNode.y + 26;
     
-    // Simple straight line for now
     return (
         <motion.path
             d={`M ${fromX} ${fromY} L ${toX} ${toY}`}
@@ -110,7 +110,7 @@ const Line = ({ fromNode, toNode }: { fromNode: Node, toNode: Node }) => {
 export function MindMapView() {
   const [nodes, setNodes] = useLocalStorage<Node[]>('projects:mindmap', initialNodes);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const { addTask } = useProjects();
+  const addTask = useProjects(state => state.addTask);
   const { toast } = useToast();
   
   const [scale, setScale] = useState(1);
@@ -157,10 +157,11 @@ export function MindMapView() {
     }
 
     setNodes(nodes.filter(n => !idsToDelete.has(n.id)));
+    setSelectedNodeId(null);
   };
   
   const handleConvertToTask = (text: string) => {
-      const { board } = useProjects.getState();
+      const board = useProjects.getState().board;
       const todoColumnId = board.columnOrder.length > 0 ? board.columnOrder[0] : null;
 
       if(todoColumnId) {
@@ -202,11 +203,15 @@ export function MindMapView() {
     <Card className="w-full h-full flex flex-col">
         <CardContent className="p-0 flex-1 relative overflow-hidden" ref={containerRef} onClick={() => setSelectedNodeId(null)}>
            <motion.div 
-             className="mindmap-canvas absolute top-0 left-0 w-full h-full origin-top-left"
+             className="mindmap-canvas absolute top-0 left-0 origin-top-left"
              style={{ scale, x: panX, y: panY }}
+             drag 
+             dragMomentum={false}
+             _dragX={panX} 
+             _dragY={panY}
+             dragConstraints={containerRef}
            >
-             <motion.div className="w-full h-full" drag dragMomentum={false}>
-                <svg className="absolute w-full h-full pointer-events-none" style={{ top: 0, left: 0, overflow: 'visible' }}>
+                <svg className="absolute w-[200vw] h-[200vh] pointer-events-none" style={{ top: 0, left: 0, overflow: 'visible' }}>
                     {nodes.map(node => {
                         const parent = nodes.find(p => p.id === node.parentId);
                         if (!parent) return null;
@@ -226,7 +231,6 @@ export function MindMapView() {
                     onSelect={setSelectedNodeId}
                     />
                 ))}
-              </motion.div>
             </motion.div>
 
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">

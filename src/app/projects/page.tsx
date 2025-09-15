@@ -73,7 +73,7 @@ function ProjectsContent() {
                           <TabsContent value="gantt" className="mt-4 flex-1 flex flex-col">
                               <GanttChartView />
                           </TabsContent>
-                          <TabsContent value="mindmap" className="mt-4 flex-1">
+                          <TabsContent value="mindmap" className="mt-4 flex-1 flex flex-col">
                               <MindMapView />
                           </TabsContent>
                           <TabsContent value="checklist" className="mt-4">
