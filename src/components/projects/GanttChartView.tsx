@@ -61,7 +61,7 @@ export function GanttChartView() {
                     start = startOfMonth(currentDate);
                     end = endOfMonth(currentDate);
                 } else {
-                    const projectStart = tasks.length > 0 ? parseISO(tasks[0].startDate || tasks[0].dueDate!) : startOfMonth(new Date());
+                    const projectStart = tasks.length > 0 && tasks[0].startDate ? parseISO(tasks[0].startDate) : startOfMonth(new Date());
                     start = startOfWeek(startOfMonth(projectStart), { weekStartsOn: 1 });
                     end = endOfWeek(addDays(new Date(), 30), { weekStartsOn: 1 });
                 }
@@ -74,7 +74,7 @@ export function GanttChartView() {
             const weekCount = Math.ceil(validDateRange.length / 7);
             columns = `repeat(${weekCount}, minmax(140px, 1fr))`;
         } else {
-            columns = `repeat(${validDateRange.length}, minmax(40px, 1fr))`;
+            columns = `repeat(${validDateRange.length}, minmax(60px, 1fr))`;
         }
         
         return { dateRange: validDateRange, gridTemplateColumns: columns };
@@ -174,7 +174,7 @@ export function GanttChartView() {
                             </div>
                             {days.map(date => (
                                 <div key={date.toISOString()} className={cn(
-                                    "text-center border-l p-2",
+                                    "text-center border-l p-2 whitespace-nowrap",
                                     isToday(date) && "bg-primary/20",
                                 )}>
                                     <div className="text-xs">{format(date, 'E')}</div>
@@ -191,7 +191,7 @@ export function GanttChartView() {
             <>
                 {dateRange.map(date => (
                     <div key={date.toISOString()} className={cn(
-                        "text-center border-l p-2",
+                        "text-center border-l p-2 whitespace-nowrap",
                         isToday(date) && "bg-primary/20",
                     )}>
                         <div className="text-xs">{format(date, 'E')}</div>
@@ -236,8 +236,8 @@ export function GanttChartView() {
             <CardContent className="flex-1 flex overflow-hidden">
                 <div className="flex w-full">
                     <div className="w-56 sticky left-0 bg-background z-20 border-r">
-                         <div className="h-[53px] flex items-center p-2 font-semibold border-b bg-muted/30">Task</div>
-                         <ScrollArea className="h-[calc(100%-53px)]">
+                         <div className="h-[72px] flex items-center p-2 font-semibold border-b bg-muted/30">Task</div>
+                         <ScrollArea className="h-[calc(100%-72px)]">
                             {tasks.map(task => (
                                 <div key={task.id} className="h-12 flex items-center p-2 border-b truncate">
                                     <TooltipProvider>
