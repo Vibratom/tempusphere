@@ -27,6 +27,13 @@ const PlaceholderTool = ({ name, icon: Icon }: { name: string, icon: React.Compo
     </Card>
 );
 
+const ResponsiveTabsTrigger = ({ value, icon: Icon, children }: { value: string, icon: React.ElementType, children: React.ReactNode }) => (
+    <TabsTrigger value={value} className="flex-col h-auto gap-1 md:flex-row md:gap-2">
+        <Icon className="w-5 h-5" />
+        <span className="hidden md:inline">{children}</span>
+    </TabsTrigger>
+);
+
 
 function ProjectsContent() {
   return (
@@ -37,15 +44,15 @@ function ProjectsContent() {
                 <Header />
                 <main className="flex-1 flex flex-col items-center p-4 md:p-8">
                     <Tabs defaultValue="board" className="w-full max-w-7xl">
-                        <TabsList className="grid w-full grid-cols-4 md:grid-cols-8">
-                            <TabsTrigger value="board"><KanbanSquare className="mr-2"/>Board</TabsTrigger>
-                            <TabsTrigger value="list"><List className="mr-2"/>List</TabsTrigger>
-                            <TabsTrigger value="gantt"><BarChartHorizontal className="mr-2"/>Gantt</TabsTrigger>
-                            <TabsTrigger value="calendar-view"><Calendar className="mr-2"/>Calendar</TabsTrigger>
-                            <TabsTrigger value="mindmap"><BrainCircuit className="mr-2"/>Mind Map</TabsTrigger>
-                            <TabsTrigger value="checklist"><ListChecks className="mr-2"/>Checklist</TabsTrigger>
-                            <TabsTrigger value="spreadsheet"><Table className="mr-2"/>Spreadsheet</TabsTrigger>
-                            <TabsTrigger value="canvas"><DraftingCompass className="mr-2"/>Canvas</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-8 md:grid-cols-4 lg:grid-cols-8">
+                            <ResponsiveTabsTrigger value="board" icon={KanbanSquare}>Board</ResponsiveTabsTrigger>
+                            <ResponsiveTabsTrigger value="list" icon={List}>List</ResponsiveTabsTrigger>
+                            <ResponsiveTabsTrigger value="gantt" icon={BarChartHorizontal}>Gantt</ResponsiveTabsTrigger>
+                            <ResponsiveTabsTrigger value="calendar-view" icon={Calendar}>Calendar</ResponsiveTabsTrigger>
+                            <ResponsiveTabsTrigger value="mindmap" icon={BrainCircuit}>Mind Map</ResponsiveTabsTrigger>
+                            <ResponsiveTabsTrigger value="checklist" icon={ListChecks}>Checklist</ResponsiveTabsTrigger>
+                            <ResponsiveTabsTrigger value="spreadsheet" icon={Table}>Spreadsheet</ResponsiveTabsTrigger>
+                            <ResponsiveTabsTrigger value="canvas" icon={DraftingCompass}>Canvas</ResponsiveTabsTrigger>
                         </TabsList>
                         <TabsContent value="board" className="mt-4">
                             <ProjectsApp />
