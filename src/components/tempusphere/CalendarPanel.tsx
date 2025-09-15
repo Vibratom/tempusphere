@@ -20,6 +20,7 @@ import {
 import { Textarea } from '../ui/textarea';
 import { useCalendar, CalendarEvent, EventType } from '@/contexts/CalendarContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DayProps } from 'react-day-picker';
 
 const eventColors = ['blue', 'green', 'red', 'purple', 'orange', 'yellow', 'pink'];
 
@@ -70,8 +71,8 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
     if (!selectedDate) return [];
     const dayKey = format(selectedDate, 'yyyy-MM-dd');
     const dayEvents = eventsByDay[dayKey] || [];
-    if(activeTab === 'All') return dayEvents;
-    return dayEvents.filter(e => e.type === activeTab);
+    if(activeTab === 'All') return dayEvents.sort((a, b) => a.time.localeCompare(b.time));
+    return dayEvents.filter(e => e.type === activeTab).sort((a, b) => a.time.localeCompare(b.time));
   }, [selectedDate, eventsByDay, activeTab]);
   
   const dayWithEventsModifier = Object.keys(eventsByDay).map(dateStr => parseISO(dateStr));
@@ -102,7 +103,7 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
         className={cn("rounded-md border", fullscreen && 'shadow-lg', glass && 'bg-black/10 border-white/20')}
         modifiers={{ withEvents: dayWithEventsModifier }}
         components={{
-            Day: ({ date, ...props }) => {
+            Day: ({ date, displayMonth, ...props }: DayProps) => {
                 const dayContent = (
                     <div className="relative h-full w-full flex items-center justify-center">
                         <p>{date.getDate()}</p>
