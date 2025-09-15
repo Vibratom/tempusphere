@@ -337,6 +337,11 @@ export function ProjectListView() {
     const [sortKey, setSortKey] = useState<SortKey>('priority');
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
     const [editingTask, setEditingTask] = useState<TaskCard | null>(null);
+    const [isClient, setIsClient] = useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const tasksWithStatus = useMemo(() => {
         return Object.values(board.tasks).map(task => {
@@ -493,7 +498,7 @@ export function ProjectListView() {
                                         <p className="font-medium">{task.title}</p>
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                                             <Badge variant="secondary">{task.status}</Badge>
-                                            {task.dueDate && <span>- Due {format(parseISO(task.dueDate), 'MMM d')}</span>}
+                                            {isClient && task.dueDate && <span>- Due {format(parseISO(task.dueDate), 'MMM d')}</span>}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -550,3 +555,5 @@ export function ProjectListView() {
         </div>
     );
 }
+
+    
