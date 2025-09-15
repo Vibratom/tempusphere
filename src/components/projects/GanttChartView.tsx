@@ -6,7 +6,7 @@ import { useProjects, Priority, TaskCard } from '@/contexts/ProjectsContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { ScrollArea } from '../ui/scroll-area';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { format, addDays, differenceInDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -157,15 +157,15 @@ export function GanttChartView() {
                 </div>
             </CardHeader>
             <CardContent className="flex-1 flex overflow-hidden">
-                <ScrollArea className="w-full h-full">
-                    <div className="flex">
-                        <div className="w-56 sticky left-0 bg-background z-10">
-                            <div className="h-14 flex items-center p-2 font-semibold border-b">Task</div>
-                             {tasks.map(task => (
+                <div className="flex w-full">
+                    <div className="w-56 sticky left-0 bg-background z-10 border-r">
+                         <div className="h-[53px] flex items-center p-2 font-semibold border-b">Task</div>
+                         <ScrollArea className="h-[calc(100%-53px)]">
+                            {tasks.map(task => (
                                 <div key={task.id} className="h-12 flex items-center p-2 border-b truncate">
                                     <TooltipProvider>
                                         <Tooltip>
-                                            <TooltipTrigger className="truncate text-left">
+                                            <TooltipTrigger className="truncate text-left w-full">
                                                 {task.title}
                                             </TooltipTrigger>
                                             <TooltipContent>
@@ -175,8 +175,11 @@ export function GanttChartView() {
                                     </TooltipProvider>
                                 </div>
                             ))}
-                        </div>
-                        <div className="flex-1">
+                         </ScrollArea>
+                    </div>
+
+                    <ScrollArea className="flex-1 h-full whitespace-nowrap">
+                        <div className="min-w-max">
                              <div className="grid border-b" style={{ gridTemplateColumns }}>
                                 <Header />
                             </div>
@@ -216,8 +219,9 @@ export function GanttChartView() {
                                 })}
                             </div>
                         </div>
-                    </div>
-                </ScrollArea>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                </div>
             </CardContent>
         </Card>
     )
