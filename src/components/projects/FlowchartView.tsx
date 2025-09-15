@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -10,7 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle, Users, Milestone, CalendarClock, GitBranch, Palette, MousePointerClick } from 'lucide-react';
+import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle, Users, Milestone, CalendarClock, GitBranch, Palette, MousePointerClick, Spline, Network, FileCheck2, Briefcase } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const diagramTemplates = {
@@ -150,7 +149,41 @@ interactive: `flowchart TD
     B --> C[End];
     
     click B "https://www.google.com" "This is a tooltip for the Google link"
-`
+`,
+swimlane: `flowchart TD
+    subgraph "Sales"
+        A[Qualify Lead] --> B{Contract > $10k?};
+    end
+    subgraph "Legal"
+        B -- Yes --> C[Review Contract];
+        C --> D[Approve Contract];
+    end
+    subgraph "Finance"
+        B -- No --> E[Issue Invoice];
+        D --> F[Issue Invoice];
+    end
+`,
+workflow: `flowchart TD
+    A[Draft Content] --> B{Submit for Review};
+    B -- Needs Changes --> A;
+    B -- Approved --> C[Schedule for Publishing];
+    C --> D((Published));
+`,
+dataFlow: `graph TD
+    A(External Source) --> |Data| B[Process Data];
+    B --> C{Store in Database};
+    C --> D[Data Store];
+`,
+bpmn: `graph TD
+    A(Start) --> B{Gateway};
+    B --> C[Task 1];
+    B --> D[Task 2];
+    subgraph "Group"
+        C --> E[Task 3];
+        D --> E;
+    end
+    E --> F(End);
+`,
 };
 
 type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral';
@@ -236,7 +269,11 @@ export function FlowchartView() {
               <CardDescription>Start from a pre-made template to learn the syntax for various diagram types, including interactive ones.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setCode(diagramTemplates.flowchart)}><Waypoints className="mr-2"/>Flowchart</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.flowchart)}><Spline className="mr-2"/>Flowchart</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.swimlane)}><Network className="mr-2"/>Swimlane</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.workflow)}><FileCheck2 className="mr-2"/>Workflow</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.dataFlow)}><Database className="mr-2"/>Data Flow</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.bpmn)}><Briefcase className="mr-2"/>BPMN</Button>
               <Button variant="outline" onClick={() => setCode(diagramTemplates.sequence)}><FileText className="mr-2"/>Sequence</Button>
               <Button variant="outline" onClick={() => setCode(diagramTemplates.class)}><Shapes className="mr-2"/>Class</Button>
               <Button variant="outline" onClick={() => setCode(diagramTemplates.state)}><Workflow className="mr-2"/>State</Button>
