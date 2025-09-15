@@ -132,22 +132,26 @@ export function CanvasView() {
     }
   }, [history, historyIndex]);
 
+  // Effect for initial loading from local storage
   useEffect(() => {
     setIsClient(true);
-    if(savedObjects.length > 0) {
-        deserializeObjects(savedObjects).then(loadedObjects => {
-            updateCanvasState(loadedObjects);
-        });
+    if (savedObjects.length > 0) {
+      deserializeObjects(savedObjects).then(loadedObjects => {
+        setObjects(loadedObjects);
+        setHistory([loadedObjects]);
+        setHistoryIndex(0);
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
-  // Save to local storage effect
+  // Effect for saving to local storage whenever objects change
   useEffect(() => {
     if (isClient) {
       setSavedObjects(serializeObjects(objects));
     }
-  }, [objects, isClient, setSavedObjects]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [objects]);
 
 
   const getCanvasContext = (): CanvasRenderingContext2D | null => {
@@ -160,60 +164,67 @@ export function CanvasView() {
     const ctx = getCanvasContext();
     if (!ctx) return;
     
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    
-    // Save context, apply transformations
-    ctx.save();
-    ctx.translate(viewOffset.x, viewOffset.y);
-    ctx.scale(scale, scale);
-    
-    // Draw grid
-    drawGrid(ctx);
-
-    objects.forEach(obj => {
+    const redraw = () => {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        
+        // Save context, apply transformations
         ctx.save();
-        ctx.translate(obj.x, obj.y);
+        ctx.translate(viewOffset.x, viewOffset.y);
+        ctx.scale(scale, scale);
+        
+        // Draw grid
+        drawGrid(ctx);
 
-        if (obj.type === 'path') {
-            ctx.strokeStyle = obj.color;
-            ctx.lineWidth = obj.lineWidth;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.beginPath();
-            if (obj.points.length > 0) {
-              ctx.moveTo(obj.points[0].x, obj.points[0].y);
-              obj.points.forEach(p => ctx.lineTo(p.x, p.y));
-              ctx.stroke();
+        objects.forEach(obj => {
+            ctx.save();
+            ctx.translate(obj.x, obj.y);
+
+            if (obj.type === 'path') {
+                ctx.strokeStyle = obj.color;
+                ctx.lineWidth = obj.lineWidth;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                if (obj.points.length > 0) {
+                  ctx.moveTo(obj.points[0].x, obj.points[0].y);
+                  obj.points.forEach(p => ctx.lineTo(p.x, p.y));
+                  ctx.stroke();
+                }
+            } else if (obj.type === 'image') {
+                ctx.drawImage(obj.image, 0, 0, obj.width, obj.height);
+            } else if (obj.type === 'text') {
+                if (obj.id !== editingTextId) {
+                    ctx.font = `${obj.fontSize}px ${obj.font}`;
+                    ctx.fillStyle = obj.color;
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(obj.text, 0, 0);
+                }
             }
-        } else if (obj.type === 'image') {
-            ctx.drawImage(obj.image, 0, 0, obj.width, obj.height);
-        } else if (obj.type === 'text') {
-            if (obj.id !== editingTextId) {
-                ctx.font = `${obj.fontSize}px ${obj.font}`;
-                ctx.fillStyle = obj.color;
-                ctx.textBaseline = 'top';
-                ctx.fillText(obj.text, 0, 0);
-            }
+
+            ctx.restore();
+        });
+        
+        // Draw selection box
+        const selectedObject = objects.find(o => o.id === selectedObjectId);
+        if(selectedObject) {
+          ctx.save();
+          ctx.translate(selectedObject.x, selectedObject.y);
+          ctx.strokeStyle = '#09f';
+          ctx.lineWidth = 1 / scale;
+          ctx.setLineDash([5 / scale, 5 / scale]);
+          const bounds = getObjectBounds(selectedObject);
+          ctx.strokeRect(bounds.minX, bounds.minY, bounds.width, bounds.height);
+          ctx.restore();
         }
 
+        // Restore context to pre-transform state
         ctx.restore();
-    });
-    
-    // Draw selection box
-    const selectedObject = objects.find(o => o.id === selectedObjectId);
-    if(selectedObject) {
-      ctx.save();
-      ctx.translate(selectedObject.x, selectedObject.y);
-      ctx.strokeStyle = '#09f';
-      ctx.lineWidth = 1 / scale;
-      ctx.setLineDash([5 / scale, 5 / scale]);
-      const bounds = getObjectBounds(selectedObject);
-      ctx.strokeRect(bounds.minX, bounds.minY, bounds.width, bounds.height);
-      ctx.restore();
     }
-
-    // Restore context to pre-transform state
-    ctx.restore();
+    
+    const animationFrameId = requestAnimationFrame(redraw);
+    
+    return () => cancelAnimationFrame(animationFrameId);
     
   }, [objects, selectedObjectId, editingTextId, scale, viewOffset]);
 
