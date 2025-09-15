@@ -296,12 +296,14 @@ const Countdown = ({ date }: { date: Date }) => {
     const days = Math.floor(timeLeft / (60 * 60 * 24));
     const hours = Math.floor((timeLeft % (60 * 60 * 24)) / (60 * 60));
     const minutes = Math.floor((timeLeft % (60 * 60)) / 60);
+    const seconds = Math.floor(timeLeft % 60);
 
     return (
         <span className="text-xs font-mono text-muted-foreground">
             {days > 0 && `${days}d `}
             {hours > 0 && `${hours}h `}
-            {minutes}m
+            {minutes > 0 && `${minutes}m `}
+            {`${seconds}s`}
         </span>
     );
 }
@@ -637,5 +639,7 @@ export function ProjectCalendarView() {
         </DragDropContext>
     );
 }
+
+    
 
     
