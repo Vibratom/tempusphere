@@ -1,11 +1,11 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { cn } from '@/lib/utils';
-import { Plus, Sigma } from 'lucide-react';
+import { Plus, Sigma, ArrowDown } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import {
   Tooltip,
@@ -46,9 +46,12 @@ const parseCellId = (cellId: string): [number, number] | null => {
     return [row, col];
 }
 
-const functionHelpers = [
-  { func: 'SUM', example: '=SUM(A1:A10)', description: 'Calculates the sum of a range of cells.' },
-];
+interface Selection {
+  startRow: number;
+  startCol: number;
+  endRow: number;
+  endCol: number;
+}
 
 export function SpreadsheetView() {
   const [gridData, setGridData] = useState<string[][]>(() =>
@@ -59,6 +62,8 @@ export function SpreadsheetView() {
   const [activeCell, setActiveCell] = useState<{ row: number; col: number } | null>(null);
   const [formulaBarValue, setFormulaBarValue] = useState('');
   const formulaInputRef = React.useRef<HTMLInputElement>(null);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [isSelecting, setIsSelecting] = useState(false);
 
 
   const handleCellChange = (row: number, col: number, value: string) => {
@@ -92,7 +97,6 @@ export function SpreadsheetView() {
 
     const formula = cellData.substring(1).toUpperCase();
     
-    // Simple SUM formula: =SUM(A1:B10)
     const sumMatch = formula.match(/^SUM\((([A-Z]+\d+):([A-Z]+\d+))\)$/);
     if (sumMatch) {
         const startCell = parseCellId(sumMatch[2]);
@@ -112,10 +116,10 @@ export function SpreadsheetView() {
         }
     }
 
-    return '#ERROR!'; // Return error if formula is not recognized
+    return '#ERROR!';
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (activeCell) {
         setFormulaBarValue(gridData[activeCell.row][activeCell.col]);
     } else {
@@ -123,22 +127,67 @@ export function SpreadsheetView() {
     }
   }, [activeCell, gridData]);
 
-  const handleSumClick = () => {
-    if (activeCell) {
-        const newValue = '=SUM()';
-        setFormulaBarValue(newValue);
-        handleCellChange(activeCell.row, activeCell.col, newValue);
-        setTimeout(() => {
-            if (formulaInputRef.current) {
-                formulaInputRef.current.focus();
-                formulaInputRef.current.setSelectionRange(5, 5);
+  const handleMouseDown = (row: number, col: number) => {
+    setIsSelecting(true);
+    setSelection({ startRow: row, startCol: col, endRow: row, endCol: col });
+    setActiveCell({ row, col });
+  };
+  
+  const handleMouseOver = (row: number, col: number) => {
+    if (isSelecting) {
+      setSelection(prev => prev ? { ...prev, endRow: row, endCol: col } : null);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsSelecting(false);
+  };
+  
+  const isCellSelected = (row: number, col: number) => {
+    if (!selection) return false;
+    const { startRow, startCol, endRow, endCol } = selection;
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    const minCol = Math.min(startCol, endCol);
+    const maxCol = Math.max(startCol, endCol);
+    return row >= minRow && row <= maxRow && col >= minCol && col <= maxCol;
+  };
+
+  const calculateSumOfSelection = () => {
+    if (!selection) return;
+
+    let sum = 0;
+    const { startRow, startCol, endRow, endCol } = selection;
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    const minCol = Math.min(startCol, endCol);
+    const maxCol = Math.max(startCol, endCol);
+    
+    for (let r = minRow; r <= maxRow; r++) {
+        for (let c = minCol; c <= maxCol; c++) {
+            const val = parseFloat(evaluateCell(r, c));
+            if (!isNaN(val)) {
+                sum += val;
             }
-        }, 0);
+        }
+    }
+    
+    // Find the next empty cell below the selection to place the sum
+    const targetRow = maxRow + 1;
+    const targetCol = minCol;
+
+    if (targetRow < numRows) {
+        const startCell = `${colToLetter(minCol)}${minRow + 1}`;
+        const endCell = `${colToLetter(maxCol)}${maxRow + 1}`;
+        handleCellChange(targetRow, targetCol, `=SUM(${startCell}:${endCell})`);
+        setSelection(null);
     }
   }
+  
+  const showSumButton = selection && (selection.startRow !== selection.endRow || selection.startCol !== selection.endCol);
 
   return (
-    <div className="w-full h-full flex flex-col gap-4">
+    <div className="w-full h-full flex flex-col gap-4" onMouseUp={handleMouseUp}>
         <div className="flex gap-2">
             <Button onClick={addRow} variant="outline">
                 <Plus className="mr-2 h-4 w-4"/> Add Row
@@ -149,33 +198,15 @@ export function SpreadsheetView() {
         </div>
 
         <div className="flex items-center gap-2">
-             <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                         <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={handleSumClick}>
-                            <Sigma className="h-5 w-5"/>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="p-4 max-w-xs">
-                        <h4 className="font-bold mb-2">Function Helper</h4>
-                        <div className="space-y-2">
-                        {functionHelpers.map(f => (
-                            <div key={f.func}>
-                                <p className="font-mono text-xs bg-muted p-1 rounded">{f.example}</p>
-                                <p className="text-sm text-muted-foreground">{f.description}</p>
-                            </div>
-                        ))}
-                        </div>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-
             <Input 
                 ref={formulaInputRef}
                 value={formulaBarValue}
                 onChange={handleFormulaBarChange}
                 placeholder={activeCell ? `${colToLetter(activeCell.col)}${activeCell.row + 1}` : 'Select a cell to edit'}
                 className="font-mono text-sm"
+                onFocus={() => {
+                  if (activeCell) setActiveCell(activeCell) // Re-trigger focus
+                }}
             />
         </div>
 
@@ -184,7 +215,6 @@ export function SpreadsheetView() {
                 <table className="border-collapse table-fixed w-full">
                     <thead className="sticky top-0 bg-muted z-10">
                         <tr>
-                            {/* Corner cell */}
                             <th className="sticky left-0 bg-muted w-14 h-8 border-b border-r z-20"></th>
                             {Array.from({ length: numCols }).map((_, colIndex) => (
                                 <th key={colIndex} className="w-32 border p-1 text-center font-medium text-muted-foreground text-sm">
@@ -196,28 +226,26 @@ export function SpreadsheetView() {
                     <tbody>
                         {Array.from({ length: numRows }).map((_, rowIndex) => (
                             <tr key={rowIndex}>
-                                {/* Row number cell */}
                                 <td className="sticky left-0 bg-muted w-14 border-r border-b p-1 text-center text-sm text-muted-foreground">{rowIndex + 1}</td>
                                 {Array.from({ length: numCols }).map((_, colIndex) => (
-                                    <td key={`${rowIndex}-${colIndex}`} className="border p-0">
+                                    <td key={`${rowIndex}-${colIndex}`} className="p-0 border-none">
                                         {activeCell?.row === rowIndex && activeCell?.col === colIndex ? (
                                             <Input
                                                 type="text"
                                                 value={gridData[rowIndex][colIndex]}
                                                 onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                                                onFocus={() => setActiveCell({ row: rowIndex, col: colIndex })}
                                                 onBlur={() => setActiveCell(null)}
                                                 autoFocus
-                                                className={cn(
-                                                    "w-full h-full p-1.5 text-sm bg-transparent border-0 rounded-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset"
-                                                )}
+                                                className="w-full h-full p-1.5 text-sm bg-transparent border-2 border-primary rounded-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                                             />
                                         ) : (
                                             <div
-                                                className={cn("w-full h-full p-1.5 text-sm truncate cursor-cell",
-                                                    isNaN(parseFloat(evaluateCell(rowIndex, colIndex))) ? 'text-left' : 'text-right'
+                                                className={cn("w-full h-full p-1.5 text-sm truncate cursor-cell border-t border-l",
+                                                    isNaN(parseFloat(evaluateCell(rowIndex, colIndex))) ? 'text-left' : 'text-right',
+                                                    isCellSelected(rowIndex, colIndex) ? 'bg-primary/20' : '',
                                                 )}
-                                                onClick={() => setActiveCell({ row: rowIndex, col: colIndex })}
+                                                onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
+                                                onMouseOver={() => handleMouseOver(rowIndex, colIndex)}
                                             >
                                                 {evaluateCell(rowIndex, colIndex)}
                                             </div>
@@ -231,6 +259,14 @@ export function SpreadsheetView() {
                 <ScrollBar orientation="horizontal" />
             </ScrollArea>
         </div>
+         {showSumButton && (
+            <div className="flex justify-center">
+                <Button onClick={calculateSumOfSelection} className="transition-all animate-in fade-in zoom-in-95">
+                    <Sigma className="mr-2 h-4 w-4"/> Calculate Sum <ArrowDown className="ml-2 h-4 w-4"/>
+                </Button>
+            </div>
+        )}
     </div>
   );
 }
+
