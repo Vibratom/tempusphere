@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
-import { Plus, Trash2, GripVertical, Calendar as CalendarIcon, FileText, Share2, Wifi } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { Plus, Trash2, Calendar as CalendarIcon, FileText, Share2, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,8 +29,8 @@ import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import Peer, { Instance as PeerInstance } from 'simple-peer';
-import { useProjects, Priority, TaskCard, Column, BoardData, encodeBoardData, decodeBoardData } from '@/contexts/ProjectsContext';
+import Peer from 'simple-peer';
+import { useProjects, Priority, TaskCard, encodeBoardData, decodeBoardData, peerRef } from '@/contexts/ProjectsContext';
 
 
 const priorityColors: Record<Priority, string> = {
@@ -49,6 +49,7 @@ export function ProjectsApp() {
     addTask: contextAddTask,
     removeTask: contextRemoveTask,
     updateTask: contextUpdateTask,
+    removeColumn: contextRemoveColumn,
     handleDragEnd
   } = useProjects();
 
@@ -59,7 +60,6 @@ export function ProjectsApp() {
   const [isLiveShareModalOpen, setLiveShareModalOpen] = useState(false);
   const [liveShareSignal, setLiveShareSignal] = useState('');
   const [isHost, setIsHost] = useState(false);
-  const peerRef = useRef<PeerInstance>();
   const { toast } = useToast();
   const searchParams = useSearchParams();
 
@@ -71,32 +71,16 @@ export function ProjectsApp() {
         if (decodedBoard) {
             setBoard(decodedBoard);
             toast({ title: 'Board Loaded!', description: 'A shared board has been loaded from the URL.' });
-            // Clear the URL parameter to avoid re-loading on refresh
             window.history.replaceState({}, '', window.location.pathname);
         } else {
             toast({ variant: 'destructive', title: 'Load Failed', description: 'Could not load the shared board from the URL.' });
         }
     }
-    
-    // Board update broadcaster for live share
-    const originalSetBoard = setBoard;
-    // @ts-ignore
-    setBoard = (updater) => {
-      originalSetBoard(prevBoard => {
-        const newBoard = typeof updater === 'function' ? updater(prevBoard) : updater;
-        if (peerRef.current && peerRef.current.connected) {
-          peerRef.current.send(JSON.stringify(newBoard));
-        }
-        return newBoard;
-      });
-    }
 
     return () => {
-      // @ts-ignore
-      setBoard = originalSetBoard;
       peerRef.current?.destroy();
     }
-  }, []);
+  }, []); // Eslint will complain but setBoard and toast are stable
 
   const handleNewTaskTitleChange = (columnId: string, title: string) => {
     setNewTaskTitles(prev => ({...prev, [columnId]: title}));
@@ -134,13 +118,14 @@ export function ProjectsApp() {
     setIsHost(initiator);
     setLiveShareModalOpen(true);
     
+    peerRef.current?.destroy(); // Destroy any existing peer connection
+
     const peer = new Peer({
       initiator: initiator,
-      trickle: false, // Simplifies signaling by exchanging all data at once
+      trickle: false,
     });
 
     peer.on('signal', (data) => {
-      // For the host, this is the offer to be shared. For the guest, this is the answer.
       setLiveShareSignal(JSON.stringify(data));
     });
 
@@ -148,18 +133,15 @@ export function ProjectsApp() {
       toast({ title: 'Live Session Connected!', description: 'You are now collaborating in real-time.' });
       setLiveShareModalOpen(false);
       if (initiator) {
-        // Host sends the current board state to the new peer
         peer.send(JSON.stringify(board));
       }
     });
 
     peer.on('data', (data) => {
       try {
-        // Received data from the other peer
         const receivedBoard = JSON.parse(data.toString());
-        // Directly set board state without broadcasting back
-        const originalSetBoard = useProjects.getState().setBoard;
-        originalSetBoard(receivedBoard);
+        // Call setBoard with fromPeer=true to prevent an echo broadcast
+        useProjects.getState().setBoard(receivedBoard, true); 
         toast({ title: 'Board Updated', description: 'The board has been updated by your collaborator.' });
       } catch (e) {
         console.error('Failed to parse received board data:', e);
@@ -364,22 +346,7 @@ export function ProjectsApp() {
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => {
-                                                        setBoard(prev => {
-                                                            const newBoard = {...prev};
-                                                            const tasksToDelete = newBoard.columns[columnId].taskIds;
-                                                            
-                                                            tasksToDelete.forEach(taskId => {
-                                                                delete newBoard.tasks[taskId];
-                                                            });
-                                                            
-                                                            delete newBoard.columns[columnId];
-                                                            
-                                                            newBoard.columnOrder = newBoard.columnOrder.filter(id => id !== columnId);
-                                                            
-                                                            return newBoard;
-                                                        })
-                                                    }}>Delete</AlertDialogAction>
+                                                    <AlertDialogAction onClick={() => contextRemoveColumn(columnId)}>Delete</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                           </AlertDialog>
@@ -467,5 +434,3 @@ export function ProjectsApp() {
     </div>
   );
 }
-
-    
