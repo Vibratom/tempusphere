@@ -5,8 +5,9 @@ import { Header } from '@/components/tempusphere/Header';
 import { Footer } from '@/components/tempusphere/Footer';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { CalendarProvider } from '@/contexts/CalendarContext';
+import { Suspense } from 'react';
 
-export default function NexusFlowPage() {
+function NexusFlowContent() {
   return (
     <SettingsProvider>
       <CalendarProvider>
@@ -20,4 +21,13 @@ export default function NexusFlowPage() {
       </CalendarProvider>
     </SettingsProvider>
   );
+}
+
+
+export default function NexusFlowPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <NexusFlowContent />
+    </Suspense>
+  )
 }

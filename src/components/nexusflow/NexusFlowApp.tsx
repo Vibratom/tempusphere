@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
-import { Plus, Trash2, GripVertical, Calendar as CalendarIcon, FileText, Flag } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Calendar as CalendarIcon, FileText, Flag, Share2, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,13 +21,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useSearchParams } from 'next/navigation';
+import { pako } from 'pako';
+import { Base64 } from 'js-base64';
+import { useToast } from '@/hooks/use-toast';
 
 type Priority = 'none' | 'low' | 'medium' | 'high';
 
@@ -86,12 +90,47 @@ const priorityColors: Record<Priority, string> = {
     high: 'bg-red-500',
 }
 
+function encodeBoardData(board: BoardData): string {
+  const jsonString = JSON.stringify(board);
+  const compressed = pako.deflate(jsonString);
+  return Base64.fromUint8Array(compressed, true);
+}
+
+function decodeBoardData(encoded: string): BoardData | null {
+  try {
+    const compressed = Base64.toUint8Array(encoded);
+    const jsonString = pako.inflate(compressed, { to: 'string' });
+    return JSON.parse(jsonString) as BoardData;
+  } catch (error) {
+    console.error("Failed to decode board data:", error);
+    return null;
+  }
+}
 
 export function NexusFlowApp() {
   const [board, setBoard] = useLocalStorage<BoardData>('nexusflow:boardV2', initialData);
   const [newColumnName, setNewColumnName] = useState('');
   const [newTaskTitles, setNewTaskTitles] = useState<Record<string, string>>({});
   const [editingTask, setEditingTask] = useState<TaskCard | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  const { toast } = useToast();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    setIsClient(true);
+    const boardParam = searchParams.get('board');
+    if (boardParam) {
+        const decodedBoard = decodeBoardData(boardParam);
+        if (decodedBoard) {
+            setBoard(decodedBoard);
+            toast({ title: 'Board Loaded!', description: 'A shared board has been loaded from the URL.' });
+            // Clear the URL parameter to avoid re-loading on refresh
+            window.history.replaceState({}, '', window.location.pathname);
+        } else {
+            toast({ variant: 'destructive', title: 'Load Failed', description: 'Could not load the shared board from the URL.' });
+        }
+    }
+  }, []);
 
   const handleNewTaskTitleChange = (columnId: string, title: string) => {
     setNewTaskTitles(prev => ({...prev, [columnId]: title}));
@@ -181,6 +220,14 @@ export function NexusFlowApp() {
       }
     }))
   }
+
+  const handleShare = () => {
+    const encodedData = encodeBoardData(board);
+    const url = new URL(window.location.href);
+    url.searchParams.set('board', encodedData);
+    navigator.clipboard.writeText(url.toString());
+    toast({ title: "Link Copied!", description: "A shareable link to this board has been copied to your clipboard."});
+  };
 
   const onDragEnd: OnDragEndResponder = (result) => {
     const { destination, source, draggableId, type } = result;
@@ -319,6 +366,10 @@ export function NexusFlowApp() {
         </Dialog>
     )
   }
+  
+  if (!isClient) {
+    return null; // Don't render server-side to avoid hydration mismatch
+  }
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -328,14 +379,19 @@ export function NexusFlowApp() {
             <p className="text-lg text-muted-foreground mt-2">Visualize your workflow with a Kanban board.</p>
         </div>
 
-        <div className="flex gap-2 mb-8 max-w-sm">
-            <Input 
-                placeholder="Add new column..."
-                value={newColumnName}
-                onChange={(e) => setNewColumnName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addColumn()}
-            />
-            <Button onClick={addColumn}><Plus className="mr-2 h-4 w-4"/>Add Column</Button>
+        <div className="flex flex-col sm:flex-row gap-2 mb-8">
+            <div className="flex gap-2 flex-1">
+                <Input 
+                    placeholder="Add new column..."
+                    value={newColumnName}
+                    onChange={(e) => setNewColumnName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addColumn()}
+                />
+                <Button onClick={addColumn}><Plus className="mr-2 h-4 w-4"/>Add Column</Button>
+            </div>
+             <Button variant="outline" onClick={handleShare}>
+                <Share2 className="mr-2 h-4 w-4"/> Share Board
+            </Button>
         </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
@@ -446,5 +502,3 @@ export function NexusFlowApp() {
     </div>
   );
 }
-
-    
