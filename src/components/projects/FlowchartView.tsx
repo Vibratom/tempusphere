@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -150,39 +151,48 @@ interactive: `flowchart TD
     
     click B "https://www.google.com" "This is a tooltip for the Google link"
 `,
-swimlane: `flowchart TD
+  swimlane: `flowchart TD
+    subgraph "Marketing"
+        A[Identify Lead] --> B(Contact Lead);
+    end
     subgraph "Sales"
-        A[Qualify Lead] --> B{Contract > $10k?};
+        B --> C{Lead Qualified?};
+        C -- Yes --> D[Send Proposal];
+        C -- No --> E[Mark as 'Nurture'];
     end
-    subgraph "Legal"
-        B -- Yes --> C[Review Contract];
-        C --> D[Approve Contract];
-    end
-    subgraph "Finance"
-        B -- No --> E[Issue Invoice];
-        D --> F[Issue Invoice];
+    subgraph "Account Management"
+        D --> F[Onboard Customer];
     end
 `,
-workflow: `flowchart TD
-    A[Draft Content] --> B{Submit for Review};
-    B -- Needs Changes --> A;
-    B -- Approved --> C[Schedule for Publishing];
-    C --> D((Published));
+  workflow: `flowchart TD
+    A((Start)) --> B[Draft Document];
+    B --> C{Review Required?};
+    C -- Yes --> D[Submit for Review];
+    D --> E{Approved?};
+    E -- No --> B;
+    C -- No --> F[Publish Document];
+    E -- Yes --> F;
+    F --> G((End));
 `,
-dataFlow: `graph TD
-    A(External Source) --> |Data| B[Process Data];
-    B --> C{Store in Database};
-    C --> D[Data Store];
+  dataFlow: `graph TD
+    A((User)) -->|Submits Form| B(Process Login);
+    B --> C[Read User Data];
+    C --> D[(User Database)];
+    B -->|Generates Token| A;
 `,
-bpmn: `graph TD
-    A(Start) --> B{Gateway};
-    B --> C[Task 1];
-    B --> D[Task 2];
-    subgraph "Group"
-        C --> E[Task 3];
-        D --> E;
+  bpmn: `flowchart TD
+    subgraph "Hiring Process"
+        A(bpmn:startEvent) --> B(bpmn:userTask: Review Application);
+        B --> C(bpmn:exclusiveGateway: Qualifies?);
+        C -- Yes --> D(bpmn:userTask: Schedule Interview);
+        C -- No --> E(bpmn:userTask: Send Rejection Email);
+        D --> F(bpmn:userTask: Conduct Interview);
+        F --> G(bpmn:exclusiveGateway: Offer?);
+        G -- Yes --> H(bpmn:userTask: Send Offer);
+        G -- No --> E;
+        H --> I(bpmn:endEvent);
+        E --> I;
     end
-    E --> F(End);
 `,
 };
 
