@@ -102,7 +102,7 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
         className={cn("rounded-md border", fullscreen && 'shadow-lg', glass && 'bg-black/10 border-white/20')}
         modifiers={{ withEvents: dayWithEventsModifier }}
         components={{
-            Day: ({ date, ...props }) => {
+            Day: ({ date, displayMonth: _displayMonth, ...props }) => {
                 const dayContent = (
                     <div className="relative h-full w-full flex items-center justify-center">
                         <p>{date.getDate()}</p>
