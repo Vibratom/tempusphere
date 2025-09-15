@@ -144,16 +144,24 @@ const RecipeDetailView = ({ recipe, onBack, onViewRecipe, onEdit, onRemix, onDel
                 </div>
                  <Separator className="my-4" />
                 <CardTitle className="text-3xl font-bold">{recipe.title}</CardTitle>
-                <CardDescription className="text-lg">{recipe.description}</CardDescription>
+                {recipe.description && <CardDescription className="text-lg pt-2">{recipe.description}</CardDescription>}
             </CardHeader>
-            <CardContent className="grid md:grid-cols-5 gap-8">
-                <div className="md:col-span-2 space-y-4">
-                    <h3 className="text-xl font-semibold border-b pb-2">Ingredients</h3>
-                    <p className="whitespace-pre-wrap text-muted-foreground">{recipe.ingredients}</p>
+            <CardContent className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground">
+                        <Sparkles className="w-12 h-12" />
+                    </div>
+                     <div className="md:col-span-2 space-y-4">
+                        <h3 className="text-xl font-semibold border-b pb-2">Ingredients</h3>
+                        <p className="whitespace-pre-wrap text-muted-foreground">{recipe.ingredients}</p>
+                    </div>
                 </div>
-                <div className="md:col-span-3 space-y-4">
+               
+                <div className="space-y-4">
                      <h3 className="text-xl font-semibold border-b pb-2">Instructions</h3>
-                    <p className="whitespace-pre-wrap leading-relaxed">{recipe.instructions}</p>
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <p className="whitespace-pre-wrap leading-relaxed">{recipe.instructions}</p>
+                    </div>
                 </div>
             </CardContent>
             {(parentRecipe || childRecipes.length > 0) && (
@@ -213,6 +221,7 @@ export function RecipesApp() {
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null | undefined>(undefined);
   const [viewingRecipe, setViewingRecipe] = useState<Recipe | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [showStarterCookbook, setShowStarterCookbook] = useState(false);
   
   useEffect(() => {
     setIsClient(true);
@@ -282,6 +291,7 @@ export function RecipesApp() {
                   onRemix={handleRemixRecipe}
                   onDelete={handleDeleteRecipe}
               />
+               {editingRecipe !== undefined && <RecipeForm onSave={handleSaveRecipe} recipe={editingRecipe} onCancel={() => setEditingRecipe(undefined)}/>}
           </div>
         </RecipesContext.Provider>
       )
@@ -295,70 +305,68 @@ export function RecipesApp() {
             <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Recipe Remix</h1>
             <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Your personal culinary journal. Create base recipes, "remix" them to track variations, or get inspired by our starter cookbook.</p>
           </div>
+            
+          <Dialog open={showStarterCookbook} onOpenChange={setShowStarterCookbook}>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><ChefHat className="text-accent" />Starter Cookbook</DialogTitle>
+                <DialogDescription>New to cooking? Browse these simple recipes and add them to your collection to get started.</DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="h-[60vh] -mx-6">
+                <div className="space-y-4 px-6">
+                    {starterRecipes.map(recipe => (
+                        <Card key={recipe.title} className="flex flex-col">
+                            <CardHeader>
+                                <CardTitle className="text-lg">{recipe.title}</CardTitle>
+                                <CardDescription>{recipe.description}</CardDescription>
+                            </CardHeader>
+                            <CardFooter className="mt-auto flex justify-end gap-2">
+                                <Button variant="secondary" size="sm" onClick={() => addStarterToCookbook(recipe)}><Plus className="mr-2 h-4 w-4"/>Add to My Cookbook</Button>
+                            </CardFooter>
+                        </Card>
+                    ))}
+                </div>
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
 
+          <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>My Cookbook</CardTitle>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setShowStarterCookbook(true)}><ChefHat className="mr-2"/>Get Inspired</Button>
+                  <Button onClick={() => setEditingRecipe(null)}><Plus className="mr-2"/>Add New Recipe</Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                  {recipes.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {recipes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(recipe => (
+                              <Card key={recipe.id} className="flex flex-col hover:shadow-lg transition-shadow">
+                                  <CardHeader>
+                                      <CardTitle className="text-lg">{recipe.title}</CardTitle>
+                                      <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
+                                  </CardHeader>
+                                  <CardFooter className="mt-auto flex justify-end gap-2">
+                                      <Button variant="secondary" size="sm" onClick={() => setViewingRecipe(recipe)}><BookOpen className="mr-2 h-4 w-4"/>View</Button>
+                                  </CardFooter>
+                              </Card>
+                          ))}
+                      </div>
+                  ) : (
+                      <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
+                          <BookOpen className="w-16 h-16 mb-4" />
+                          <h3 className="text-xl font-semibold">Your Cookbook is Empty</h3>
+                          <p className="text-sm">Add a new recipe or choose one from the starters.</p>
+                      </div>
+                  )}
+              </CardContent>
+          </Card>
+          
           <Dialog open={editingRecipe !== undefined} onOpenChange={(isOpen) => !isOpen && setEditingRecipe(undefined)}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ChefHat className="text-accent" />Starter Cookbook</CardTitle>
-                        <CardDescription>New to cooking? Browse these simple recipes and add them to your collection to get started.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <ScrollArea className="h-96">
-                            <div className="space-y-4 pr-4">
-                                {starterRecipes.map(recipe => (
-                                    <Card key={recipe.title} className="flex flex-col">
-                                        <CardHeader>
-                                            <CardTitle className="text-lg">{recipe.title}</CardTitle>
-                                            <CardDescription>{recipe.description}</CardDescription>
-                                        </CardHeader>
-                                        <CardFooter className="mt-auto flex justify-end gap-2">
-                                            <Button variant="secondary" size="sm" onClick={() => addStarterToCookbook(recipe)}><Plus className="mr-2 h-4 w-4"/>Add to My Cookbook</Button>
-                                        </CardFooter>
-                                    </Card>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>My Cookbook</CardTitle>
-                        <Button onClick={() => setEditingRecipe(null)}><Plus className="mr-2"/>Add New Recipe</Button>
-                    </CardHeader>
-                    <CardContent>
-                        {recipes.length > 0 ? (
-                            <ScrollArea className="h-96">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-4">
-                                    {recipes.map(recipe => (
-                                        <Card key={recipe.id} className="flex flex-col">
-                                            <CardHeader>
-                                                <CardTitle className="text-lg">{recipe.title}</CardTitle>
-                                                <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
-                                            </CardHeader>
-                                            <CardFooter className="mt-auto flex justify-end gap-2">
-                                                <Button variant="secondary" size="sm" onClick={() => setViewingRecipe(recipe)}><BookOpen className="mr-2 h-4 w-4"/>View</Button>
-                                            </CardFooter>
-                                        </Card>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                        ) : (
-                            <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
-                                <BookOpen className="w-16 h-16 mb-4" />
-                                <h3 className="text-xl font-semibold">Your Cookbook is Empty</h3>
-                                <p className="text-sm">Add a new recipe or choose one from the starters.</p>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
             {editingRecipe !== undefined && <RecipeForm onSave={handleSaveRecipe} recipe={editingRecipe} onCancel={() => setEditingRecipe(undefined)}/>}
           </Dialog>
         </div>
     </RecipesContext.Provider>
   );
 }
-
-    
