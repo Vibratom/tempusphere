@@ -66,6 +66,11 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
   const [activeTab, setActiveTab] = useState<EventType | 'All'>('All');
   const [newTabName, setNewTabName] = useState('');
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleAddEvent = useCallback(() => {
     if (newEventTitle && selectedDate && activeTab !== 'All') {
@@ -161,16 +166,17 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
         modifiers={{ withEvents: dayWithEventsModifier }}
         components={{
             Day: (props: DayProps) => {
-                const { date, displayMonth } = props;
+                const { date, displayMonth, ...buttonProps } = props;
+                if (!isClient) {
+                    return <div className="relative h-full w-full flex items-center justify-center"><p>{date.getDate()}</p></div>;
+                }
+
                 const dayContent = (
                     <div className="relative h-full w-full flex items-center justify-center">
                         <p>{date.getDate()}</p>
                         <EventDots date={date}/>
                     </div>
                 );
-                const buttonProps = { ...props };
-                // @ts-ignore - remove non-DOM props
-                delete buttonProps.displayMonth;
 
                 return (
                     <button {...buttonProps} >
@@ -258,7 +264,7 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
 
             <ScrollArea className="flex-1 -mr-4">
               <div className="space-y-2 pr-4">
-                {selectedDayEvents.length > 0 ? (
+                {isClient && selectedDayEvents.length > 0 ? (
                   selectedDayEvents.map((event) => (
                     editingEventId === event.id ? (
                       <EditEventForm 
@@ -288,11 +294,11 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
                       </div>
                     )
                   ))
-                ) : (
+                ) : isClient ? (
                   <div className="text-center text-muted-foreground pt-8">
                     <p>No {activeTab !== 'All' && activeTab} events for this day.</p>
                   </div>
-                )}
+                ) : null}
               </div>
             </ScrollArea>
         </div>
