@@ -3,7 +3,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { KanbanSquare, List, BarChartHorizontal, DraftingCompass, Table, ListChecks, Calendar, BrainCircuit, Spline } from 'lucide-react';
+import { KanbanSquare, List, BarChartHorizontal, DraftingCompass, Table, ListChecks, Calendar, Spline } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
@@ -14,7 +14,7 @@ const tools = [
     { value: 'spreadsheet', icon: Table, label: 'Spreadsheet', href: '/projects/spreadsheet' },
     { value: 'checklist', icon: ListChecks, label: 'Checklist', href: '/projects/checklist' },
     { value: 'canvas', icon: DraftingCompass, label: 'Canvas', href: '/projects/canvas' },
-    { value: 'mindmap', icon: BrainCircuit, label: 'Mind Map', href: '/projects/mindmap' },
+    { value: 'flowchart', icon: Spline, label: 'Flowchart', href: '/projects/flowchart' },
 ];
 
 const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: string, href: string, icon: React.ElementType, children: React.ReactNode }) => (
