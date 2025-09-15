@@ -22,7 +22,7 @@ export interface TaskCard {
 }
 
 export interface Column {
-  id: string;
+  id:string;
   title: string;
   taskIds: string[];
 }
@@ -98,6 +98,37 @@ const broadcast = (board: BoardData) => {
     }
 }
 
+const syncTaskToCalendar = (task: TaskCard, action: 'add' | 'update' | 'remove') => {
+    const { addEvent, updateEventsBySourceId, removeEventsBySourceId } = useCalendar.getState();
+    
+    if (action === 'remove') {
+        removeEventsBySourceId(task.id);
+        return;
+    }
+
+    if (!task.dueDate) {
+        removeEventsBySourceId(task.id);
+        return;
+    }
+
+    const calendarEventPayload = {
+        date: task.dueDate,
+        time: '09:00', // Default time for tasks
+        title: task.title,
+        description: `Project Task: ${task.description || ''}`,
+        color: 'purple',
+        type: 'Work' as const,
+        sourceId: task.id
+    };
+
+    if (action === 'add') {
+        addEvent(calendarEventPayload);
+    } else if (action === 'update') {
+        updateEventsBySourceId(task.id, calendarEventPayload);
+    }
+}
+
+
 export const useProjects = create<ProjectsState>((set, get) => ({
   board: initialData,
   setBoard: (updater, fromPeer = false) => {
@@ -116,29 +147,30 @@ export const useProjects = create<ProjectsState>((set, get) => ({
       title: title,
       taskIds: [],
     };
-    const newBoard: BoardData = {
-        ...get().board,
+    get().setBoard(prev => ({
+        ...prev,
         columns: {
-          ...get().board.columns,
+          ...prev.columns,
           [newColumnId]: newColumn,
         },
-        columnOrder: [...get().board.columnOrder, newColumnId],
-    };
-    get().setBoard(newBoard);
+        columnOrder: [...prev.columnOrder, newColumnId],
+    }));
   },
   removeColumn: (columnId: string) => {
-    const newBoard = {...get().board};
-    const tasksToDelete = newBoard.columns[columnId].taskIds;
-    
-    tasksToDelete.forEach(taskId => {
-        delete newBoard.tasks[taskId];
+    get().setBoard(prev => {
+        const newBoard = {...prev};
+        const tasksToDelete = newBoard.columns[columnId].taskIds;
+        
+        tasksToDelete.forEach(taskId => {
+            syncTaskToCalendar(newBoard.tasks[taskId], 'remove');
+            delete newBoard.tasks[taskId];
+        });
+        
+        delete newBoard.columns[columnId];
+        
+        newBoard.columnOrder = newBoard.columnOrder.filter(id => id !== columnId);
+        return newBoard;
     });
-    
-    delete newBoard.columns[columnId];
-    
-    newBoard.columnOrder = newBoard.columnOrder.filter(id => id !== columnId);
-    
-    get().setBoard(newBoard);
   },
   addTask: (columnId, taskDetails) => {
     const newTaskId = `task-${Date.now()}`;
@@ -147,60 +179,70 @@ export const useProjects = create<ProjectsState>((set, get) => ({
       priority: 'none',
       ...taskDetails,
     };
-    const column = get().board.columns[columnId];
-    if (!column) return;
+    
+    get().setBoard(prev => {
+        const column = prev.columns[columnId];
+        if (!column) return prev;
+        
+        syncTaskToCalendar(newTask, 'add');
 
-    const newBoard: BoardData = {
-      ...get().board,
-      tasks: { ...get().board.tasks, [newTaskId]: newTask },
-      columns: {
-        ...get().board.columns,
-        [columnId]: {
-          ...column,
-          taskIds: [...column.taskIds, newTaskId],
-        }
-      }
-    };
-    get().setBoard(newBoard);
+        return {
+          ...prev,
+          tasks: { ...prev.tasks, [newTaskId]: newTask },
+          columns: {
+            ...prev.columns,
+            [columnId]: {
+              ...column,
+              taskIds: [...column.taskIds, newTaskId],
+            }
+          }
+        };
+    });
   },
   removeTask: (taskId, columnId) => {
-      const newTasks = { ...get().board.tasks };
-      delete newTasks[taskId];
-      
-      const column = get().board.columns[columnId];
-      if (!column) return;
+      get().setBoard(prev => {
+          const newTasks = { ...prev.tasks };
+          const taskToRemove = newTasks[taskId];
+          if (taskToRemove) {
+              syncTaskToCalendar(taskToRemove, 'remove');
+          }
+          delete newTasks[taskId];
+          
+          const column = prev.columns[columnId];
+          if (!column) return {...prev, tasks: newTasks};
 
-      const newTaskIds = column.taskIds.filter(id => id !== taskId);
+          const newTaskIds = column.taskIds.filter(id => id !== taskId);
 
-      const newBoard: BoardData = {
-        ...get().board,
-        tasks: newTasks,
-        columns: {
-          ...get().board.columns,
-          [columnId]: { ...column, taskIds: newTaskIds }
-        }
-      };
-      get().setBoard(newBoard);
+          return {
+            ...prev,
+            tasks: newTasks,
+            columns: {
+              ...prev.columns,
+              [columnId]: { ...column, taskIds: newTaskIds }
+            }
+          };
+      });
   },
   updateTask: (updatedTask) => {
       if(!updatedTask) return;
-      const newBoard: BoardData = {
-        ...get().board,
-        tasks: { ...get().board.tasks, [updatedTask.id]: updatedTask }
-      };
-      get().setBoard(newBoard);
+      
+      syncTaskToCalendar(updatedTask, 'update');
+
+      get().setBoard(prev => ({
+        ...prev,
+        tasks: { ...prev.tasks, [updatedTask.id]: updatedTask }
+      }));
   },
   handleDragEnd: (result) => {
     const { destination, source, draggableId, type } = result;
     const state = get();
     if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) return;
 
-    let newBoard: BoardData;
     if (type === 'COLUMN') {
       const newColumnOrder = Array.from(state.board.columnOrder);
       newColumnOrder.splice(source.index, 1);
       newColumnOrder.splice(destination.index, 0, draggableId);
-      newBoard = { ...state.board, columnOrder: newColumnOrder };
+      get().setBoard({ ...state.board, columnOrder: newColumnOrder });
     } else {
         const startColumn = state.board.columns[source.droppableId];
         const endColumn = state.board.columns[destination.droppableId];
@@ -210,7 +252,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
           newTaskIds.splice(source.index, 1);
           newTaskIds.splice(destination.index, 0, draggableId);
           const newColumn = { ...startColumn, taskIds: newTaskIds };
-          newBoard = { ...state.board, columns: { ...state.board.columns, [newColumn.id]: newColumn } };
+          get().setBoard({ ...state.board, columns: { ...state.board.columns, [newColumn.id]: newColumn } });
         } else {
           const startTaskIds = Array.from(startColumn.taskIds);
           startTaskIds.splice(source.index, 1);
@@ -220,45 +262,11 @@ export const useProjects = create<ProjectsState>((set, get) => ({
           endTaskIds.splice(destination.index, 0, draggableId);
           const newEndColumn = { ...endColumn, taskIds: endTaskIds };
           
-          newBoard = { ...state.board, columns: { ...state.board.columns, [newStartColumn.id]: newStartColumn, [newEndColumn.id]: newEndColumn } };
+          get().setBoard({ ...state.board, columns: { ...state.board.columns, [newStartColumn.id]: newStartColumn, [newEndColumn.id]: newEndColumn } });
         }
     }
-    get().setBoard(newBoard);
   },
 }));
-
-const ProjectTaskSync = () => {
-    const { board } = useProjects();
-    const { addEvent, setEvents } = useCalendar();
-    
-    // Sync logic to update calendar events when project tasks change
-    React.useEffect(() => {
-        // This is a simple implementation. A more robust one would diff changes.
-        // For now, we clear and re-add all project-related tasks.
-        
-        // 1. Remove all old 'Work' events
-        setEvents(prev => prev.filter(e => e.type !== 'Work'));
-
-        // 2. Add all current tasks from board
-        Object.values(board.tasks).forEach(task => {
-            if (task.dueDate) {
-                addEvent({
-                    date: task.dueDate,
-                    time: '09:00', // Default time for tasks
-                    title: task.title,
-                    description: `Project Task: ${task.description || ''}`,
-                    color: 'purple',
-                    type: 'Work',
-                    sourceId: task.id
-                });
-            }
-        });
-
-    }, [board.tasks, addEvent, setEvents]);
-
-    return null;
-}
-
 
 // This provider component is now simpler. It ensures the hook is initialized from localStorage.
 export function ProjectsProvider({ children }: { children: ReactNode }) {
@@ -279,5 +287,5 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     }, [setBoard]);
 
 
-  return <><ProjectTaskSync />{children}</>;
+  return <>{children}</>;
 }
