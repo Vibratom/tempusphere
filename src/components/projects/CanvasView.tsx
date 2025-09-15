@@ -210,7 +210,7 @@ export function CanvasView() {
     if(isClient) {
       setSavedObjects(serializeObjects(objects));
     }
-  }, [objects, selectedObjectId, isClient, setSavedObjects, editingTextId, scale, viewOffset]);
+  }, [objects, selectedObjectId, isClient, editingTextId, scale, viewOffset, setSavedObjects]);
 
   const drawGrid = (ctx: CanvasRenderingContext2D) => {
     const canvasWidth = ctx.canvas.width;
