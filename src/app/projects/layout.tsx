@@ -11,12 +11,29 @@ import { ProjectsProvider } from '@/contexts/ProjectsContext';
 import { usePathname } from 'next/navigation';
 import { ProjectNav } from '@/components/projects/ProjectNav';
 import { Card, CardContent } from '@/components/ui/card';
+import BoardPage from './board/page';
+import CalendarViewPage from './calendar/page';
+import ListPage from './list/page';
+import GanttPage from './gantt/page';
+import CanvasPage from './canvas/page';
+import SpreadsheetPage from './spreadsheet/page';
+import ChecklistPage from './checklist/page';
 
 const LoadingFallback = () => (
     <div className="flex-1 flex items-center justify-center">
-        <p>Loading Tool...</p>
+        <p>Loading Tools...</p>
     </div>
 );
+
+const toolComponents: Record<string, React.ComponentType> = {
+    board: BoardPage,
+    calendar: CalendarViewPage,
+    list: ListPage,
+    gantt: GanttPage,
+    canvas: CanvasPage,
+    spreadsheet: SpreadsheetPage,
+    checklist: ChecklistPage,
+};
 
 export default function ProjectsLayout({
   children,
@@ -41,7 +58,11 @@ export default function ProjectsLayout({
                            <Card className="flex-1">
                               <CardContent className="p-4 md:p-6 h-full">
                                 <Suspense fallback={<LoadingFallback />}>
-                                  {children}
+                                   {Object.entries(toolComponents).map(([toolName, ToolComponent]) => (
+                                       <div key={toolName} style={{ display: activeTool === toolName ? 'block' : 'none' }} className="h-full w-full">
+                                          <ToolComponent />
+                                       </div>
+                                   ))}
                                 </Suspense>
                               </CardContent>
                           </Card>
