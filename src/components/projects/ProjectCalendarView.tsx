@@ -279,8 +279,7 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
     );
 }
 
-const SummaryCard = ({ title, tasks, icon }: { title: string, tasks: TaskCard[], icon: React.ElementType }) => {
-    const Icon = icon;
+const SummaryCard = ({ title, tasks, icon: Icon, children }: { title: string, tasks: TaskCard[], icon: React.ElementType, children?: React.ReactNode }) => {
     return (
         <Card>
             <CardHeader>
@@ -289,7 +288,10 @@ const SummaryCard = ({ title, tasks, icon }: { title: string, tasks: TaskCard[],
                         <Icon className="h-4 w-4 text-muted-foreground" />
                         {title}
                     </div>
-                    <span className="text-sm font-normal text-muted-foreground">{tasks.length}</span>
+                    <div className="flex items-center gap-2">
+                        {children}
+                        <span className="text-sm font-normal text-muted-foreground">{tasks.length}</span>
+                    </div>
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -311,11 +313,21 @@ const SummaryCard = ({ title, tasks, icon }: { title: string, tasks: TaskCard[],
     );
 };
 
+const upcomingRangeOptions = [
+    { value: '7', label: '7 days' },
+    { value: '15', label: '15 days' },
+    { value: '30', label: '1 month' },
+    { value: '90', label: '3 months' },
+    { value: '180', label: '6 months' },
+    { value: '365', label: '1 year' },
+];
+
 export function ProjectCalendarView() {
     const { board, updateTask, removeTask, setBoard } = useProjects();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [editingTask, setEditingTask] = useState<TaskCard | null>(null);
     const [isAddingTask, setIsAddingTask] = useState(false);
+    const [upcomingDays, setUpcomingDays] = useState('7');
 
     const tasksWithDueDate = useMemo(() => {
         return Object.values(board.tasks).filter(task => !!task.dueDate);
@@ -390,11 +402,11 @@ export function ProjectCalendarView() {
         const upcomingTasks = activeTasks.filter(task => {
             if (!task.dueDate) return false;
             const date = parseISO(task.dueDate);
-            return isFuture(date) && !isToday(date) && differenceInDays(date, new Date()) <= 7;
+            return isFuture(date) && !isToday(date) && differenceInDays(date, new Date()) <= parseInt(upcomingDays, 10);
         }).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
 
         return { doneTasks, todaysTasks, upcomingTasks };
-    }, [board]);
+    }, [board, upcomingDays]);
 
 
     return (
@@ -555,7 +567,20 @@ export function ProjectCalendarView() {
                                <div className="space-y-4 pr-4">
                                     <SummaryCard title="Completed Tasks" tasks={doneTasks} icon={CheckCircle} />
                                     <SummaryCard title="Today's Tasks" tasks={todaysTasks} icon={CalendarIconLucide} />
-                                    <SummaryCard title="Upcoming (7 days)" tasks={upcomingTasks} icon={FastForward} />
+                                    <SummaryCard title="Upcoming" tasks={upcomingTasks} icon={FastForward}>
+                                        <Select value={upcomingDays} onValueChange={setUpcomingDays}>
+                                            <SelectTrigger className="w-32 h-8 text-xs">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {upcomingRangeOptions.map(option => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </SummaryCard>
                                 </div>
                             )}
                         </ScrollArea>
@@ -577,5 +602,7 @@ export function ProjectCalendarView() {
         </DragDropContext>
     );
 }
+
+    
 
     
