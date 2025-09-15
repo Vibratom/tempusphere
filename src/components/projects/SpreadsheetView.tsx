@@ -96,133 +96,117 @@ export function SpreadsheetView() {
     if (!activeCell) return;
     const { row: activeRow, col: activeCol } = activeCell;
 
+    // --- Meta Key Shortcuts (Ctrl/Cmd) ---
     if (e.ctrlKey || e.metaKey) {
-        if (e.shiftKey && e.key.toLowerCase() === ' ') { // Ctrl + Shift + Space
-            e.preventDefault();
-            setActiveCell({ row: 0, col: 0 });
-            setSelection({ start: { row: 0, col: 0 }, end: { row: numRows - 1, col: numCols - 1 }});
+        e.preventDefault();
+        
+        // Ctrl + Shift combinations
+        if (e.shiftKey) {
+             switch (e.key.toLowerCase()) {
+                case ' ': // Ctrl + Shift + Space
+                    setActiveCell({ row: 0, col: 0 });
+                    setSelection({ start: { row: 0, col: 0 }, end: { row: numRows - 1, col: numCols - 1 }});
+                    break;
+                case 'arrowdown': {
+                    let endRow = activeRow;
+                    while (endRow < numRows - 1 && gridData[endRow][activeCol]?.value) { endRow++; }
+                    setSelection({ start: activeCell, end: { row: endRow, col: activeCol }});
+                    break;
+                }
+                case 'arrowup': {
+                    let endRow = activeRow;
+                    while (endRow > 0 && gridData[endRow][activeCol]?.value) { endRow--; }
+                    setSelection({ start: activeCell, end: { row: endRow, col: activeCol }});
+                    break;
+                }
+                case 'arrowright': {
+                    let endCol = activeCol;
+                    while (endCol < numCols - 1 && gridData[activeRow][endCol]?.value) { endCol++; }
+                    setSelection({ start: activeCell, end: { row: activeRow, col: endCol }});
+                    break;
+                }
+                case 'arrowleft': {
+                    let endCol = activeCol;
+                    while (endCol > 0 && gridData[activeRow][endCol]?.value) { endCol--; }
+                    setSelection({ start: activeCell, end: { row: activeRow, col: endCol }});
+                    break;
+                }
+            }
             return;
         }
 
+        // Regular Ctrl combinations
         switch (e.key.toLowerCase()) {
             case 'a':
-                e.preventDefault();
                 setActiveCell({ row: 0, col: 0 });
                 setSelection({ start: { row: 0, col: 0 }, end: { row: numRows - 1, col: numCols - 1 }});
                 break;
-            case 'c':
-                handleCopy();
-                break;
-            case 'x':
-                handleCut();
-                break;
-            case 'v':
-                handlePaste();
-                break;
-            case 'z':
-                e.preventDefault();
-                handleUndo();
-                break;
-            case 'y':
-                e.preventDefault();
-                handleRedo();
-                break;
-            case 'b':
-                e.preventDefault();
-                toggleFormatting('bold');
-                break;
-            case 'i':
-                e.preventDefault();
-                toggleFormatting('italic');
-                break;
-            case 'u':
-                e.preventDefault();
-                toggleFormatting('underline');
-                break;
-            case 'd':
-                e.preventDefault();
-                handleFillDown();
-                break;
-            case 'r':
-                e.preventDefault();
-                handleFillRight();
-                break;
-            default:
-                return;
+            case 'c': handleCopy(); break;
+            case 'x': handleCut(); break;
+            case 'v': handlePaste(); break;
+            case 'z': handleUndo(); break;
+            case 'y': handleRedo(); break;
+            case 'b': toggleFormatting('bold'); break;
+            case 'i': toggleFormatting('italic'); break;
+            case 'u': toggleFormatting('underline'); break;
+            case 'd': handleFillDown(); break;
+            case 'r': handleFillRight(); break;
         }
         return;
     }
     
     if (isEditing) return;
 
+    // --- Shift Key Selections ---
     if (e.shiftKey) {
+        e.preventDefault();
         let endRow = selection?.end.row ?? activeRow;
         let endCol = selection?.end.col ?? activeCol;
 
-        switch(e.key) {
-            case 'ArrowDown':
-                e.preventDefault();
-                endRow = Math.min(numRows - 1, endRow + 1);
-                break;
-            case 'ArrowUp':
-                e.preventDefault();
-                endRow = Math.max(0, endRow - 1);
-                break;
-            case 'ArrowLeft':
-                e.preventDefault();
-                endCol = Math.max(0, endCol - 1);
-                break;
-            case 'ArrowRight':
-                e.preventDefault();
-                endCol = Math.min(numCols - 1, endCol + 1);
-                break;
-            case ' ': // Shift + Space
-                e.preventDefault();
-                setSelection({ start: { row: activeRow, col: 0 }, end: { row: activeRow, col: numCols - 1 } });
-                return;
-            default:
-                return;
+        switch(e.key.toLowerCase()) {
+            case 'arrowdown': endRow = Math.min(numRows - 1, endRow + 1); break;
+            case 'arrowup': endRow = Math.max(0, endRow - 1); break;
+            case 'arrowleft': endCol = Math.max(0, endCol - 1); break;
+            case 'arrowright': endCol = Math.min(numCols - 1, endCol + 1); break;
+            case ' ': setSelection({ start: { row: activeRow, col: 0 }, end: { row: activeRow, col: numCols - 1 } }); return;
+            case 'home': endCol = 0; break;
+            case 'end': {
+                 let lastCol = numCols - 1;
+                 for(let c = numCols - 1; c >= activeCol; c--) {
+                    if (gridData[activeRow][c]?.value) {
+                        lastCol = c;
+                        break;
+                    }
+                 }
+                 endCol = lastCol;
+                 break;
+            }
+            default: return;
         }
         setSelection({ start: selection?.start ?? activeCell, end: { row: endRow, col: endCol } });
         return;
     }
 
+    // --- Basic Navigation ---
     let nextRow = activeRow;
     let nextCol = activeCol;
 
     switch (e.key) {
         case 'Enter':
             e.preventDefault();
-            nextRow = e.shiftKey ? Math.max(0, activeRow - 1) : Math.min(numRows - 1, activeRow + 1);
+            nextRow = Math.min(numRows - 1, activeRow + 1);
             break;
         case 'Tab':
             e.preventDefault();
-            if (e.shiftKey) {
-                if (activeCol > 0) nextCol = activeCol - 1;
-                else if (activeRow > 0) { nextRow = activeRow - 1; nextCol = numCols - 1; }
-            } else {
-                if (activeCol < numCols - 1) nextCol = activeCol + 1;
-                else if (activeRow < numRows - 1) { nextRow = activeRow + 1; nextCol = 0; }
-            }
+            if (activeCol < numCols - 1) nextCol = activeCol + 1;
+            else if (activeRow < numRows - 1) { nextRow = activeRow + 1; nextCol = 0; }
             break;
-        case 'ArrowDown':
-            e.preventDefault();
-            nextRow = Math.min(numRows - 1, activeRow + 1);
-            break;
-        case 'ArrowUp':
-            e.preventDefault();
-            nextRow = Math.max(0, activeRow - 1);
-            break;
-        case 'ArrowLeft':
-            e.preventDefault();
-            nextCol = Math.max(0, activeCol - 1);
-            break;
-        case 'ArrowRight':
-            e.preventDefault();
-            nextCol = Math.min(numCols - 1, activeCol + 1);
-            break;
+        case 'ArrowDown': e.preventDefault(); nextRow = Math.min(numRows - 1, activeRow + 1); break;
+        case 'ArrowUp': e.preventDefault(); nextRow = Math.max(0, activeRow - 1); break;
+        case 'ArrowLeft': e.preventDefault(); nextCol = Math.max(0, activeCol - 1); break;
+        case 'ArrowRight': e.preventDefault(); nextCol = Math.min(numCols - 1, activeCol + 1); break;
         default:
-            if(e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            if(e.key.length === 1 && !e.altKey) {
               setIsEditing(true);
             }
             return;
@@ -231,7 +215,7 @@ export function SpreadsheetView() {
     setActiveCell({ row: nextRow, col: nextCol });
     setSelection({ start: { row: nextRow, col: nextCol }, end: { row: nextRow, col: nextCol } });
     cellRefs.current[nextRow]?.[nextCol]?.focus();
-  }, [activeCell, isEditing, numRows, numCols, handleUndo, handleRedo, selection]);
+  }, [activeCell, isEditing, numRows, numCols, handleUndo, handleRedo, selection, gridData]);
 
   const addRow = () => {
     if (!Array.isArray(gridData)) {
@@ -244,12 +228,11 @@ export function SpreadsheetView() {
   };
   
   const addCol = () => {
-    if (!Array.isArray(gridData)) {
-        updateGridData([createEmptyRow(1).map(() => createEmptyCell())]);
+    if (!Array.isArray(gridData) || gridData.length === 0) {
+        updateGridData([createEmptyRow(1)]);
         return;
     }
-    const currentGrid = gridData.length > 0 ? gridData : [[]];
-    updateGridData(currentGrid.map(row => [...(Array.isArray(row) ? row : []), createEmptyCell()]));
+    updateGridData(gridData.map(row => [...(Array.isArray(row) ? row : []), createEmptyCell()]));
   };
 
   const removeRow = (rowIndex: number) => {
@@ -463,6 +446,7 @@ export function SpreadsheetView() {
                                         onMouseDown={() => {
                                             setActiveCell({ row: rowIndex, col: colIndex });
                                             setSelection({ start: { row: rowIndex, col: colIndex }, end: { row: rowIndex, col: colIndex } });
+                                            finishEditing();
                                         }}
                                         onMouseOver={(e) => {
                                             if (e.buttons === 1) { // If left mouse button is held down
@@ -474,12 +458,12 @@ export function SpreadsheetView() {
                                         <div
                                             ref={el => {
                                               if (cellRefs.current[rowIndex]) {
-                                                cellRefs.current[rowIndex][colIndex] = el as HTMLInputElement; // This is a div, but we need focus. We'll handle input separately.
+                                                cellRefs.current[rowIndex][colIndex] = el as HTMLInputElement; // This is a div, but we need focus.
                                               }
                                             }}
                                             tabIndex={0}
                                             className={cn(
-                                              "w-full h-full p-1.5 text-sm outline-none",
+                                              "w-full h-full p-1.5 text-sm outline-none whitespace-nowrap overflow-hidden",
                                               isActive && "ring-2 ring-primary z-10",
                                               cellData.bold && "font-bold",
                                               cellData.italic && "italic",
