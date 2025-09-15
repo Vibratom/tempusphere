@@ -28,12 +28,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 const priorityColors: Record<Priority, string> = {
     none: 'bg-muted-foreground',
@@ -317,6 +311,7 @@ export function ProjectCalendarView() {
                             onSelect={setSelectedDate}
                             className="p-0 [&_td]:p-0"
                             classNames={{
+                                day_button: "w-full h-full p-0 relative", // This is the new change
                                 day: cn(
                                   "h-full w-full p-0 relative",
                                   "[&:has([aria-selected])]:bg-transparent"
@@ -363,8 +358,8 @@ export function ProjectCalendarView() {
                                     if (dayTasks.length > 0 && !isOutside) {
                                         return (
                                             <Popover>
-                                                <PopoverTrigger asChild>
-                                                    {DayContent}
+                                                <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                    <div className="h-full w-full">{DayContent}</div>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-64 p-2">
                                                     <div className="font-bold mb-2">{dayTasks.length} task{dayTasks.length > 1 ? 's' : ''} on {format(date, 'MMM d')}</div>

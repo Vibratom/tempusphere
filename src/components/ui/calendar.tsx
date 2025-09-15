@@ -39,6 +39,7 @@ function Calendar({
         row: "flex w-full mt-2",
         cell: cn(
           "h-9 w-9 text-center text-sm p-0 relative",
+          "text-foreground", // Make sure text color is applied
           "[&:has([aria-selected])]:bg-accent",
           "first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
           "focus-within:relative focus-within:z-20"
@@ -64,9 +65,6 @@ function Calendar({
         IconRight: ({ className, ...props }) => (
           <ChevronRight className={cn("h-4 w-4", className)} {...props} />
         ),
-         DayContent: (props: DayContentProps) => {
-            return <div className="w-full h-full text-foreground">{props.date.getDate()}</div>
-         }
       }}
       {...props}
     />
