@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -335,7 +334,7 @@ export function ProjectsApp() {
 
     peer.on('data', (data) => {
       // Received data from the other peer
-      const receivedBoard = JSON.parse(data);
+      const receivedBoard = JSON.parse(data.toString());
       setBoard(receivedBoard);
       toast({ title: 'Board Updated', description: 'The board has been updated by your collaborator.' });
     });
@@ -606,5 +605,3 @@ export function ProjectsApp() {
     </div>
   );
 }
-
-    

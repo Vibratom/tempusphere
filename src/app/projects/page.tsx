@@ -1,4 +1,3 @@
-
 'use client';
 
 import { ProjectsApp } from '@/components/projects/ProjectsApp';
