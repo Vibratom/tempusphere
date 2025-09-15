@@ -123,8 +123,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
         },
         columnOrder: [...get().board.columnOrder, newColumnId],
     };
-    set({ board: newBoard });
-    broadcast(newBoard);
+    get().setBoard(newBoard);
   },
   removeColumn: (columnId: string) => {
     const newBoard = {...get().board};
@@ -138,8 +137,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
     
     newBoard.columnOrder = newBoard.columnOrder.filter(id => id !== columnId);
     
-    set({ board: newBoard });
-    broadcast(newBoard);
+    get().setBoard(newBoard);
   },
   addTask: (columnId, taskDetails) => {
     const newTaskId = `task-${Date.now()}`;
@@ -162,8 +160,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
         }
       }
     };
-    set({ board: newBoard });
-    broadcast(newBoard);
+    get().setBoard(newBoard);
   },
   removeTask: (taskId, columnId) => {
       const newTasks = { ...get().board.tasks };
@@ -182,8 +179,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
           [columnId]: { ...column, taskIds: newTaskIds }
         }
       };
-      set({ board: newBoard });
-      broadcast(newBoard);
+      get().setBoard(newBoard);
   },
   updateTask: (updatedTask) => {
       if(!updatedTask) return;
@@ -191,8 +187,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
         ...get().board,
         tasks: { ...get().board.tasks, [updatedTask.id]: updatedTask }
       };
-      set({ board: newBoard });
-      broadcast(newBoard);
+      get().setBoard(newBoard);
   },
   handleDragEnd: (result) => {
     const { destination, source, draggableId, type } = result;
@@ -227,21 +222,21 @@ export const useProjects = create<ProjectsState>((set, get) => ({
           newBoard = { ...state.board, columns: { ...state.board.columns, [newStartColumn.id]: newStartColumn, [newEndColumn.id]: newEndColumn } };
         }
     }
-    set({ board: newBoard });
-    broadcast(newBoard);
+    get().setBoard(newBoard);
   },
 }));
 
 // This provider component is now simpler. It ensures the hook is initialized from localStorage.
 export function ProjectsProvider({ children }: { children: ReactNode }) {
     const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV2', initialData);
-    const setProjectsState = useProjects.setState;
+    const setProjectsState = useProjects(state => state.setBoard);
 
+    // Effect to initialize the store from localStorage
     React.useEffect(() => {
-        setProjectsState({ board });
-    }, [board, setProjectsState]);
+        setProjectsState(board, true); // Initialize without broadcasting
+    }, []);
     
-    // Subscribe to Zustand store changes and update localStorage
+    // Effect to persist store changes to localStorage
     React.useEffect(() => {
         const unsubscribe = useProjects.subscribe(
             (state) => setBoard(state.board)

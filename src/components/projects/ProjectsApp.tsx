@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Plus, Trash2, Calendar as CalendarIcon, FileText, Share2, Wifi } from 'lucide-react';
+import { Plus, Trash2, Calendar as CalendarIcon, FileText, Share2, Wifi, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,7 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import Peer from 'simple-peer';
-import { useProjects, Priority, TaskCard, encodeBoardData, decodeBoardData, peerRef } from '@/contexts/ProjectsContext';
+import { useProjects, Priority, TaskCard, encodeBoardData, decodeBoardData, peerRef, BoardData } from '@/contexts/ProjectsContext';
 
 
 const priorityColors: Record<Priority, string> = {
@@ -62,6 +62,7 @@ export function ProjectsApp() {
   const [isHost, setIsHost] = useState(false);
   const { toast } = useToast();
   const searchParams = useSearchParams();
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -106,6 +107,44 @@ export function ProjectsApp() {
     navigator.clipboard.writeText(url.toString());
     toast({ title: "Link Copied!", description: "A shareable link to this board has been copied to your clipboard."});
   };
+
+  const handleExport = () => {
+    const jsonString = JSON.stringify(board, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'project-board.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: 'Board Exported', description: 'Your project board has been saved as a JSON file.' });
+  }
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const importedBoard = JSON.parse(text) as BoardData;
+        // Basic validation
+        if (importedBoard.tasks && importedBoard.columns && importedBoard.columnOrder) {
+          setBoard(importedBoard);
+          toast({ title: 'Import Successful', description: 'Your project board has been loaded.' });
+        } else {
+          throw new Error('Invalid JSON format for project board.');
+        }
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Import Failed', description: (error as Error).message });
+      }
+    };
+    reader.readAsText(file);
+    if(importFileRef.current) importFileRef.current.value = ""; // Reset file input
+  }
 
   const handleSaveEditingTask = () => {
     if (editingTask) {
@@ -309,8 +348,25 @@ export function ProjectsApp() {
                 <Button onClick={addColumn}><Plus className="mr-2 h-4 w-4"/>Add Column</Button>
             </div>
              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleExport}><Download className="mr-2 h-4 w-4"/> Export Board</Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="outline"><Upload className="mr-2 h-4 w-4" /> Import Board</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Import Board Data</AlertDialogTitle>
+                            <AlertDialogDescription>This will overwrite your current board. This action cannot be undone. Please ensure you have an exported backup of your current board if needed.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => importFileRef.current?.click()}>Confirm & Import</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <input type="file" ref={importFileRef} onChange={handleImport} accept=".json" className="hidden" />
                 <Button variant="outline" onClick={handleShare}>
-                    <Share2 className="mr-2 h-4 w-4"/> Share Board
+                    <Share2 className="mr-2 h-4 w-4"/> Share via Link
                 </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
