@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
-import { motion, useMotionValue } from 'framer-motion';
+import React, { useState, useRef } from 'react';
+import { motion, useMotionValue, PanInfo } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
@@ -24,15 +24,15 @@ const initialNodes: Node[] = [
   { id: 'root', text: 'My Project Idea', x: 0, y: 0 },
 ];
 
-const NodeComponent = ({ node, onUpdate, onUpdateText, onAddChild, onDelete, onConvertToTask, isSelected, onSelect }: {
+const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTask, isSelected, onSelect, onNodeDrag }: {
     node: Node;
-    onUpdate: (id: string, newPos: { x: number, y: number }) => void;
     onUpdateText: (id: string, text: string) => void;
     onAddChild: (parentId: string) => void;
     onDelete: (id: string) => void;
     onConvertToTask: (text: string) => void;
     isSelected: boolean;
     onSelect: (id: string | null) => void;
+    onNodeDrag: (id: string, info: PanInfo) => void;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(node.text);
@@ -46,19 +46,17 @@ const NodeComponent = ({ node, onUpdate, onUpdateText, onAddChild, onDelete, onC
     <motion.div
         layout
         initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
+        animate={{ opacity: 1, scale: 1, x: node.x, y: node.y }}
         exit={{ opacity: 0, scale: 0.5 }}
         drag
         dragMomentum={false}
+        onDrag={(event, info) => onNodeDrag(node.id, info)}
         className={cn(
-            "absolute p-2 rounded-lg shadow-lg cursor-grab",
+            "absolute p-2 rounded-lg shadow-lg cursor-grab z-10",
             node.id === 'root' ? 'bg-primary text-primary-foreground' : 'bg-card text-card-foreground border',
             isSelected && "ring-2 ring-accent"
         )}
-        style={{ x: node.x, y: node.y, top: 0, left: 0 }}
-        onDragEnd={(event, info) => {
-            onUpdate(node.id, { x: node.x + info.offset.x, y: node.y + info.offset.y });
-        }}
+        style={{ top: 0, left: 0 }}
         onClick={(e) => { e.stopPropagation(); onSelect(node.id); }}
         onDoubleClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
     >
@@ -79,7 +77,7 @@ const NodeComponent = ({ node, onUpdate, onUpdateText, onAddChild, onDelete, onC
       )}
       
        {isSelected && (
-           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex gap-1 bg-background p-1 rounded-md border shadow-lg z-10">
+           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex gap-1 bg-background p-1 rounded-md border shadow-lg z-20">
                 <Button size="icon" variant="ghost" onClick={() => onAddChild(node.id)} className="h-7 w-7"><Plus/></Button>
                 {node.id !== 'root' && <Button size="icon" variant="ghost" onClick={() => onDelete(node.id)} className="h-7 w-7 text-destructive"><Trash2/></Button>}
                 <Button size="icon" variant="ghost" onClick={() => onConvertToTask(node.text)} className="h-7 w-7 text-green-500"><Zap/></Button>
@@ -116,7 +114,6 @@ export function MindMapView() {
   const [scale, setScale] = useState(1);
   const panX = useMotionValue(0);
   const panY = useMotionValue(0);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleAddChild = (parentId: string) => {
     const parentNode = nodes.find(n => n.id === parentId);
@@ -137,10 +134,10 @@ export function MindMapView() {
     setNodes([...nodes, newNode]);
   };
 
-  const handleUpdateNodePosition = (id: string, newPos: { x: number, y: number }) => {
-      setNodes(nodes.map(n => (n.id === id ? { ...n, x: newPos.x, y: newPos.y } : n)));
-  }
-
+  const handleNodeDrag = (id: string, info: PanInfo) => {
+    setNodes(nodes.map(n => n.id === id ? { ...n, x: n.x + info.delta.x, y: n.y + info.delta.y } : n));
+  };
+  
   const handleUpdateText = (id: string, text: string) => {
     setNodes(nodes.map(n => n.id === id ? { ...n, text } : n));
   };
@@ -188,52 +185,56 @@ export function MindMapView() {
   
   return (
     <Card className="w-full h-full flex flex-col">
-        <CardContent className="p-0 flex-1 relative overflow-hidden" ref={containerRef} onClick={() => setSelectedNodeId(null)}>
-           <motion.div 
-             className="absolute top-0 left-0 w-full h-full"
-             style={{ x: panX, y: panY, scale }}
-             onPan={(event, info) => {
-                 panX.set(panX.get() + info.delta.x);
-                 panY.set(panY.get() + info.delta.y);
-             }}
-           >
-                <div className="relative w-full h-full transform-origin-top-left">
-                    <svg className="absolute w-[400vw] h-[400vh] pointer-events-none" style={{ top: '-100vh', left: '-100vw', overflow: 'visible' }}>
-                        {nodes.map(node => {
-                            const parent = nodes.find(p => p.id === node.parentId);
-                            if (!parent) return null;
-                            return <Line key={`${parent.id}-${node.id}`} fromNode={parent} toNode={node} />
-                        })}
-                    </svg>
-                    {nodes.map(node => (
-                        <NodeComponent
+        <CardContent className="p-0 flex-1 relative overflow-hidden" onClick={() => setSelectedNodeId(null)}>
+            <motion.div 
+              className="w-full h-full"
+              drag
+              dragMomentum={false}
+              onDrag={(e, info) => {
+                  panX.set(panX.get() + info.delta.x);
+                  panY.set(panY.get() + info.delta.y);
+              }}
+            >
+              <motion.div 
+                className="relative w-full h-full"
+                style={{ x: panX, y: panY, scale, transformOrigin: "50% 50%" }}
+              >
+                  <svg className="absolute w-[400vw] h-[400vh] pointer-events-none" style={{ top: '-200vh', left: '-200vw' }}>
+                      {nodes.map(node => {
+                          const parent = nodes.find(p => p.id === node.parentId);
+                          if (!parent) return null;
+                          return <Line key={`${parent.id}-${node.id}`} fromNode={parent} toNode={node} />
+                      })}
+                  </svg>
+                  {nodes.map(node => (
+                      <NodeComponent
                         key={node.id}
                         node={node}
-                        onUpdate={handleUpdateNodePosition}
                         onUpdateText={handleUpdateText}
                         onAddChild={handleAddChild}
                         onDelete={handleDelete}
                         onConvertToTask={handleConvertToTask}
                         isSelected={selectedNodeId === node.id}
                         onSelect={setSelectedNodeId}
-                        />
-                    ))}
-                </div>
+                        onNodeDrag={(id, info) => {
+                          setNodes(nodes.map(n => n.id === id ? { ...n, x: n.x + info.delta.x / scale, y: n.y + info.delta.y / scale } : n));
+                        }}
+                      />
+                  ))}
+              </motion.div>
             </motion.div>
 
-            <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+            <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
                 <Button variant="outline" size="icon" onClick={() => handleZoom('in')}><ZoomIn/></Button>
                 <Button variant="outline" size="icon" onClick={() => handleZoom('out')}><ZoomOut/></Button>
                 <div className="p-2 bg-muted/80 text-muted-foreground rounded-md text-xs font-mono text-center">
                     {Math.round(scale * 100)}%
                 </div>
             </div>
-             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-muted/80 p-2 rounded-lg text-sm text-muted-foreground z-10">
-                <p><strong>Double-click</strong> to edit. <strong>Click</strong> a node for options. <strong>Drag</strong> background to pan. <strong>Scroll</strong> to zoom.</p>
+             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-muted/80 p-2 rounded-lg text-sm text-muted-foreground z-20">
+                <p><strong>Double-click</strong> node to edit. <strong>Click</strong> node for options. <strong>Drag</strong> background to pan.</p>
             </div>
         </CardContent>
     </Card>
   );
 }
-
-    
