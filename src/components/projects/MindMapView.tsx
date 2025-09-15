@@ -64,7 +64,7 @@ export function MindMapView() {
       x: e.clientX - rect.left - 75,
       y: e.clientY - rect.top - 50,
       width: 150,
-      height: 100,
+      height: 70,
       color: darkAwareDefaultColor,
     };
     setNodes([...nodes, newNode]);
@@ -85,8 +85,18 @@ export function MindMapView() {
   
   const deleteNode = (id: string) => {
     const nodesToDelete = new Set<string>([id]);
-    const children = lines.filter(l => l.from === id).map(l => l.to);
-    children.forEach(childId => nodesToDelete.add(childId));
+    
+    // Also delete children recursively, optional based on desired behavior
+    const findChildren = (parentId: string) => {
+      const children = lines.filter(l => l.from === parentId).map(l => l.to);
+      children.forEach(childId => {
+        if (!nodesToDelete.has(childId)) {
+          nodesToDelete.add(childId);
+          findChildren(childId);
+        }
+      });
+    };
+    findChildren(id);
     
     setNodes(nodes.filter(node => !nodesToDelete.has(node.id)));
     setLines(lines.filter(line => !nodesToDelete.has(line.from) && !nodesToDelete.has(line.to)));
@@ -195,6 +205,14 @@ export function MindMapView() {
 
     const svgString = `
       <svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}">
+        <style>
+          .node-text {
+             font-family: sans-serif;
+             font-size: 14px;
+             word-break: break-word;
+             padding: 8px;
+          }
+        </style>
         ${lines.map(line => {
             const fromNode = nodes.find(n => n.id === line.from);
             const toNode = nodes.find(n => n.id === line.to);
@@ -207,11 +225,10 @@ export function MindMapView() {
         ${nodes.map(node => {
             const div = document.createElement('div');
             div.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+            div.setAttribute('class', 'node-text');
             div.style.width = `${node.width}px`;
             div.style.height = `${node.height}px`;
-            div.style.padding = '8px';
             div.style.color = (node.color === '#ffffff' || node.color === 'hsl(var(--card))') ? `hsl(${nodeColor})` : 'white';
-            div.style.wordBreak = 'break-word';
             div.textContent = node.text;
 
             return `<rect x="${node.x - bounds.minX + padding}" y="${node.y - bounds.minY + padding}" width="${node.width}" height="${node.height}" fill="${node.color || '#ffffff'}" stroke="hsl(${lineColor})" stroke-width="1" rx="8" />
@@ -307,11 +324,7 @@ export function MindMapView() {
                     key={node.id}
                     drag
                     onDragEnd={(event, info) => {
-                      const rect = canvasRef.current?.getBoundingClientRect();
-                      if (!rect) return;
-                      const x = info.point.x - rect.left;
-                      const y = info.point.y - rect.top;
-                      setNodes(nodes.map(n => n.id === node.id ? { ...n, x, y } : n));
+                      setNodes(nodes.map(n => n.id === node.id ? { ...n, x: info.point.x, y: info.point.y } : n));
                     }}
                     whileHover={{ scale: 1.02 }}
                     onHoverStart={e => { e.stopPropagation(); }}
@@ -385,3 +398,5 @@ export function MindMapView() {
     </div>
   );
 }
+
+    
