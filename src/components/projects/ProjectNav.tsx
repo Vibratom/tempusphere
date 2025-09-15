@@ -3,7 +3,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { KanbanSquare, List, BarChartHorizontal, BrainCircuit, Table, ListChecks, DraftingCompass, Calendar } from 'lucide-react';
+import { KanbanSquare, List, BarChartHorizontal, BrainCircuit, Table, ListChecks, Calendar } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
@@ -14,7 +14,6 @@ const tools = [
     { value: 'mindmap', icon: BrainCircuit, label: 'Mind Map', href: '/projects/mindmap' },
     { value: 'spreadsheet', icon: Table, label: 'Spreadsheet', href: '/projects/spreadsheet' },
     { value: 'checklist', icon: ListChecks, label: 'Checklist', href: '/projects/checklist' },
-    { value: 'canvas', icon: DraftingCompass, label: 'Canvas', href: '/projects/canvas' },
 ];
 
 const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: string, href: string, icon: React.ElementType, children: React.ReactNode }) => (
@@ -29,7 +28,7 @@ const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: s
 export function ProjectNav({ activeTool }: { activeTool: string }) {
     return (
         <Tabs defaultValue={activeTool} value={activeTool}>
-            <TabsList className="grid w-full h-auto grid-cols-4 sm:grid-cols-8 md:grid-cols-8 lg:grid-cols-8">
+            <TabsList className="grid w-full h-auto grid-cols-4 sm:grid-cols-7 md:grid-cols-7 lg:grid-cols-7">
                 {tools.map(tool => (
                     <ResponsiveTabsTrigger key={tool.value} value={tool.value} href={tool.href} icon={tool.icon}>
                         {tool.label}
