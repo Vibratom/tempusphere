@@ -15,7 +15,8 @@ export interface TaskCard {
   id: string;
   title: string;
   description?: string;
-  dueDate?: string; // ISO string
+  startDate?: string; // ISO string
+  dueDate?: string; // ISO string for end date
   priority: Priority;
 }
 
@@ -34,7 +35,7 @@ export interface BoardData {
 export const initialData: BoardData = {
   tasks: {
     'task-1': { id: 'task-1', title: 'Brainstorm feature ideas', priority: 'medium' },
-    'task-2': { id: 'task-2', title: 'Design the UI mockups', priority: 'high', description: 'Create mockups in Figma for all screen sizes.' },
+    'task-2': { id: 'task-2', title: 'Design the UI mockups', priority: 'high', description: 'Create mockups in Figma for all screen sizes.', startDate: new Date().toISOString(), dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() },
     'task-3': { id: 'task-3', title: 'Develop the Kanban components', priority: 'high' },
     'task-4': { id: 'task-4', title: 'Implement drag and drop', priority: 'medium', dueDate: new Date().toISOString() },
     'task-5': { id: 'task-5', title: 'Review and test the board', priority: 'low' },

@@ -219,7 +219,29 @@ export function ProjectsApp() {
                         <Textarea id="description" value={editingTask.description || ''} onChange={(e) => setEditingTask({...editingTask, description: e.target.value})} className="col-span-3" rows={5} />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="dueDate" className="text-right">Due Date</Label>
+                        <Label htmlFor="startDate" className="text-right">Start Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn("col-span-3 justify-start text-left font-normal", !editingTask.startDate && "text-muted-foreground")}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {editingTask.startDate ? format(new Date(editingTask.startDate), "PPP") : <span>Pick a start date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={editingTask.startDate ? new Date(editingTask.startDate) : undefined}
+                                    onSelect={(date) => setEditingTask({...editingTask, startDate: date?.toISOString()})}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="dueDate" className="text-right">End Date</Label>
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
@@ -227,7 +249,7 @@ export function ProjectsApp() {
                                   className={cn("col-span-3 justify-start text-left font-normal", !editingTask.dueDate && "text-muted-foreground")}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {editingTask.dueDate ? format(new Date(editingTask.dueDate), "PPP") : <span>Pick a date</span>}
+                                    {editingTask.dueDate ? format(new Date(editingTask.dueDate), "PPP") : <span>Pick an end date</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0">
@@ -394,7 +416,7 @@ export function ProjectsApp() {
                                                                   </div>
                                                                    <div className="flex items-center gap-2 mt-2 text-muted-foreground">
                                                                     {task.description && <FileText className="h-4 w-4"/>}
-                                                                    {task.dueDate && <CalendarIcon className="h-4 w-4"/>}
+                                                                    {(task.startDate || task.dueDate) && <CalendarIcon className="h-4 w-4"/>}
                                                                   </div>
                                                               </CardContent>
                                                           </Card>

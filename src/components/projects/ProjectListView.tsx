@@ -52,6 +52,7 @@ const NewTaskDialog = () => {
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState(board.columnOrder.length > 0 ? board.columns[board.columnOrder[0]].title : '');
     const [priority, setPriority] = useState<Priority>('none');
+    const [startDate, setStartDate] = useState<Date | undefined>();
     const [dueDate, setDueDate] = useState<Date | undefined>();
     const [isOpen, setIsOpen] = useState(false);
 
@@ -64,6 +65,7 @@ const NewTaskDialog = () => {
             title,
             description: description || undefined,
             priority,
+            startDate: startDate?.toISOString(),
             dueDate: dueDate?.toISOString()
         };
 
@@ -72,6 +74,7 @@ const NewTaskDialog = () => {
         setTitle('');
         setDescription('');
         setPriority('none');
+        setStartDate(undefined);
         setDueDate(undefined);
         setIsOpen(false);
     }
@@ -124,7 +127,24 @@ const NewTaskDialog = () => {
                         </Select>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="task-dueDate" className="text-right">Due Date</Label>
+                        <Label htmlFor="task-startDate" className="text-right">Start Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn("col-span-3 justify-start text-left font-normal", !startDate && "text-muted-foreground")}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-dueDate" className="text-right">End Date</Label>
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
@@ -155,6 +175,7 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState('');
     const [priority, setPriority] = useState<Priority>('none');
+    const [startDate, setStartDate] = useState<Date | undefined>();
     const [dueDate, setDueDate] = useState<Date | undefined>();
 
     React.useEffect(() => {
@@ -164,6 +185,7 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
             setDescription(task.description || '');
             setStatus(currentColumn?.title || '');
             setPriority(task.priority);
+            setStartDate(task.startDate ? new Date(task.startDate) : undefined);
             setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
         }
     }, [task, board.columns]);
@@ -176,6 +198,7 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
             title,
             description: description || undefined,
             priority,
+            startDate: startDate?.toISOString(),
             dueDate: dueDate?.toISOString()
         };
         onSave(updatedTask, status);
@@ -223,11 +246,31 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="task-dueDate" className="text-right">Due Date</Label>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-startDate" className="text-right">Start Date</Label>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant={"outline"} className={cn("col-span-3 justify-start text-left font-normal", !dueDate && "text-muted-foreground")}>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn("col-span-3 justify-start text-left font-normal", !startDate && "text-muted-foreground")}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-dueDate" className="text-right">End Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn("col-span-3 justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                                >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
                                 </Button>
@@ -403,7 +446,7 @@ export function ProjectListView() {
                             <SortableHeader tkey="title" label="Task" />
                             <SortableHeader tkey="status" label="Status" />
                             <SortableHeader tkey="priority" label="Priority" />
-                            <SortableHeader tkey="dueDate" label="Due Date" />
+                            <SortableHeader tkey="dueDate" label="End Date" />
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -480,5 +523,3 @@ export function ProjectListView() {
         </div>
     );
 }
-
-    

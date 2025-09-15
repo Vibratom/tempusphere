@@ -42,9 +42,11 @@ const NewTaskDialog = ({ isOpen, onOpenChange, forDate }: { isOpen: boolean, onO
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState(board.columnOrder.length > 0 ? board.columns[board.columnOrder[0]].title : '');
     const [priority, setPriority] = useState<Priority>('none');
+    const [startDate, setStartDate] = useState<Date | undefined>(forDate);
     const [dueDate, setDueDate] = useState<Date | undefined>(forDate);
 
     React.useEffect(() => {
+        setStartDate(forDate);
         setDueDate(forDate);
     }, [forDate])
 
@@ -57,6 +59,7 @@ const NewTaskDialog = ({ isOpen, onOpenChange, forDate }: { isOpen: boolean, onO
             title,
             description: description || undefined,
             priority,
+            startDate: startDate?.toISOString(),
             dueDate: dueDate?.toISOString()
         };
 
@@ -65,6 +68,7 @@ const NewTaskDialog = ({ isOpen, onOpenChange, forDate }: { isOpen: boolean, onO
         setTitle('');
         setDescription('');
         setPriority('none');
+        setStartDate(undefined);
         setDueDate(undefined);
         onOpenChange(false);
     }
@@ -111,8 +115,25 @@ const NewTaskDialog = ({ isOpen, onOpenChange, forDate }: { isOpen: boolean, onO
                             </SelectContent>
                         </Select>
                     </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-startDate" className="text-right">Start Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn("col-span-3 justify-start text-left font-normal", !startDate && "text-muted-foreground")}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="task-dueDate" className="text-right">Due Date</Label>
+                        <Label htmlFor="task-dueDate" className="text-right">End Date</Label>
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
@@ -143,6 +164,7 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState('');
     const [priority, setPriority] = useState<Priority>('none');
+    const [startDate, setStartDate] = useState<Date | undefined>();
     const [dueDate, setDueDate] = useState<Date | undefined>();
 
     React.useEffect(() => {
@@ -152,6 +174,7 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
             setDescription(task.description || '');
             setStatus(currentColumn?.title || '');
             setPriority(task.priority);
+            setStartDate(task.startDate ? new Date(task.startDate) : undefined);
             setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
         }
     }, [task, board.columns]);
@@ -164,6 +187,7 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
             title,
             description: description || undefined,
             priority,
+            startDate: startDate?.toISOString(),
             dueDate: dueDate?.toISOString()
         };
         onSave(updatedTask, status);
@@ -212,10 +236,30 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
                         </Select>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="task-dueDate" className="text-right">Due Date</Label>
+                        <Label htmlFor="task-startDate" className="text-right">Start Date</Label>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant={"outline"} className={cn("col-span-3 justify-start text-left font-normal", !dueDate && "text-muted-foreground")}>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn("col-span-3 justify-start text-left font-normal", !startDate && "text-muted-foreground")}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-dueDate" className="text-right">End Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn("col-span-3 justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                                >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
                                 </Button>
@@ -311,18 +355,20 @@ export function ProjectCalendarView() {
                             onSelect={setSelectedDate}
                             className="p-0 [&_td]:p-0"
                             classNames={{
-                                day_button: "w-full h-full p-0 relative", // This is the new change
+                                day_button: "w-full h-full p-0 relative",
                                 day: cn(
                                   "h-full w-full p-0 relative",
+                                  "focus-within:relative focus-within:z-20",
                                   "[&:has([aria-selected])]:bg-transparent"
                                 ),
-                                day_selected:
-                                  "bg-primary/10 text-primary-foreground hover:bg-primary/20",
-                                day_today: "bg-accent/10 text-accent-foreground",
+                                day_selected: "text-primary-foreground",
+                                day_today: "text-accent-foreground",
                             }}
                             modifiers={{ hasTask: (date) => tasksByDay[format(date, 'yyyy-MM-dd')]?.length > 0 }}
                             modifiersClassNames={{
                                 hasTask: 'rdp-day_hasTask',
+                                selected: 'rdp-day_selected',
+                                today: 'rdp-day_today',
                             }}
                             components={{
                                 Day: ({ date, displayMonth }) => {
@@ -358,7 +404,7 @@ export function ProjectCalendarView() {
                                     if (dayTasks.length > 0 && !isOutside) {
                                         return (
                                             <Popover>
-                                                <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                <PopoverTrigger asChild onFocus={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()}>
                                                     <div className="h-full w-full">{DayContent}</div>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-64 p-2">

@@ -34,8 +34,12 @@ export function GanttChartView() {
 
     const tasks = useMemo(() => {
         return Object.values(board.tasks)
-            .filter(task => task.dueDate)
-            .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+            .filter(task => task.startDate || task.dueDate)
+            .sort((a, b) => {
+                const aDate = a.startDate ? new Date(a.startDate) : new Date(a.dueDate!);
+                const bDate = b.startDate ? new Date(b.startDate) : new Date(b.dueDate!);
+                return aDate.getTime() - bDate.getTime();
+            });
     }, [board.tasks]);
 
     const { dateRange, gridTemplateColumns } = useMemo(() => {
@@ -80,20 +84,22 @@ export function GanttChartView() {
     };
     
     const getTaskPosition = (task: TaskCard) => {
-        if (!task.dueDate) return { gridColumnStart: 0, gridColumnEnd: 0 };
-        const startDate = parseISO(task.dueDate);
+        const startDate = task.startDate ? parseISO(task.startDate) : parseISO(task.dueDate!);
+        const endDate = task.dueDate ? parseISO(task.dueDate) : startDate;
         
-        // For simplicity, tasks have a fixed duration. Could be extended with start/end dates.
-        const taskDurationDays = 2; 
-
         const startIndex = differenceInDays(startDate, dateRange[0]);
-        if (startIndex < 0 || startIndex >= dateRange.length) return null;
+        const endIndex = differenceInDays(endDate, dateRange[0]) + 1;
+
+        if (startIndex >= dateRange.length || endIndex < 0) return null;
         
-        const endIndex = Math.min(startIndex + taskDurationDays, dateRange.length);
+        const clampedStartIndex = Math.max(startIndex, 0);
+        const clampedEndIndex = Math.min(endIndex, dateRange.length);
+        
+        if (clampedStartIndex >= clampedEndIndex) return null;
 
         return {
-            gridColumnStart: startIndex + 1,
-            gridColumnEnd: endIndex + 1
+            gridColumnStart: clampedStartIndex + 1,
+            gridColumnEnd: clampedEndIndex + 1
         }
     }
     
@@ -217,7 +223,8 @@ export function GanttChartView() {
                                                 <TooltipContent>
                                                     <div className="font-bold mb-2">{task.title}</div>
                                                     <div className="space-y-1 text-sm">
-                                                        <p><span className="font-semibold">Due:</span> {format(parseISO(task.dueDate!), 'PPP')}</p>
+                                                        <p><span className="font-semibold">Start:</span> {task.startDate ? format(parseISO(task.startDate), 'PPP') : 'N/A'}</p>
+                                                        <p><span className="font-semibold">End:</span> {task.dueDate ? format(parseISO(task.dueDate), 'PPP') : 'N/A'}</p>
                                                         <p><span className="font-semibold">Status:</span> {status}</p>
                                                         <div className="flex items-center gap-2"><span className="font-semibold">Priority:</span> <Flag className={cn("h-4 w-4", priorityColors[task.priority].replace('bg-','text-'))} /> <span className="capitalize">{task.priority}</span></div>
                                                     </div>
