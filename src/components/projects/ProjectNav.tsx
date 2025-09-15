@@ -11,7 +11,6 @@ const tools = [
     { value: 'board', icon: KanbanSquare, label: 'Board', href: '/projects/board' },
     { value: 'list', icon: List, label: 'List', href: '/projects/list' },
     { value: 'gantt', icon: BarChartHorizontal, label: 'Gantt', href: '/projects/gantt' },
-    { value: 'canvas', icon: DraftingCompass, label: 'Canvas', href: '/projects/canvas' },
     { value: 'spreadsheet', icon: Table, label: 'Spreadsheet', href: '/projects/spreadsheet' },
     { value: 'checklist', icon: ListChecks, label: 'Checklist', href: '/projects/checklist' },
 ];

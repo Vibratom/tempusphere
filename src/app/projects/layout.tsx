@@ -15,7 +15,6 @@ import BoardPage from './board/page';
 import CalendarViewPage from './calendar/page';
 import ListPage from './list/page';
 import GanttPage from './gantt/page';
-import CanvasPage from './canvas/page';
 import SpreadsheetPage from './spreadsheet/page';
 import ChecklistPage from './checklist/page';
 
@@ -30,7 +29,6 @@ const toolComponents: Record<string, React.ComponentType> = {
     calendar: CalendarViewPage,
     list: ListPage,
     gantt: GanttPage,
-    canvas: CanvasPage,
     spreadsheet: SpreadsheetPage,
     checklist: ChecklistPage,
 };
