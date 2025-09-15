@@ -102,7 +102,7 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
         className={cn("rounded-md border", fullscreen && 'shadow-lg', glass && 'bg-black/10 border-white/20')}
         modifiers={{ withEvents: dayWithEventsModifier }}
         components={{
-            Day: ({ date, displayMonth: _displayMonth, ...props }) => {
+            Day: ({ date, ...props }) => {
                 const dayContent = (
                     <div className="relative h-full w-full flex items-center justify-center">
                         <p>{date.getDate()}</p>
@@ -184,7 +184,7 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
 
           <ScrollArea className="flex-1 -mr-4">
             <div className="space-y-2 pr-4">
-              {selectedDayEvents.length > 0 ? (
+              {isClient && selectedDayEvents.length > 0 ? (
                 selectedDayEvents.map((event) => (
                   <div key={event.id} className="flex justify-between items-start p-3 rounded-lg border bg-background/50">
                     <div className="flex items-start gap-3">
