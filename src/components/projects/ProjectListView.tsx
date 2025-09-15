@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Flag, Search } from 'lucide-react';
+import { Flag, Search, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '../ui/button';
 import {
   DropdownMenu,
@@ -102,60 +102,62 @@ export function ProjectListView() {
     };
     
     const SortableHeader = ({ tkey, label }: { tkey: SortKey, label: string}) => (
-        <TableHead onClick={() => handleSort(tkey)} className="cursor-pointer">
+        <TableHead onClick={() => handleSort(tkey)} className="cursor-pointer hover:bg-muted/50">
             <div className="flex items-center gap-2">
                 {label}
-                {sortKey === tkey && (sortDirection === 'asc' ? '▲' : '▼')}
+                {sortKey === tkey && (sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
             </div>
         </TableHead>
     );
 
     return (
         <div className="w-full h-full flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
+            <div className="flex flex-col md:flex-row items-center gap-2">
+                <div className="relative flex-1 w-full">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Filter tasks by title..."
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
-                        className="pl-8"
+                        className="pl-8 w-full"
                     />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                        <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        {board.columnOrder.map(colId => (
-                            <SelectItem key={colId} value={board.columns[colId].title}>
-                                {board.columns[colId].title}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full sm:w-auto">
-                            <Flag className={cn("mr-2 h-4 w-4", priorityFilter !== 'all' && priorityColors[priorityFilter])}/>
-                            Filter Priority
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuRadioGroup value={priorityFilter} onValueChange={(p) => setPriorityFilter(p as Priority | 'all')}>
-                            <DropdownMenuRadioItem value="all">All Priorities</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="high"><Flag className="h-4 w-4 mr-2 text-red-500"/>High</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="medium"><Flag className="h-4 w-4 mr-2 text-yellow-500"/>Medium</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="low"><Flag className="h-4 w-4 mr-2 text-blue-500"/>Low</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="none"><Flag className="h-4 w-4 mr-2 text-muted-foreground"/>None</DropdownMenuRadioItem>
-                        </DropdownMenuRadioGroup>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex gap-2 w-full md:w-auto">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-full md:w-[180px]">
+                            <SelectValue placeholder="Filter by status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            {board.columnOrder.map(colId => (
+                                <SelectItem key={colId} value={board.columns[colId].title}>
+                                    {board.columns[colId].title}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full md:w-auto flex-shrink-0">
+                                <Flag className={cn("mr-2 h-4 w-4", priorityFilter !== 'all' && priorityColors[priorityFilter])}/>
+                                <span>Priority</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuRadioGroup value={priorityFilter} onValueChange={(p) => setPriorityFilter(p as Priority | 'all')}>
+                                <DropdownMenuRadioItem value="all">All Priorities</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="high"><Flag className="h-4 w-4 mr-2 text-red-500"/>High</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="medium"><Flag className="h-4 w-4 mr-2 text-yellow-500"/>Medium</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="low"><Flag className="h-4 w-4 mr-2 text-blue-500"/>Low</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="none"><Flag className="h-4 w-4 mr-2 text-muted-foreground"/>None</DropdownMenuRadioItem>
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border rounded-lg overflow-hidden bg-card">
                 <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-muted/50">
                         <TableRow>
                             <SortableHeader tkey="title" label="Task" />
                             <SortableHeader tkey="status" label="Status" />
@@ -176,7 +178,7 @@ export function ProjectListView() {
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             <Flag className={cn("h-4 w-4", priorityColors[task.priority])} />
-                                            <span className="capitalize">{task.priority}</span>
+                                            <span className="capitalize">{task.priority === 'none' ? 'None' : task.priority}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -186,7 +188,7 @@ export function ProjectListView() {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center">
+                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                                     No tasks found.
                                 </TableCell>
                             </TableRow>
