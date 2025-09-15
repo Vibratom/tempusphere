@@ -401,8 +401,8 @@ export function ProjectsApp() {
                         <Input id="title" value={editingTask.title} onChange={(e) => setEditingTask({...editingTask, title: e.target.value})} className="col-span-3" />
                     </div>
                     <div className="grid grid-cols-4 items-start gap-4">
-                        <Label htmlFor="description" className="text-right pt-2">Description</Label>
-                        <Textarea id="description" value={editingTask.description || ''} onChange={(e) => setEditingTask({...editingTask, description: e.target.value})} className="col-span-3" />
+                        <Label htmlFor="description" className="text-right pt-2">Notes</Label>
+                        <Textarea id="description" value={editingTask.description || ''} onChange={(e) => setEditingTask({...editingTask, description: e.target.value})} className="col-span-3" rows={5} />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="dueDate" className="text-right">Due Date</Label>
