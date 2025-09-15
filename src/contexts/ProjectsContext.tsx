@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction } from 'react';
+import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import * as pako from 'pako';
 import { Base64 } from 'js-base64';
@@ -78,15 +78,14 @@ export function decodeBoardData(encoded: string): BoardData | null {
   }
 }
 
-// Export peerRef to be accessible by both the component and the store
 export const peerRef: React.MutableRefObject<PeerInstance | undefined> = { current: undefined };
 
 interface ProjectsState {
   board: BoardData;
   setBoard: (board: BoardData | ((prev: BoardData) => BoardData), fromPeer?: boolean) => void;
-  addTask: (columnId: string, taskDetails: Partial<TaskCard> & { title: string }) => void;
-  removeTask: (taskId: string, columnId: string) => void;
-  updateTask: (updatedTask: TaskCard) => void;
+  addTask: (columnId: string, taskDetails: Partial<TaskCard> & { title: string }, fromCalendar?: boolean) => TaskCard;
+  removeTask: (taskId: string, columnId?: string, fromCalendar?: boolean) => void;
+  updateTask: (updatedTask: TaskCard, fromCalendar?: boolean) => void;
   addColumn: (title: string) => void;
   removeColumn: (columnId: string) => void;
   handleDragEnd: OnDragEndResponder;
@@ -97,37 +96,6 @@ const broadcast = (board: BoardData) => {
         peerRef.current.send(JSON.stringify(board));
     }
 }
-
-const syncTaskToCalendar = (task: TaskCard, action: 'add' | 'update' | 'remove') => {
-    const { addEvent, updateEventsBySourceId, removeEventsBySourceId } = useCalendar.getState();
-    
-    if (action === 'remove') {
-        removeEventsBySourceId(task.id);
-        return;
-    }
-
-    if (!task.dueDate) {
-        removeEventsBySourceId(task.id);
-        return;
-    }
-
-    const calendarEventPayload = {
-        date: task.dueDate,
-        time: '09:00', // Default time for tasks
-        title: task.title,
-        description: `Project Task: ${task.description || ''}`,
-        color: 'purple',
-        type: 'Work' as const,
-        sourceId: task.id
-    };
-
-    if (action === 'add') {
-        addEvent(calendarEventPayload);
-    } else if (action === 'update') {
-        updateEventsBySourceId(task.id, calendarEventPayload);
-    }
-}
-
 
 export const useProjects = create<ProjectsState>((set, get) => ({
   board: initialData,
@@ -160,9 +128,11 @@ export const useProjects = create<ProjectsState>((set, get) => ({
     get().setBoard(prev => {
         const newBoard = {...prev};
         const tasksToDelete = newBoard.columns[columnId].taskIds;
+        const { removeEvent } = useCalendar.getState();
         
         tasksToDelete.forEach(taskId => {
-            syncTaskToCalendar(newBoard.tasks[taskId], 'remove');
+            const calendarEvent = useCalendar.getState().events.find(e => e.sourceId === taskId);
+            if (calendarEvent) removeEvent(calendarEvent.id);
             delete newBoard.tasks[taskId];
         });
         
@@ -172,20 +142,18 @@ export const useProjects = create<ProjectsState>((set, get) => ({
         return newBoard;
     });
   },
-  addTask: (columnId, taskDetails) => {
-    const newTaskId = `task-${Date.now()}`;
+  addTask: (columnId, taskDetails, fromCalendar = false) => {
+    const newTaskId = taskDetails.id || `task-${Date.now()}-${Math.random()}`;
     const newTask: TaskCard = {
-      id: newTaskId,
       priority: 'none',
       ...taskDetails,
+      id: newTaskId,
     };
     
     get().setBoard(prev => {
         const column = prev.columns[columnId];
         if (!column) return prev;
         
-        syncTaskToCalendar(newTask, 'add');
-
         return {
           ...prev,
           tasks: { ...prev.tasks, [newTaskId]: newTask },
@@ -198,40 +166,60 @@ export const useProjects = create<ProjectsState>((set, get) => ({
           }
         };
     });
+
+    if (!fromCalendar) {
+        const { addEvent } = useCalendar.getState();
+        if(newTask.dueDate) {
+          addEvent({
+              date: newTask.dueDate, time: '09:00', title: newTask.title,
+              description: '', color: 'purple', type: 'Work', sourceId: newTask.id
+          });
+        }
+    }
+    return newTask;
   },
-  removeTask: (taskId, columnId) => {
+  removeTask: (taskId, columnId, fromCalendar = false) => {
       get().setBoard(prev => {
           const newTasks = { ...prev.tasks };
-          const taskToRemove = newTasks[taskId];
-          if (taskToRemove) {
-              syncTaskToCalendar(taskToRemove, 'remove');
-          }
           delete newTasks[taskId];
           
-          const column = prev.columns[columnId];
-          if (!column) return {...prev, tasks: newTasks};
+          let newColumns = { ...prev.columns };
+          if (columnId && newColumns[columnId]) {
+            newColumns[columnId].taskIds = newColumns[columnId].taskIds.filter(id => id !== taskId);
+          } else { // if columnId is not provided, search all columns
+            Object.keys(newColumns).forEach(colId => {
+              newColumns[colId].taskIds = newColumns[colId].taskIds.filter(id => id !== taskId);
+            });
+          }
 
-          const newTaskIds = column.taskIds.filter(id => id !== taskId);
-
-          return {
-            ...prev,
-            tasks: newTasks,
-            columns: {
-              ...prev.columns,
-              [columnId]: { ...column, taskIds: newTaskIds }
-            }
-          };
+          return { ...prev, tasks: newTasks, columns: newColumns };
       });
+
+      if (!fromCalendar) {
+        const { removeEvent } = useCalendar.getState();
+        const calendarEvent = useCalendar.getState().events.find(e => e.sourceId === taskId);
+        if (calendarEvent) removeEvent(calendarEvent.id);
+      }
   },
-  updateTask: (updatedTask) => {
+  updateTask: (updatedTask, fromCalendar = false) => {
       if(!updatedTask) return;
-      
-      syncTaskToCalendar(updatedTask, 'update');
 
       get().setBoard(prev => ({
         ...prev,
         tasks: { ...prev.tasks, [updatedTask.id]: updatedTask }
       }));
+
+      if (!fromCalendar) {
+        const { updateEvent, events } = useCalendar.getState();
+        const calendarEvent = events.find(e => e.sourceId === updatedTask.id);
+        if (calendarEvent) {
+          updateEvent({
+            ...calendarEvent,
+            title: updatedTask.title,
+            date: updatedTask.dueDate || calendarEvent.date,
+          });
+        }
+      }
   },
   handleDragEnd: (result) => {
     const { destination, source, draggableId, type } = result;
@@ -268,24 +256,51 @@ export const useProjects = create<ProjectsState>((set, get) => ({
   },
 }));
 
-// This provider component is now simpler. It ensures the hook is initialized from localStorage.
+function ProjectTaskSync() {
+    const board = useProjects(s => s.board);
+    const { setEvents } = useCalendar();
+
+    useEffect(() => {
+        const workEvents = Object.values(board.tasks)
+            .filter(task => task.dueDate)
+            .map(task => ({
+                id: `evt-${task.id}`,
+                sourceId: task.id,
+                date: task.dueDate!,
+                time: '09:00', // Default time for tasks
+                title: task.title,
+                description: `Project Task: ${task.description || ''}`,
+                color: 'purple',
+                type: 'Work' as const
+            }));
+        
+        setEvents(prev => [
+            ...prev.filter(e => e.type !== 'Work'),
+            ...workEvents
+        ]);
+        
+    }, [board.tasks, setEvents]);
+
+    return null;
+}
+
 export function ProjectsProvider({ children }: { children: ReactNode }) {
     const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV2', initialData);
     const setProjectsState = useProjects(state => state.setBoard);
 
-    // Effect to initialize the store from localStorage
-    React.useEffect(() => {
-        setProjectsState(board, true); // Initialize without broadcasting
+    useEffect(() => {
+        setProjectsState(board, true);
     }, []);
     
-    // Effect to persist store changes to localStorage
-    React.useEffect(() => {
+    useEffect(() => {
         const unsubscribe = useProjects.subscribe(
             (state) => setBoard(state.board)
         );
         return unsubscribe;
     }, [setBoard]);
 
-
-  return <>{children}</>;
+  return <>
+    <ProjectTaskSync />
+    {children}
+  </>;
 }

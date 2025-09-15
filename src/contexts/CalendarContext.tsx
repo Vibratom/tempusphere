@@ -4,63 +4,71 @@
 import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
-export type EventType = 'Personal' | 'Work';
+export type EventType = string;
 
 export interface CalendarEvent {
-  id: string; // Unique ID for the calendar event itself
+  id: string;
   date: string; // ISO string for the date
   time: string; // HH:MM
   title: string;
   description: string;
   color: string;
   type: EventType;
-  sourceId?: string; // Original ID from the source (e.g., project task ID)
+  sourceId?: string;
 }
 
 interface CalendarContextType {
   events: CalendarEvent[];
   setEvents: Dispatch<SetStateAction<CalendarEvent[]>>;
-  addEvent: (event: Omit<CalendarEvent, 'id'>) => void;
+  eventTypes: EventType[];
+  addEventType: (type: EventType) => void;
+  removeEventType: (type: EventType) => void;
+  addEvent: (event: Omit<CalendarEvent, 'id'>) => CalendarEvent;
   removeEvent: (eventId: string) => void;
   updateEvent: (event: CalendarEvent) => void;
-  removeEventsBySourceId: (sourceId: string) => void;
-  updateEventsBySourceId: (sourceId: string, updates: Partial<CalendarEvent>) => void;
 }
 
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
-  const [events, setEvents] = useLocalStorage<CalendarEvent[]>('calendar:eventsV3', []);
+  const [events, setEvents] = useLocalStorage<CalendarEvent[]>('calendar:eventsV4', []);
+  const [eventTypes, setEventTypes] = useLocalStorage<EventType[]>('calendar:eventTypesV1', ['Personal', 'Work']);
 
-  const addEvent = useCallback((event: Omit<CalendarEvent, 'id'>) => {
-    const newEvent = { ...event, id: `evt-${Date.now()}` };
+  const addEventType = useCallback((type: EventType) => {
+    if (type && !eventTypes.includes(type)) {
+      setEventTypes(prev => [...prev, type]);
+    }
+  }, [eventTypes, setEventTypes]);
+
+  const removeEventType = useCallback((type: EventType) => {
+    // Re-assign events of the removed type to 'Personal'
+    setEvents(prev => prev.map(e => e.type === type ? { ...e, type: 'Personal' } : e));
+    setEventTypes(prev => prev.filter(t => t !== type));
+  }, [setEventTypes, setEvents]);
+
+  const addEvent = useCallback((event: Omit<CalendarEvent, 'id'>): CalendarEvent => {
+    const newEvent = { ...event, id: `evt-${Date.now()}-${Math.random()}` };
     setEvents(prev => [...prev, newEvent].sort((a,b) => a.time.localeCompare(b.time)));
+    return newEvent;
   }, [setEvents]);
 
   const removeEvent = useCallback((eventId: string) => {
     setEvents(prev => prev.filter(e => e.id !== eventId));
   }, [setEvents]);
   
-  const removeEventsBySourceId = useCallback((sourceId: string) => {
-    setEvents(prev => prev.filter(e => e.sourceId !== sourceId));
-  }, [setEvents]);
-  
   const updateEvent = useCallback((updatedEvent: CalendarEvent) => {
     setEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEvent : e).sort((a,b) => a.time.localeCompare(b.time)));
-  }, [setEvents]);
-
-  const updateEventsBySourceId = useCallback((sourceId: string, updates: Partial<CalendarEvent>) => {
-    setEvents(prev => prev.map(e => e.sourceId === sourceId ? { ...e, ...updates } : e).sort((a,b) => a.time.localeCompare(b.time)));
   }, [setEvents]);
 
   const value = {
     events,
     setEvents,
+    eventTypes,
+    addEventType,
+    removeEventType,
     addEvent,
     removeEvent,
     updateEvent,
-    removeEventsBySourceId,
-    updateEventsBySourceId
   };
 
   return <CalendarContext.Provider value={value}>{children}</CalendarContext.Provider>;
