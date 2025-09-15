@@ -35,6 +35,8 @@ const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTa
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(node.text);
+  const x = useMotionValue(node.x);
+  const y = useMotionValue(node.y);
 
   const handleUpdate = () => {
     onUpdateText(node.id, editText);
@@ -54,7 +56,12 @@ const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTa
             node.id === 'root' ? 'bg-primary text-primary-foreground' : 'bg-card text-card-foreground border',
             isSelected && "ring-2 ring-accent"
         )}
-        style={{ x: node.x, y: node.y }}
+        style={{ x, y }}
+        onDragEnd={(event, info) => {
+            // This is a simple update. For a more robust solution, you might want to update this in the parent state.
+            node.x = info.point.x;
+            node.y = info.point.y;
+        }}
         onClick={() => onSelect(node.id)}
     >
       {isEditing ? (
