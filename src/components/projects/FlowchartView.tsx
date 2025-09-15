@@ -10,7 +10,8 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle, Users, Milestone, CalendarClock, GitBranch } from 'lucide-react';
+import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle, Users, Milestone, CalendarClock, GitBranch, Palette } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const diagramTemplates = {
   flowchart: `flowchart TD
@@ -134,36 +135,52 @@ const diagramTemplates = {
              : Frontend Components
     2024-08-15 : Launch Beta Version
 `,
+stylingDemo: `flowchart TD
+    A[Start] --> B(Styled Node);
+    B --> C{Decision};
+    
+    style A fill:#f9f,stroke:#333,stroke-width:4px
+    style B fill:#ccf,stroke:#333,stroke-width:2px,stroke-dasharray: 5, 5
+    
+    linkStyle 0 stroke-width:2px,fill:none,stroke:green;
+    linkStyle 1 stroke-width:4px,fill:none,stroke:orange;
+`
 };
 
+type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral';
+
 export function FlowchartView() {
-  const [code, setCode] = useLocalStorage('flowchart:mermaid-code-v3', diagramTemplates.flowchart);
+  const [code, setCode] = useLocalStorage('flowchart:mermaid-code-v4', diagramTemplates.flowchart);
   const [svg, setSvg] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const mermaidRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { resolvedTheme } = useTheme();
+  
+  const [mermaidTheme, setMermaidTheme] = useState<MermaidTheme>('default');
+  const [customCSS, setCustomCSS] = useLocalStorage('flowchart:custom-css-v1', '/* Target elements with CSS classes */\n.node-style {\n  font-weight: bold;\n}');
 
   useEffect(() => {
     setIsClient(true);
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: resolvedTheme === 'dark' ? 'dark' : 'default',
-      securityLevel: 'loose',
-      fontFamily: 'sans-serif',
-      logLevel: 5, 
-    });
-  }, [resolvedTheme]);
+  }, []);
 
   useEffect(() => {
     if (!isClient) return;
 
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: resolvedTheme === 'dark' ? 'dark' : mermaidTheme,
+      securityLevel: 'loose',
+      fontFamily: 'sans-serif',
+      logLevel: 5,
+    });
+
     const renderMermaid = async () => {
       try {
-        // The render function requires a unique ID for each render.
         const uniqueId = `mermaid-graph-${Date.now()}`;
-        const { svg: renderedSvg } = await mermaid.render(uniqueId, code);
+        const finalCode = `${code}\n${customCSS ? `\n%%{init: {'themeCSS': '${customCSS.replace(/\n/g, ' ')}' }}%%` : ''}`;
+        const { svg: renderedSvg } = await mermaid.render(uniqueId, finalCode);
         setSvg(renderedSvg);
         setRenderError(null);
       } catch (error) {
@@ -179,10 +196,10 @@ export function FlowchartView() {
         setSvg('');
         setRenderError(null);
       }
-    }, 50); // Reduced delay for a more responsive feel
+    }, 50);
 
     return () => clearTimeout(timeoutId);
-  }, [code, isClient]);
+  }, [code, isClient, resolvedTheme, mermaidTheme, customCSS]);
   
   const handleExportSvg = () => {
     if (!svg || renderError) {
@@ -224,26 +241,61 @@ export function FlowchartView() {
               <Button variant="outline" onClick={() => setCode(diagramTemplates.decisionTree)}><GitBranch className="mr-2"/>Decision Tree</Button>
               <Button variant="outline" onClick={() => setCode(diagramTemplates.orgChart)}><Users className="mr-2"/>Org Chart</Button>
               <Button variant="outline" onClick={() => setCode(diagramTemplates.timeline)}><CalendarClock className="mr-2"/>Timeline</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.stylingDemo)}><Palette className="mr-2"/>Styling Demo</Button>
           </CardContent>
       </Card>
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
-        <Card className="flex flex-col flex-1">
-            <CardHeader className="flex flex-row justify-between items-center">
-                 <div>
-                    <CardTitle>Create a Diagram</CardTitle>
-                    <CardDescription>Describe your structure using Mermaid.js syntax.</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={handleExportSvg}><Download className="mr-2"/>Export as SVG</Button>
-            </CardHeader>
-            <CardContent className="p-0 flex-1">
-                <Textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
-                placeholder="Write your Mermaid.js code here..."
-                />
-            </CardContent>
-        </Card>
+        <div className="flex flex-col gap-4">
+            <Card className="flex flex-col flex-1">
+                <CardHeader className="flex flex-row justify-between items-center">
+                    <div>
+                        <CardTitle>Create a Diagram</CardTitle>
+                        <CardDescription>Describe your structure using Mermaid.js syntax.</CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleExportSvg}><Download className="mr-2"/>Export as SVG</Button>
+                </CardHeader>
+                <CardContent className="p-0 flex-1">
+                    <Textarea
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
+                    placeholder="Write your Mermaid.js code here..."
+                    />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Customization</CardTitle>
+                    <CardDescription>Fine-tune the look and feel of your diagram.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                     <div className="grid grid-cols-2 gap-4 items-center">
+                        <p>Theme</p>
+                        <Select value={mermaidTheme} onValueChange={(v) => setMermaidTheme(v as MermaidTheme)} disabled={resolvedTheme === 'dark'}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a theme" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="default">Default</SelectItem>
+                                <SelectItem value="forest">Forest</SelectItem>
+                                <SelectItem value="neutral">Neutral</SelectItem>
+                                <SelectItem value="dark" disabled>Dark (auto)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="flex flex-col gap-2">
+                        <p>Custom CSS</p>
+                        <Textarea
+                            value={customCSS}
+                            onChange={(e) => setCustomCSS(e.target.value)}
+                            className="w-full resize-y border rounded-md p-2 font-mono text-xs"
+                            placeholder="e.g., .node-class { fill: #f00; }"
+                            rows={4}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
         <Card className="flex flex-col">
             <CardHeader>
                 <CardTitle>Preview</CardTitle>
