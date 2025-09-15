@@ -83,9 +83,9 @@ export const peerRef: React.MutableRefObject<PeerInstance | undefined> = { curre
 interface ProjectsState {
   board: BoardData;
   setBoard: (board: BoardData | ((prev: BoardData) => BoardData), fromPeer?: boolean) => void;
-  addTask: (columnId: string, taskDetails: Partial<TaskCard> & { title: string }, fromCalendar?: boolean) => TaskCard;
-  removeTask: (taskId: string, columnId?: string, fromCalendar?: boolean) => void;
-  updateTask: (updatedTask: TaskCard, fromCalendar?: boolean) => void;
+  addTask: (columnId: string, taskDetails: Partial<TaskCard> & { title: string }) => TaskCard;
+  removeTask: (taskId: string, columnId?: string) => void;
+  updateTask: (updatedTask: TaskCard) => void;
   addColumn: (title: string) => void;
   removeColumn: (columnId: string) => void;
   handleDragEnd: OnDragEndResponder;
@@ -128,11 +128,9 @@ export const useProjects = create<ProjectsState>((set, get) => ({
     get().setBoard(prev => {
         const newBoard = {...prev};
         const tasksToDelete = newBoard.columns[columnId].taskIds;
-        const { removeEvent } = useCalendar.getState();
+        // The calendar event removal will be handled in the UI component
         
         tasksToDelete.forEach(taskId => {
-            const calendarEvent = useCalendar.getState().events.find(e => e.sourceId === taskId);
-            if (calendarEvent) removeEvent(calendarEvent.id);
             delete newBoard.tasks[taskId];
         });
         
@@ -142,7 +140,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
         return newBoard;
     });
   },
-  addTask: (columnId, taskDetails, fromCalendar = false) => {
+  addTask: (columnId, taskDetails) => {
     const newTaskId = taskDetails.id || `task-${Date.now()}-${Math.random()}`;
     const newTask: TaskCard = {
       priority: 'none',
@@ -166,19 +164,10 @@ export const useProjects = create<ProjectsState>((set, get) => ({
           }
         };
     });
-
-    if (!fromCalendar) {
-        const { addEvent } = useCalendar.getState();
-        if(newTask.dueDate) {
-          addEvent({
-              date: newTask.dueDate, time: '09:00', title: newTask.title,
-              description: '', color: 'purple', type: 'Work', sourceId: newTask.id
-          });
-        }
-    }
+    
     return newTask;
   },
-  removeTask: (taskId, columnId, fromCalendar = false) => {
+  removeTask: (taskId, columnId) => {
       get().setBoard(prev => {
           const newTasks = { ...prev.tasks };
           delete newTasks[taskId];
@@ -194,32 +183,14 @@ export const useProjects = create<ProjectsState>((set, get) => ({
 
           return { ...prev, tasks: newTasks, columns: newColumns };
       });
-
-      if (!fromCalendar) {
-        const { removeEvent } = useCalendar.getState();
-        const calendarEvent = useCalendar.getState().events.find(e => e.sourceId === taskId);
-        if (calendarEvent) removeEvent(calendarEvent.id);
-      }
   },
-  updateTask: (updatedTask, fromCalendar = false) => {
+  updateTask: (updatedTask) => {
       if(!updatedTask) return;
 
       get().setBoard(prev => ({
         ...prev,
         tasks: { ...prev.tasks, [updatedTask.id]: updatedTask }
       }));
-
-      if (!fromCalendar) {
-        const { updateEvent, events } = useCalendar.getState();
-        const calendarEvent = events.find(e => e.sourceId === updatedTask.id);
-        if (calendarEvent) {
-          updateEvent({
-            ...calendarEvent,
-            title: updatedTask.title,
-            date: updatedTask.dueDate || calendarEvent.date,
-          });
-        }
-      }
   },
   handleDragEnd: (result) => {
     const { destination, source, draggableId, type } = result;
@@ -271,6 +242,37 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     );
     return unsubscribe;
   }, [setBoard]);
+
+  // Sync project tasks with due dates to the calendar
+  const { events, setEvents } = useCalendar();
+  const { board: projectsBoard } = useProjects();
+  
+  useEffect(() => {
+    const projectEvents = Object.values(projectsBoard.tasks)
+        .filter(task => task.dueDate)
+        .map(task => ({
+            id: `proj-${task.id}`, // Keep a unique prefix
+            date: task.dueDate!,
+            time: '09:00', // Default time
+            title: task.title,
+            description: `Project Task: ${task.title}`,
+            color: 'purple',
+            type: 'Work',
+            sourceId: task.id,
+        }));
+    
+    // Combine with existing non-project events
+    const otherEvents = events.filter(e => e.type !== 'Work');
+    const newEvents = [...otherEvents, ...projectEvents];
+
+    // Avoid unnecessary re-renders if the events haven't changed
+    if (JSON.stringify(newEvents) !== JSON.stringify(events)) {
+        setEvents(newEvents);
+    }
+  // We only want to run this when the projects board changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectsBoard, setEvents]);
+
 
   return <>{children}</>;
 }

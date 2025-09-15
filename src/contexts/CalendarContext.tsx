@@ -14,7 +14,7 @@ export interface CalendarEvent {
   description: string;
   color: string;
   type: EventType;
-  sourceId?: string;
+  sourceId?: string; // e.g., ID of the task from the Projects context
 }
 
 interface CalendarContextType {
@@ -56,17 +56,23 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   }, [setEventTypes, setEvents]);
 
   const addEvent = useCallback((event: Omit<CalendarEvent, 'id'>): CalendarEvent => {
-    const newEvent = { ...event, id: `evt-${Date.now()}-${Math.random()}` };
-    setEvents(prev => [...prev, newEvent].sort((a,b) => a.time.localeCompare(b.time)));
+    const newEvent = { ...event, id: event.sourceId || `evt-${Date.now()}-${Math.random()}` };
+    
+    setEvents(prev => {
+        // Avoid duplicates if event with same ID (from source) already exists
+        if(prev.some(e => e.id === newEvent.id)) return prev;
+        return [...prev, newEvent].sort((a,b) => a.time.localeCompare(b.time));
+    });
+
     return newEvent;
   }, [setEvents]);
 
   const removeEvent = useCallback((eventId: string) => {
-    setEvents(prev => prev.filter(e => e.id !== eventId));
+    setEvents(prev => prev.filter(e => e.id !== eventId && e.sourceId !== eventId));
   }, [setEvents]);
   
   const updateEvent = useCallback((updatedEvent: CalendarEvent) => {
-    setEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEvent : e).sort((a,b) => a.time.localeCompare(b.time)));
+    setEvents(prev => prev.map(e => (e.id === updatedEvent.id || e.sourceId === updatedEvent.id) ? updatedEvent : e).sort((a,b) => a.time.localeCompare(b.time)));
   }, [setEvents]);
 
   const value = {

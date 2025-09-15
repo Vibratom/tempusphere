@@ -74,31 +74,34 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
 
   const handleAddEvent = useCallback(() => {
     if (newEventTitle && selectedDate && activeTab !== 'All') {
-      const newEvent = addEvent({
-        date: startOfDay(selectedDate).toISOString(),
-        time: newEventTime,
-        title: newEventTitle,
-        description: newEventDescription,
-        color: activeTab === 'Work' ? 'purple' : newEventColor,
-        type: activeTab
-      });
+      let sourceId: string | undefined = undefined;
 
       if (activeTab === 'Work') {
         const todoColumn = board.columnOrder[0];
         if (todoColumn) {
           const newTask = addTask(todoColumn, { 
-            title: newEvent.title,
-            dueDate: newEvent.date,
-          }, true);
-          updateEvent({ ...newEvent, sourceId: newTask.id });
+            title: newEventTitle,
+            dueDate: startOfDay(selectedDate).toISOString(),
+          });
+          sourceId = newTask.id;
         }
       }
+
+      addEvent({
+        date: startOfDay(selectedDate).toISOString(),
+        time: newEventTime,
+        title: newEventTitle,
+        description: newEventDescription,
+        color: activeTab === 'Work' ? 'purple' : newEventColor,
+        type: activeTab,
+        sourceId: sourceId
+      });
 
       setNewEventTitle('');
       setNewEventTime('12:00');
       setNewEventDescription('');
     }
-  }, [newEventTitle, selectedDate, activeTab, addEvent, newEventTime, newEventDescription, newEventColor, board.columnOrder, addTask, updateEvent]);
+  }, [newEventTitle, selectedDate, activeTab, addEvent, newEventTime, newEventDescription, newEventColor, board.columnOrder, addTask]);
   
   const handleUpdateEvent = useCallback((updatedEvent: CalendarEvent) => {
     updateEvent(updatedEvent);
@@ -109,7 +112,7 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
                 ...task,
                 title: updatedEvent.title,
                 dueDate: updatedEvent.date,
-            }, true);
+            });
         }
     }
   }, [updateEvent, board.tasks, updateTask]);
@@ -118,7 +121,7 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
     const eventToRemove = events.find(e => e.id === eventId);
     removeEvent(eventId);
     if (eventToRemove?.type === 'Work' && eventToRemove.sourceId) {
-        removeProjectTask(eventToRemove.sourceId, undefined, true);
+        removeProjectTask(eventToRemove.sourceId);
     }
   }, [removeEvent, events, removeProjectTask]);
 

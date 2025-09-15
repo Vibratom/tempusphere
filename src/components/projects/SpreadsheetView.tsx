@@ -35,6 +35,7 @@ import { Textarea } from '../ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { useCalendar } from '@/contexts/CalendarContext';
 
 type SortKey = 'title' | 'status' | 'priority' | 'dueDate';
 type SortDirection = 'asc' | 'desc';
@@ -49,6 +50,7 @@ const priorityColors: Record<Priority, string> = {
 
 const NewTaskDialog = () => {
     const { board, addTask } = useProjects();
+    const { addEvent } = useCalendar();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState(board.columnOrder.length > 0 ? board.columns[board.columnOrder[0]].title : '');
@@ -62,7 +64,7 @@ const NewTaskDialog = () => {
         const columnId = Object.values(board.columns).find(c => c.title === status)?.id;
         if (!columnId) return;
         
-        const newTask: Partial<TaskCard> & { title: string } = {
+        const newTaskDetails: Partial<TaskCard> & { title: string } = {
             title,
             description: description || undefined,
             priority,
@@ -70,7 +72,20 @@ const NewTaskDialog = () => {
             dueDate: dueDate?.toISOString()
         };
 
-        addTask(columnId, newTask);
+        const newTask = addTask(columnId, newTaskDetails);
+        
+        if (newTask.dueDate) {
+            addEvent({
+                date: newTask.dueDate,
+                time: '09:00',
+                title: newTask.title,
+                description: `Project Task: ${newTask.title}`,
+                color: 'purple',
+                type: 'Work',
+                sourceId: newTask.id,
+            });
+        }
+        
         // Reset form and close
         setTitle('');
         setDescription('');
@@ -172,6 +187,8 @@ const NewTaskDialog = () => {
 
 const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard | null, isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (updatedTask: TaskCard, newStatusTitle?: string) => void }) => {
     const { board } = useProjects();
+    const { events, updateEvent, addEvent, removeEvent } = useCalendar();
+    
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState('');
@@ -203,6 +220,26 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
             dueDate: dueDate?.toISOString()
         };
         onSave(updatedTask, status);
+
+        const calendarEvent = events.find(e => e.sourceId === task.id);
+        if (updatedTask.dueDate) {
+            const eventData = {
+                date: updatedTask.dueDate,
+                time: '09:00',
+                title: updatedTask.title,
+                description: `Project Task: ${updatedTask.title}`,
+                color: 'purple',
+                type: 'Work',
+                sourceId: updatedTask.id,
+            };
+            if (calendarEvent) {
+                updateEvent({ ...calendarEvent, ...eventData });
+            } else {
+                addEvent(eventData);
+            }
+        } else if (calendarEvent) {
+            removeEvent(calendarEvent.id);
+        }
     }
 
     return (
@@ -292,6 +329,8 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
 
 export function SpreadsheetView() {
     const { board, updateTask, removeTask, setBoard } = useProjects();
+    const { events, removeEvent } = useCalendar();
+    
     const [filter, setFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
@@ -385,6 +424,14 @@ export function SpreadsheetView() {
         setEditingTask(null);
     }
     
+    const handleDeleteTask = (task: typeof tasksWithStatus[0]) => {
+        removeTask(task.id, task.columnId);
+        const calendarEvent = events.find(e => e.sourceId === task.id);
+        if (calendarEvent) {
+            removeEvent(calendarEvent.id);
+        }
+    }
+    
     const SortableHeader = ({ tkey, label, className }: { tkey: SortKey, label: string, className?: string }) => (
         <TableHead onClick={() => handleSort(tkey)} className={cn("cursor-pointer hover:bg-muted/50", className)}>
             <div className="flex items-center gap-2">
@@ -441,7 +488,7 @@ export function SpreadsheetView() {
                 </div>
             </div>
             <ScrollArea className="border rounded-lg bg-card flex-1">
-                <Table className="min-w-[600px]">
+                <Table>
                     <TableHeader className="bg-muted/50 sticky top-0 z-10">
                         <TableRow>
                             <SortableHeader tkey="title" label="Task" className="w-[40%]" />
@@ -496,7 +543,7 @@ export function SpreadsheetView() {
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => removeTask(task.id, task.columnId)}>Delete</AlertDialogAction>
+                                                            <AlertDialogAction onClick={() => handleDeleteTask(task)}>Delete</AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
