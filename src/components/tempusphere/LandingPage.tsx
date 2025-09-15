@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Landmark, BrainCircuit, DraftingCompass, KanbanSquare, FileText, Table, UtensilsCrossed, ListChecks } from "lucide-react";
@@ -59,6 +60,16 @@ const features = [
         icon: <ListChecks className="w-5 h-5 text-primary" />,
         title: 'Advanced Checklist',
         description: 'Organize tasks with sub-tasks, priorities, recurring items, and calendar integration.',
+    },
+     {
+        icon: <KanbanSquare className="w-5 h-5 text-primary" />,
+        title: 'Project Management Boards',
+        description: 'Visualize your workflow with Kanban-style boards, with sharing and live collaboration.',
+    },
+    {
+        icon: <UtensilsCrossed className="w-5 h-5 text-primary" />,
+        title: 'Recipe Remix',
+        description: 'A personal cookbook where you can save, edit, and "remix" recipes to track variations.',
     },
     {
         icon: <Settings className="w-5 h-5 text-primary" />,
