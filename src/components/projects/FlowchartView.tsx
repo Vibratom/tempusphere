@@ -9,8 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, Sparkles, Loader } from 'lucide-react';
-import { generateDiagram } from '@/ai/flows/generate-diagram-flow';
+import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database } from 'lucide-react';
 
 const diagramTemplates = {
   flowchart: `flowchart TD
@@ -83,8 +82,6 @@ const diagramTemplates = {
 export function FlowchartView() {
   const [code, setCode] = useLocalStorage('flowchart:mermaid-code-v3', diagramTemplates.flowchart);
   const [svg, setSvg] = useState('');
-  const [aiDescription, setAiDescription] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const mermaidRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -123,23 +120,6 @@ export function FlowchartView() {
 
     return () => clearTimeout(timeoutId);
   }, [code, isClient]);
-
-  const handleGenerateDiagram = async () => {
-      if (!aiDescription.trim()) {
-          toast({ title: "Please enter a description", variant: "destructive" });
-          return;
-      }
-      setIsGenerating(true);
-      try {
-          const result = await generateDiagram({ description: aiDescription });
-          setCode(result.mermaidCode);
-          toast({ title: "Diagram generated successfully!" });
-      } catch (error) {
-          console.error("AI diagram generation error:", error);
-          toast({ title: "Generation Failed", description: "Could not generate the diagram. Please try again.", variant: "destructive"});
-      }
-      setIsGenerating(false);
-  };
   
   const handleExportSvg = () => {
     if (!svg) {
@@ -164,44 +144,21 @@ export function FlowchartView() {
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="text-primary" />
-                    AI Diagram Generator
-                </CardTitle>
-                <CardDescription>Describe the diagram you want to create in plain English.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-                <Textarea
-                    value={aiDescription}
-                    onChange={(e) => setAiDescription(e.target.value)}
-                    placeholder="e.g., A flowchart where a user logs in. If it's successful, show the dashboard. If not, show an error and go back to login."
-                    rows={3}
-                />
-                <Button onClick={handleGenerateDiagram} disabled={isGenerating}>
-                    {isGenerating ? <Loader className="mr-2 animate-spin" /> : <Sparkles className="mr-2" />}
-                    Generate Diagram
-                </Button>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Templates</CardTitle>
-                 <CardDescription>Start from a pre-made template to learn the syntax.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={() => setCode(diagramTemplates.flowchart)}><Waypoints className="mr-2"/>Flowchart</Button>
-                <Button variant="outline" onClick={() => setCode(diagramTemplates.sequence)}><FileText className="mr-2"/>Sequence</Button>
-                <Button variant="outline" onClick={() => setCode(diagramTemplates.class)}><Shapes className="mr-2"/>Class</Button>
-                <Button variant="outline" onClick={() => setCode(diagramTemplates.state)}><Workflow className="mr-2"/>State</Button>
-                <Button variant="outline" onClick={() => setCode(diagramTemplates.er)}><Database className="mr-2"/>ER Diagram</Button>
-                <Button variant="outline" onClick={() => setCode(diagramTemplates.pie)}><PieChart className="mr-2"/>Pie Chart</Button>
-                <Button variant="outline" onClick={() => setCode(diagramTemplates.gantt)}><GanttChart className="mr-2"/>Gantt</Button>
-            </CardContent>
-        </Card>
-      </div>
+      <Card>
+          <CardHeader>
+              <CardTitle>Templates</CardTitle>
+              <CardDescription>Start from a pre-made template to learn the syntax.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.flowchart)}><Waypoints className="mr-2"/>Flowchart</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.sequence)}><FileText className="mr-2"/>Sequence</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.class)}><Shapes className="mr-2"/>Class</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.state)}><Workflow className="mr-2"/>State</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.er)}><Database className="mr-2"/>ER Diagram</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.pie)}><PieChart className="mr-2"/>Pie Chart</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.gantt)}><GanttChart className="mr-2"/>Gantt</Button>
+          </CardContent>
+      </Card>
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
         <Card className="flex flex-col flex-1">
             <CardHeader className="flex flex-row justify-between items-center">
