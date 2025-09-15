@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { v4 as uuidv4 } from 'uuid';
 import { UtensilsCrossed, Plus, BookOpen, Trash2, Edit, GitBranch, ArrowLeft, Search, Sparkles, ChefHat } from 'lucide-react';
@@ -306,7 +306,8 @@ export function RecipesApp() {
                                         <Card key={recipe.id} className="flex flex-col">
                                             <CardHeader>
                                                 <CardTitle className="text-lg">{recipe.title}</CardTitle>
-                                                <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
+-                                                <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
++                                                <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
                                             </CardHeader>
                                             <CardFooter className="mt-auto flex justify-end gap-2">
                                                 <Button variant="secondary" size="sm" onClick={() => setViewingRecipe(recipe)}><BookOpen className="mr-2 h-4 w-4"/>View</Button>
@@ -333,5 +334,3 @@ export function RecipesApp() {
     </RecipesContext.Provider>
   );
 }
-
-    
