@@ -1,11 +1,11 @@
 
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useProjects, Priority, TaskCard } from '@/contexts/ProjectsContext';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { format, parseISO, startOfDay, isSameDay, isToday, isFuture, addDays, differenceInDays } from 'date-fns';
+import { format, parseISO, startOfDay, isSameDay, isToday, isFuture, addDays, differenceInDays, differenceInSeconds } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Flag, Plus, Edit, Trash2, GripVertical, CheckCircle, Calendar as CalendarIconLucide, FastForward } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -279,7 +279,34 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
     );
 }
 
-const SummaryCard = ({ title, tasks, icon: Icon, children }: { title: string, tasks: TaskCard[], icon: React.ElementType, children?: React.ReactNode }) => {
+const Countdown = ({ date }: { date: Date }) => {
+    const [timeLeft, setTimeLeft] = useState(differenceInSeconds(date, new Date()));
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTimeLeft(differenceInSeconds(date, new Date()));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [date]);
+
+    if (timeLeft <= 0) {
+        return <span className="text-xs text-destructive">Overdue</span>;
+    }
+
+    const days = Math.floor(timeLeft / (60 * 60 * 24));
+    const hours = Math.floor((timeLeft % (60 * 60 * 24)) / (60 * 60));
+    const minutes = Math.floor((timeLeft % (60 * 60)) / 60);
+
+    return (
+        <span className="text-xs font-mono text-muted-foreground">
+            {days > 0 && `${days}d `}
+            {hours > 0 && `${hours}h `}
+            {minutes}m
+        </span>
+    );
+}
+
+const SummaryCard = ({ title, tasks, icon: Icon, children, showCountdown = false }: { title: string, tasks: TaskCard[], icon: React.ElementType, children?: React.ReactNode, showCountdown?: boolean }) => {
     return (
         <Card>
             <CardHeader>
@@ -296,11 +323,19 @@ const SummaryCard = ({ title, tasks, icon: Icon, children }: { title: string, ta
             </CardHeader>
             <CardContent>
                 {tasks.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {tasks.slice(0, 5).map(task => (
-                            <div key={task.id} className="flex items-center gap-2 text-sm">
-                                <div className={cn("h-2 w-2 rounded-full flex-shrink-0", priorityColors[task.priority])} />
-                                <span className="truncate">{task.title}</span>
+                            <div key={task.id} className="flex items-center justify-between gap-2 text-sm">
+                                <div className="flex items-center gap-2 truncate">
+                                    <div className={cn("h-2 w-2 rounded-full flex-shrink-0", priorityColors[task.priority])} />
+                                    <span className="truncate">{task.title}</span>
+                                </div>
+                                {showCountdown && task.dueDate && (
+                                    <div className="flex flex-col items-end flex-shrink-0">
+                                        <Countdown date={parseISO(task.dueDate)} />
+                                        <span className="text-xs text-muted-foreground">{format(parseISO(task.dueDate), 'MMM d')}</span>
+                                    </div>
+                                )}
                             </div>
                         ))}
                         {tasks.length > 5 && <p className="text-xs text-muted-foreground text-center pt-1">...and {tasks.length - 5} more.</p>}
@@ -496,7 +531,7 @@ export function ProjectCalendarView() {
                             <div>
                                 <CardTitle>{selectedDate ? format(selectedDate, 'PPP') : 'Select a day'}</CardTitle>
                                 <CardDescription>
-                                    {selectedDayTasks.length} task{selectedDayTasks.length !== 1 && 's'} due
+                                    {selectedDayTasks.length > 0 ? `${selectedDayTasks.length} task${selectedDayTasks.length !== 1 && 's'} due` : 'Project Summary'}
                                 </CardDescription>
                             </div>
                             <Button size="icon" onClick={() => setIsAddingTask(true)} disabled={!selectedDate}>
@@ -567,7 +602,7 @@ export function ProjectCalendarView() {
                                <div className="space-y-4 pr-4">
                                     <SummaryCard title="Completed Tasks" tasks={doneTasks} icon={CheckCircle} />
                                     <SummaryCard title="Today's Tasks" tasks={todaysTasks} icon={CalendarIconLucide} />
-                                    <SummaryCard title="Upcoming" tasks={upcomingTasks} icon={FastForward}>
+                                    <SummaryCard title="Upcoming" tasks={upcomingTasks} icon={FastForward} showCountdown>
                                         <Select value={upcomingDays} onValueChange={setUpcomingDays}>
                                             <SelectTrigger className="w-32 h-8 text-xs">
                                                 <SelectValue />
@@ -602,7 +637,5 @@ export function ProjectCalendarView() {
         </DragDropContext>
     );
 }
-
-    
 
     
