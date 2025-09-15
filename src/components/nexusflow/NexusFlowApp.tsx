@@ -29,7 +29,7 @@ import { Calendar } from '../ui/calendar';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useSearchParams } from 'next/navigation';
-import { pako } from 'pako';
+import * as pako from 'pako';
 import { Base64 } from 'js-base64';
 import { useToast } from '@/hooks/use-toast';
 import Peer, { Instance as PeerInstance } from 'simple-peer';

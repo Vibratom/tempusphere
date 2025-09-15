@@ -34,7 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCalendar } from '@/contexts/CalendarContext';
 import { PlatformLink } from '../tempusphere/PlatformLink';
 import { useSearchParams } from 'next/navigation';
-import { pako } from 'pako';
+import * as pako from 'pako';
 import { Base64 } from 'js-base64';
 
 
