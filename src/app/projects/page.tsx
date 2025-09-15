@@ -48,25 +48,25 @@ function ProjectsContent() {
             <div className="min-h-screen w-full bg-background flex flex-col">
                 <Header />
                 <main className="flex-1 flex flex-col items-center p-4 md:p-8">
-                    <Tabs defaultValue="board" className="w-full max-w-7xl">
+                    <Tabs defaultValue="calendar-view" className="w-full max-w-7xl">
                         <TabsList className="grid w-full grid-cols-8 md:grid-cols-8 lg:grid-cols-8">
+                            <ResponsiveTabsTrigger value="calendar-view" icon={Calendar}>Calendar</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="board" icon={KanbanSquare}>Board</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="list" icon={List}>List</ResponsiveTabsTrigger>
-                            <ResponsiveTabsTrigger value="calendar-view" icon={Calendar}>Calendar</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="gantt" icon={BarChartHorizontal}>Gantt</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="mindmap" icon={BrainCircuit}>Mind Map</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="checklist" icon={ListChecks}>Checklist</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="spreadsheet" icon={Table}>Spreadsheet</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="canvas" icon={DraftingCompass}>Canvas</ResponsiveTabsTrigger>
                         </TabsList>
+                        <TabsContent value="calendar-view" className="mt-4">
+                            <ProjectCalendarView />
+                        </TabsContent>
                         <TabsContent value="board" className="mt-4">
                             <ProjectsApp />
                         </TabsContent>
                         <TabsContent value="list" className="mt-4">
                             <ProjectListView />
-                        </TabsContent>
-                        <TabsContent value="calendar-view" className="mt-4">
-                            <ProjectCalendarView />
                         </TabsContent>
                         <TabsContent value="gantt" className="mt-4">
                             <GanttChartView />
