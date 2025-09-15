@@ -109,8 +109,8 @@ function decodeBoardData(encoded: string): BoardData | null {
   }
 }
 
-export function NexusFlowApp() {
-  const [board, setBoard] = useLocalStorage<BoardData>('nexusflow:boardV2', initialData);
+export function ProjectsApp() {
+  const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV1', initialData);
   const [newColumnName, setNewColumnName] = useState('');
   const [newTaskTitles, setNewTaskTitles] = useState<Record<string, string>>({});
   const [editingTask, setEditingTask] = useState<TaskCard | null>(null);
@@ -459,7 +459,7 @@ export function NexusFlowApp() {
         {renderEditModal()}
         {renderLiveShareModal()}
         <div className="flex flex-col items-center text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">NexusFlow</h1>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Projects</h1>
             <p className="text-lg text-muted-foreground mt-2">Visualize your workflow with a Kanban board.</p>
         </div>
 
@@ -606,3 +606,5 @@ export function NexusFlowApp() {
     </div>
   );
 }
+
+    

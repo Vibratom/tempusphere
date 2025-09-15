@@ -1,20 +1,21 @@
+
 'use client';
 
-import { NexusFlowApp } from '@/components/nexusflow/NexusFlowApp';
+import { ProjectsApp } from '@/components/projects/ProjectsApp';
 import { Header } from '@/components/tempusphere/Header';
 import { Footer } from '@/components/tempusphere/Footer';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { CalendarProvider } from '@/contexts/CalendarContext';
 import { Suspense } from 'react';
 
-function NexusFlowContent() {
+function ProjectsContent() {
   return (
     <SettingsProvider>
       <CalendarProvider>
         <div className="min-h-screen w-full bg-background flex flex-col">
           <Header />
           <main className="flex-1 flex flex-col items-center p-4 md:p-8">
-              <NexusFlowApp />
+              <ProjectsApp />
           </main>
           <Footer />
         </div>
@@ -24,10 +25,10 @@ function NexusFlowContent() {
 }
 
 
-export default function NexusFlowPage() {
+export default function ProjectsPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <NexusFlowContent />
+      <ProjectsContent />
     </Suspense>
   )
 }

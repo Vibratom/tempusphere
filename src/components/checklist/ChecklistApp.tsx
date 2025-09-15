@@ -118,7 +118,7 @@ const otherPlatforms = [
     { name: 'Notes', category: 'Notes', icon: FileText, href: '#', color: 'bg-gray-500 hover:bg-gray-600', description: 'A clean space for your thoughts and documents.' },
     { name: 'Spreadsheets', category: 'Spreadsheets', icon: Table, href: '#', color: 'bg-emerald-500 hover:bg-emerald-600', description: 'Organize and analyze data in spreadsheets.' },
     { name: 'Recipes', category: 'Recipes', icon: UtensilsCrossed, href: '#', color: 'bg-yellow-500 hover:bg-yellow-600', description: 'Organize recipes and plan your meals.' },
-    { name: 'NexusFlow', category: 'Projects', icon: KanbanSquare, href: '/nexusflow', color: 'bg-rose-500 hover:bg-rose-600', description: 'Manage projects with Kanban-style boards.' },
+    { name: 'Projects', category: 'Projects', icon: KanbanSquare, href: '/projects', color: 'bg-rose-500 hover:bg-rose-600', description: 'Manage projects with Kanban-style boards.' },
     { name: 'Checklist', category: 'To-Do List', icon: ListChecks, href: '/checklist', color: 'bg-blue-500 hover:bg-blue-600', description: 'Simple checklists for daily tasks and goals.' },
 ]
 
@@ -449,7 +449,7 @@ export function ChecklistApp() {
     return [...lists].sort((a, b) => {
         const aProgress = calculateProgress(a.tasks);
         const bProgress = calculateProgress(b.tasks);
-        const aIsDone = aProgress.total > 0 && aProgress.completed === aProgress.total;
+        const aIsDone = aProgress.total > 0 && aProgress.completed === a.total;
         const bIsDone = bProgress.total > 0 && bProgress.completed === b.total;
         if (aIsDone && !bIsDone) return 1;
         if (!aIsDone && bIsDone) return -1;
