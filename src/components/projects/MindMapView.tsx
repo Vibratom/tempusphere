@@ -4,7 +4,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion } from 'framer-motion';
-import { X, Palette, Download, Upload } from 'lucide-react';
+import { X, Palette, Download, Upload, Image as ImageIcon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
@@ -127,7 +127,7 @@ export function MindMapView() {
       }
   }
   
-  const handleExport = () => {
+  const handleExportJson = () => {
     const data: MindMapData = { nodes, lines };
     const jsonString = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
@@ -140,7 +140,7 @@ export function MindMapView() {
     toast({ title: "Mind Map Saved", description: "Your mind map has been downloaded as a .json file." });
   };
   
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportJson = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -164,6 +164,89 @@ export function MindMapView() {
     if (importFileRef.current) importFileRef.current.value = "";
   };
 
+  const handleExportPng = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const bounds = {
+      minX: Infinity, minY: Infinity,
+      maxX: -Infinity, maxY: -Infinity,
+    };
+    nodes.forEach(node => {
+      bounds.minX = Math.min(bounds.minX, node.x);
+      bounds.minY = Math.min(bounds.minY, node.y);
+      bounds.maxX = Math.max(bounds.maxX, node.x + node.width);
+      bounds.maxY = Math.max(bounds.maxY, node.y + node.height);
+    });
+
+    if (nodes.length === 0) {
+      toast({ variant: 'destructive', title: 'Export Failed', description: 'Cannot export an empty mind map.' });
+      return;
+    }
+    
+    const padding = 50;
+    const svgWidth = bounds.maxX - bounds.minX + padding * 2;
+    const svgHeight = bounds.maxY - bounds.minY + padding * 2;
+    
+    const nodeColor = getComputedStyle(document.documentElement).getPropertyValue('--card-foreground').trim();
+    const lineColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+    
+    const foreignObjectSerializer = new XMLSerializer();
+
+    const svgString = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}">
+        ${lines.map(line => {
+            const fromNode = nodes.find(n => n.id === line.from);
+            const toNode = nodes.find(n => n.id === line.to);
+            if (!fromNode || !toNode) return '';
+            const fromPos = getConnectorPosition(fromNode, 'bottom');
+            const toPos = getConnectorPosition(toNode, 'top');
+            const pathData = `M ${fromPos.x - bounds.minX + padding} ${fromPos.y - bounds.minY + padding} C ${fromPos.x - bounds.minX + padding} ${fromPos.y - bounds.minY + padding + 50}, ${toPos.x - bounds.minX + padding} ${toPos.y - bounds.minY + padding - 50}, ${toPos.x - bounds.minX + padding} ${toPos.y - bounds.minY + padding}`;
+            return `<path d="${pathData}" stroke="hsl(${lineColor})" stroke-width="2" fill="none" />`;
+        }).join('')}
+        ${nodes.map(node => {
+            const div = document.createElement('div');
+            div.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+            div.style.width = `${node.width}px`;
+            div.style.height = `${node.height}px`;
+            div.style.padding = '8px';
+            div.style.color = (node.color === '#ffffff' || node.color === 'hsl(var(--card))') ? `hsl(${nodeColor})` : 'white';
+            div.style.wordBreak = 'break-word';
+            div.textContent = node.text;
+
+            return `<rect x="${node.x - bounds.minX + padding}" y="${node.y - bounds.minY + padding}" width="${node.width}" height="${node.height}" fill="${node.color || '#ffffff'}" stroke="hsl(${lineColor})" stroke-width="1" rx="8" />
+            <foreignObject x="${node.x - bounds.minX + padding}" y="${node.y - bounds.minY + padding}" width="${node.width}" height="${node.height}">${foreignObjectSerializer.serializeToString(div)}</foreignObject>`;
+        }).join('')}
+      </svg>
+    `;
+    
+    const img = new Image();
+    const svg = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svg);
+    
+    img.onload = () => {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = svgWidth;
+      tempCanvas.height = svgHeight;
+      const ctx = tempCanvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      const dataUrl = tempCanvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = 'mind-map.png';
+      link.href = dataUrl;
+      link.click();
+      toast({ title: 'Exported as PNG', description: 'Your mind map image has been downloaded.' });
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not generate the PNG image.' });
+    }
+
+    img.src = url;
+  };
+
 
   useEffect(() => {
     if (editingNodeId && textareaRef.current) {
@@ -177,9 +260,19 @@ export function MindMapView() {
       <Card className="w-full flex flex-col" style={{ height: '800px' }}>
         <CardContent className="p-0 flex-1 relative overflow-hidden">
             <div className="absolute top-2 left-2 z-10 bg-background/80 border rounded-lg p-1 flex gap-1 items-center shadow-md">
-                <Button variant="outline" size="sm" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export</Button>
                 <Button variant="outline" size="sm" onClick={() => importFileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import</Button>
-                <input type="file" ref={importFileRef} accept=".json" className="hidden" onChange={handleImport} />
+                <input type="file" ref={importFileRef} accept=".json" className="hidden" onChange={handleImportJson} />
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4"/>Export</Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-1">
+                       <div className="flex flex-col">
+                           <Button variant="ghost" onClick={handleExportJson}>As JSON</Button>
+                           <Button variant="ghost" onClick={handleExportPng}>As PNG</Button>
+                       </div>
+                    </PopoverContent>
+                </Popover>
             </div>
             <div 
                 ref={canvasRef} 
@@ -214,12 +307,11 @@ export function MindMapView() {
                     key={node.id}
                     drag
                     onDragEnd={(event, info) => {
-                    const { x, y } = info.point;
-                    setNodes(
-                        nodes.map(n =>
-                        n.id === node.id ? { ...n, x, y } : n
-                        )
-                    );
+                      const rect = canvasRef.current?.getBoundingClientRect();
+                      if (!rect) return;
+                      const x = info.point.x - rect.left;
+                      const y = info.point.y - rect.top;
+                      setNodes(nodes.map(n => n.id === node.id ? { ...n, x, y } : n));
                     }}
                     whileHover={{ scale: 1.02 }}
                     onHoverStart={e => { e.stopPropagation(); }}
@@ -239,7 +331,7 @@ export function MindMapView() {
                     onMouseUp={(e) => handleMouseUpOnNode(e, node.id)}
                 >
                     <motion.div 
-                        className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-5 h-5 bg-primary/20 border-2 border-primary rounded-full cursor-pointer hidden group-hover:block"
+                        className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-5 h-5 bg-primary/20 border-2 border-primary rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
                         onMouseDown={(e) => { e.stopPropagation(); setIsConnecting(node.id); }}
                     />
 
@@ -293,5 +385,3 @@ export function MindMapView() {
     </div>
   );
 }
-
-    
