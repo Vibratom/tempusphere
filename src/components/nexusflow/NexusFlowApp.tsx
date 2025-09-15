@@ -6,7 +6,6 @@ import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hell
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -44,7 +43,7 @@ const initialData: BoardData = {
   tasks: {
     'task-1': { id: 'task-1', title: 'Brainstorm feature ideas' },
     'task-2': { id: 'task-2', title: 'Design the UI mockups' },
-    'task-3': { id: 'task-3', title: 'Develop the Kanban components', description: 'Use ShadCN and Tailwind' },
+    'task-3': { id: 'task-3', title: 'Develop the Kanban components' },
     'task-4': { id: 'task-4', title: 'Implement drag and drop' },
     'task-5': { id: 'task-5', title: 'Review and test the board' },
   },
@@ -258,7 +257,7 @@ export function NexusFlowApp() {
                                   className="w-80 flex-shrink-0"
                                 >
                                   <Card className="bg-muted/50 flex flex-col max-h-full">
-                                      <div {...provided.dragHandleProps} className="p-3 border-b flex justify-between items-center">
+                                      <div {...provided.dragHandleProps} className="p-3 border-b flex justify-between items-center cursor-grab">
                                           <h3 className="font-semibold">{column.title}</h3>
                                           <GripVertical className="h-5 w-5 text-muted-foreground" />
                                       </div>
@@ -277,13 +276,14 @@ export function NexusFlowApp() {
                                                         ref={provided.innerRef}
                                                         {...provided.draggableProps}
                                                         {...provided.dragHandleProps}
+                                                        className="group"
                                                       >
                                                           <Card className="hover:shadow-md transition-shadow">
                                                               <CardContent className="p-3 flex justify-between items-start">
-                                                                  <p className="text-sm font-medium">{task.title}</p>
+                                                                  <p className="text-sm font-medium pr-2">{task.title}</p>
                                                                   <AlertDialog>
                                                                       <AlertDialogTrigger asChild>
-                                                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-50 hover:opacity-100"><Trash2 className="h-4 w-4"/></Button>
+                                                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"><Trash2 className="h-4 w-4"/></Button>
                                                                       </AlertDialogTrigger>
                                                                       <AlertDialogContent>
                                                                         <AlertDialogHeader>
