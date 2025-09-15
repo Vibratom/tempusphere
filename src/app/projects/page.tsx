@@ -8,7 +8,7 @@ import { SettingsProvider } from '@/contexts/SettingsContext';
 import { CalendarProvider } from '@/contexts/CalendarContext';
 import { Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { KanbanSquare, ListChecks, Table, DraftingCompass } from 'lucide-react';
+import { KanbanSquare, ListChecks, Table, DraftingCompass, List, BarChartHorizontal, Calendar, BrainCircuit } from 'lucide-react';
 import { ChecklistApp } from '@/components/checklist/ChecklistApp';
 import { ChecklistProvider } from '@/contexts/ChecklistContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,15 +36,31 @@ function ProjectsContent() {
             <div className="min-h-screen w-full bg-background flex flex-col">
                 <Header />
                 <main className="flex-1 flex flex-col items-center p-4 md:p-8">
-                    <Tabs defaultValue="workflow" className="w-full max-w-7xl">
-                        <TabsList className="grid w-full grid-cols-4">
-                            <TabsTrigger value="workflow"><KanbanSquare className="mr-2"/>Workflow</TabsTrigger>
+                    <Tabs defaultValue="board" className="w-full max-w-7xl">
+                        <TabsList className="grid w-full grid-cols-4 md:grid-cols-8">
+                            <TabsTrigger value="board"><KanbanSquare className="mr-2"/>Board</TabsTrigger>
+                            <TabsTrigger value="list"><List className="mr-2"/>List</TabsTrigger>
+                            <TabsTrigger value="gantt"><BarChartHorizontal className="mr-2"/>Gantt</TabsTrigger>
+                            <TabsTrigger value="calendar-view"><Calendar className="mr-2"/>Calendar</TabsTrigger>
+                            <TabsTrigger value="mindmap"><BrainCircuit className="mr-2"/>Mind Map</TabsTrigger>
                             <TabsTrigger value="checklist"><ListChecks className="mr-2"/>Checklist</TabsTrigger>
                             <TabsTrigger value="spreadsheet"><Table className="mr-2"/>Spreadsheet</TabsTrigger>
                             <TabsTrigger value="canvas"><DraftingCompass className="mr-2"/>Canvas</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="workflow" className="mt-4">
+                        <TabsContent value="board" className="mt-4">
                             <ProjectsApp />
+                        </TabsContent>
+                        <TabsContent value="list" className="mt-4">
+                            <PlaceholderTool name="List View" icon={List} />
+                        </TabsContent>
+                        <TabsContent value="gantt" className="mt-4">
+                            <PlaceholderTool name="Gantt Chart" icon={BarChartHorizontal} />
+                        </TabsContent>
+                        <TabsContent value="calendar-view" className="mt-4">
+                            <PlaceholderTool name="Calendar View" icon={Calendar} />
+                        </TabsContent>
+                        <TabsContent value="mindmap" className="mt-4">
+                            <PlaceholderTool name="Mind Map" icon={BrainCircuit} />
                         </TabsContent>
                         <TabsContent value="checklist" className="mt-4">
                             <ChecklistApp />
