@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue } from 'framer-motion';
 import { X, Palette, Download, Upload, Image as ImageIcon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '../ui/button';
@@ -324,7 +324,13 @@ export function MindMapView() {
                     key={node.id}
                     drag
                     onDragEnd={(event, info) => {
-                      setNodes(nodes.map(n => n.id === node.id ? { ...n, x: info.point.x, y: info.point.y } : n));
+                        const rect = canvasRef.current?.getBoundingClientRect();
+                        if (!rect) return;
+                        setNodes(
+                            nodes.map(n =>
+                            n.id === node.id ? { ...n, x: info.point.x, y: info.point.y } : n
+                            )
+                        );
                     }}
                     whileHover={{ scale: 1.02 }}
                     onHoverStart={e => { e.stopPropagation(); }}
@@ -398,5 +404,3 @@ export function MindMapView() {
     </div>
   );
 }
-
-    
