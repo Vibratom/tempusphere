@@ -70,7 +70,7 @@ export function GanttChartView() {
         }
         
         return { dateRange: validDateRange, gridTemplateColumns: columns };
-    }, [viewMode, currentDate, tasks]);
+    }, [viewMode, currentDate]);
 
 
     const handleDateChange = (direction: 'prev' | 'next') => {
@@ -96,28 +96,32 @@ export function GanttChartView() {
 
         const startDayIndex = differenceInDays(startDate, dateRange[0]);
         const endDayIndex = differenceInDays(endDate, dateRange[0]);
+        const isMilestone = startDayIndex === endDayIndex || !task.startDate || !task.dueDate;
 
         if (viewMode === 'week') {
-             const startWeekIndex = Math.floor(startDayIndex / 7);
+            const startWeekIndex = Math.floor(startDayIndex / 7);
             const endWeekIndex = Math.floor(endDayIndex / 7);
             
             const startOffset = (startDayIndex % 7) / 7;
             const endOffset = ((endDayIndex % 7) + 1) / 7;
 
-            const gridColumnStart = Math.max(0, startWeekIndex + startOffset) + 1;
-            const gridColumnEnd = Math.min(dateRange.length / 7, endWeekIndex + endOffset) + 1;
-
-            if (gridColumnStart >= gridColumnEnd) return null;
+            const gridColumnStart = isMilestone 
+                ? (startWeekIndex + startOffset)
+                : Math.max(0, startWeekIndex + startOffset);
             
-            return { gridColumnStart, gridColumnEnd };
+            const gridColumnEnd = Math.min(dateRange.length / 7, endWeekIndex + endOffset);
+
+            if (!isMilestone && gridColumnStart >= gridColumnEnd) return null;
+            
+            return { gridColumnStart: gridColumnStart + 1, gridColumnEnd: gridColumnEnd + 1, isMilestone };
         }
         
-        const gridColumnStart = Math.max(0, startDayIndex) + 1;
-        const gridColumnEnd = Math.min(dateRange.length, endDayIndex + 1) + 1;
+        const gridColumnStart = isMilestone ? startDayIndex : Math.max(0, startDayIndex);
+        const gridColumnEnd = Math.min(dateRange.length, endDayIndex + 1);
 
-        if (gridColumnStart >= gridColumnEnd) return null;
+        if (!isMilestone && gridColumnStart >= gridColumnEnd) return null;
         
-        return { gridColumnStart, gridColumnEnd };
+        return { gridColumnStart: gridColumnStart + 1, gridColumnEnd: gridColumnEnd + 1, isMilestone };
     }
     
     const getTaskStatus = (taskId: string) => {
@@ -193,12 +197,14 @@ export function GanttChartView() {
     };
     
     const todayIndex = differenceInDays(new Date(), dateRange[0]);
-    let todayPosition;
+    let todayPosition: number;
     if (viewMode === 'week') {
         todayPosition = (todayIndex / 7);
     } else {
         todayPosition = todayIndex + (new Date().getHours() / 24);
     }
+    const numColumns = viewMode === 'week' ? Math.ceil(dateRange.length / 7) : dateRange.length;
+
 
     return (
         <Card className="h-[75vh] flex flex-col">
@@ -225,43 +231,39 @@ export function GanttChartView() {
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden">
                 <ScrollArea className="w-full h-full">
-                    <div className="relative min-w-max" style={{ gridTemplateRows: `auto repeat(${tasks.length}, 3rem)` }}>
-                        <div className="sticky top-0 z-20 grid" style={{ gridTemplateColumns: `224px ${gridTemplateColumns}` }}>
-                            <div className="font-semibold p-2 border-b border-r bg-muted/30 sticky left-0 z-10">Task</div>
-                            <div className="contents">
-                                <Header />
-                            </div>
+                    <div className="relative grid min-w-max" style={{ gridTemplateColumns: `224px ${gridTemplateColumns}`, gridTemplateRows: `auto repeat(${tasks.length}, 3rem)` }}>
+                        {/* Headers */}
+                        <div className="font-semibold p-2 border-b border-r bg-muted/30 sticky top-0 left-0 z-20">Task</div>
+                        <div className="contents sticky top-0 z-10">
+                            <Header />
                         </div>
-
+                        
                         {/* Task List */}
-                        <div className="grid" style={{ gridTemplateColumns: `224px`, gridTemplateRows: `repeat(${tasks.length}, 3rem)`}}>
-                           {tasks.map((task, index) => (
-                                <div key={task.id} className="h-12 flex items-center p-2 border-b border-r truncate sticky left-0 bg-background z-10" style={{ gridRow: index + 1}}>
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger className="truncate text-left w-full">
-                                                {task.title}
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>{task.title}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </div>
-                            ))}
-                        </div>
+                        {tasks.map((task, index) => (
+                             <div key={task.id} className="h-12 flex items-center p-2 border-b border-r truncate sticky left-0 bg-background z-10" style={{ gridRow: index + 2}}>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger className="truncate text-left w-full">
+                                            {task.title}
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{task.title}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                        ))}
 
-                        {/* Timeline Grid & Task Bars */}
+                        {/* Timeline Grid & Task Bars Area */}
                         <div className="absolute top-[53px] left-[224px] right-0 bottom-0 grid" style={{ gridTemplateColumns, gridTemplateRows: `repeat(${tasks.length}, 3rem)` }}>
                              {/* Vertical Grid Lines */}
-                            {dateRange.map((date, i) => {
-                                if (viewMode === 'week' && i % 7 !== 0) return null;
-                                const colIndex = viewMode === 'week' ? Math.floor(i / 7) : i;
+                            {Array.from({ length: numColumns }).map((_, i) => {
+                                const dateForLine = viewMode === 'week' ? dateRange[i*7] : dateRange[i];
                                 return (
                                     <div key={i} className={cn(
                                         "border-r h-full",
-                                        isWeekend(date) && viewMode !== 'week' && "bg-muted/30",
-                                    )} style={{gridColumn: colIndex + 1, gridRow: `1 / -1`}}></div>
+                                        isWeekend(dateForLine) && viewMode !== 'week' && "bg-muted/30",
+                                    )} style={{gridColumn: i + 1, gridRow: `1 / -1`}}></div>
                                 )
                             })}
                             {/* Horizontal Grid Lines */}
@@ -271,10 +273,10 @@ export function GanttChartView() {
 
                             {/* Today Marker */}
                              {todayIndex >= 0 && todayIndex < dateRange.length && (
-                                 <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-10" style={{ left: `calc(${todayPosition} * (100% / ${gridTemplateColumns.split(',').length}))` }}></div>
+                                <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-10" style={{ left: `calc(${todayPosition} * (100% / ${numColumns}))` }}></div>
                              )}
 
-                            {/* Task Bars */}
+                            {/* Task Bars & Milestones */}
                             {tasks.map((task, index) => {
                                 const pos = getTaskPosition(task);
                                 if (!pos) return null;
@@ -283,22 +285,35 @@ export function GanttChartView() {
                                     <TooltipProvider key={task.id}>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <div 
-                                                    className="h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden relative self-center" 
-                                                    style={{ 
-                                                        gridRow: index + 1, 
-                                                        gridColumn: `${pos.gridColumnStart} / ${pos.gridColumnEnd}`,
-                                                    }}
-                                                >
-                                                    <div className={cn("absolute left-0 top-0 bottom-0 w-1", priorityColors[task.priority])}></div>
-                                                    <span className="truncate pl-2">{task.title}</span>
-                                                </div>
+                                                {pos.isMilestone ? (
+                                                     <div 
+                                                        className="relative h-7 w-7 self-center cursor-pointer hover:opacity-90"
+                                                        style={{ 
+                                                            gridRow: index + 1, 
+                                                            gridColumn: `${pos.gridColumnStart}`,
+                                                            transform: 'translateX(-50%) rotate(45deg)'
+                                                        }}
+                                                    >
+                                                        <div className={cn("w-full h-full rounded-sm", priorityColors[task.priority])}></div>
+                                                     </div>
+                                                ) : (
+                                                    <div 
+                                                        className="h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden relative self-center" 
+                                                        style={{ 
+                                                            gridRow: index + 1, 
+                                                            gridColumn: `${pos.gridColumnStart} / ${pos.gridColumnEnd}`,
+                                                        }}
+                                                    >
+                                                        <div className={cn("absolute left-0 top-0 bottom-0 w-1", priorityColors[task.priority])}></div>
+                                                        <span className="truncate pl-2">{task.title}</span>
+                                                    </div>
+                                                )}
                                             </TooltipTrigger>
                                             <TooltipContent>
-                                                <div className="font-bold mb-2">{task.title}</div>
+                                                <div className="font-bold mb-2">{task.title} {pos.isMilestone && '(Milestone)'}</div>
                                                 <div className="space-y-1 text-sm">
-                                                    <p><span className="font-semibold">Start:</span> {task.startDate ? format(parseISO(task.startDate), 'PPP') : 'N/A'}</p>
-                                                    <p><span className="font-semibold">End:</span> {task.dueDate ? format(parseISO(task.dueDate), 'PPP') : 'N/A'}</p>
+                                                    {!pos.isMilestone && <p><span className="font-semibold">Start:</span> {task.startDate ? format(parseISO(task.startDate), 'PPP') : 'N/A'}</p>}
+                                                    <p><span className="font-semibold">{pos.isMilestone ? 'Date' : 'End'}:</span> {task.dueDate ? format(parseISO(task.dueDate), 'PPP') : 'N/A'}</p>
                                                     <p><span className="font-semibold">Status:</span> {status}</p>
                                                     <div className="flex items-center gap-2"><span className="font-semibold">Priority:</span> <Flag className={cn("h-4 w-4", priorityColors[task.priority].replace('bg-','text-'))} /> <span className="capitalize">{task.priority}</span></div>
                                                 </div>
