@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
-import { format, addDays, differenceInDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
+import { format, addDays, differenceInDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isToday, isWeekend } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -112,7 +112,7 @@ export function GanttChartView() {
             return (
                 <>
                     {weeks.map(weekStart => (
-                        <div key={weekStart.toISOString()} className="text-center border-l p-2 font-semibold">
+                        <div key={weekStart.toISOString()} className="text-center border-l p-2 font-semibold bg-muted/30">
                             Week of {format(weekStart, 'MMM d')}
                         </div>
                     ))}
@@ -123,7 +123,10 @@ export function GanttChartView() {
         return (
             <>
                 {dateRange.map(date => (
-                    <div key={date.toISOString()} className="text-center border-l p-2">
+                    <div key={date.toISOString()} className={cn(
+                        "text-center border-l p-2",
+                        isToday(date) && "bg-primary/20",
+                    )}>
                         {viewMode === 'month' && <div className="text-xs">{format(date, 'E')}</div>}
                         <div className="font-semibold">{format(date, 'd')}</div>
                     </div>
@@ -159,7 +162,7 @@ export function GanttChartView() {
             <CardContent className="flex-1 flex overflow-hidden">
                 <div className="flex w-full">
                     <div className="w-56 sticky left-0 bg-background z-10 border-r">
-                         <div className="h-[53px] flex items-center p-2 font-semibold border-b">Task</div>
+                         <div className="h-[53px] flex items-center p-2 font-semibold border-b bg-muted/30">Task</div>
                          <ScrollArea className="h-[calc(100%-53px)]">
                             {tasks.map(task => (
                                 <div key={task.id} className="h-12 flex items-center p-2 border-b truncate">
@@ -185,7 +188,11 @@ export function GanttChartView() {
                             </div>
                             <div className="relative grid h-full" style={{ gridTemplateColumns, gridTemplateRows: `repeat(${tasks.length}, 3rem)` }}>
                                 {dateRange.map((date, i) => (
-                                    <div key={i} className="border-l h-full"></div>
+                                    <div key={i} className={cn(
+                                        "border-l h-full",
+                                        isWeekend(date) && "bg-muted/30",
+                                        isToday(date) && "bg-primary/20"
+                                    )}></div>
                                 ))}
                                 {tasks.map((task, index) => {
                                     const pos = getTaskPosition(task);
@@ -196,21 +203,24 @@ export function GanttChartView() {
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <div 
-                                                        className="h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden" 
+                                                        className="h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden relative" 
                                                         style={{ 
                                                             gridRow: index + 1, 
                                                             gridColumnStart: pos.gridColumnStart,
                                                             gridColumnEnd: pos.gridColumnEnd,
                                                         }}
                                                     >
-                                                        <span className="truncate">{task.title}</span>
+                                                        <div className={cn("absolute left-0 top-0 bottom-0 w-1", priorityColors[task.priority])}></div>
+                                                        <span className="truncate pl-2">{task.title}</span>
                                                     </div>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    <p className="font-bold">{task.title}</p>
-                                                    <p>Due: {format(parseISO(task.dueDate!), 'PPP')}</p>
-                                                    <p>Status: {status}</p>
-                                                    <div className="flex items-center gap-2">Priority: <Flag className={cn("h-4 w-4", priorityColors[task.priority].replace('bg-','text-'))} /> <span className="capitalize">{task.priority}</span></div>
+                                                    <div className="font-bold mb-2">{task.title}</div>
+                                                    <div className="space-y-1 text-sm">
+                                                        <p><span className="font-semibold">Due:</span> {format(parseISO(task.dueDate!), 'PPP')}</p>
+                                                        <p><span className="font-semibold">Status:</span> {status}</p>
+                                                        <div className="flex items-center gap-2"><span className="font-semibold">Priority:</span> <Flag className={cn("h-4 w-4", priorityColors[task.priority].replace('bg-','text-'))} /> <span className="capitalize">{task.priority}</span></div>
+                                                    </div>
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
