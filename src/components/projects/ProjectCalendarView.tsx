@@ -448,7 +448,7 @@ export function ProjectCalendarView() {
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="lg:col-span-1">
                     <CardContent className="p-2 sm:p-4">
                         <Calendar
@@ -462,7 +462,7 @@ export function ProjectCalendarView() {
                                 table: "w-full border-collapse space-y-1",
                                 row: "flex w-full mt-2",
                                 cell: cn(
-                                  "h-24 w-full p-1 relative text-left",
+                                  "h-20 w-full p-1 relative text-left",
                                   "focus-within:relative focus-within:z-20",
                                 ),
                                 day: cn(
@@ -652,4 +652,5 @@ export function ProjectCalendarView() {
     
 
     
+
 
