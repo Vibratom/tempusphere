@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
-import { format, addDays, differenceInDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isToday, isWeekend, isSameMonth } from 'date-fns';
+import { format, addDays, differenceInDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isToday, isWeekend, isSameMonth, addMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -55,16 +55,8 @@ export function GanttChartView() {
                 break;
             case 'month':
             default:
-                start = startOfMonth(currentDate);
-                end = endOfMonth(currentDate);
-                if (!isSameMonth(currentDate, new Date())) {
-                    start = startOfMonth(currentDate);
-                    end = endOfMonth(currentDate);
-                } else {
-                    const projectStart = tasks.length > 0 && tasks[0].startDate ? parseISO(tasks[0].startDate) : startOfMonth(new Date());
-                    start = startOfWeek(startOfMonth(projectStart), { weekStartsOn: 1 });
-                    end = endOfWeek(addDays(new Date(), 30), { weekStartsOn: 1 });
-                }
+                start = startOfMonth(addMonths(currentDate, -1));
+                end = endOfMonth(addMonths(currentDate, 1));
                 break;
         }
         
@@ -74,7 +66,7 @@ export function GanttChartView() {
             const weekCount = Math.ceil(validDateRange.length / 7);
             columns = `repeat(${weekCount}, minmax(140px, 1fr))`;
         } else {
-            columns = `repeat(${validDateRange.length}, minmax(60px, 1fr))`;
+            columns = `repeat(${validDateRange.length}, minmax(40px, 1fr))`;
         }
         
         return { dateRange: validDateRange, gridTemplateColumns: columns };
@@ -91,11 +83,7 @@ export function GanttChartView() {
                 setCurrentDate(addDays(currentDate, amount * 28));
                 break;
             case 'month':
-                setCurrentDate(prev => {
-                    const newDate = new Date(prev);
-                    newDate.setMonth(newDate.getMonth() + amount);
-                    return newDate;
-                });
+                setCurrentDate(prev => addMonths(prev, amount));
                 break;
         }
     };
@@ -176,6 +164,7 @@ export function GanttChartView() {
                                 <div key={date.toISOString()} className={cn(
                                     "text-center border-l p-2 whitespace-nowrap",
                                     isToday(date) && "bg-primary/20",
+                                    isWeekend(date) && "bg-muted/30",
                                 )}>
                                     <div className="text-xs">{format(date, 'E')}</div>
                                     <div className="font-semibold">{format(date, 'd')}</div>
@@ -193,6 +182,7 @@ export function GanttChartView() {
                     <div key={date.toISOString()} className={cn(
                         "text-center border-l p-2 whitespace-nowrap",
                         isToday(date) && "bg-primary/20",
+                        isWeekend(date) && "bg-muted/30",
                     )}>
                         <div className="text-xs">{format(date, 'E')}</div>
                         <div className="font-semibold">{format(date, 'd')}</div>
@@ -236,8 +226,8 @@ export function GanttChartView() {
             <CardContent className="flex-1 flex overflow-hidden">
                 <div className="flex w-full">
                     <div className="w-56 sticky left-0 bg-background z-20 border-r">
-                         <div className="h-[72px] flex items-center p-2 font-semibold border-b bg-muted/30">Task</div>
-                         <ScrollArea className="h-[calc(100%-72px)]">
+                         <div className="h-[96px] flex items-center p-2 font-semibold border-b bg-muted/30">Task</div>
+                         <ScrollArea className="h-[calc(100%-96px)]">
                             {tasks.map(task => (
                                 <div key={task.id} className="h-12 flex items-center p-2 border-b truncate">
                                     <TooltipProvider>
@@ -273,7 +263,9 @@ export function GanttChartView() {
                                     )
                                 })}
                                  {todayIndex >= 0 && todayIndex < dateRange.length && (
-                                     <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-10" style={{ gridColumn: todayPosition }}></div>
+                                     <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-10" style={{ left: `calc(${todayPosition} * (100% / ${gridTemplateColumns.split(',').length}))`,
+                                        gridColumn: `1 / -1`
+                                     }}></div>
                                  )}
                                 {tasks.map((task, index) => {
                                     const pos = getTaskPosition(task);
