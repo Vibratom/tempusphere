@@ -27,8 +27,8 @@ const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: s
 
 export function ProjectNav({ activeTool }: { activeTool: string }) {
     return (
-        <Tabs defaultValue={activeTool} value={activeTool}>
-            <TabsList className="grid w-full h-auto grid-cols-4 sm:grid-cols-7 md:grid-cols-7 lg:grid-cols-7">
+        <Tabs defaultValue={activeTool} value={activeTool} className="flex justify-center">
+            <TabsList className="h-auto">
                 {tools.map(tool => (
                     <ResponsiveTabsTrigger key={tool.value} value={tool.value} href={tool.href} icon={tool.icon}>
                         {tool.label}
