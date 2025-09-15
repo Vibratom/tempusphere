@@ -448,21 +448,30 @@ export function ProjectCalendarView() {
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-                <Card className="lg:col-span-2">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <Card className="xl:col-span-2">
                     <CardContent className="p-2 sm:p-4">
                         <Calendar
                             mode="single"
                             selected={selectedDate}
                             onSelect={setSelectedDate}
-                            className="p-0 [&_td]:p-0"
+                            className="p-0 [&_td]:p-0 w-full"
                             classNames={{
-                                day: cn(
-                                  "h-24 w-full p-1 relative",
+                                months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                                month: "space-y-4 w-full",
+                                table: "w-full border-collapse space-y-1",
+                                row: "flex w-full mt-2",
+                                cell: cn(
+                                  "h-24 w-full p-1 relative text-left",
                                   "focus-within:relative focus-within:z-20",
                                 ),
-                                day_selected: "text-primary-foreground",
-                                day_today: "text-accent-foreground",
+                                day: cn(
+                                  buttonVariants({ variant: "ghost" }),
+                                  "h-full w-full p-0 font-normal aria-selected:opacity-100"
+                                ),
+                                day_selected: "bg-primary text-primary-foreground",
+                                day_today: "bg-accent text-accent-foreground",
+                                day_outside: "text-muted-foreground opacity-50",
                             }}
                             modifiers={{ hasTask: (date) => tasksByDay[format(date, 'yyyy-MM-dd')]?.length > 0 }}
                             modifiersClassNames={{
