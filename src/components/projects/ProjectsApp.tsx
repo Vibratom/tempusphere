@@ -92,7 +92,7 @@ export function ProjectsApp() {
   const addTask = (columnId: string) => {
     const title = newTaskTitles[columnId]?.trim();
     if(!title) return;
-    contextAddTask(columnId, title);
+    contextAddTask(columnId, { title });
     setNewTaskTitles(prev => ({...prev, [columnId]: ''}));
   }
 

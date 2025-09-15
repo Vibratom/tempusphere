@@ -77,7 +77,7 @@ export function decodeBoardData(encoded: string): BoardData | null {
 interface ProjectsContextType {
   board: BoardData;
   setBoard: Dispatch<SetStateAction<BoardData>>;
-  addTask: (columnId: string, title: string) => void;
+  addTask: (columnId: string, taskDetails: Partial<TaskCard> & { title: string }) => void;
   removeTask: (taskId: string, columnId: string) => void;
   updateTask: (updatedTask: TaskCard) => void;
   addColumn: (title: string) => void;
@@ -107,16 +107,17 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const addTask = (columnId: string, title: string) => {
+  const addTask = (columnId: string, taskDetails: Partial<TaskCard> & { title: string }) => {
     const newTaskId = `task-${Date.now()}`;
     const newTask: TaskCard = {
       id: newTaskId,
-      title,
-      priority: 'none'
+      priority: 'none',
+      ...taskDetails,
     };
 
     setBoard(prev => {
       const column = prev.columns[columnId];
+      if (!column) return prev;
       return {
         ...prev,
         tasks: {

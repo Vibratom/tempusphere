@@ -2,13 +2,13 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useProjects, Priority } from '@/contexts/ProjectsContext';
+import { useProjects, Priority, TaskCard } from '@/contexts/ProjectsContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Flag, Search, ArrowUp, ArrowDown } from 'lucide-react';
+import { Flag, Search, ArrowUp, ArrowDown, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import {
   DropdownMenu,
@@ -16,7 +16,12 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Calendar } from '../ui/calendar';
 
 type SortKey = 'title' | 'status' | 'priority' | 'dueDate';
 type SortDirection = 'asc' | 'desc';
@@ -27,6 +32,104 @@ const priorityColors: Record<Priority, string> = {
     low: 'text-blue-500',
     medium: 'text-yellow-500',
     high: 'text-red-500',
+}
+
+const NewTaskDialog = () => {
+    const { board, addTask } = useProjects();
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [status, setStatus] = useState(board.columnOrder[0] || '');
+    const [priority, setPriority] = useState<Priority>('none');
+    const [dueDate, setDueDate] = useState<Date | undefined>();
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handleSubmit = () => {
+        if (!title.trim() || !status) return;
+        addTask(status, {
+            title,
+            description: description || undefined,
+            priority,
+            dueDate: dueDate?.toISOString()
+        });
+        // Reset form and close
+        setTitle('');
+        setDescription('');
+        setPriority('none');
+        setDueDate(undefined);
+        setIsOpen(false);
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button>
+                    <Plus className="mr-2 h-4 w-4" /> New Task
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Add New Task</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-title" className="text-right">Title</Label>
+                        <Input id="task-title" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" />
+                    </div>
+                     <div className="grid grid-cols-4 items-start gap-4">
+                        <Label htmlFor="task-desc" className="text-right pt-2">Description</Label>
+                        <Textarea id="task-desc" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" rows={3} />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-status" className="text-right">Status</Label>
+                        <Select value={status} onValueChange={setStatus}>
+                            <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="Select a status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {board.columnOrder.map(colId => (
+                                    <SelectItem key={colId} value={colId}>{board.columns[colId].title}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-priority" className="text-right">Priority</Label>
+                        <Select value={priority} onValueChange={(p) => setPriority(p as Priority)}>
+                            <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="Set priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="low">Low</SelectItem>
+                                <SelectItem value="medium">Medium</SelectItem>
+                                <SelectItem value="high">High</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-dueDate" className="text-right">Due Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn("col-span-3 justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleSubmit} disabled={!title.trim() || !status}>Save task</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
 }
 
 export function ProjectListView() {
@@ -153,6 +256,7 @@ export function ProjectListView() {
                             </DropdownMenuRadioGroup>
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    <NewTaskDialog />
                 </div>
             </div>
             <div className="border rounded-lg overflow-hidden bg-card">
