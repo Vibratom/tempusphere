@@ -144,7 +144,7 @@ export function MindMapView() {
           case 'top': return { x: node.x + node.width / 2, y: node.y };
           case 'bottom': return { x: node.x + node.width / 2, y: node.y + node.height };
           case 'left': return { x: node.x, y: node.y + node.height / 2 };
-          case 'right': return { x: node.x + node.width, y: node.y + node.height / 2 };
+          case 'right': return { x: node.x + node.width, y: node.y + node.height };
       }
   }
   
@@ -342,8 +342,8 @@ export function MindMapView() {
                     drag
                     onDragEnd={(event, info) => {
                         const rect = canvasRef.current!.getBoundingClientRect();
-                        const x = info.point.x - rect.left;
-                        const y = info.point.y - rect.top;
+                        const x = info.point.x - rect.left - node.width/2;
+                        const y = info.point.y - rect.top - node.height/2;
                         
                         const newX = Math.round(x / GRID_SIZE) * GRID_SIZE;
                         const newY = Math.round(y / GRID_SIZE) * GRID_SIZE;
@@ -426,5 +426,7 @@ export function MindMapView() {
     </div>
   );
 }
+
+    
 
     
