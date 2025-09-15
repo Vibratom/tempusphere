@@ -460,7 +460,7 @@ export function ProjectCalendarView() {
                                 months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                                 month: "space-y-4 w-full",
                                 table: "w-full border-collapse space-y-1",
-                                row: "flex w-full mt-2",
+                                row: "flex w-full",
                                 cell: cn(
                                   "h-20 w-full p-1 relative text-left",
                                   "focus-within:relative focus-within:z-20",
@@ -654,3 +654,6 @@ export function ProjectCalendarView() {
     
 
 
+
+
+    
