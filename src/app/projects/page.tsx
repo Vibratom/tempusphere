@@ -14,6 +14,7 @@ import { ChecklistProvider } from '@/contexts/ChecklistContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectsProvider } from '@/contexts/ProjectsContext';
 import { ProjectListView } from '@/components/projects/ProjectListView';
+import { ProjectCalendarView } from '@/components/projects/ProjectCalendarView';
 
 const PlaceholderTool = ({ name, icon: Icon }: { name: string, icon: React.ComponentType<any> }) => (
     <Card className="w-full h-full flex flex-col items-center justify-center text-center p-8">
@@ -50,8 +51,8 @@ function ProjectsContent() {
                         <TabsList className="grid w-full grid-cols-8 md:grid-cols-8 lg:grid-cols-8">
                             <ResponsiveTabsTrigger value="board" icon={KanbanSquare}>Board</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="list" icon={List}>List</ResponsiveTabsTrigger>
-                            <ResponsiveTabsTrigger value="gantt" icon={BarChartHorizontal}>Gantt</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="calendar-view" icon={Calendar}>Calendar</ResponsiveTabsTrigger>
+                            <ResponsiveTabsTrigger value="gantt" icon={BarChartHorizontal}>Gantt</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="mindmap" icon={BrainCircuit}>Mind Map</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="checklist" icon={ListChecks}>Checklist</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="spreadsheet" icon={Table}>Spreadsheet</ResponsiveTabsTrigger>
@@ -63,11 +64,11 @@ function ProjectsContent() {
                         <TabsContent value="list" className="mt-4">
                             <ProjectListView />
                         </TabsContent>
+                        <TabsContent value="calendar-view" className="mt-4">
+                            <ProjectCalendarView />
+                        </TabsContent>
                         <TabsContent value="gantt" className="mt-4">
                             <PlaceholderTool name="Gantt Chart" icon={BarChartHorizontal} />
-                        </TabsContent>
-                        <TabsContent value="calendar-view" className="mt-4">
-                            <PlaceholderTool name="Calendar View" icon={Calendar} />
                         </TabsContent>
                         <TabsContent value="mindmap" className="mt-4">
                             <PlaceholderTool name="Mind Map" icon={BrainCircuit} />

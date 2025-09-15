@@ -86,6 +86,12 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+  .rdp-day_has-task:not(.rdp-day_selected):not(.rdp-day_today) > div {
+    @apply bg-accent/20;
+  }
+  .rdp-button {
+    height: 100% !important;
+  }
 }
 
 @layer utilities {
