@@ -87,7 +87,7 @@ const NewTaskDialog = () => {
                             </SelectTrigger>
                             <SelectContent>
                                 {board.columnOrder.map(colId => (
-                                    <SelectItem key={colId} value={colId}>{board.columns[colId].title}</SelectItem>
+                                    <SelectItem key={colId} value={board.columns[colId].title}>{board.columns[colId].title}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -241,7 +241,7 @@ export function ProjectListView() {
                     </Select>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="w-full md:w-auto flex-shrink-0">
+                            <Button variant="outline" className="w-full md:w-auto flex-shrink-0 px-4">
                                 <Flag className={cn("mr-2 h-4 w-4", priorityFilter !== 'all' && priorityColors[priorityFilter])}/>
                                 <span>Priority</span>
                             </Button>
