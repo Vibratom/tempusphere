@@ -166,7 +166,7 @@ const NewTaskDialog = () => {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-    )
+    );
 }
 
 const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard | null, isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (updatedTask: TaskCard, newStatusTitle?: string) => void }) => {
@@ -418,7 +418,7 @@ export function SpreadsheetView() {
                                 </SelectItem>
                             ))}
                         </SelectContent>
-                        </Select>
+                    </Select>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="w-full md:w-auto justify-start px-2">
@@ -492,7 +492,7 @@ export function SpreadsheetView() {
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                                             <AlertDialogDescription>This will permanently delete the task "{task.title}".</AlertDialogDescription>
-                                                        </Header>
+                                                        </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                                                             <AlertDialogAction onClick={() => removeTask(task.id, task.columnId)}>Delete</AlertDialogAction>
