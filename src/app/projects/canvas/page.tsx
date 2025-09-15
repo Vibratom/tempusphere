@@ -1,6 +1,6 @@
 
-import { MindMapView } from '@/components/projects/MindMapView';
+import { CanvasView } from '@/components/projects/CanvasView';
 
-export default function MindMapPage() {
-  return <MindMapView />;
+export default function CanvasPage() {
+  return <CanvasView />;
 }

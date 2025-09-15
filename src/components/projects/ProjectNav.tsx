@@ -3,7 +3,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { KanbanSquare, List, BarChartHorizontal, BrainCircuit, Table, ListChecks, Calendar } from 'lucide-react';
+import { KanbanSquare, List, BarChartHorizontal, DraftingCompass, Table, ListChecks, Calendar } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
@@ -11,7 +11,7 @@ const tools = [
     { value: 'board', icon: KanbanSquare, label: 'Board', href: '/projects/board' },
     { value: 'list', icon: List, label: 'List', href: '/projects/list' },
     { value: 'gantt', icon: BarChartHorizontal, label: 'Gantt', href: '/projects/gantt' },
-    { value: 'mindmap', icon: BrainCircuit, label: 'Mind Map', href: '/projects/mindmap' },
+    { value: 'canvas', icon: DraftingCompass, label: 'Canvas', href: '/projects/canvas' },
     { value: 'spreadsheet', icon: Table, label: 'Spreadsheet', href: '/projects/spreadsheet' },
     { value: 'checklist', icon: ListChecks, label: 'Checklist', href: '/projects/checklist' },
 ];

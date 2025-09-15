@@ -105,7 +105,7 @@ const Line = ({ fromNode, toNode }: { fromNode: Node, toNode: Node }) => {
     )
 }
 
-export function MindMapView() {
+export function CanvasView() {
   const [nodes, setNodes] = useLocalStorage<Node[]>('projects:mindmap', initialNodes);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const addTask = useProjects(state => state.addTask);
