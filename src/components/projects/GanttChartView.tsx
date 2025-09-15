@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useProjects, Priority, TaskCard } from '@/contexts/ProjectsContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
@@ -44,6 +44,11 @@ export function GanttChartView() {
     const { board } = useProjects();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('0');
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const tasks = useMemo(() => {
         return Object.values(board.tasks)
@@ -118,7 +123,7 @@ export function GanttChartView() {
         return column ? column.title : 'Unassigned';
     };
 
-    const todayOffset = differenceInDays(startOfDay(new Date()), dateRange.start);
+    const todayOffset = isClient ? differenceInDays(startOfDay(new Date()), dateRange.start) : -1;
     const taskColWidth = 150;
 
     return (
@@ -130,7 +135,7 @@ export function GanttChartView() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={() => handleDateChange('prev')}><ChevronLeft/></Button>
-                    <span className="font-semibold text-base md:text-lg w-32 md:w-48 text-center">{format(currentDate, 'MMM yyyy')}</span>
+                    <span className="font-semibold text-base md:text-lg w-32 md:w-48 text-center">{isClient ? format(currentDate, 'MMM yyyy') : ''}</span>
                     <Button variant="outline" size="icon" onClick={() => handleDateChange('next')}><ChevronRight/></Button>
                     <div className="flex items-center gap-1 ml-2 md:ml-4">
                         <Button variant="outline" size="icon" onClick={() => handleZoom('out')} disabled={zoomLevel === '-3'}>
@@ -155,7 +160,7 @@ export function GanttChartView() {
                             
                             {/* 2. Date Header */}
                             <div className="grid" style={{ gridTemplateColumns: `repeat(${TOTAL_COLUMNS}, 1fr)` }}>
-                                {columns.map(({ start, end }, i) => {
+                                {isClient && columns.map(({ start, end }, i) => {
                                     const config = zoomConfig[zoomLevel];
                                     return (
                                        <div key={i} className="text-center border-b border-r p-1 text-xs whitespace-nowrap bg-muted">
