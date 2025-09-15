@@ -17,6 +17,8 @@ import ListPage from './list/page';
 import GanttPage from './gantt/page';
 import SpreadsheetPage from './spreadsheet/page';
 import ChecklistPage from './checklist/page';
+import CanvasPage from './canvas/page';
+import MindMapPage from './mindmap/page';
 
 const LoadingFallback = () => (
     <div className="flex-1 flex items-center justify-center">
@@ -31,6 +33,8 @@ const toolComponents: Record<string, React.ComponentType> = {
     gantt: GanttPage,
     spreadsheet: SpreadsheetPage,
     checklist: ChecklistPage,
+    canvas: CanvasPage,
+    mindmap: MindMapPage,
 };
 
 export default function ProjectsLayout({
