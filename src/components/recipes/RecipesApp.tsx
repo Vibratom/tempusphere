@@ -8,6 +8,17 @@ import { UtensilsCrossed, Plus, BookOpen, Trash2, Edit, GitBranch, ArrowLeft, Se
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
@@ -99,7 +110,7 @@ const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => 
     )
 }
 
-const RecipeDetailView = ({ recipe, onBack, onViewRecipe, onEdit, onRemix }: { recipe: Recipe, onBack: () => void, onViewRecipe: (recipe: Recipe) => void, onEdit: (recipe: Recipe) => void, onRemix: (recipe: Recipe) => void }) => {
+const RecipeDetailView = ({ recipe, onBack, onViewRecipe, onEdit, onRemix, onDelete }: { recipe: Recipe, onBack: () => void, onViewRecipe: (recipe: Recipe) => void, onEdit: (recipe: Recipe) => void, onRemix: (recipe: Recipe) => void, onDelete: (id: string) => void }) => {
     const { recipes } = useRecipesContext();
     const parentRecipe = recipe.remixedFrom ? recipes.find(r => r.id === recipe.remixedFrom) : null;
     const childRecipes = recipes.filter(r => r.remixedFrom === recipe.id);
@@ -111,7 +122,24 @@ const RecipeDetailView = ({ recipe, onBack, onViewRecipe, onEdit, onRemix }: { r
                     <Button variant="ghost" onClick={onBack}><ArrowLeft className="mr-2 h-4 w-4" /> Back to Cookbook</Button>
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={() => onEdit(recipe)}><Edit className="mr-2 h-4 w-4"/>Edit</Button>
-                        <Button onClick={() => onRemix(recipe)}><GitBranch className="mr-2 h-4 w-4"/>Remix this Recipe</Button>
+                        <Button onClick={() => onRemix(recipe)}><GitBranch className="mr-2 h-4 w-4"/>Remix</Button>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the "{recipe.title}" recipe. Any remixes of this recipe will be orphaned.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDelete(recipe.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 </div>
                  <Separator className="my-4" />
@@ -225,6 +253,7 @@ export function RecipesApp() {
 
   const handleDeleteRecipe = (recipeId: string) => {
     setRecipes(recipes.filter(r => r.id !== recipeId));
+    setViewingRecipe(null); // Go back to the main list
   }
 
   if (!isClient) {
@@ -248,10 +277,10 @@ export function RecipesApp() {
                   onBack={() => setViewingRecipe(null)}
                   onViewRecipe={setViewingRecipe}
                   onEdit={(recipe) => {
-                      setViewingRecipe(null);
                       setEditingRecipe(recipe);
                   }}
                   onRemix={handleRemixRecipe}
+                  onDelete={handleDeleteRecipe}
               />
           </div>
         </RecipesContext.Provider>
@@ -306,13 +335,10 @@ export function RecipesApp() {
                                         <Card key={recipe.id} className="flex flex-col">
                                             <CardHeader>
                                                 <CardTitle className="text-lg">{recipe.title}</CardTitle>
--                                                <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
-+                                                <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
+                                                <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
                                             </CardHeader>
                                             <CardFooter className="mt-auto flex justify-end gap-2">
                                                 <Button variant="secondary" size="sm" onClick={() => setViewingRecipe(recipe)}><BookOpen className="mr-2 h-4 w-4"/>View</Button>
-                                                <Button variant="outline" size="sm" onClick={() => setEditingRecipe(recipe)}><Edit className="mr-2 h-4 w-4"/>Edit</Button>
-                                                <Button variant="outline" size="sm" onClick={() => handleRemixRecipe(recipe)}><GitBranch className="mr-2 h-4 w-4"/>Remix</Button>
                                             </CardFooter>
                                         </Card>
                                     ))}
@@ -334,3 +360,5 @@ export function RecipesApp() {
     </RecipesContext.Provider>
   );
 }
+
+    
