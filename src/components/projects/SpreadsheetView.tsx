@@ -7,13 +7,6 @@ import { Input } from '../ui/input';
 import { cn } from '@/lib/utils';
 import { Plus, Sigma, ArrowDown } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
 
 const COLS = 26;
 const ROWS = 100;
@@ -90,6 +83,7 @@ export function SpreadsheetView() {
   };
 
   const evaluateCell = (row: number, col: number): string => {
+    if (row >= gridData.length || col >= gridData[row].length) return '';
     const cellData = gridData[row][col];
     if (!cellData.startsWith('=')) {
         return cellData;
@@ -116,6 +110,15 @@ export function SpreadsheetView() {
         }
     }
 
+    // Check for single cell reference
+    const cellRefMatch = formula.match(/^([A-Z]+\d+)$/);
+    if(cellRefMatch) {
+      const refCell = parseCellId(cellRefMatch[1]);
+      if (refCell && (refCell[0] !== row || refCell[1] !== col)) { // Prevent self-reference
+        return evaluateCell(refCell[0], refCell[1]);
+      }
+    }
+
     return '#ERROR!';
   };
 
@@ -131,6 +134,10 @@ export function SpreadsheetView() {
     setIsSelecting(true);
     setSelection({ startRow: row, startCol: col, endRow: row, endCol: col });
     setActiveCell({ row, col });
+    // Deactivate editing mode when starting a new selection
+    if (activeCell?.row !== row || activeCell?.col !== col) {
+      setActiveCell(null);
+    }
   };
   
   const handleMouseOver = (row: number, col: number) => {
@@ -143,6 +150,11 @@ export function SpreadsheetView() {
     setIsSelecting(false);
   };
   
+  const handleDoubleClick = (row: number, col: number) => {
+      setActiveCell({ row, col });
+      setSelection(null); // Clear selection when editing
+  }
+  
   const isCellSelected = (row: number, col: number) => {
     if (!selection) return false;
     const { startRow, startCol, endRow, endCol } = selection;
@@ -152,6 +164,11 @@ export function SpreadsheetView() {
     const maxCol = Math.max(startCol, endCol);
     return row >= minRow && row <= maxRow && col >= minCol && col <= maxCol;
   };
+  
+  const isCellActiveForSelection = (row: number, col: number) => {
+    if (!activeCell || selection) return false;
+    return activeCell.row === row && activeCell.col === col;
+  }
 
   const calculateSumOfSelection = () => {
     if (!selection) return;
@@ -177,9 +194,9 @@ export function SpreadsheetView() {
     const targetCol = minCol;
 
     if (targetRow < numRows) {
-        const startCell = `${colToLetter(minCol)}${minRow + 1}`;
-        const endCell = `${colToLetter(maxCol)}${maxRow + 1}`;
-        handleCellChange(targetRow, targetCol, `=SUM(${startCell}:${endCell})`);
+        const startCellId = `${colToLetter(minCol)}${minRow + 1}`;
+        const endCellId = `${colToLetter(maxCol)}${maxRow + 1}`;
+        handleCellChange(targetRow, targetCol, `=SUM(${startCellId}:${endCellId})`);
         setSelection(null);
     }
   }
@@ -236,6 +253,7 @@ export function SpreadsheetView() {
                                                 onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
                                                 onBlur={() => setActiveCell(null)}
                                                 autoFocus
+                                                onKeyDown={(e) => e.key === 'Enter' && setActiveCell(null)}
                                                 className="w-full h-full p-1.5 text-sm bg-transparent border-2 border-primary rounded-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                                             />
                                         ) : (
@@ -243,9 +261,11 @@ export function SpreadsheetView() {
                                                 className={cn("w-full h-full p-1.5 text-sm truncate cursor-cell border-t border-l",
                                                     isNaN(parseFloat(evaluateCell(rowIndex, colIndex))) ? 'text-left' : 'text-right',
                                                     isCellSelected(rowIndex, colIndex) ? 'bg-primary/20' : '',
+                                                    isCellActiveForSelection(rowIndex, colIndex) ? 'ring-2 ring-primary' : ''
                                                 )}
                                                 onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
                                                 onMouseOver={() => handleMouseOver(rowIndex, colIndex)}
+                                                onDoubleClick={() => handleDoubleClick(rowIndex, colIndex)}
                                             >
                                                 {evaluateCell(rowIndex, colIndex)}
                                             </div>
@@ -269,4 +289,3 @@ export function SpreadsheetView() {
     </div>
   );
 }
-
