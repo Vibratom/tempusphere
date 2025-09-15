@@ -6,8 +6,9 @@ import { Header } from '@/components/tempusphere/Header';
 import { CalendarProvider } from '@/contexts/CalendarContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { Footer } from '@/components/tempusphere/Footer';
+import { Suspense } from 'react';
 
-export default function ChecklistPage() {
+function ChecklistContent() {
   return (
     <SettingsProvider>
       <CalendarProvider>
@@ -20,5 +21,13 @@ export default function ChecklistPage() {
         </div>
       </CalendarProvider>
     </SettingsProvider>
+  )
+}
+
+export default function ChecklistPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ChecklistContent />
+    </Suspense>
   );
 }

@@ -33,6 +33,9 @@ import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useCalendar } from '@/contexts/CalendarContext';
 import { PlatformLink } from '../tempusphere/PlatformLink';
+import { useSearchParams } from 'next/navigation';
+import { pako } from 'pako';
+import { Base64 } from 'js-base64';
 
 
 type Priority = 'none' | 'low' | 'medium' | 'high';
@@ -79,6 +82,12 @@ interface ListState {
     showCompleted: boolean;
 }
 
+interface SharedChecklistData {
+  lists: Checklist[];
+  listStates: Record<string, ListState>;
+}
+
+
 const findTask = (tasks: Task[], taskId: string): Task | null => {
     for (const task of tasks) {
         if (task.id === taskId) return task;
@@ -97,6 +106,7 @@ const featureList = [
     { icon: <Repeat className="h-5 w-5 text-teal-500" />, title: 'Recurring Tasks', description: 'Set up daily recurring tasks for your habits and routines.' },
     { icon: <Bell className="h-5 w-5 text-yellow-500" />, title: 'Task Reminders', description: 'Get browser notifications for tasks that are due today.' },
     { icon: <CalendarIcon className="h-5 w-5 text-indigo-500" />, title: 'Calendar Integration', description: 'Tasks with a due date automatically appear in your main Tempusphere calendar.' },
+    { icon: <Share2 className="h-5 w-5 text-cyan-500" />, title: 'Share via URL', description: 'Share your entire checklist setup with others through a single link.' },
     { icon: <Palette className="h-5 w-5 text-pink-500" />, title: 'Custom List Themes', description: 'Personalize each checklist with a unique color theme for better organization.' },
     { icon: <FileText className="h-5 w-5 text-orange-500" />, title: 'Human-Readable Export/Import', description: 'Backup and restore your data using a simple, editable .txt file format.' },
 ];
@@ -112,6 +122,23 @@ const otherPlatforms = [
     { name: 'Checklist', category: 'To-Do List', icon: ListChecks, href: '/checklist', color: 'bg-blue-500 hover:bg-blue-600', description: 'Simple checklists for daily tasks and goals.' },
 ]
 
+function encodeData(data: SharedChecklistData): string {
+  const jsonString = JSON.stringify(data);
+  const compressed = pako.deflate(jsonString);
+  return Base64.fromUint8Array(compressed, true);
+}
+
+function decodeData(encoded: string): SharedChecklistData | null {
+  try {
+    const compressed = Base64.toUint8Array(encoded);
+    const jsonString = pako.inflate(compressed, { to: 'string' });
+    return JSON.parse(jsonString) as SharedChecklistData;
+  } catch (error) {
+    console.error("Failed to decode checklist data:", error);
+    return null;
+  }
+}
+
 export function ChecklistApp() {
   const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV7', []);
   const [newListName, setNewListName] = useState('');
@@ -123,12 +150,25 @@ export function ChecklistApp() {
   const { toast } = useToast();
   const { addEvent, removeEvent, setEvents: setCalendarEvents } = useCalendar();
   const importFileRef = useRef<HTMLInputElement>(null);
+  const searchParams = useSearchParams();
 
 
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== 'undefined' && 'Notification' in window) {
         setNotificationPermission(Notification.permission);
+    }
+     const dataParam = searchParams.get('data');
+    if (dataParam) {
+        const decodedData = decodeData(dataParam);
+        if (decodedData) {
+            setLists(decodedData.lists);
+            setListStates(decodedData.listStates);
+            toast({ title: 'Lists Loaded!', description: 'Shared checklists have been loaded from the URL.' });
+            window.history.replaceState({}, '', window.location.pathname);
+        } else {
+            toast({ variant: 'destructive', title: 'Load Failed', description: 'Could not load shared checklists from the URL.' });
+        }
     }
   }, []);
 
@@ -682,6 +722,15 @@ export function ChecklistApp() {
     reader.readAsText(file);
     if(importFileRef.current) importFileRef.current.value = ""; // Reset file input
   };
+
+  const handleShare = () => {
+    const dataToShare: SharedChecklistData = { lists, listStates };
+    const encodedData = encodeData(dataToShare);
+    const url = new URL(window.location.href);
+    url.searchParams.set('data', encodedData);
+    navigator.clipboard.writeText(url.toString());
+    toast({ title: "Link Copied!", description: "A shareable link to your checklists has been copied."});
+  };
   
   const renderTasks = (tasks: Task[], listId: string, parentId: string) => {
     const listState = listStates[listId] || { filter: '', sortBy: 'manual', showCompleted: false };
@@ -807,14 +856,14 @@ export function ChecklistApp() {
             <CardHeader>
                 <CardTitle>Actions</CardTitle>
             </CardHeader>
-            <CardContent className="flex gap-2">
-                <Button variant="outline" onClick={handleExport} className="w-full">
-                    <Download className="mr-2 h-4 w-4" /> Export Data
+            <CardContent className="grid grid-cols-3 gap-2">
+                <Button variant="outline" onClick={handleExport}>
+                    <Download className="mr-2 h-4 w-4" /> Export
                 </Button>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="outline" className="w-full">
-                            <Upload className="mr-2 h-4 w-4" /> Import Data
+                        <Button variant="outline">
+                            <Upload className="mr-2 h-4 w-4" /> Import
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -833,6 +882,9 @@ export function ChecklistApp() {
                     </AlertDialogContent>
                 </AlertDialog>
                 <input type="file" ref={importFileRef} onChange={handleImport} accept=".txt" className="hidden" />
+                <Button variant="outline" onClick={handleShare}>
+                    <Share2 className="mr-2 h-4 w-4" /> Share
+                </Button>
             </CardContent>
         </Card>
       </div>
