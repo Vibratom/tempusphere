@@ -99,7 +99,7 @@ function decodeData(encoded: string): SharedChecklistData | null {
   }
 }
 
-export function ChecklistApp() {
+export function ChecklistApp({ variant = 'standalone' }: { variant?: 'standalone' | 'project' }) {
   const { 
       lists, setLists, 
       listStates, setListStates,
@@ -685,21 +685,24 @@ export function ChecklistApp() {
   
   if (!isClient) return null;
 
-  return (
+  const mainContent = (
     <div className="w-full max-w-7xl mx-auto">
-      <div className="flex flex-col items-center text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Checklist</h1>
-          <p className="text-lg text-muted-foreground mt-2">Organize your tasks and get things done.</p>
-      </div>
-
-       {notificationPermission !== 'granted' && (
-            <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 mb-4 max-w-4xl mx-auto">
-                <div className="flex items-center gap-3">
-                    <Bell className="h-5 w-5 text-yellow-800 dark:text-yellow-200" />
-                    <p className="text-sm text-yellow-800 dark:text-yellow-200">Enable notifications to get reminders for tasks that are due today.</p>
-                </div>
-                <Button size="sm" onClick={requestNotificationPermission}>Enable</Button>
+        {variant === 'standalone' && (
+          <>
+            <div className="flex flex-col items-center text-center mb-8">
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Checklist</h1>
+                <p className="text-lg text-muted-foreground mt-2">Organize your tasks and get things done.</p>
             </div>
+            {notificationPermission !== 'granted' && (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 mb-4 max-w-4xl mx-auto">
+                      <div className="flex items-center gap-3">
+                          <Bell className="h-5 w-5 text-yellow-800 dark:text-yellow-200" />
+                          <p className="text-sm text-yellow-800 dark:text-yellow-200">Enable notifications to get reminders for tasks that are due today.</p>
+                      </div>
+                      <Button size="sm" onClick={requestNotificationPermission}>Enable</Button>
+                  </div>
+            )}
+          </>
         )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -760,7 +763,7 @@ export function ChecklistApp() {
 
       <DragDropContext onDragEnd={onDragEnd}>
         {lists.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
+          <div className={cn("grid gap-6 items-start", variant === 'project' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' )}>
             {sortedLists.map((list) => {
                 const { completed: completedTasks, total: totalTasks } = calculateProgress(list.tasks);
                 const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
@@ -936,7 +939,9 @@ export function ChecklistApp() {
         )}
       </DragDropContext>
       
-       <Card className="mt-12">
+       {variant === 'standalone' && (
+         <>
+          <Card className="mt-12">
             <CardHeader>
                 <CardTitle>Other Tools</CardTitle>
             </CardHeader>
@@ -948,9 +953,8 @@ export function ChecklistApp() {
                     {otherPlatforms.map(p => <PlatformLink key={p.name} {...p} />)}
                 </div>
             </CardContent>
-        </Card>
-
-       <Card className="mt-12">
+          </Card>
+          <Card className="mt-12">
             <CardHeader>
                 <CardTitle>Features Overview</CardTitle>
             </CardHeader>
@@ -967,7 +971,15 @@ export function ChecklistApp() {
                     ))}
                 </ul>
             </CardContent>
-        </Card>
+          </Card>
+         </>
+       )}
     </div>
   );
+
+  if (variant === 'standalone') {
+    return mainContent;
+  }
+  
+  return <div className="h-full w-full">{mainContent}</div>;
 }
