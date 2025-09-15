@@ -139,6 +139,7 @@ export function MindMapView() {
   }
   
   const getConnectorPosition = (node: Node, side: 'top' | 'bottom' | 'left' | 'right') => {
+      if (!node) return { x: 0, y: 0 };
       switch(side) {
           case 'top': return { x: node.x + node.width / 2, y: node.y };
           case 'bottom': return { x: node.x + node.width / 2, y: node.y + node.height };
@@ -421,3 +422,5 @@ export function MindMapView() {
     </div>
   );
 }
+
+    
