@@ -39,56 +39,98 @@ export function SpreadsheetView() {
     let nextRow = rowIndex;
     let nextCol = colIndex;
 
-    switch (e.key) {
-        case 'Enter':
-            e.preventDefault();
-            if (e.shiftKey) {
-                nextRow = Math.max(0, rowIndex - 1); // Shift + Enter moves up
-            } else {
-                nextRow = Math.min(numRows - 1, rowIndex + 1); // Enter moves down
-            }
-            break;
-        case 'Tab':
-            e.preventDefault();
-            if (e.shiftKey) {
-                if (colIndex > 0) {
-                    nextCol = colIndex - 1;
-                } else if (rowIndex > 0) {
-                    nextRow = rowIndex - 1;
-                    nextCol = numCols - 1;
+    const findNextCell = (dRow: number, dCol: number) => {
+      let r = rowIndex + dRow;
+      let c = colIndex + dCol;
+
+      // Skip over empty cells
+      while (r >= 0 && r < numRows && c >= 0 && c < numCols && gridData[r][c] === '') {
+        r += dRow;
+        c += dCol;
+      }
+      // If we went out of bounds, find the last non-empty cell from the edge
+      if (r < 0 || r >= numRows || c < 0 || c >= numCols) {
+        r = dRow > 0 ? numRows - 1 : 0;
+        c = dCol > 0 ? numCols - 1 : 0;
+        if (dRow !== 0) c = colIndex;
+        if (dCol !== 0) r = rowIndex;
+
+        // Find last non-empty from the edge
+        while(r >= 0 && r < numRows && c >= 0 && c < numCols && gridData[r][c] === '') {
+            r -= dRow;
+            c -= dCol;
+        }
+      }
+      return [r, c];
+    };
+
+    if (e.ctrlKey) {
+        switch (e.key) {
+            case 'ArrowDown':
+                [nextRow, nextCol] = findNextCell(1, 0);
+                break;
+            case 'ArrowUp':
+                [nextRow, nextCol] = findNextCell(-1, 0);
+                break;
+            case 'ArrowRight':
+                [nextRow, nextCol] = findNextCell(0, 1);
+                break;
+            case 'ArrowLeft':
+                [nextRow, nextCol] = findNextCell(0, -1);
+                break;
+            default:
+                return;
+        }
+        e.preventDefault();
+    } else {
+        switch (e.key) {
+            case 'Enter':
+                e.preventDefault();
+                nextRow = e.shiftKey
+                    ? Math.max(0, rowIndex - 1)
+                    : Math.min(numRows - 1, rowIndex + 1);
+                break;
+            case 'Tab':
+                e.preventDefault();
+                if (e.shiftKey) {
+                    if (colIndex > 0) nextCol = colIndex - 1;
+                    else if (rowIndex > 0) {
+                        nextRow = rowIndex - 1;
+                        nextCol = numCols - 1;
+                    }
+                } else {
+                    if (colIndex < numCols - 1) nextCol = colIndex + 1;
+                    else if (rowIndex < numRows - 1) {
+                        nextRow = rowIndex + 1;
+                        nextCol = 0;
+                    }
                 }
-            } else {
-                if (colIndex < numCols - 1) {
-                    nextCol = colIndex + 1;
-                } else if (rowIndex < numRows - 1) {
-                    nextRow = rowIndex + 1;
-                    nextCol = 0;
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                nextRow = Math.min(numRows - 1, rowIndex + 1);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                nextRow = Math.max(0, rowIndex - 1);
+                break;
+            case 'ArrowLeft':
+                if(e.currentTarget.selectionStart === 0) {
+                  e.preventDefault();
+                  nextCol = Math.max(0, colIndex - 1);
                 }
-            }
-            break;
-        case 'ArrowDown':
-            e.preventDefault();
-            nextRow = Math.min(numRows - 1, rowIndex + 1);
-            break;
-        case 'ArrowUp':
-            e.preventDefault();
-            nextRow = Math.max(0, rowIndex - 1);
-            break;
-        case 'ArrowLeft':
-            if(e.currentTarget.selectionStart === 0) {
-              e.preventDefault();
-              nextCol = Math.max(0, colIndex - 1);
-            }
-            break;
-        case 'ArrowRight':
-            if(e.currentTarget.selectionStart === e.currentTarget.value.length) {
-              e.preventDefault();
-              nextCol = Math.min(numCols - 1, colIndex + 1);
-            }
-            break;
-        default:
-            return;
+                break;
+            case 'ArrowRight':
+                if(e.currentTarget.selectionStart === e.currentTarget.value.length) {
+                  e.preventDefault();
+                  nextCol = Math.min(numCols - 1, colIndex + 1);
+                }
+                break;
+            default:
+                return;
+        }
     }
+
 
     if (cellRefs.current[nextRow] && cellRefs.current[nextRow][nextCol]) {
       cellRefs.current[nextRow][nextCol]?.focus();
