@@ -16,6 +16,7 @@ import { ProjectsProvider } from '@/contexts/ProjectsContext';
 import { ProjectListView } from '@/components/projects/ProjectListView';
 import { GanttChartView } from '@/components/projects/GanttChartView';
 import { CalendarPanel } from '@/components/tempusphere/CalendarPanel';
+import { MindMapView } from '@/components/projects/MindMapView';
 
 const PlaceholderTool = ({ name, icon: Icon }: { name: string, icon: React.ComponentType<any> }) => (
     <Card className="w-full h-full flex flex-col items-center justify-center text-center p-8">
@@ -72,8 +73,8 @@ function ProjectsContent() {
                           <TabsContent value="gantt" className="mt-4 flex-1 flex flex-col">
                               <GanttChartView />
                           </TabsContent>
-                          <TabsContent value="mindmap" className="mt-4">
-                              <PlaceholderTool name="Mind Map" icon={BrainCircuit} />
+                          <TabsContent value="mindmap" className="mt-4 flex-1 flex flex-col">
+                              <MindMapView />
                           </TabsContent>
                           <TabsContent value="checklist" className="mt-4">
                               <ChecklistApp />
