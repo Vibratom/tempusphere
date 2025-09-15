@@ -17,6 +17,7 @@ import { ProjectListView } from '@/components/projects/ProjectListView';
 import { GanttChartView } from '@/components/projects/GanttChartView';
 import { CalendarPanel } from '@/components/tempusphere/CalendarPanel';
 import { MindMapView } from '@/components/projects/MindMapView';
+import { SpreadsheetView } from '@/components/projects/SpreadsheetView';
 
 const PlaceholderTool = ({ name, icon: Icon }: { name: string, icon: React.ComponentType<any> }) => (
     <Card className="w-full h-full flex flex-col items-center justify-center text-center p-8">
@@ -50,7 +51,7 @@ function ProjectsContent() {
                 <Header />
                 <main className="flex-1 flex flex-col">
                     <div className="flex-1 flex flex-col items-center p-4 md:p-8">
-                      <Tabs defaultValue="mindmap" className="w-full max-w-7xl flex flex-col flex-1">
+                      <Tabs defaultValue="board" className="w-full max-w-7xl flex flex-col flex-1">
                           <TabsList className="grid w-full grid-cols-8 md:grid-cols-8 lg:grid-cols-8">
                               <ResponsiveTabsTrigger value="calendar-view" icon={Calendar}>Calendar</ResponsiveTabsTrigger>
                               <ResponsiveTabsTrigger value="board" icon={KanbanSquare}>Board</ResponsiveTabsTrigger>
@@ -73,14 +74,14 @@ function ProjectsContent() {
                           <TabsContent value="gantt" className="mt-4 flex-1 flex flex-col">
                               <GanttChartView />
                           </TabsContent>
-                          <TabsContent value="mindmap" className="mt-4 flex-1 flex flex-col">
+                           <TabsContent value="mindmap" className="mt-4 flex-1 flex flex-col">
                               <MindMapView />
                           </TabsContent>
                           <TabsContent value="checklist" className="mt-4">
                               <ChecklistApp />
                           </TabsContent>
-                          <TabsContent value="spreadsheet" className="mt-4">
-                              <PlaceholderTool name="Spreadsheet" icon={Table} />
+                          <TabsContent value="spreadsheet" className="mt-4 flex-1 flex flex-col">
+                              <SpreadsheetView />
                           </TabsContent>
                           <TabsContent value="canvas" className="mt-4">
                               <PlaceholderTool name="Canvas" icon={DraftingCompass} />
@@ -105,3 +106,5 @@ export default function ProjectsPage() {
     </Suspense>
   )
 }
+
+    
