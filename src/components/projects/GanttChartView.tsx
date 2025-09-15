@@ -78,7 +78,11 @@ export function GanttChartView() {
                 setCurrentDate(addDays(currentDate, amount * 7));
                 break;
             case 'month':
-                setCurrentDate(prev => new Date(prev.setMonth(prev.getMonth() + amount)));
+                setCurrentDate(prev => {
+                    const newDate = new Date(prev);
+                    newDate.setMonth(newDate.getMonth() + amount);
+                    return newDate;
+                });
                 break;
         }
     };
@@ -87,20 +91,30 @@ export function GanttChartView() {
         const startDate = task.startDate ? parseISO(task.startDate) : parseISO(task.dueDate!);
         const endDate = task.dueDate ? parseISO(task.dueDate) : startDate;
         
-        const startIndex = differenceInDays(startDate, dateRange[0]);
-        const endIndex = differenceInDays(endDate, dateRange[0]) + 1;
+        const dayDuration = viewMode === 'week' ? 7 : 1;
 
-        if (startIndex >= dateRange.length || endIndex < 0) return null;
+        const startDayIndex = differenceInDays(startDate, dateRange[0]);
+        const endDayIndex = differenceInDays(endDate, dateRange[0]);
         
-        const clampedStartIndex = Math.max(startIndex, 0);
-        const clampedEndIndex = Math.min(endIndex, dateRange.length);
+        const startIndex = viewMode === 'week' ? Math.floor(startDayIndex / 7) : startDayIndex;
+        const endIndex = viewMode === 'week' ? Math.floor(endDayIndex / 7) : endDayIndex;
+
+        const startPosition = startIndex + (startDayIndex % dayDuration) / dayDuration;
+        const endPosition = endIndex + ((endDayIndex % dayDuration) + 1) / dayDuration;
+
+        const duration = endPosition - startPosition;
         
-        if (clampedStartIndex >= clampedEndIndex) return null;
+        if (startPosition > dateRange.length / dayDuration || endPosition < 0) return null;
+
+        const clampedStartPosition = Math.max(startPosition, 0);
+        const clampedEndPosition = Math.min(endPosition, dateRange.length / dayDuration);
+
+        if (clampedStartPosition >= clampedEndPosition) return null;
 
         return {
-            gridColumnStart: clampedStartIndex + 1,
-            gridColumnEnd: clampedEndIndex + 1
-        }
+            gridColumnStart: clampedStartPosition + 1,
+            gridColumnEnd: clampedEndPosition + 1,
+        };
     }
     
     const getTaskStatus = (taskId: string) => {
@@ -125,6 +139,38 @@ export function GanttChartView() {
                 </>
             );
         }
+        
+        if (viewMode === 'month') {
+            const months: { [key: string]: Date[] } = {};
+            dateRange.forEach(date => {
+                const monthKey = format(date, 'MMMM yyyy');
+                if (!months[monthKey]) {
+                    months[monthKey] = [];
+                }
+                months[monthKey].push(date);
+            });
+
+            return (
+                 <div className="contents">
+                    {Object.entries(months).map(([month, days]) => (
+                        <React.Fragment key={month}>
+                            <div className="col-span-full text-center font-semibold p-2 border-b border-l bg-muted/30" style={{ gridColumn: `${differenceInDays(days[0], dateRange[0]) + 1} / span ${days.length}` }}>
+                                {month}
+                            </div>
+                            {days.map(date => (
+                                <div key={date.toISOString()} className={cn(
+                                    "text-center border-l p-2",
+                                    isToday(date) && "bg-primary/20",
+                                )}>
+                                    <div className="text-xs">{format(date, 'E')}</div>
+                                    <div className="font-semibold">{format(date, 'd')}</div>
+                                </div>
+                            ))}
+                        </React.Fragment>
+                    ))}
+                </div>
+            )
+        }
 
         return (
             <>
@@ -133,7 +179,7 @@ export function GanttChartView() {
                         "text-center border-l p-2",
                         isToday(date) && "bg-primary/20",
                     )}>
-                        {viewMode === 'month' && <div className="text-xs">{format(date, 'E')}</div>}
+                        <div className="text-xs">{format(date, 'E')}</div>
                         <div className="font-semibold">{format(date, 'd')}</div>
                     </div>
                 ))}
@@ -151,7 +197,7 @@ export function GanttChartView() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={() => handleDateChange('prev')}><ChevronLeft/></Button>
-                    <span className="font-semibold text-lg w-32 text-center">{format(currentDate, 'MMM yyyy')}</span>
+                    <span className="font-semibold text-lg w-32 text-center">{format(currentDate, viewMode === 'day' ? 'MMM d, yyyy' : 'MMM yyyy')}</span>
                     <Button variant="outline" size="icon" onClick={() => handleDateChange('next')}><ChevronRight/></Button>
                      <Select value={viewMode} onValueChange={(v) => setViewMode(v as GanttViewMode)}>
                         <SelectTrigger className="w-[120px]">
@@ -188,18 +234,24 @@ export function GanttChartView() {
                     </div>
 
                     <ScrollArea className="flex-1 h-full whitespace-nowrap">
-                        <div className="min-w-max">
-                             <div className="grid border-b" style={{ gridTemplateColumns }}>
+                        <div className="min-w-max h-full flex flex-col">
+                             <div className="grid border-b sticky top-0 bg-background z-10" style={{ gridTemplateColumns }}>
                                 <Header />
                             </div>
-                            <div className="relative grid h-full" style={{ gridTemplateColumns, gridTemplateRows: `repeat(${tasks.length}, 3rem)` }}>
-                                {dateRange.map((date, i) => (
-                                    <div key={i} className={cn(
-                                        "border-l h-full",
-                                        isWeekend(date) && "bg-muted/30",
-                                        isToday(date) && "bg-primary/20"
-                                    )}></div>
-                                ))}
+                            <div className="relative grid flex-1" style={{ gridTemplateColumns, gridTemplateRows: `repeat(${tasks.length}, 3rem)` }}>
+                                {dateRange.map((date, i) => {
+                                    const colIndex = viewMode === 'week' ? Math.floor(i / 7) : i;
+                                    if (viewMode === 'week' && i % 7 !== 0) return null;
+                                    
+                                    return (
+                                        <div key={i} className={cn(
+                                            "border-l h-full",
+                                            isWeekend(date) && viewMode !== 'week' && "bg-muted/30",
+                                            isToday(date) && viewMode !== 'week' && "bg-primary/20",
+                                            viewMode === 'week' && 'col-span-1'
+                                        )} style={{gridColumn: colIndex + 1}}></div>
+                                    )
+                                })}
                                 {tasks.map((task, index) => {
                                     const pos = getTaskPosition(task);
                                     if (!pos) return null;
@@ -209,7 +261,7 @@ export function GanttChartView() {
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <div 
-                                                        className="h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden relative" 
+                                                        className="h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden relative self-center" 
                                                         style={{ 
                                                             gridRow: index + 1, 
                                                             gridColumnStart: pos.gridColumnStart,
