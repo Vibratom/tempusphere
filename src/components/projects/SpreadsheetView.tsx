@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -15,6 +15,8 @@ export function SpreadsheetView() {
   const [gridData, setGridData] = useLocalStorage<string[][]>('projects:spreadsheet-v2', 
     () => Array(5).fill(null).map(() => Array(4).fill(''))
   );
+  const cellRefs = useRef<(HTMLInputElement | null)[][]>([]);
+
 
   const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
     const newGridData = gridData.map((row, rIdx) => 
@@ -25,15 +27,48 @@ export function SpreadsheetView() {
     setGridData(newGridData);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, rowIndex: number, colIndex: number) => {
+    let nextRow = rowIndex;
+    let nextCol = colIndex;
+
+    switch (e.key) {
+        case 'Enter':
+        case 'ArrowDown':
+            e.preventDefault();
+            nextRow = Math.min(numRows - 1, rowIndex + 1);
+            break;
+        case 'ArrowUp':
+            e.preventDefault();
+            nextRow = Math.max(0, rowIndex - 1);
+            break;
+        case 'ArrowLeft':
+            if(e.currentTarget.selectionStart === 0) {
+              e.preventDefault();
+              nextCol = Math.max(0, colIndex - 1);
+            }
+            break;
+        case 'ArrowRight':
+            if(e.currentTarget.selectionStart === e.currentTarget.value.length) {
+              e.preventDefault();
+              nextCol = Math.min(numCols - 1, colIndex + 1);
+            }
+            break;
+        default:
+            return;
+    }
+
+    if (cellRefs.current[nextRow] && cellRefs.current[nextRow][nextCol]) {
+      cellRefs.current[nextRow][nextCol]?.focus();
+    }
+  }
+
   const addRow = () => {
-    // Ensure gridData is an array before spreading
     const currentGrid = Array.isArray(gridData) ? gridData : [];
     const numCols = currentGrid[0]?.length || MIN_COLS;
     setGridData([...currentGrid, Array(numCols).fill('')]);
   };
   
   const addCol = () => {
-    // Ensure gridData is an array before mapping
     const currentGrid = Array.isArray(gridData) ? gridData : [[]];
     setGridData(currentGrid.map(row => [...(Array.isArray(row) ? row : []), '']));
   };
@@ -50,6 +85,9 @@ export function SpreadsheetView() {
 
   const numRows = Array.isArray(gridData) ? gridData.length : 0;
   const numCols = Array.isArray(gridData) && gridData[0] ? gridData[0].length : 0;
+  
+  // Ensure refs array is up to date
+  cellRefs.current = Array(numRows).fill(null).map(() => Array(numCols).fill(null));
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
@@ -105,8 +143,14 @@ export function SpreadsheetView() {
                                     <td key={`${rowIndex}-${colIndex}`} className="p-0 border">
                                         <Input
                                             type="text"
+                                            ref={el => {
+                                              if (cellRefs.current[rowIndex]) {
+                                                cellRefs.current[rowIndex][colIndex] = el;
+                                              }
+                                            }}
                                             value={gridData?.[rowIndex]?.[colIndex] || ''}
                                             onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                                            onKeyDown={(e) => handleKeyDown(e, rowIndex, colIndex)}
                                             className="w-full h-full p-1.5 text-sm bg-transparent border-0 rounded-none shadow-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:z-10"
                                         />
                                     </td>
