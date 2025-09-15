@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
-import { format, addDays, differenceInDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isToday, isWeekend } from 'date-fns';
+import { format, addDays, differenceInDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isToday, isWeekend, isSameMonth } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -50,22 +50,35 @@ export function GanttChartView() {
                 end = addDays(currentDate, 15);
                 break;
             case 'week':
-                start = startOfWeek(addDays(currentDate, -14));
-                end = endOfWeek(addDays(currentDate, 14));
+                start = startOfWeek(addDays(currentDate, -28), { weekStartsOn: 1 });
+                end = endOfWeek(addDays(currentDate, 28), { weekStartsOn: 1 });
                 break;
             case 'month':
             default:
                 start = startOfMonth(currentDate);
                 end = endOfMonth(currentDate);
+                if (!isSameMonth(currentDate, new Date())) {
+                    start = startOfMonth(currentDate);
+                    end = endOfMonth(currentDate);
+                } else {
+                    const projectStart = tasks.length > 0 ? parseISO(tasks[0].startDate || tasks[0].dueDate!) : startOfMonth(new Date());
+                    start = startOfWeek(startOfMonth(projectStart), { weekStartsOn: 1 });
+                    end = endOfWeek(addDays(new Date(), 30), { weekStartsOn: 1 });
+                }
                 break;
         }
-        const dateRange = eachDayOfInterval({ start, end });
-        const gridTemplateColumns = viewMode === 'week' 
-            ? `repeat(${dateRange.length / 7}, minmax(140px, 1fr))` 
-            : `repeat(${dateRange.length}, minmax(40px, 1fr))`;
         
-        return { dateRange, gridTemplateColumns };
-    }, [viewMode, currentDate]);
+        const validDateRange = eachDayOfInterval({ start, end });
+        let columns;
+        if (viewMode === 'week') {
+            const weekCount = Math.ceil(validDateRange.length / 7);
+            columns = `repeat(${weekCount}, minmax(140px, 1fr))`;
+        } else {
+            columns = `repeat(${validDateRange.length}, minmax(40px, 1fr))`;
+        }
+        
+        return { dateRange: validDateRange, gridTemplateColumns: columns };
+    }, [viewMode, currentDate, tasks]);
 
 
     const handleDateChange = (direction: 'prev' | 'next') => {
@@ -75,7 +88,7 @@ export function GanttChartView() {
                 setCurrentDate(addDays(currentDate, amount * 15));
                 break;
             case 'week':
-                setCurrentDate(addDays(currentDate, amount * 7));
+                setCurrentDate(addDays(currentDate, amount * 28));
                 break;
             case 'month':
                 setCurrentDate(prev => {
@@ -91,30 +104,32 @@ export function GanttChartView() {
         const startDate = task.startDate ? parseISO(task.startDate) : parseISO(task.dueDate!);
         const endDate = task.dueDate ? parseISO(task.dueDate) : startDate;
         
-        const dayDuration = viewMode === 'week' ? 7 : 1;
+        if (startDate > endDate) return null; // Invalid date range
 
         const startDayIndex = differenceInDays(startDate, dateRange[0]);
         const endDayIndex = differenceInDays(endDate, dateRange[0]);
+
+        if (viewMode === 'week') {
+             const startWeekIndex = Math.floor(startDayIndex / 7);
+            const endWeekIndex = Math.floor(endDayIndex / 7);
+            
+            const startOffset = (startDayIndex % 7) / 7;
+            const endOffset = ((endDayIndex % 7) + 1) / 7;
+
+            const gridColumnStart = Math.max(0, startWeekIndex + startOffset) + 1;
+            const gridColumnEnd = Math.min(dateRange.length / 7, endWeekIndex + endOffset) + 1;
+
+            if (gridColumnStart >= gridColumnEnd) return null;
+            
+            return { gridColumnStart, gridColumnEnd };
+        }
         
-        const startIndex = viewMode === 'week' ? Math.floor(startDayIndex / 7) : startDayIndex;
-        const endIndex = viewMode === 'week' ? Math.floor(endDayIndex / 7) : endDayIndex;
+        const gridColumnStart = Math.max(0, startDayIndex) + 1;
+        const gridColumnEnd = Math.min(dateRange.length, endDayIndex + 1) + 1;
 
-        const startPosition = startIndex + (startDayIndex % dayDuration) / dayDuration;
-        const endPosition = endIndex + ((endDayIndex % dayDuration) + 1) / dayDuration;
-
-        const duration = endPosition - startPosition;
+        if (gridColumnStart >= gridColumnEnd) return null;
         
-        if (startPosition > dateRange.length / dayDuration || endPosition < 0) return null;
-
-        const clampedStartPosition = Math.max(startPosition, 0);
-        const clampedEndPosition = Math.min(endPosition, dateRange.length / dayDuration);
-
-        if (clampedStartPosition >= clampedEndPosition) return null;
-
-        return {
-            gridColumnStart: clampedStartPosition + 1,
-            gridColumnEnd: clampedEndPosition + 1,
-        };
+        return { gridColumnStart, gridColumnEnd };
     }
     
     const getTaskStatus = (taskId: string) => {
@@ -186,7 +201,14 @@ export function GanttChartView() {
             </>
         )
     };
-
+    
+    const todayIndex = differenceInDays(new Date(), dateRange[0]);
+    let todayPosition;
+    if (viewMode === 'week') {
+        todayPosition = (todayIndex / 7) + 1;
+    } else {
+        todayPosition = todayIndex + (new Date().getHours() / 24) + 1;
+    }
 
     return (
         <Card className="h-[75vh] flex flex-col">
@@ -197,7 +219,7 @@ export function GanttChartView() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={() => handleDateChange('prev')}><ChevronLeft/></Button>
-                    <span className="font-semibold text-lg w-32 text-center">{format(currentDate, viewMode === 'day' ? 'MMM d, yyyy' : 'MMM yyyy')}</span>
+                    <span className="font-semibold text-lg w-48 text-center">{format(currentDate, viewMode === 'day' ? 'MMMM d, yyyy' : 'MMMM yyyy')}</span>
                     <Button variant="outline" size="icon" onClick={() => handleDateChange('next')}><ChevronRight/></Button>
                      <Select value={viewMode} onValueChange={(v) => setViewMode(v as GanttViewMode)}>
                         <SelectTrigger className="w-[120px]">
@@ -213,7 +235,7 @@ export function GanttChartView() {
             </CardHeader>
             <CardContent className="flex-1 flex overflow-hidden">
                 <div className="flex w-full">
-                    <div className="w-56 sticky left-0 bg-background z-10 border-r">
+                    <div className="w-56 sticky left-0 bg-background z-20 border-r">
                          <div className="h-[53px] flex items-center p-2 font-semibold border-b bg-muted/30">Task</div>
                          <ScrollArea className="h-[calc(100%-53px)]">
                             {tasks.map(task => (
@@ -240,18 +262,19 @@ export function GanttChartView() {
                             </div>
                             <div className="relative grid flex-1" style={{ gridTemplateColumns, gridTemplateRows: `repeat(${tasks.length}, 3rem)` }}>
                                 {dateRange.map((date, i) => {
-                                    const colIndex = viewMode === 'week' ? Math.floor(i / 7) : i;
                                     if (viewMode === 'week' && i % 7 !== 0) return null;
+                                    const colIndex = viewMode === 'week' ? Math.floor(i / 7) : i;
                                     
                                     return (
                                         <div key={i} className={cn(
                                             "border-l h-full",
                                             isWeekend(date) && viewMode !== 'week' && "bg-muted/30",
-                                            isToday(date) && viewMode !== 'week' && "bg-primary/20",
-                                            viewMode === 'week' && 'col-span-1'
                                         )} style={{gridColumn: colIndex + 1}}></div>
                                     )
                                 })}
+                                 {todayIndex >= 0 && todayIndex < dateRange.length && (
+                                     <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-10" style={{ gridColumn: todayPosition }}></div>
+                                 )}
                                 {tasks.map((task, index) => {
                                     const pos = getTaskPosition(task);
                                     if (!pos) return null;
