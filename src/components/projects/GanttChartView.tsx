@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui
 import { Button } from '../ui/button';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { ChevronLeft, ChevronRight, Flag, ZoomIn, ZoomOut } from 'lucide-react';
-import { format, addDays, differenceInDays, startOfMonth, eachDayOfInterval, parseISO, isToday, isWeekend, addMonths } from 'date-fns';
+import { format, addDays, differenceInDays, startOfDay, eachDayOfInterval, parseISO, isToday, isWeekend, startOfWeek, endOfWeek } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -24,18 +24,36 @@ const priorityColors: Record<Priority, string> = {
     high: 'bg-red-500',
 };
 
-const zoomLevels = [
-    { name: 'Quarter', days: 90, columnWidth: 30 },
-    { name: 'Month', days: 60, columnWidth: 40 },
-    { name: 'Week', days: 30, columnWidth: 50 },
-    { name: 'Day', days: 14, columnWidth: 60 },
-];
+// Zoom levels:
+// -3: 1 col = 4 weeks (28 days)
+// -2: 1 col = 3 weeks (21 days)
+// -1: 1 col = 2 weeks (14 days)
+//  0: 1 col = 1 week (7 days) [Default]
+// +1: 1 col = 6 days
+// +2: 1 col = 5 days
+// +3: 1 col = 4 days
+// +4: 1 col = 3 days
+// +5: 1 col = 2 days
+// +6: 1 col = 1 day
+const zoomConfig = {
+    '-3': { totalDays: 364, daysPerColumn: 28, columnWidth: 140 }, // Approx 1 year
+    '-2': { totalDays: 189, daysPerColumn: 21, columnWidth: 120 }, // Approx 6 months
+    '-1': { totalDays: 126, daysPerColumn: 14, columnWidth: 100 }, // Approx 4 months
+     '0': { totalDays: 91, daysPerColumn: 7, columnWidth: 80 },  // Approx 3 months
+     '1': { totalDays: 78, daysPerColumn: 6, columnWidth: 70 },
+     '2': { totalDays: 65, daysPerColumn: 5, columnWidth: 60 },
+     '3': { totalDays: 52, daysPerColumn: 4, columnWidth: 50 },
+     '4': { totalDays: 39, daysPerColumn: 3, columnWidth: 40 },
+     '5': { totalDays: 26, daysPerColumn: 2, columnWidth: 40 },
+     '6': { totalDays: 30, daysPerColumn: 1, columnWidth: 50 }, // 30 days total for daily view
+};
 
+type ZoomLevel = keyof typeof zoomConfig;
 
 export function GanttChartView() {
     const { board } = useProjects();
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [zoomLevel, setZoomLevel] = useState(2); // Index of zoomLevels array, default to 'Week'
+    const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('0');
 
     const tasks = useMemo(() => {
         return Object.values(board.tasks)
@@ -47,50 +65,41 @@ export function GanttChartView() {
             });
     }, [board.tasks]);
 
-    const { dateRange, gridTemplateColumns, numColumns, columnWidth, months } = useMemo(() => {
-        const { days, columnWidth: cw } = zoomLevels[zoomLevel];
-        const start = addDays(startOfMonth(currentDate), -Math.floor(days/2));
-        const end = addDays(start, days);
+    const { dateRange, columns, gridTemplateColumns, totalWidth } = useMemo(() => {
+        const config = zoomConfig[zoomLevel];
+        const startDate = addDays(currentDate, -Math.floor(config.totalDays / 2));
         
-        const range = eachDayOfInterval({ start, end });
+        let cols = [];
+        let currentDay = startDate;
+        
+        while (currentDay < addDays(startDate, config.totalDays)) {
+            const endDate = addDays(currentDay, config.daysPerColumn - 1);
+            cols.push({ start: currentDay, end: endDate });
+            currentDay = addDays(endDate, 1);
+        }
 
-        const monthData: { [key: string]: Date[] } = {};
-        range.forEach(date => {
-            const monthKey = format(date, 'MMMM yyyy');
-            if (!monthData[monthKey]) {
-                monthData[monthKey] = [];
-            }
-            monthData[monthKey].push(date);
-        });
-        
+        const range = { start: cols[0].start, end: cols[cols.length - 1].end };
+
         return { 
             dateRange: range, 
-            gridTemplateColumns: `repeat(${range.length}, minmax(${cw}px, 1fr))`,
-            numColumns: range.length,
-            columnWidth: cw,
-            months: monthData,
+            columns: cols,
+            gridTemplateColumns: `repeat(${cols.length}, ${config.columnWidth}px)`,
+            totalWidth: cols.length * config.columnWidth
         };
     }, [zoomLevel, currentDate]);
 
-
     const handleDateChange = (direction: 'prev' | 'next') => {
         const amount = direction === 'prev' ? -1 : 1;
-        const zoomInfo = zoomLevels[zoomLevel];
-        
-        let moveAmount = 7; // Default to week
-        if (zoomInfo.name === 'Day') moveAmount = 3;
-        if (zoomInfo.name === 'Week') moveAmount = 7;
-        if (zoomInfo.name === 'Month') moveAmount = 30;
-        if (zoomInfo.name === 'Quarter') moveAmount = 45;
-        
-        setCurrentDate(current => addDays(current, amount * moveAmount));
+        const { daysPerColumn } = zoomConfig[zoomLevel];
+        setCurrentDate(current => addDays(current, amount * daysPerColumn * (zoomLevel === '6' ? 7 : 1))); // Move by a week in daily view
     };
     
     const handleZoom = (direction: 'in' | 'out') => {
-        if (direction === 'in') {
-            setZoomLevel(prev => Math.min(zoomLevels.length - 1, prev + 1));
-        } else {
-            setZoomLevel(prev => Math.max(0, prev - 1));
+        const level = parseInt(zoomLevel, 10);
+        if (direction === 'in' && level < 6) {
+            setZoomLevel((level + 1).toString() as ZoomLevel);
+        } else if (direction === 'out' && level > -3) {
+            setZoomLevel((level - 1).toString() as ZoomLevel);
         }
     };
     
@@ -98,19 +107,19 @@ export function GanttChartView() {
         const startDate = task.startDate ? parseISO(task.startDate) : parseISO(task.dueDate!);
         const endDate = task.dueDate ? parseISO(task.dueDate!) : startDate;
         
-        if (startDate > endDate) return null; // Invalid date range
+        if (startDate > endDate || endDate < dateRange.start || startDate > dateRange.end) return null;
 
         const isMilestone = !task.startDate || !task.dueDate || task.startDate === task.dueDate;
         
-        const startDayIndex = differenceInDays(startDate, dateRange[0]);
-        const endDayIndex = differenceInDays(endDate, dateRange[0]);
+        const startOffset = differenceInDays(startDate, dateRange.start);
+        const endOffset = differenceInDays(endDate, dateRange.start);
         
-        if (endDayIndex < 0 || startDayIndex >= dateRange.length) return null;
+        const dayWidth = totalWidth / differenceInDays(dateRange.end, dateRange.start);
 
-        const gridColumnStart = Math.max(1, startDayIndex + 1);
-        const gridColumnEnd = Math.min(dateRange.length + 1, endDayIndex + 2);
+        const left = startOffset * dayWidth;
+        const width = (endOffset - startOffset + 1) * dayWidth;
 
-        return { gridColumn: `${gridColumnStart} / span ${gridColumnEnd - gridColumnStart}`, isMilestone };
+        return { left, width, isMilestone };
     }
     
     const getTaskStatus = (taskId: string) => {
@@ -118,14 +127,10 @@ export function GanttChartView() {
         return column ? column.title : 'Unassigned';
     };
 
-    const todayIndex = differenceInDays(new Date(), dateRange[0]);
-    let todayPosition: number | undefined;
-    if (todayIndex >= 0 && todayIndex < dateRange.length) {
-        const now = new Date();
-        todayPosition = todayIndex + (now.getHours() * 60 + now.getMinutes()) / (24 * 60);
-    }
+    const todayOffset = differenceInDays(startOfDay(new Date()), dateRange.start);
+    const dayWidth = totalWidth / differenceInDays(dateRange.end, dateRange.start);
     
-    const taskColWidth = 'minmax(200px, 1fr)';
+    const taskColWidth = 200;
 
     return (
         <Card className="flex flex-col">
@@ -139,10 +144,10 @@ export function GanttChartView() {
                     <span className="font-semibold text-base md:text-lg w-32 md:w-48 text-center">{format(currentDate, 'MMM yyyy')}</span>
                     <Button variant="outline" size="icon" onClick={() => handleDateChange('next')}><ChevronRight/></Button>
                     <div className="flex items-center gap-1 ml-2 md:ml-4">
-                        <Button variant="outline" size="icon" onClick={() => handleZoom('out')} disabled={zoomLevel === 0}>
+                        <Button variant="outline" size="icon" onClick={() => handleZoom('out')} disabled={zoomLevel === '-3'}>
                             <ZoomOut />
                         </Button>
-                         <Button variant="outline" size="icon" onClick={() => handleZoom('in')} disabled={zoomLevel === zoomLevels.length - 1}>
+                         <Button variant="outline" size="icon" onClick={() => handleZoom('in')} disabled={zoomLevel === '6'}>
                             <ZoomIn />
                         </Button>
                     </div>
@@ -150,64 +155,83 @@ export function GanttChartView() {
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden">
                 <ScrollArea className="w-full h-full">
-                    <div className="min-w-max relative">
-                        <div 
-                            className="grid bg-background" 
-                            style={{ 
-                                gridTemplateColumns: `${taskColWidth} ${gridTemplateColumns}`,
-                                gridTemplateRows: `auto auto repeat(${tasks.length}, 40px)`
-                            }}
-                        >
-                            {/* Headers */}
-                            <div className="font-semibold p-2 border-b border-r bg-muted/50 sticky top-0 left-0 z-30 flex items-end">Task</div>
-                            
-                            {/* Month Headers */}
-                            {Object.entries(months).map(([month, daysInMonth]) => (
-                                <div key={month} className="text-center font-semibold p-2 border-b border-r bg-muted/30 sticky top-0 z-20" style={{ gridColumn: `${differenceInDays(daysInMonth[0], dateRange[0]) + 2} / span ${daysInMonth.length}` }}>
-                                    {month}
+                    <div className="relative pt-[66px]">
+                        {/* Header container */}
+                        <div className="sticky top-0 z-20 bg-background flex" style={{ width: taskColWidth + totalWidth }}>
+                           <div className="w-[200px] flex-shrink-0 border-b border-r bg-muted/50 flex items-end p-2 font-semibold text-sm">Task</div>
+                           <div className="flex-grow">
+                                {/* Month headers */}
+                                <div className="flex border-b">
+                                    {columns.map(({ start }, i) => {
+                                        if (i === 0 || start.getDate() === 1) {
+                                            const month = format(start, 'MMMM yyyy');
+                                            let dayInMonth = 0;
+                                            if(start.getMonth() === addDays(dateRange.end, -1).getMonth()){
+                                                dayInMonth = differenceInDays(dateRange.end, start);
+                                            } else {
+                                                dayInMonth = differenceInDays(new Date(start.getFullYear(), start.getMonth() + 1, 0), start);
+                                            }
+                                            const width = dayInMonth * dayWidth;
+                                            return (
+                                                <div key={month} className="p-1 text-center font-semibold border-r" style={{ width, minWidth: width }}>
+                                                    {month}
+                                                </div>
+                                            )
+                                        }
+                                        return null;
+                                    })}
                                 </div>
-                            ))}
-
-                            {/* Day Headers */}
-                            {dateRange.map((date, i) => (
-                                <div key={date.toISOString()} className={cn(
-                                    "text-center border-r border-b p-1 whitespace-nowrap sticky top-[49px] bg-muted/30 text-xs md:text-sm z-20",
-                                    isToday(date) && "bg-primary/20",
-                                    isWeekend(date) && "bg-muted/50",
-                                )} style={{ gridColumn: i + 2, gridRow: 2 }}>
-                                    <div className="text-xs">{format(date, 'E')}</div>
-                                    <div className="font-semibold">{format(date, 'd')}</div>
+                                {/* Day/Week headers */}
+                                <div className="flex">
+                                    {columns.map(({start, end}, i) => (
+                                        <div key={i} className={cn("text-center border-r p-1 text-xs whitespace-nowrap bg-muted/30",
+                                          isToday(start) && 'bg-primary/20')} style={{ width: zoomConfig[zoomLevel].columnWidth }}>
+                                            {zoomLevel === '6' ? (
+                                                <>
+                                                   <div>{format(start, 'E')}</div>
+                                                   <div className="font-semibold">{format(start, 'd')}</div>
+                                                </>
+                                            ) : (
+                                                <div className="truncate">{format(start, 'd')} - {format(end, 'd')}</div>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                           </div>
+                        </div>
 
-                            {/* Vertical Grid Lines */}
-                            {dateRange.map((_, i) => (
-                               <div key={i} className="border-r" style={{ gridColumn: i + 2, gridRow: `3 / span ${tasks.length}`}}></div>
-                            ))}
+                        {/* Today Marker */}
+                         {todayOffset >= 0 && todayOffset * dayWidth < totalWidth && (
+                            <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-10" style={{ left: taskColWidth + todayOffset * dayWidth + 0.5 * dayWidth}}></div>
+                         )}
 
-                            {/* Today Marker */}
-                             {todayPosition !== undefined && (
-                                <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-10" style={{ left: `calc(${taskColWidth} + ${todayPosition * columnWidth}px)`, marginLeft: '1px' }}></div>
-                             )}
-
-                            {/* Task List & Timeline Grid */}
-                            {tasks.map((task, index) => (
-                                 <React.Fragment key={task.id}>
-                                    <div className="h-10 flex items-center p-2 border-b border-r truncate sticky left-0 bg-background z-10 text-xs md:text-sm" style={{ gridRow: index + 3, gridColumn: 1 }}>
+                        {/* Task Rows */}
+                        <div className="flex" style={{ width: taskColWidth + totalWidth }}>
+                            {/* Task List */}
+                            <div className="w-[200px] flex-shrink-0 border-r bg-background sticky left-0 z-10">
+                                {tasks.map(task => (
+                                    <div key={task.id} className="h-10 flex items-center p-2 border-b truncate text-sm">
                                         <TooltipProvider>
                                             <Tooltip>
-                                                <TooltipTrigger className="truncate text-left w-full">
-                                                    {task.title}
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>{task.title}</p>
-                                                </TooltipContent>
+                                                <TooltipTrigger className="truncate text-left w-full">{task.title}</TooltipTrigger>
+                                                <TooltipContent><p>{task.title}</p></TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
                                     </div>
-                                    <div className="relative border-b h-10 flex items-center" style={{gridRow: index + 3, gridColumn: `2 / -1`}}>
-                                        {/* Task Bar */}
-                                        {(pos => {
+                                ))}
+                            </div>
+                            {/* Timeline Grid */}
+                            <div className="relative flex-grow">
+                                {/* Vertical lines */}
+                                <div className="absolute inset-0 flex">
+                                    {columns.map((_, i) => (
+                                        <div key={i} className="border-r" style={{ width: zoomConfig[zoomLevel].columnWidth }}></div>
+                                    ))}
+                                </div>
+                                {/* Task bars */}
+                                {tasks.map((task, index) => (
+                                    <div key={task.id} className="relative h-10 border-b flex items-center">
+                                       {(pos => {
                                             if (!pos) return null;
                                             const status = getTaskStatus(task.id);
                                             return (
@@ -217,22 +241,14 @@ export function GanttChartView() {
                                                             {pos.isMilestone ? (
                                                                 <div 
                                                                     className="absolute h-6 w-6 self-center cursor-pointer hover:opacity-90 z-10 -translate-y-1/2 -translate-x-1/2 rotate-45"
-                                                                    style={{ 
-                                                                        top: '50%',
-                                                                        left: `calc((${pos.gridColumn.split(' / ')[0]} - 1) * ${columnWidth}px + ${columnWidth / 2}px)`,
-                                                                    }}
+                                                                    style={{ left: pos.left, top: '50%' }}
                                                                 >
                                                                     <div className={cn("w-full h-full rounded-sm", priorityColors[task.priority])}></div>
                                                                 </div>
                                                             ) : (
                                                                 <div 
                                                                     className="absolute h-7 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden" 
-                                                                    style={{ 
-                                                                        top: '50%',
-                                                                        transform: 'translateY(-50%)',
-                                                                        left: `calc((${pos.gridColumn.split(' / ')[0]} - 1) * ${columnWidth}px)`,
-                                                                        width: `calc(${pos.gridColumn.split('span ')[1]} * ${columnWidth}px - 4px)`,
-                                                                    }}
+                                                                    style={{ left: pos.left, width: pos.width - 4, top: '50%', transform: 'translateY(-50%)' }}
                                                                 >
                                                                     <div className={cn("absolute left-0 top-0 bottom-0 w-1", priorityColors[task.priority])}></div>
                                                                     <span className="truncate pl-2">{task.title}</span>
@@ -253,8 +269,8 @@ export function GanttChartView() {
                                             )
                                         })(getTaskPosition(task))}
                                     </div>
-                                 </React.Fragment>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
                     <ScrollBar orientation="horizontal" />
