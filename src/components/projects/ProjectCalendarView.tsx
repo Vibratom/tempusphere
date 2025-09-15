@@ -462,7 +462,7 @@ export function ProjectCalendarView() {
                                 table: "w-full border-collapse space-y-1",
                                 row: "flex w-full",
                                 cell: cn(
-                                  "h-20 w-full p-1 relative text-left",
+                                  "h-20 p-1 relative text-left flex-1",
                                   "focus-within:relative focus-within:z-20",
                                 ),
                                 day: cn(
@@ -472,6 +472,7 @@ export function ProjectCalendarView() {
                                 day_selected: "bg-primary text-primary-foreground",
                                 day_today: "bg-accent text-accent-foreground",
                                 day_outside: "text-muted-foreground opacity-50",
+                                head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
                             }}
                             modifiers={{ hasTask: (date) => tasksByDay[format(date, 'yyyy-MM-dd')]?.length > 0 }}
                             modifiersClassNames={{
