@@ -20,8 +20,15 @@ const ROWS = 100;
 
 // Function to convert column index to letter (0 -> A, 1 -> B)
 const colToLetter = (colIndex: number) => {
-  return String.fromCharCode(65 + colIndex);
+  let temp, letter = '';
+  while (colIndex >= 0) {
+    temp = colIndex % 26;
+    letter = String.fromCharCode(temp + 65) + letter;
+    colIndex = Math.floor(colIndex / 26) - 1;
+  }
+  return letter;
 };
+
 
 // Function to parse cell coordinates like "A1" into [row, col]
 const parseCellId = (cellId: string): [number, number] | null => {
@@ -33,7 +40,7 @@ const parseCellId = (cellId: string): [number, number] | null => {
     
     let col = 0;
     for (let i = 0; i < colStr.length; i++) {
-        col = col * 26 + (colStr.charCodeAt(i) - 65);
+        col = col * 26 + (colStr.charCodeAt(i) - 64) - 1;
     }
     
     return [row, col];
@@ -51,6 +58,8 @@ export function SpreadsheetView() {
   const [numCols, setNumCols] = useState(COLS);
   const [activeCell, setActiveCell] = useState<{ row: number; col: number } | null>(null);
   const [formulaBarValue, setFormulaBarValue] = useState('');
+  const formulaInputRef = React.useRef<HTMLInputElement>(null);
+
 
   const handleCellChange = (row: number, col: number, value: string) => {
     const newGridData = [...gridData];
@@ -114,6 +123,20 @@ export function SpreadsheetView() {
     }
   }, [activeCell, gridData]);
 
+  const handleSumClick = () => {
+    if (activeCell) {
+        const newValue = '=SUM()';
+        setFormulaBarValue(newValue);
+        handleCellChange(activeCell.row, activeCell.col, newValue);
+        setTimeout(() => {
+            if (formulaInputRef.current) {
+                formulaInputRef.current.focus();
+                formulaInputRef.current.setSelectionRange(5, 5);
+            }
+        }, 0);
+    }
+  }
+
   return (
     <div className="w-full h-full flex flex-col gap-4">
         <div className="flex gap-2">
@@ -129,7 +152,7 @@ export function SpreadsheetView() {
              <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                         <Button variant="ghost" size="icon" className="text-muted-foreground">
+                         <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={handleSumClick}>
                             <Sigma className="h-5 w-5"/>
                         </Button>
                     </TooltipTrigger>
@@ -148,6 +171,7 @@ export function SpreadsheetView() {
             </TooltipProvider>
 
             <Input 
+                ref={formulaInputRef}
                 value={formulaBarValue}
                 onChange={handleFormulaBarChange}
                 placeholder={activeCell ? `${colToLetter(activeCell.col)}${activeCell.row + 1}` : 'Select a cell to edit'}
