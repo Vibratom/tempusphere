@@ -24,8 +24,9 @@ const initialNodes: Node[] = [
   { id: 'root', text: 'My Project Idea', x: 0, y: 0 },
 ];
 
-const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTask, isSelected, onSelect }: {
+const NodeComponent = ({ node, onUpdate, onUpdateText, onAddChild, onDelete, onConvertToTask, isSelected, onSelect }: {
     node: Node;
+    onUpdate: (id: string, newPos: { x: number, y: number }) => void;
     onUpdateText: (id: string, text: string) => void;
     onAddChild: (parentId: string) => void;
     onDelete: (id: string) => void;
@@ -35,9 +36,7 @@ const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTa
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(node.text);
-  const x = useMotionValue(node.x);
-  const y = useMotionValue(node.y);
-
+  
   const handleUpdate = () => {
     onUpdateText(node.id, editText);
     setIsEditing(false);
@@ -47,7 +46,7 @@ const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTa
     <motion.div
         layout
         initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
+        animate={{ opacity: 1, scale: 1, x: node.x, y: node.y }}
         exit={{ opacity: 0, scale: 0.5 }}
         drag
         dragMomentum={false}
@@ -56,13 +55,11 @@ const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTa
             node.id === 'root' ? 'bg-primary text-primary-foreground' : 'bg-card text-card-foreground border',
             isSelected && "ring-2 ring-accent"
         )}
-        style={{ x, y }}
         onDragEnd={(event, info) => {
-            // This is a simple update. For a more robust solution, you might want to update this in the parent state.
-            node.x = info.point.x;
-            node.y = info.point.y;
+            onUpdate(node.id, { x: node.x + info.offset.x, y: node.y + info.offset.y });
         }}
-        onClick={() => onSelect(node.id)}
+        onClick={(e) => { e.stopPropagation(); onSelect(node.id); }}
+        onDoubleClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
     >
       {isEditing ? (
         <Input
@@ -72,9 +69,10 @@ const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTa
           onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
           autoFocus
           className="w-40"
+          onClick={(e) => e.stopPropagation()}
         />
       ) : (
-        <div onDoubleClick={() => setIsEditing(true)} className="p-2 w-40 truncate">
+        <div className="p-2 w-40 truncate">
           {node.text}
         </div>
       )}
@@ -91,9 +89,15 @@ const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTa
 };
 
 const Line = ({ fromNode, toNode }: { fromNode: Node, toNode: Node }) => {
+    const fromX = fromNode.x + 80; // center of the node
+    const fromY = fromNode.y + 25; // middle of the node
+    const toX = toNode.x + 80;
+    const toY = toNode.y + 25;
+    
+    // Simple straight line for now
     return (
         <motion.path
-            d={`M ${fromNode.x + 80} ${fromNode.y + 25} Q ${fromNode.x + 80} ${toNode.y + 25}, ${toNode.x + 80} ${toNode.y + 25}`}
+            d={`M ${fromX} ${fromY} L ${toX} ${toY}`}
             stroke="hsl(var(--border))"
             strokeWidth="2"
             fill="none"
@@ -110,21 +114,29 @@ export function MindMapView() {
   const { toast } = useToast();
   
   const [scale, setScale] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const panX = useMotionValue(0);
+  const panY = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleAddChild = (parentId: string) => {
     const parentNode = nodes.find(n => n.id === parentId);
     if (!parentNode) return;
+    
+    const childrenCount = nodes.filter(n => n.parentId === parentId).length;
+
     const newNode: Node = {
       id: `node-${Date.now()}`,
       text: 'New Idea',
-      x: parentNode.x + 200,
-      y: parentNode.y + (nodes.filter(n => n.parentId === parentId).length * 100),
+      x: parentNode.x + 250,
+      y: parentNode.y + (childrenCount * 100),
       parentId: parentId,
     };
     setNodes([...nodes, newNode]);
   };
+
+  const handleUpdateNodePosition = (id: string, newPos: { x: number, y: number }) => {
+      setNodes(nodes.map(n => (n.id === id ? { ...n, x: newPos.x, y: newPos.y } : n)));
+  }
 
   const handleUpdateText = (id: string, text: string) => {
     setNodes(nodes.map(n => n.id === id ? { ...n, text } : n));
@@ -188,20 +200,12 @@ export function MindMapView() {
 
   return (
     <Card className="w-full h-full flex flex-col">
-        <CardContent className="p-0 flex-1 relative overflow-hidden" ref={containerRef} onClick={(e) => {
-            if(e.target === containerRef.current || (e.target as HTMLElement).classList.contains('mindmap-canvas')) {
-                setSelectedNodeId(null);
-            }
-        }}>
+        <CardContent className="p-0 flex-1 relative overflow-hidden" ref={containerRef} onClick={() => setSelectedNodeId(null)}>
            <motion.div 
-             className="mindmap-canvas absolute top-0 left-0 w-full h-full"
-             drag 
-             dragMomentum={false}
-             style={{ scale, x: pan.x, y: pan.y }}
-             onDrag={(event, info) => {
-                setPan({x: pan.x + info.delta.x, y: pan.y + info.delta.y})
-             }}
+             className="mindmap-canvas absolute top-0 left-0 w-full h-full origin-top-left"
+             style={{ scale, x: panX, y: panY }}
            >
+             <motion.div className="w-full h-full" drag dragMomentum={false}>
                 <svg className="absolute w-full h-full pointer-events-none" style={{ top: 0, left: 0, overflow: 'visible' }}>
                     {nodes.map(node => {
                         const parent = nodes.find(p => p.id === node.parentId);
@@ -213,6 +217,7 @@ export function MindMapView() {
                     <NodeComponent
                     key={node.id}
                     node={node}
+                    onUpdate={handleUpdateNodePosition}
                     onUpdateText={handleUpdateText}
                     onAddChild={handleAddChild}
                     onDelete={handleDelete}
@@ -221,17 +226,18 @@ export function MindMapView() {
                     onSelect={setSelectedNodeId}
                     />
                 ))}
+              </motion.div>
             </motion.div>
 
-            <div className="absolute top-4 right-4 flex flex-col gap-2">
+            <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
                 <Button variant="outline" size="icon" onClick={() => handleZoom('in')}><ZoomIn/></Button>
                 <Button variant="outline" size="icon" onClick={() => handleZoom('out')}><ZoomOut/></Button>
                 <div className="p-2 bg-muted/80 text-muted-foreground rounded-md text-xs font-mono text-center">
                     {Math.round(scale * 100)}%
                 </div>
             </div>
-             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-muted/80 p-2 rounded-lg text-sm text-muted-foreground">
-                <p><strong>Double-click</strong> to edit. <strong>Click</strong> a node to see options. <strong>Drag</strong> background to pan. <strong>Ctrl + Scroll</strong> to zoom.</p>
+             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-muted/80 p-2 rounded-lg text-sm text-muted-foreground z-10">
+                <p><strong>Double-click</strong> to edit. <strong>Click</strong> a node for options. <strong>Drag</strong> background to pan. <strong>Ctrl + Scroll</strong> to zoom.</p>
             </div>
         </CardContent>
     </Card>
