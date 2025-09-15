@@ -14,8 +14,8 @@ import { ChecklistProvider } from '@/contexts/ChecklistContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectsProvider } from '@/contexts/ProjectsContext';
 import { ProjectListView } from '@/components/projects/ProjectListView';
-import { ProjectCalendarView } from '@/components/projects/ProjectCalendarView';
 import { GanttChartView } from '@/components/projects/GanttChartView';
+import { CalendarPanel } from '@/components/tempusphere/CalendarPanel';
 
 const PlaceholderTool = ({ name, icon: Icon }: { name: string, icon: React.ComponentType<any> }) => (
     <Card className="w-full h-full flex flex-col items-center justify-center text-center p-8">
@@ -61,7 +61,7 @@ function ProjectsContent() {
                               <ResponsiveTabsTrigger value="canvas" icon={DraftingCompass}>Canvas</ResponsiveTabsTrigger>
                           </TabsList>
                           <TabsContent value="calendar-view" className="mt-4 flex-1 flex flex-col">
-                              <ProjectCalendarView />
+                              <CalendarPanel />
                           </TabsContent>
                           <TabsContent value="board" className="mt-4 flex-1 flex flex-col">
                               <ProjectsApp />

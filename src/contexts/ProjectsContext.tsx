@@ -8,6 +8,7 @@ import { Base64 } from 'js-base64';
 import { OnDragEndResponder } from '@hello-pangea/dnd';
 import { create } from 'zustand';
 import Peer, { Instance as PeerInstance } from 'simple-peer';
+import { useCalendar } from './CalendarContext';
 
 export type Priority = 'none' | 'low' | 'medium' | 'high';
 
@@ -226,6 +227,39 @@ export const useProjects = create<ProjectsState>((set, get) => ({
   },
 }));
 
+const ProjectTaskSync = () => {
+    const { board } = useProjects();
+    const { addEvent, removeEventsBySourceId, updateEventsBySourceId } = useCalendar();
+    
+    // Sync logic to update calendar events when project tasks change
+    React.useEffect(() => {
+        // This is a simple implementation. A more robust one would diff changes.
+        // For now, we clear and re-add all project-related tasks.
+        
+        // 1. Remove all old 'Work' events
+        useCalendar.getState().setEvents(prev => prev.filter(e => e.type !== 'Work'));
+
+        // 2. Add all current tasks from board
+        Object.values(board.tasks).forEach(task => {
+            if (task.dueDate) {
+                addEvent({
+                    date: task.dueDate,
+                    time: '09:00', // Default time for tasks
+                    title: task.title,
+                    description: `Project Task: ${task.description || ''}`,
+                    color: 'purple',
+                    type: 'Work',
+                    sourceId: task.id
+                });
+            }
+        });
+
+    }, [board.tasks, addEvent]);
+
+    return null;
+}
+
+
 // This provider component is now simpler. It ensures the hook is initialized from localStorage.
 export function ProjectsProvider({ children }: { children: ReactNode }) {
     const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV2', initialData);
@@ -245,5 +279,5 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     }, [setBoard]);
 
 
-  return <>{children}</>;
+  return <><ProjectTaskSync />{children}</>;
 }
