@@ -10,7 +10,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle } from 'lucide-react';
+import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle, Users, Milestone, CalendarClock, GitBranch } from 'lucide-react';
 
 const diagramTemplates = {
   flowchart: `flowchart TD
@@ -77,7 +77,63 @@ const diagramTemplates = {
     section Another
     Task in sec      :2014-01-12  , 12d
     another task      : 24d
-`
+`,
+  uiFlow: `flowchart LR
+    subgraph "User Login Flow"
+        A[Start: User visits Login Page] --> B{Enters credentials};
+        B --> C[Clicks 'Log In' button];
+        C --> D{API: Authenticate user};
+        D -- Success --> E[Redirect to Dashboard];
+        D -- Failure --> F[Show 'Invalid credentials' error];
+        F --> B;
+        E --> G[End: User is logged in];
+    end
+`,
+  decisionTree: `flowchart TD
+    A{Should I deploy on Friday?}
+    A -- Yes --> B{Is there a critical bug fix?};
+    A -- No --> C[Enjoy the weekend!];
+    
+    B -- Yes --> D[Deploy with monitoring];
+    B -- No --> E{Can it wait until Monday?};
+    
+    E -- Yes --> F[Schedule for Monday morning];
+    E -- No --> G[Deploy... but be ready for a long night];
+`,
+  orgChart: `flowchart TD
+    subgraph "Executive Team"
+        A(CEO)
+    end
+    subgraph "Product Division"
+        B(Head of Product)
+        C(Product Manager)
+        D(UX/UI Designer)
+    end
+    subgraph "Engineering Division"
+        E(CTO)
+        F(Engineering Lead)
+        G[Developer 1]
+        H[Developer 2]
+    end
+    A --> B;
+    A --> E;
+    B --> C;
+    B --> D;
+    E --> F;
+    F --> G;
+    F --> H;
+`,
+  timeline: `timeline
+    title Project Development Timeline
+    2024-07-01 : Kick-off & Brainstorming
+    2024-07-15 : UI/UX Design Phase
+             : Initial Mockups
+             : User Feedback Session
+    2024-08-01 : Development Sprint 1
+             : Backend Setup
+             : Frontend Components
+    2024-08-15 : Launch Beta Version
+`,
 };
 
 export function FlowchartView() {
@@ -164,6 +220,10 @@ export function FlowchartView() {
               <Button variant="outline" onClick={() => setCode(diagramTemplates.er)}><Database className="mr-2"/>ER Diagram</Button>
               <Button variant="outline" onClick={() => setCode(diagramTemplates.pie)}><PieChart className="mr-2"/>Pie Chart</Button>
               <Button variant="outline" onClick={() => setCode(diagramTemplates.gantt)}><GanttChart className="mr-2"/>Gantt</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.uiFlow)}><Milestone className="mr-2"/>UI Flow</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.decisionTree)}><GitBranch className="mr-2"/>Decision Tree</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.orgChart)}><Users className="mr-2"/>Org Chart</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.timeline)}><CalendarClock className="mr-2"/>Timeline</Button>
           </CardContent>
       </Card>
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
