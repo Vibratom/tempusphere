@@ -235,6 +235,7 @@ export function RecipesApp() {
   const [viewingRecipe, setViewingRecipe] = useState<Recipe | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [showStarterCookbook, setShowStarterCookbook] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   useEffect(() => {
     setIsClient(true);
@@ -277,6 +278,12 @@ export function RecipesApp() {
     setRecipes(recipes.filter(r => r.id !== recipeId));
     setViewingRecipe(null); // Go back to the main list
   }
+  
+  const filteredRecipes = recipes.filter(recipe => 
+      recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      recipe.description.toLowerCase().includes(searchQuery.toLowerCase())
+  ).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
 
   if (!isClient) {
       return (
@@ -344,17 +351,26 @@ export function RecipesApp() {
           </Dialog>
 
           <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <CardTitle>My Cookbook</CardTitle>
-                <div className="flex gap-2">
+                <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                          placeholder="Search recipes..." 
+                          className="pl-8"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                  </div>
                   <Button variant="outline" onClick={() => setShowStarterCookbook(true)}><ChefHat className="mr-2"/>Get Inspired</Button>
                   <Button onClick={() => setEditingRecipe(null)}><Plus className="mr-2"/>Add New Recipe</Button>
                 </div>
               </CardHeader>
               <CardContent>
-                  {recipes.length > 0 ? (
+                  {filteredRecipes.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {recipes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(recipe => (
+                          {filteredRecipes.map(recipe => (
                               <Card key={recipe.id} className="flex flex-col hover:shadow-lg transition-shadow">
                                   <CardHeader>
                                       {recipe.imageUrl && (
@@ -374,8 +390,8 @@ export function RecipesApp() {
                   ) : (
                       <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
                           <BookOpen className="w-16 h-16 mb-4" />
-                          <h3 className="text-xl font-semibold">Your Cookbook is Empty</h3>
-                          <p className="text-sm">Add a new recipe or choose one from the starters.</p>
+                          <h3 className="text-xl font-semibold">{recipes.length > 0 ? 'No Recipes Found' : 'Your Cookbook is Empty'}</h3>
+                          <p className="text-sm">{recipes.length > 0 ? 'Try a different search term.' : 'Add a new recipe or choose one from the starters.'}</p>
                       </div>
                   )}
               </CardContent>
@@ -388,5 +404,3 @@ export function RecipesApp() {
     </RecipesContext.Provider>
   );
 }
-
-    
