@@ -26,8 +26,8 @@ const priorityColors: Record<Priority, string> = {
 
 const zoomLevels = [
     { name: 'Quarter', days: 365, columnWidth: 20 },
-    { name: 'Month', days: 180, columnWidth: 25 },
-    { name: 'Week', days: 90, columnWidth: 35 },
+    { name: 'Month', days: 180, columnWidth: 30 },
+    { name: 'Week', days: 90, columnWidth: 40 },
     { name: 'Day', days: 30, columnWidth: 50 },
 ];
 
@@ -65,7 +65,13 @@ export function GanttChartView() {
 
     const handleDateChange = (direction: 'prev' | 'next') => {
         const amount = direction === 'prev' ? -1 : 1;
-        setCurrentDate(current => addMonths(current, amount));
+        const zoomInfo = zoomLevels[zoomLevel];
+        let moveAmount = 1;
+        if(zoomInfo.name === 'Week') moveAmount = 1;
+        if(zoomInfo.name === 'Month') moveAmount = 2;
+        if(zoomInfo.name === 'Quarter') moveAmount = 6;
+        
+        setCurrentDate(current => addMonths(current, amount * moveAmount));
     };
     
     const handleZoom = (direction: 'in' | 'out') => {
@@ -123,7 +129,7 @@ export function GanttChartView() {
                                 isToday(date) && "bg-primary/20",
                                 isWeekend(date) && "bg-muted/50",
                             )}>
-                                {zoomLevels[zoomLevel].name === 'Day' && <div className="text-xs">{format(date, 'E')}</div>}
+                                <div className="text-xs">{format(date, 'E')}</div>
                                 <div className="font-semibold">{format(date, 'd')}</div>
                             </div>
                         ))}
@@ -140,11 +146,11 @@ export function GanttChartView() {
         todayPosition = todayIndex + (now.getHours() * 60 + now.getMinutes()) / (24 * 60);
     }
     
-    const taskColWidth = 'minmax(120px, 1fr)';
-    const stickyLeft = '120px';
+    const taskColWidth = 'minmax(150px, 1fr)';
+    const stickyLeft = '150px';
 
     return (
-        <Card className="h-[80vh] flex flex-col">
+        <Card className="flex flex-col">
             <CardHeader className="flex-col md:flex-row items-center justify-between flex-shrink-0 gap-4">
                 <div className="text-center md:text-left">
                     <CardTitle>Gantt Chart</CardTitle>
@@ -164,8 +170,8 @@ export function GanttChartView() {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="flex-1 overflow-hidden">
-                <ScrollArea className="w-full h-full">
+            <CardContent>
+                <ScrollArea className="w-full">
                     <div className="grid min-w-max relative" style={{ gridTemplateColumns: `${taskColWidth} ${gridTemplateColumns}`, gridAutoRows: 'minmax(2.5rem, auto)' }}>
                         {/* Headers */}
                         <div className="font-semibold p-2 border-b border-r bg-background sticky top-0 left-0 z-30" style={{gridRow: '1 / span 2'}}>Task</div>
@@ -254,5 +260,7 @@ export function GanttChartView() {
         </Card>
     )
 }
+
+    
 
     
