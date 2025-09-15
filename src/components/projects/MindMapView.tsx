@@ -341,8 +341,12 @@ export function MindMapView() {
                     key={node.id}
                     drag
                     onDragEnd={(event, info) => {
-                        const newX = Math.round(info.point.x / GRID_SIZE) * GRID_SIZE;
-                        const newY = Math.round(info.point.y / GRID_SIZE) * GRID_SIZE;
+                        const rect = canvasRef.current!.getBoundingClientRect();
+                        const x = info.point.x - rect.left;
+                        const y = info.point.y - rect.top;
+                        
+                        const newX = Math.round(x / GRID_SIZE) * GRID_SIZE;
+                        const newY = Math.round(y / GRID_SIZE) * GRID_SIZE;
 
                         setNodes(
                             nodes.map(n =>
