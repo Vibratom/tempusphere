@@ -59,7 +59,7 @@ export function SpreadsheetView() {
       setHistoryIndex(newIndex);
       setGridData(history[newIndex]);
     }
-  }, [history, historyIndex]);
+  }, [history, historyIndex, setGridData]);
 
   const handleRedo = useCallback(() => {
     if (historyIndex < history.length - 1) {
@@ -67,7 +67,7 @@ export function SpreadsheetView() {
       setHistoryIndex(newIndex);
       setGridData(history[newIndex]);
     }
-  }, [history, historyIndex]);
+  }, [history, historyIndex, setGridData]);
 
 
   const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
@@ -94,9 +94,15 @@ export function SpreadsheetView() {
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!activeCell) return;
+    const { row: activeRow, col: activeCol } = activeCell;
 
     if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
+            case 'a':
+                e.preventDefault();
+                setActiveCell({ row: 0, col: 0 });
+                setSelection({ start: { row: 0, col: 0 }, end: { row: numRows - 1, col: numCols - 1 }});
+                break;
             case 'c':
                 handleCopy();
                 break;
@@ -126,6 +132,14 @@ export function SpreadsheetView() {
                 e.preventDefault();
                 toggleFormatting('underline');
                 break;
+            case 'd':
+                e.preventDefault();
+                handleFillDown();
+                break;
+            case 'r':
+                e.preventDefault();
+                handleFillRight();
+                break;
             default:
                 return;
         }
@@ -134,39 +148,39 @@ export function SpreadsheetView() {
     
     if (isEditing) return;
 
-    let nextRow = activeCell.row;
-    let nextCol = activeCell.col;
+    let nextRow = activeRow;
+    let nextCol = activeCol;
 
     switch (e.key) {
         case 'Enter':
             e.preventDefault();
-            nextRow = e.shiftKey ? Math.max(0, activeCell.row - 1) : Math.min(numRows - 1, activeCell.row + 1);
+            nextRow = e.shiftKey ? Math.max(0, activeRow - 1) : Math.min(numRows - 1, activeRow + 1);
             break;
         case 'Tab':
             e.preventDefault();
             if (e.shiftKey) {
-                if (activeCell.col > 0) nextCol = activeCell.col - 1;
-                else if (activeCell.row > 0) { nextRow = activeCell.row - 1; nextCol = numCols - 1; }
+                if (activeCol > 0) nextCol = activeCol - 1;
+                else if (activeRow > 0) { nextRow = activeRow - 1; nextCol = numCols - 1; }
             } else {
-                if (activeCell.col < numCols - 1) nextCol = activeCell.col + 1;
-                else if (activeCell.row < numRows - 1) { nextRow = activeCell.row + 1; nextCol = 0; }
+                if (activeCol < numCols - 1) nextCol = activeCol + 1;
+                else if (activeRow < numRows - 1) { nextRow = activeRow + 1; nextCol = 0; }
             }
             break;
         case 'ArrowDown':
             e.preventDefault();
-            nextRow = Math.min(numRows - 1, activeCell.row + 1);
+            nextRow = Math.min(numRows - 1, activeRow + 1);
             break;
         case 'ArrowUp':
             e.preventDefault();
-            nextRow = Math.max(0, activeCell.row - 1);
+            nextRow = Math.max(0, activeRow - 1);
             break;
         case 'ArrowLeft':
             e.preventDefault();
-            nextCol = Math.max(0, activeCell.col - 1);
+            nextCol = Math.max(0, activeCol - 1);
             break;
         case 'ArrowRight':
             e.preventDefault();
-            nextCol = Math.min(numCols - 1, activeCell.col + 1);
+            nextCol = Math.min(numCols - 1, activeCol + 1);
             break;
         default:
             if(e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -220,12 +234,11 @@ export function SpreadsheetView() {
 
   const toggleFormatting = (format: 'bold' | 'italic' | 'underline') => {
     const range = getSelectionRange();
-    if (!range) return;
+    if (!range || !activeCell) return;
 
     const { minRow, maxRow, minCol, maxCol } = range;
     
-    // Determine the new format state based on the active cell
-    const activeCellData = gridData[activeCell!.row][activeCell!.col];
+    const activeCellData = gridData[activeCell.row][activeCell.col];
     const newFormatState = !activeCellData[format];
 
     const newGridData = gridData.map((row, rIdx) => {
@@ -296,6 +309,37 @@ export function SpreadsheetView() {
         setClipboard(null);
     }
   };
+
+  const handleFillDown = () => {
+    const range = getSelectionRange();
+    if (!range) return;
+    const { minRow, maxRow, minCol, maxCol } = range;
+
+    const newGridData = [...gridData.map(row => [...row])];
+    for (let col = minCol; col <= maxCol; col++) {
+      const sourceCell = newGridData[minRow][col];
+      for (let row = minRow + 1; row <= maxRow; row++) {
+        newGridData[row][col] = { ...sourceCell };
+      }
+    }
+    updateGridData(newGridData);
+  };
+
+  const handleFillRight = () => {
+    const range = getSelectionRange();
+    if (!range) return;
+    const { minRow, maxRow, minCol, maxCol } = range;
+
+    const newGridData = [...gridData.map(row => [...row])];
+    for (let row = minRow; row <= maxRow; row++) {
+      const sourceCell = newGridData[row][minCol];
+      for (let col = minCol + 1; col <= maxCol; col++) {
+        newGridData[row][col] = { ...sourceCell };
+      }
+    }
+    updateGridData(newGridData);
+  };
+
 
   useEffect(() => {
     cellRefs.current = Array(numRows).fill(null).map(() => Array(numCols).fill(null));
@@ -418,3 +462,5 @@ export function SpreadsheetView() {
     </div>
   );
 }
+
+    
