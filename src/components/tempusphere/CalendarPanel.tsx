@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Calendar } from '../ui/calendar';
 import { format, parseISO, startOfDay } from 'date-fns';
@@ -37,6 +37,11 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
   const [newEventDescription, setNewEventDescription] = useState('');
   const [newEventColor, setNewEventColor] = useState(eventColors[0]);
   const [activeTab, setActiveTab] = useState<EventType | 'All'>('All');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleAddEvent = () => {
     if (newEventTitle && selectedDate) {
@@ -72,6 +77,7 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
   const dayWithEventsModifier = Object.keys(eventsByDay).map(dateStr => parseISO(dateStr));
   
   const EventDots = ({date}: {date: Date}) => {
+    if (!isClient) return null; // Prevent rendering on server
     const dayKey = format(date, 'yyyy-MM-dd');
     const dayEvents = eventsByDay[dayKey];
     if(!dayEvents) return null;
@@ -96,12 +102,28 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
         className={cn("rounded-md border", fullscreen && 'shadow-lg', glass && 'bg-black/10 border-white/20')}
         modifiers={{ withEvents: dayWithEventsModifier }}
         components={{
-            Day: ({ date, ...props }) => (
-                <div className="relative h-full">
-                    <p>{date.getDate()}</p>
-                    <EventDots date={date}/>
-                </div>
-            ) as any,
+            Day: ({ date, ...props }) => {
+                const dayContent = (
+                    <div className="relative h-full w-full flex items-center justify-center">
+                        <p>{date.getDate()}</p>
+                        <EventDots date={date}/>
+                    </div>
+                );
+                // The Day component from react-day-picker needs a button as its root element for accessibility and functionality.
+                // We're wrapping our custom content inside the structure react-day-picker expects.
+                return (
+                    <button
+                        {...props}
+                        // We must spread the props to pass down things like aria-label, disabled state, etc.
+                        // We remove the children from props to replace it with our custom dayContent
+                        // and also remove style if it exists to avoid conflicts with tailwind classes
+                        // @ts-ignore
+                        style={{...props.style, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%'}}
+                    >
+                        {dayContent}
+                    </button>
+                )
+            }
         }}
         modifiersClassNames={{
             withEvents: 'has-events'
@@ -122,11 +144,11 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
       <CardHeader>
         <CardTitle>Calendar</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col lg:flex-row gap-4 p-4">
+      <CardContent className="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
         <div className="flex justify-center">
             {calendarComponent}
         </div>
-        <div className="flex-1 flex flex-col gap-4">
+        <div className="flex-1 flex flex-col gap-4 overflow-hidden">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="All">All</TabsTrigger>
