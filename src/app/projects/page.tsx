@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectsProvider } from '@/contexts/ProjectsContext';
 import { ProjectListView } from '@/components/projects/ProjectListView';
 import { ProjectCalendarView } from '@/components/projects/ProjectCalendarView';
+import { GanttChartView } from '@/components/projects/GanttChartView';
 
 const PlaceholderTool = ({ name, icon: Icon }: { name: string, icon: React.ComponentType<any> }) => (
     <Card className="w-full h-full flex flex-col items-center justify-center text-center p-8">
@@ -68,7 +69,7 @@ function ProjectsContent() {
                             <ProjectCalendarView />
                         </TabsContent>
                         <TabsContent value="gantt" className="mt-4">
-                            <PlaceholderTool name="Gantt Chart" icon={BarChartHorizontal} />
+                            <GanttChartView />
                         </TabsContent>
                         <TabsContent value="mindmap" className="mt-4">
                             <PlaceholderTool name="Mind Map" icon={BrainCircuit} />

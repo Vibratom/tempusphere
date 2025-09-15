@@ -1,0 +1,224 @@
+
+'use client';
+
+import React, { useMemo, useState } from 'react';
+import { useProjects, Priority, TaskCard } from '@/contexts/ProjectsContext';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { Button } from '../ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { ScrollArea } from '../ui/scroll-area';
+import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
+import { format, addDays, differenceInDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+
+const priorityColors: Record<Priority, string> = {
+    none: 'bg-muted-foreground/50',
+    low: 'bg-blue-500',
+    medium: 'bg-yellow-500',
+    high: 'bg-red-500',
+};
+
+type GanttViewMode = 'day' | 'week' | 'month';
+
+export function GanttChartView() {
+    const { board } = useProjects();
+    const [viewMode, setViewMode] = useState<GanttViewMode>('month');
+    const [currentDate, setCurrentDate] = useState(new Date());
+
+    const tasks = useMemo(() => {
+        return Object.values(board.tasks)
+            .filter(task => task.dueDate)
+            .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+    }, [board.tasks]);
+
+    const { dateRange, gridTemplateColumns } = useMemo(() => {
+        let start, end;
+        switch (viewMode) {
+            case 'day':
+                start = addDays(currentDate, -15);
+                end = addDays(currentDate, 15);
+                break;
+            case 'week':
+                start = startOfWeek(addDays(currentDate, -14));
+                end = endOfWeek(addDays(currentDate, 14));
+                break;
+            case 'month':
+            default:
+                start = startOfMonth(currentDate);
+                end = endOfMonth(currentDate);
+                break;
+        }
+        const dateRange = eachDayOfInterval({ start, end });
+        const gridTemplateColumns = viewMode === 'week' 
+            ? `repeat(${dateRange.length / 7}, minmax(140px, 1fr))` 
+            : `repeat(${dateRange.length}, minmax(40px, 1fr))`;
+        
+        return { dateRange, gridTemplateColumns };
+    }, [viewMode, currentDate]);
+
+
+    const handleDateChange = (direction: 'prev' | 'next') => {
+        const amount = direction === 'prev' ? -1 : 1;
+        switch (viewMode) {
+            case 'day':
+                setCurrentDate(addDays(currentDate, amount * 15));
+                break;
+            case 'week':
+                setCurrentDate(addDays(currentDate, amount * 7));
+                break;
+            case 'month':
+                setCurrentDate(prev => new Date(prev.setMonth(prev.getMonth() + amount)));
+                break;
+        }
+    };
+    
+    const getTaskPosition = (task: TaskCard) => {
+        if (!task.dueDate) return { gridColumnStart: 0, gridColumnEnd: 0 };
+        const startDate = parseISO(task.dueDate);
+        
+        // For simplicity, tasks have a fixed duration. Could be extended with start/end dates.
+        const taskDurationDays = 2; 
+
+        const startIndex = differenceInDays(startDate, dateRange[0]);
+        if (startIndex < 0 || startIndex >= dateRange.length) return null;
+        
+        const endIndex = Math.min(startIndex + taskDurationDays, dateRange.length);
+
+        return {
+            gridColumnStart: startIndex + 1,
+            gridColumnEnd: endIndex + 1
+        }
+    }
+    
+    const getTaskStatus = (taskId: string) => {
+        const column = Object.values(board.columns).find(c => c.taskIds.includes(taskId));
+        return column ? column.title : 'Unassigned';
+    };
+
+
+    const Header = () => {
+        if (viewMode === 'week') {
+            const weeks = [];
+            for (let i = 0; i < dateRange.length; i += 7) {
+                weeks.push(dateRange[i]);
+            }
+            return (
+                <>
+                    {weeks.map(weekStart => (
+                        <div key={weekStart.toISOString()} className="text-center border-l p-2 font-semibold">
+                            Week of {format(weekStart, 'MMM d')}
+                        </div>
+                    ))}
+                </>
+            );
+        }
+
+        return (
+            <>
+                {dateRange.map(date => (
+                    <div key={date.toISOString()} className="text-center border-l p-2">
+                        {viewMode === 'month' && <div className="text-xs">{format(date, 'E')}</div>}
+                        <div className="font-semibold">{format(date, 'd')}</div>
+                    </div>
+                ))}
+            </>
+        )
+    };
+
+
+    return (
+        <Card className="h-[75vh] flex flex-col">
+            <CardHeader className="flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Gantt Chart</CardTitle>
+                    <CardDescription>A timeline of your project tasks.</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => handleDateChange('prev')}><ChevronLeft/></Button>
+                    <span className="font-semibold text-lg w-32 text-center">{format(currentDate, 'MMM yyyy')}</span>
+                    <Button variant="outline" size="icon" onClick={() => handleDateChange('next')}><ChevronRight/></Button>
+                     <Select value={viewMode} onValueChange={(v) => setViewMode(v as GanttViewMode)}>
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="View Mode"/>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="day">Day</SelectItem>
+                            <SelectItem value="week">Week</SelectItem>
+                            <SelectItem value="month">Month</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-1 flex overflow-hidden">
+                <ScrollArea className="w-full h-full">
+                    <div className="flex">
+                        <div className="w-56 sticky left-0 bg-background z-10">
+                            <div className="h-14 flex items-center p-2 font-semibold border-b">Task</div>
+                             {tasks.map(task => (
+                                <div key={task.id} className="h-12 flex items-center p-2 border-b truncate">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger className="truncate text-left">
+                                                {task.title}
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{task.title}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex-1">
+                             <div className="grid border-b" style={{ gridTemplateColumns }}>
+                                <Header />
+                            </div>
+                            <div className="relative grid h-full" style={{ gridTemplateColumns, gridTemplateRows: `repeat(${tasks.length}, 3rem)` }}>
+                                {dateRange.map((date, i) => (
+                                    <div key={i} className="border-l h-full"></div>
+                                ))}
+                                {tasks.map((task, index) => {
+                                    const pos = getTaskPosition(task);
+                                    if (!pos) return null;
+                                    const status = getTaskStatus(task.id);
+                                    return (
+                                        <TooltipProvider key={task.id}>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div 
+                                                        className="h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden" 
+                                                        style={{ 
+                                                            gridRow: index + 1, 
+                                                            gridColumnStart: pos.gridColumnStart,
+                                                            gridColumnEnd: pos.gridColumnEnd,
+                                                            backgroundColor: `var(--${priorityColors[task.priority].replace('bg-', '')})`
+                                                        }}
+                                                    >
+                                                        <span className="truncate">{task.title}</span>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p className="font-bold">{task.title}</p>
+                                                    <p>Due: {format(parseISO(task.dueDate!), 'PPP')}</p>
+                                                    <p>Status: {status}</p>
+                                                    <div className="flex items-center gap-2">Priority: <Flag className={cn("h-4 w-4", priorityColors[task.priority].replace('bg-','text-'))} /> <span className="capitalize">{task.priority}</span></div>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
+    )
+}
