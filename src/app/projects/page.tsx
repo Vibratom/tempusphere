@@ -30,9 +30,9 @@ const PlaceholderTool = ({ name, icon: Icon }: { name: string, icon: React.Compo
 );
 
 const ResponsiveTabsTrigger = ({ value, icon: Icon, children }: { value: string, icon: React.ElementType, children: React.ReactNode }) => (
-    <TabsTrigger value={value} className="flex-col h-auto gap-1 md:flex-row md:gap-2">
+    <TabsTrigger value={value} className="flex-col h-auto gap-1 p-2 md:p-3 lg:flex-row lg:gap-2">
         <Icon className="w-5 h-5" />
-        <span className="hidden md:inline">{children}</span>
+        <span className="hidden lg:inline text-xs">{children}</span>
     </TabsTrigger>
 );
 
@@ -47,7 +47,7 @@ function ProjectsContent() {
                 <Header />
                 <main className="flex-1 flex flex-col items-center p-4 md:p-8">
                     <Tabs defaultValue="board" className="w-full max-w-7xl">
-                        <TabsList className="grid w-full grid-cols-8 md:grid-cols-4 lg:grid-cols-8">
+                        <TabsList className="grid w-full grid-cols-8 md:grid-cols-8 lg:grid-cols-8">
                             <ResponsiveTabsTrigger value="board" icon={KanbanSquare}>Board</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="list" icon={List}>List</ResponsiveTabsTrigger>
                             <ResponsiveTabsTrigger value="gantt" icon={BarChartHorizontal}>Gantt</ResponsiveTabsTrigger>
