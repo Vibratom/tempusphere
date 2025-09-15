@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { format, parseISO, startOfDay, isSameDay, isToday, isFuture, addDays, differenceInDays, differenceInSeconds } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Flag, Plus, Edit, Trash2, GripVertical, CheckCircle, Calendar as CalendarIconLucide, FastForward } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Button, buttonVariants } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
 import {
   AlertDialog,
@@ -448,8 +448,8 @@ export function ProjectCalendarView() {
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <Card className="xl:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-6">
+                <Card className="lg:col-span-1">
                     <CardContent className="p-2 sm:p-4">
                         <Calendar
                             mode="single"
@@ -652,3 +652,4 @@ export function ProjectCalendarView() {
     
 
     
+
