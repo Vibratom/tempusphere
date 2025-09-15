@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction } from 'react';
+import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 export type EventType = 'Personal' | 'Work';
@@ -32,26 +32,26 @@ const CalendarContext = createContext<CalendarContextType | undefined>(undefined
 export function CalendarProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useLocalStorage<CalendarEvent[]>('calendar:eventsV3', []);
 
-  const addEvent = (event: Omit<CalendarEvent, 'id'>) => {
+  const addEvent = useCallback((event: Omit<CalendarEvent, 'id'>) => {
     const newEvent = { ...event, id: `evt-${Date.now()}` };
     setEvents(prev => [...prev, newEvent].sort((a,b) => a.time.localeCompare(b.time)));
-  };
+  }, [setEvents]);
 
-  const removeEvent = (eventId: string) => {
+  const removeEvent = useCallback((eventId: string) => {
     setEvents(prev => prev.filter(e => e.id !== eventId));
-  };
-
-  const removeEventsBySourceId = (sourceId: string) => {
-    setEvents(prev => prev.filter(e => e.sourceId !== sourceId));
-  }
+  }, [setEvents]);
   
-  const updateEvent = (updatedEvent: CalendarEvent) => {
+  const removeEventsBySourceId = useCallback((sourceId: string) => {
+    setEvents(prev => prev.filter(e => e.sourceId !== sourceId));
+  }, [setEvents]);
+  
+  const updateEvent = useCallback((updatedEvent: CalendarEvent) => {
     setEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEvent : e).sort((a,b) => a.time.localeCompare(b.time)));
-  }
+  }, [setEvents]);
 
-  const updateEventsBySourceId = (sourceId: string, updates: Partial<CalendarEvent>) => {
+  const updateEventsBySourceId = useCallback((sourceId: string, updates: Partial<CalendarEvent>) => {
     setEvents(prev => prev.map(e => e.sourceId === sourceId ? { ...e, ...updates } : e).sort((a,b) => a.time.localeCompare(b.time)));
-  }
+  }, [setEvents]);
 
   const value = {
     events,
