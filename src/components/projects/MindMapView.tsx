@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { motion, useMotionValue } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { X, Palette, Download, Upload, Image as ImageIcon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '../ui/button';
@@ -40,9 +40,41 @@ const defaultColor = 'hsl(var(--card))';
 const darkAwareDefaultColor = '#ffffff';
 const GRID_SIZE = 20;
 
+const getConnectorPoints = (node: Node) => {
+    if (!node) return [];
+    return [
+      { x: node.x + node.width / 2, y: node.y }, // Top
+      { x: node.x + node.width / 2, y: node.y + node.height }, // Bottom
+      { x: node.x, y: node.y + node.height / 2 }, // Left
+      { x: node.x + node.width, y: node.y + node.height / 2 }, // Right
+    ];
+};
+
+const getDistance = (p1: {x:number, y:number}, p2: {x:number, y:number}) => {
+    return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+}
+
+const getClosestPoints = (nodeA: Node, nodeB: Node) => {
+    const pointsA = getConnectorPoints(nodeA);
+    const pointsB = getConnectorPoints(nodeB);
+    let minDistance = Infinity;
+    let closestPair: [{x:number, y:number}, {x:number, y:number}] = [pointsA[0], pointsB[0]];
+
+    for (const pA of pointsA) {
+        for (const pB of pointsB) {
+            const distance = getDistance(pA, pB);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestPair = [pA, pB];
+            }
+        }
+    }
+    return closestPair;
+}
+
 export function MindMapView() {
-  const [nodes, setNodes] = useLocalStorage<Node[]>('mindmap:nodes-v3', []);
-  const [lines, setLines] = useLocalStorage<Line[]>('mindmap:lines-v3', []);
+  const [nodes, setNodes] = useLocalStorage<Node[]>('mindmap:nodes-v4', []);
+  const [lines, setLines] = useLocalStorage<Line[]>('mindmap:lines-v4', []);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -144,7 +176,7 @@ export function MindMapView() {
           case 'top': return { x: node.x + node.width / 2, y: node.y };
           case 'bottom': return { x: node.x + node.width / 2, y: node.y + node.height };
           case 'left': return { x: node.x, y: node.y + node.height / 2 };
-          case 'right': return { x: node.x + node.width, y: node.y + node.height };
+          case 'right': return { x: node.x + node.width, y: node.y + node.height / 2 };
       }
   }
   
@@ -228,10 +260,8 @@ export function MindMapView() {
             const fromNode = nodes.find(n => n.id === line.from);
             const toNode = nodes.find(n => n.id === line.to);
             if (!fromNode || !toNode) return '';
-            const fromPos = getConnectorPosition(fromNode, 'bottom');
-            const toPos = getConnectorPosition(toNode, 'top');
-            const pathData = `M ${fromPos.x - bounds.minX + padding} ${fromPos.y - bounds.minY + padding} C ${fromPos.x - bounds.minX + padding} ${fromPos.y - bounds.minY + padding + 50}, ${toPos.x - bounds.minX + padding} ${toPos.y - bounds.minY + padding - 50}, ${toPos.x - bounds.minX + padding} ${toPos.y - bounds.minY + padding}`;
-            return `<path d="${pathData}" stroke="hsl(${lineColor})" stroke-width="2" fill="none" />`;
+            const [p1, p2] = getClosestPoints(fromNode, toNode);
+            return `<line x1="${p1.x - bounds.minX + padding}" y1="${p1.y - bounds.minY + padding}" x2="${p2.x - bounds.minX + padding}" y2="${p2.y - bounds.minY + padding}" stroke="hsl(${lineColor})" stroke-width="2" />`;
         }).join('')}
         ${nodes.map(node => {
             const div = document.createElement('div');
@@ -320,19 +350,16 @@ export function MindMapView() {
                         const fromNode = nodes.find(n => n.id === line.from);
                         const toNode = nodes.find(n => n.id === line.to);
                         if (!fromNode || !toNode) return null;
+                        
+                        const [p1, p2] = getClosestPoints(fromNode, toNode);
 
-                        const fromPos = getConnectorPosition(fromNode, 'bottom');
-                        const toPos = getConnectorPosition(toNode, 'top');
-
-                        const pathData = `M ${fromPos.x} ${fromPos.y} C ${fromPos.x} ${fromPos.y + 50}, ${toPos.x} ${toPos.y - 50}, ${toPos.x} ${toPos.y}`;
-
-                        return <path key={line.id} d={pathData} stroke="hsl(var(--border))" strokeWidth="2" fill="none" />;
+                        return <line key={line.id} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="hsl(var(--border))" strokeWidth="2" />;
                     })}
                     {isConnecting && nodes.find(n => n.id === isConnecting) && (() => {
                         const fromNode = nodes.find(n => n.id === isConnecting)!;
                         const fromPos = getConnectorPosition(fromNode, 'bottom');
-                        const pathData = `M ${fromPos.x} ${fromPos.y} C ${fromPos.x} ${fromPos.y + 50}, ${mousePos.x} ${mousePos.y - 50}, ${mousePos.x} ${mousePos.y}`;
-                        return <path d={pathData} stroke="hsl(var(--primary))" strokeWidth="2" fill="none" strokeDasharray="5,5" />;
+                        
+                        return <line x1={fromPos.x} y1={fromPos.y} x2={mousePos.x} y2={mousePos.y} stroke="hsl(var(--primary))" strokeWidth="2" strokeDasharray="5,5" />;
                     })()}
                 </svg>
                 
@@ -426,7 +453,3 @@ export function MindMapView() {
     </div>
   );
 }
-
-    
-
-    
