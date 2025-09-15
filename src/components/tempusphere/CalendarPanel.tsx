@@ -56,7 +56,7 @@ const EditEventForm = ({ event, onSave, onCancel }: { event: CalendarEvent, onSa
 
 export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPanelProps) {
   const { events, addEvent, removeEvent, updateEvent, eventTypes, addEventType, removeEventType } = useCalendar();
-  const projects = useProjects();
+  const { addTask, updateTask, removeTask: removeProjectTask, board } = useProjects();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
   const [newEventTitle, setNewEventTitle] = useState('');
@@ -84,14 +84,13 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
       });
 
       if (activeTab === 'Work') {
-        const todoColumn = projects.board.columnOrder[0];
+        const todoColumn = board.columnOrder[0];
         if (todoColumn) {
-          projects.addTask(todoColumn, { 
-            id: `task-${newEvent.id}`,
+          const newTask = addTask(todoColumn, { 
             title: newEvent.title,
             dueDate: newEvent.date,
           }, true);
-          updateEvent({ ...newEvent, sourceId: `task-${newEvent.id}` });
+          updateEvent({ ...newEvent, sourceId: newTask.id });
         }
       }
 
@@ -99,29 +98,29 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
       setNewEventTime('12:00');
       setNewEventDescription('');
     }
-  }, [newEventTitle, selectedDate, activeTab, addEvent, newEventTime, newEventDescription, newEventColor, projects, updateEvent]);
+  }, [newEventTitle, selectedDate, activeTab, addEvent, newEventTime, newEventDescription, newEventColor, board.columnOrder, addTask, updateEvent]);
   
   const handleUpdateEvent = useCallback((updatedEvent: CalendarEvent) => {
     updateEvent(updatedEvent);
     if(updatedEvent.type === 'Work' && updatedEvent.sourceId) {
-        const task = projects.board.tasks[updatedEvent.sourceId];
+        const task = board.tasks[updatedEvent.sourceId];
         if (task) {
-            projects.updateTask({
+            updateTask({
                 ...task,
                 title: updatedEvent.title,
                 dueDate: updatedEvent.date,
             }, true);
         }
     }
-  }, [updateEvent, projects]);
+  }, [updateEvent, board.tasks, updateTask]);
 
   const handleRemoveEvent = useCallback((eventId: string) => {
     const eventToRemove = events.find(e => e.id === eventId);
     removeEvent(eventId);
     if (eventToRemove?.type === 'Work' && eventToRemove.sourceId) {
-        projects.removeTask(eventToRemove.sourceId, undefined, true);
+        removeProjectTask(eventToRemove.sourceId, undefined, true);
     }
-  }, [removeEvent, projects, events]);
+  }, [removeEvent, events, removeProjectTask]);
 
   const eventsByDay = useMemo(() => events.reduce((acc, event) => {
     const day = format(parseISO(event.date), 'yyyy-MM-dd');

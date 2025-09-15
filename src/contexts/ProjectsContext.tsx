@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import * as pako from 'pako';
 import { Base64 } from 'js-base64';
@@ -256,51 +256,21 @@ export const useProjects = create<ProjectsState>((set, get) => ({
   },
 }));
 
-function ProjectTaskSync() {
-    const board = useProjects(s => s.board);
-    const { setEvents } = useCalendar();
-
-    useEffect(() => {
-        const workEvents = Object.values(board.tasks)
-            .filter(task => task.dueDate)
-            .map(task => ({
-                id: `evt-${task.id}`,
-                sourceId: task.id,
-                date: task.dueDate!,
-                time: '09:00', // Default time for tasks
-                title: task.title,
-                description: `Project Task: ${task.description || ''}`,
-                color: 'purple',
-                type: 'Work' as const
-            }));
-        
-        setEvents(prev => [
-            ...prev.filter(e => e.type !== 'Work'),
-            ...workEvents
-        ]);
-        
-    }, [board.tasks, setEvents]);
-
-    return null;
-}
-
 export function ProjectsProvider({ children }: { children: ReactNode }) {
-    const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV2', initialData);
-    const setProjectsState = useProjects(state => state.setBoard);
+  const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV2', initialData);
+  const setProjectsState = useProjects(state => state.setBoard);
 
-    useEffect(() => {
-        setProjectsState(board, true);
-    }, []);
-    
-    useEffect(() => {
-        const unsubscribe = useProjects.subscribe(
-            (state) => setBoard(state.board)
-        );
-        return unsubscribe;
-    }, [setBoard]);
+  useEffect(() => {
+    setProjectsState(board, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  useEffect(() => {
+    const unsubscribe = useProjects.subscribe(
+        (state) => setBoard(state.board)
+    );
+    return unsubscribe;
+  }, [setBoard]);
 
-  return <>
-    <ProjectTaskSync />
-    {children}
-  </>;
+  return <>{children}</>;
 }

@@ -81,7 +81,8 @@ export function ProjectsApp() {
     return () => {
       peerRef.current?.destroy();
     }
-  }, []); // Eslint will complain but setBoard and toast are stable
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
 
   const handleNewTaskTitleChange = (columnId: string, title: string) => {
     setNewTaskTitles(prev => ({...prev, [columnId]: title}));
