@@ -98,10 +98,10 @@ export function SpreadsheetView() {
 
     // --- Meta Key Shortcuts (Ctrl/Cmd) ---
     if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
         
         // Ctrl + Shift combinations
         if (e.shiftKey) {
+             e.preventDefault();
              switch (e.key.toLowerCase()) {
                 case ' ': // Ctrl + Shift + Space
                     setActiveCell({ row: 0, col: 0 });
@@ -109,25 +109,25 @@ export function SpreadsheetView() {
                     break;
                 case 'arrowdown': {
                     let endRow = activeRow;
-                    while (endRow < numRows - 1 && gridData[endRow][activeCol]?.value) { endRow++; }
+                    while (endRow < numRows - 1 && gridData[endRow + 1][activeCol]?.value) { endRow++; }
                     setSelection({ start: activeCell, end: { row: endRow, col: activeCol }});
                     break;
                 }
                 case 'arrowup': {
                     let endRow = activeRow;
-                    while (endRow > 0 && gridData[endRow][activeCol]?.value) { endRow--; }
+                    while (endRow > 0 && gridData[endRow - 1][activeCol]?.value) { endRow--; }
                     setSelection({ start: activeCell, end: { row: endRow, col: activeCol }});
                     break;
                 }
                 case 'arrowright': {
                     let endCol = activeCol;
-                    while (endCol < numCols - 1 && gridData[activeRow][endCol]?.value) { endCol++; }
+                    while (endCol < numCols - 1 && gridData[activeRow][endCol + 1]?.value) { endCol++; }
                     setSelection({ start: activeCell, end: { row: activeRow, col: endCol }});
                     break;
                 }
                 case 'arrowleft': {
                     let endCol = activeCol;
-                    while (endCol > 0 && gridData[activeRow][endCol]?.value) { endCol--; }
+                    while (endCol > 0 && gridData[activeRow][endCol - 1]?.value) { endCol--; }
                     setSelection({ start: activeCell, end: { row: activeRow, col: endCol }});
                     break;
                 }
@@ -135,6 +135,7 @@ export function SpreadsheetView() {
             return;
         }
 
+        e.preventDefault();
         // Regular Ctrl combinations
         switch (e.key.toLowerCase()) {
             case 'a':
@@ -171,8 +172,8 @@ export function SpreadsheetView() {
             case ' ': setSelection({ start: { row: activeRow, col: 0 }, end: { row: activeRow, col: numCols - 1 } }); return;
             case 'home': endCol = 0; break;
             case 'end': {
-                 let lastCol = numCols - 1;
-                 for(let c = numCols - 1; c >= activeCol; c--) {
+                 let lastCol = 0;
+                 for(let c = numCols - 1; c >= 0; c--) {
                     if (gridData[activeRow][c]?.value) {
                         lastCol = c;
                         break;
@@ -181,6 +182,8 @@ export function SpreadsheetView() {
                  endCol = lastCol;
                  break;
             }
+            case 'tab': // This is handled below with normal navigation
+                break;
             default: return;
         }
         setSelection({ start: selection?.start ?? activeCell, end: { row: endRow, col: endCol } });
@@ -198,8 +201,21 @@ export function SpreadsheetView() {
             break;
         case 'Tab':
             e.preventDefault();
-            if (activeCol < numCols - 1) nextCol = activeCol + 1;
-            else if (activeRow < numRows - 1) { nextRow = activeRow + 1; nextCol = 0; }
+            if (e.shiftKey) {
+                if (activeCol > 0) {
+                    nextCol = activeCol - 1;
+                } else if (activeRow > 0) {
+                    nextRow = activeRow - 1;
+                    nextCol = numCols - 1;
+                }
+            } else {
+                if (activeCol < numCols - 1) {
+                    nextCol = activeCol + 1;
+                } else if (activeRow < numRows - 1) {
+                    nextRow = activeRow + 1;
+                    nextCol = 0;
+                }
+            }
             break;
         case 'ArrowDown': e.preventDefault(); nextRow = Math.min(numRows - 1, activeRow + 1); break;
         case 'ArrowUp': e.preventDefault(); nextRow = Math.max(0, activeRow - 1); break;
@@ -207,6 +223,7 @@ export function SpreadsheetView() {
         case 'ArrowRight': e.preventDefault(); nextCol = Math.min(numCols - 1, activeCol + 1); break;
         default:
             if(e.key.length === 1 && !e.altKey) {
+              handleCellChange(activeRow, activeCol, e.key);
               setIsEditing(true);
             }
             return;
@@ -453,7 +470,10 @@ export function SpreadsheetView() {
                                                 setSelection(prev => prev ? { ...prev, end: { row: rowIndex, col: colIndex } } : null);
                                             }
                                         }}
-                                        onDoubleClick={() => setIsEditing(true)}
+                                        onDoubleClick={() => {
+                                          if(activeCell) handleCellChange(activeCell.row, activeCell.col, gridData[activeCell.row][activeCell.col].value);
+                                          setIsEditing(true);
+                                        }}
                                     >
                                         <div
                                             ref={el => {
@@ -496,3 +516,5 @@ export function SpreadsheetView() {
     </div>
   );
 }
+
+    
