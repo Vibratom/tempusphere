@@ -57,10 +57,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [showSeconds, setShowSeconds] = useLocalStorage<boolean>('settings:showSeconds', true);
   const [primaryClockMode, setPrimaryClockMode] = useLocalStorage<'analog' | 'digital'>('settings:clockMode', 'digital');
   const [primaryClockTimezone, setPrimaryClockTimezone] = useLocalStorage<'local' | 'utc'>('settings:clockTimezone', 'local');
-  const [primaryColor, setPrimaryColor] = useLocalStorage<string>('settings:primaryColor', '141 15% 54%');
-  const [accentColor, setAccentColor] = useLocalStorage<string>('settings:accentColor', '5 41% 49%');
-  const [lightBackgroundColor, setLightBackgroundColor] = useLocalStorage<string>('settings:lightBackgroundColor', '210 20% 96%');
-  const [darkBackgroundColor, setDarkBackgroundColor] = useLocalStorage<string>('settings:darkBackgroundColor', '220 20% 10%');
+  const [primaryColor, setPrimaryColor] = useLocalStorage<string>('settings:primaryColor', '130 50% 50%');
+  const [accentColor, setAccentColor] = useLocalStorage<string>('settings:accentColor', '340 80% 60%');
+  const [lightBackgroundColor, setLightBackgroundColor] = useLocalStorage<string>('settings:lightBackgroundColor', '50 100% 96%');
+  const [darkBackgroundColor, setDarkBackgroundColor] = useLocalStorage<string>('settings:darkBackgroundColor', '260 20% 10%');
   const [backgroundImage, setBackgroundImage] = useLocalStorage<string | null>('settings:backgroundImage', null);
   const [clockSize, setClockSize] = useLocalStorage<number>('settings:clockSize', 100);
   const [fullscreenSettings, setFullscreenSettings] = useLocalStorage<FullscreenSettings>('settings:fullscreen', {
@@ -82,12 +82,28 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         const currentBgColor = isDark ? darkBackgroundColor : lightBackgroundColor;
         const luminance = getLuminance(currentBgColor);
         // Determine foreground color based on background luminance
-        const foregroundColor = luminance > 50 ? '224 71.4% 4.1%' : '210 20% 98%';
+        const foregroundColor = luminance > 50 ? '30 20% 20%' : '260 10% 95%';
 
         document.documentElement.style.setProperty('--primary', primaryColor);
         document.documentElement.style.setProperty('--accent', accentColor);
         document.documentElement.style.setProperty('--background', currentBgColor);
         document.documentElement.style.setProperty('--foreground', foregroundColor);
+        
+        if (isDark) {
+            document.documentElement.style.setProperty('--card', '260 20% 12%');
+            document.documentElement.style.setProperty('--popover', '260 20% 10%');
+            document.documentElement.style.setProperty('--secondary', '260 20% 18%');
+            document.documentElement.style.setProperty('--muted', '260 15% 25%');
+            document.documentElement.style.setProperty('--border', '260 15% 25%');
+            document.documentElement.style.setProperty('--input', '260 15% 25%');
+        } else {
+            document.documentElement.style.setProperty('--card', '50 100% 99%');
+            document.documentElement.style.setProperty('--popover', '50 100% 99%');
+            document.documentElement.style.setProperty('--secondary', '50 30% 92%');
+            document.documentElement.style.setProperty('--muted', '50 30% 92%');
+            document.documentElement.style.setProperty('--border', '50 30% 88%');
+            document.documentElement.style.setProperty('--input', '50 30% 90%');
+        }
     }
   }, [primaryColor, accentColor, lightBackgroundColor, darkBackgroundColor, resolvedTheme]);
 
