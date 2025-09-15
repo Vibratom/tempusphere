@@ -7,7 +7,6 @@ import * as pako from 'pako';
 import { Base64 } from 'js-base64';
 import { OnDragEndResponder } from '@hello-pangea/dnd';
 import { create } from 'zustand';
-import Peer, { Instance as PeerInstance } from 'simple-peer';
 import { useCalendar } from './CalendarContext';
 
 export type Priority = 'none' | 'low' | 'medium' | 'high';
@@ -78,11 +77,9 @@ export function decodeBoardData(encoded: string): BoardData | null {
   }
 }
 
-export const peerRef: React.MutableRefObject<PeerInstance | undefined> = { current: undefined };
-
 interface ProjectsState {
   board: BoardData;
-  setBoard: (board: BoardData | ((prev: BoardData) => BoardData), fromPeer?: boolean) => void;
+  setBoard: (board: BoardData | ((prev: BoardData) => BoardData)) => void;
   addTask: (columnId: string, taskDetails: Partial<TaskCard> & { title: string }) => TaskCard;
   removeTask: (taskId: string, columnId?: string) => void;
   updateTask: (updatedTask: TaskCard) => void;
@@ -91,20 +88,11 @@ interface ProjectsState {
   handleDragEnd: OnDragEndResponder;
 }
 
-const broadcast = (board: BoardData) => {
-    if (peerRef.current && peerRef.current.connected) {
-        peerRef.current.send(JSON.stringify(board));
-    }
-}
-
 export const useProjects = create<ProjectsState>((set, get) => ({
   board: initialData,
-  setBoard: (updater, fromPeer = false) => {
+  setBoard: (updater) => {
     set(state => {
         const newBoard = typeof updater === 'function' ? updater(state.board) : updater;
-        if (!fromPeer) {
-          broadcast(newBoard);
-        }
         return { board: newBoard };
     });
   },
@@ -232,7 +220,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
   const setProjectsState = useProjects(state => state.setBoard);
 
   useEffect(() => {
-    setProjectsState(board, true);
+    setProjectsState(board);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
@@ -276,3 +264,5 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
 
   return <>{children}</>;
 }
+
+    

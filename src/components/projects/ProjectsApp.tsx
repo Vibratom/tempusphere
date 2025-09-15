@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Plus, Trash2, Calendar as CalendarIcon, FileText, Share2, Wifi, Upload, Download } from 'lucide-react';
+import { Plus, Trash2, Calendar as CalendarIcon, FileText, Share2, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
@@ -29,8 +29,7 @@ import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import Peer from 'simple-peer';
-import { useProjects, Priority, TaskCard, encodeBoardData, decodeBoardData, peerRef, BoardData } from '@/contexts/ProjectsContext';
+import { useProjects, Priority, TaskCard, encodeBoardData, decodeBoardData, BoardData } from '@/contexts/ProjectsContext';
 
 
 const priorityColors: Record<Priority, string> = {
@@ -57,9 +56,6 @@ export function ProjectsApp() {
   const [newTaskTitles, setNewTaskTitles] = useState<Record<string, string>>({});
   const [editingTask, setEditingTask] = useState<TaskCard | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const [isLiveShareModalOpen, setLiveShareModalOpen] = useState(false);
-  const [liveShareSignal, setLiveShareSignal] = useState('');
-  const [isHost, setIsHost] = useState(false);
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const importFileRef = useRef<HTMLInputElement>(null);
@@ -76,10 +72,6 @@ export function ProjectsApp() {
         } else {
             toast({ variant: 'destructive', title: 'Load Failed', description: 'Could not load the shared board from the URL.' });
         }
-    }
-
-    return () => {
-      peerRef.current?.destroy();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
@@ -153,93 +145,7 @@ export function ProjectsApp() {
       setEditingTask(null);
     }
   };
-
-  const startLiveShare = (initiator: boolean) => {
-    setIsHost(initiator);
-    setLiveShareModalOpen(true);
-    
-    peerRef.current?.destroy(); // Destroy any existing peer connection
-
-    const peer = new Peer({
-      initiator: initiator,
-      trickle: false,
-    });
-
-    peer.on('signal', (data) => {
-      setLiveShareSignal(JSON.stringify(data));
-    });
-
-    peer.on('connect', () => {
-      toast({ title: 'Live Session Connected!', description: 'You are now collaborating in real-time.' });
-      setLiveShareModalOpen(false);
-      if (initiator) {
-        peer.send(JSON.stringify(board));
-      }
-    });
-
-    peer.on('data', (data) => {
-      try {
-        const receivedBoard = JSON.parse(data.toString());
-        // Call setBoard with fromPeer=true to prevent an echo broadcast
-        useProjects.getState().setBoard(receivedBoard, true); 
-        toast({ title: 'Board Updated', description: 'The board has been updated by your collaborator.' });
-      } catch (e) {
-        console.error('Failed to parse received board data:', e);
-      }
-    });
-
-    peer.on('close', () => {
-      toast({ variant: 'destructive', title: 'Session Closed', description: 'The live share session has ended.' });
-      peerRef.current = undefined;
-    });
-
-    peer.on('error', (err) => {
-        toast({ variant: 'destructive', title: 'Connection Error', description: err.message });
-        console.error('Peer error:', err);
-    });
-
-    peerRef.current = peer;
-  };
-
-  const connectToPeer = () => {
-    if (peerRef.current && liveShareSignal) {
-      try {
-        peerRef.current.signal(JSON.parse(liveShareSignal));
-      } catch (e) {
-        toast({ variant: 'destructive', title: 'Connection Failed', description: 'The signal data seems to be invalid.' });
-      }
-    }
-  };
   
-  const renderLiveShareModal = () => (
-    <Dialog open={isLiveShareModalOpen} onOpenChange={setLiveShareModalOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{isHost ? 'Start a Live Share Session' : 'Join a Live Share Session'}</DialogTitle>
-          <DialogDescription>
-            {isHost
-              ? "Copy this signal data and send it to your collaborator. They will paste it to generate a response signal for you."
-              : "Paste the signal data you received from the host here. Then, copy the generated response and send it back to them."}
-          </DialogDescription>
-        </DialogHeader>
-        <Textarea
-          value={liveShareSignal}
-          onChange={(e) => !isHost && setLiveShareSignal(e.target.value)}
-          placeholder={isHost ? 'Generating signal...' : 'Paste signal data here...'}
-          rows={6}
-          readOnly={isHost}
-        />
-        <DialogFooter className="sm:justify-between">
-          <Button variant="outline" onClick={() => {
-            navigator.clipboard.writeText(liveShareSignal);
-            toast({ title: 'Copied to Clipboard!' });
-          }}>Copy Signal</Button>
-          {!isHost && <Button onClick={connectToPeer}>Generate Response & Connect</Button>}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-
   const renderEditModal = () => {
     if (!editingTask) return null;
 
@@ -332,7 +238,6 @@ export function ProjectsApp() {
   return (
     <div className="w-full h-full flex flex-col">
         {renderEditModal()}
-        {renderLiveShareModal()}
         <div className="flex flex-col items-center text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Board</h1>
             <p className="text-lg text-muted-foreground mt-2">Visualize your workflow with a Kanban board.</p>
@@ -369,24 +274,6 @@ export function ProjectsApp() {
                 <Button variant="outline" onClick={handleShare}>
                     <Share2 className="mr-2 h-4 w-4"/> Share via Link
                 </Button>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="outline"><Wifi className="mr-2 h-4 w-4" /> Live Share</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Live Share Session</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Start a new session to host and share your board, or join an existing session using signal data from a host.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => startLiveShare(false)}>Join Session</AlertDialogAction>
-                            <AlertDialogAction onClick={() => startLiveShare(true)}>Start Hosting</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
             </div>
         </div>
 
@@ -513,3 +400,5 @@ export function ProjectsApp() {
     </div>
   );
 }
+
+    
