@@ -126,86 +126,90 @@ export function MindMapView() {
   }, [editingNodeId]);
 
   return (
-    <div className="w-full h-full flex flex-col gap-4">
-        <div 
-            ref={canvasRef} 
-            className="w-full h-full relative overflow-hidden bg-muted/30 rounded-lg border flex-1" 
-            onDoubleClick={handleCanvasDoubleClick}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-        >
-            <svg className="absolute w-full h-full pointer-events-none" style={{ top: 0, left: 0 }}>
-                {lines.map(line => {
-                    const fromNode = nodes.find(n => n.id === line.from);
-                    const toNode = nodes.find(n => n.id === line.to);
-                    if (!fromNode || !toNode) return null;
-
-                    const fromPos = getConnectorPosition(fromNode, 'bottom');
-                    const toPos = getConnectorPosition(toNode, 'top');
-
-                    const pathData = `M ${fromPos.x} ${fromPos.y} C ${fromPos.x} ${fromPos.y + 50}, ${toPos.x} ${toPos.y - 50}, ${toPos.x} ${toPos.y}`;
-
-                    return <path key={line.id} d={pathData} stroke="hsl(var(--border))" strokeWidth="2" fill="none" />;
-                })}
-                {isConnecting && nodes.find(n => n.id === isConnecting) && (() => {
-                    const fromNode = nodes.find(n => n.id === isConnecting)!;
-                    const fromPos = getConnectorPosition(fromNode, 'bottom');
-                    const pathData = `M ${fromPos.x} ${fromPos.y} C ${fromPos.x} ${fromPos.y + 50}, ${mousePos.x} ${mousePos.y - 50}, ${mousePos.x} ${mousePos.y}`;
-                    return <path d={pathData} stroke="hsl(var(--primary))" strokeWidth="2" fill="none" strokeDasharray="5,5" />;
-                })()}
-            </svg>
-            
-            {nodes.map(node => (
-            <motion.div
-                key={node.id}
-                drag
-                onDragEnd={(event, info) => {
-                const { x, y } = info.point;
-                setNodes(
-                    nodes.map(n =>
-                    n.id === node.id ? { ...n, x, y } : n
-                    )
-                );
-                }}
-                whileHover={{ scale: 1.02 }}
-                onHoverStart={e => { e.stopPropagation(); }}
-                onHoverEnd={e => { e.stopPropagation(); }}
-                dragMomentum={false}
-                className="mindmap-node absolute bg-card shadow-lg rounded-lg p-3 cursor-grab border border-border group"
-                style={{ x: node.x, y: node.y, width: node.width, height: node.height, minWidth: 150, minHeight: 70 }}
-                onDoubleClick={(e) => { e.stopPropagation(); setEditingNodeId(node.id); }}
-                onMouseUp={(e) => handleMouseUpOnNode(e, node.id)}
+    <div className="w-full h-full flex items-center justify-center">
+      <Card className="w-full flex flex-col" style={{ height: '800px' }}>
+        <CardContent className="p-0 flex-1 relative overflow-hidden">
+            <div 
+                ref={canvasRef} 
+                className="w-full h-full relative overflow-hidden bg-muted/30" 
+                onDoubleClick={handleCanvasDoubleClick}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleCanvasMouseUp}
             >
-                <motion.div 
-                    className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-5 h-5 bg-primary/20 border-2 border-primary rounded-full cursor-pointer hidden group-hover:block"
-                    onMouseDown={(e) => { e.stopPropagation(); setIsConnecting(node.id); }}
-                />
+                <svg className="absolute w-full h-full pointer-events-none" style={{ top: 0, left: 0 }}>
+                    {lines.map(line => {
+                        const fromNode = nodes.find(n => n.id === line.from);
+                        const toNode = nodes.find(n => n.id === line.to);
+                        if (!fromNode || !toNode) return null;
+
+                        const fromPos = getConnectorPosition(fromNode, 'bottom');
+                        const toPos = getConnectorPosition(toNode, 'top');
+
+                        const pathData = `M ${fromPos.x} ${fromPos.y} C ${fromPos.x} ${fromPos.y + 50}, ${toPos.x} ${toPos.y - 50}, ${toPos.x} ${toPos.y}`;
+
+                        return <path key={line.id} d={pathData} stroke="hsl(var(--border))" strokeWidth="2" fill="none" />;
+                    })}
+                    {isConnecting && nodes.find(n => n.id === isConnecting) && (() => {
+                        const fromNode = nodes.find(n => n.id === isConnecting)!;
+                        const fromPos = getConnectorPosition(fromNode, 'bottom');
+                        const pathData = `M ${fromPos.x} ${fromPos.y} C ${fromPos.x} ${fromPos.y + 50}, ${mousePos.x} ${mousePos.y - 50}, ${mousePos.x} ${mousePos.y}`;
+                        return <path d={pathData} stroke="hsl(var(--primary))" strokeWidth="2" fill="none" strokeDasharray="5,5" />;
+                    })()}
+                </svg>
                 
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute -top-3 -right-3 h-6 w-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => { e.stopPropagation(); deleteNode(node.id); }}
+                {nodes.map(node => (
+                <motion.div
+                    key={node.id}
+                    drag
+                    onDragEnd={(event, info) => {
+                    const { x, y } = info.point;
+                    setNodes(
+                        nodes.map(n =>
+                        n.id === node.id ? { ...n, x, y } : n
+                        )
+                    );
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    onHoverStart={e => { e.stopPropagation(); }}
+                    onHoverEnd={e => { e.stopPropagation(); }}
+                    dragMomentum={false}
+                    className="mindmap-node absolute bg-card shadow-lg rounded-lg p-3 cursor-grab border border-border group"
+                    style={{ x: node.x, y: node.y, width: node.width, height: node.height, minWidth: 150, minHeight: 70 }}
+                    onDoubleClick={(e) => { e.stopPropagation(); setEditingNodeId(node.id); }}
+                    onMouseUp={(e) => handleMouseUpOnNode(e, node.id)}
                 >
-                    <X className="h-4 w-4" />
-                </Button>
-                
-                {editingNodeId === node.id ? (
-                    <textarea
-                    ref={textareaRef}
-                    value={node.text}
-                    onChange={(e) => handleNodeChange(node.id, e.target.value)}
-                    onBlur={stopEditing}
-                    onKeyDown={(e) => {if(e.key === 'Escape') stopEditing()}}
-                    className="w-full h-full bg-transparent resize-none focus:outline-none p-2"
+                    <motion.div 
+                        className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-5 h-5 bg-primary/20 border-2 border-primary rounded-full cursor-pointer hidden group-hover:block"
+                        onMouseDown={(e) => { e.stopPropagation(); setIsConnecting(node.id); }}
                     />
-                ) : (
-                    <div className="w-full h-full p-2 break-words">{node.text}</div>
-                )}
-            </motion.div>
-            ))}
-        </div>
+                    
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute -top-3 -right-3 h-6 w-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => { e.stopPropagation(); deleteNode(node.id); }}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                    
+                    {editingNodeId === node.id ? (
+                        <textarea
+                        ref={textareaRef}
+                        value={node.text}
+                        onChange={(e) => handleNodeChange(node.id, e.target.value)}
+                        onBlur={stopEditing}
+                        onKeyDown={(e) => {if(e.key === 'Escape') stopEditing()}}
+                        className="w-full h-full bg-transparent resize-none focus:outline-none p-2"
+                        />
+                    ) : (
+                        <div className="w-full h-full p-2 break-words">{node.text}</div>
+                    )}
+                </motion.div>
+                ))}
+            </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
