@@ -152,16 +152,25 @@ interactive: `flowchart TD
     click B "https://www.google.com" "This is a tooltip for the Google link"
 `,
   swimlane: `flowchart TD
-    subgraph "Marketing"
-        A[Identify Lead] --> B(Contact Lead);
+    subgraph CUSTOMER
+        A[Place a Product Order] --> B
+        H[Finish]
     end
-    subgraph "Sales"
-        B --> C{Lead Qualified?};
-        C -- Yes --> D[Send Proposal];
-        C -- No --> E[Mark as 'Nurture'];
+    subgraph SALES
+        B(Confirm if order is received) --> C
+        F{Cancel the order}
     end
-    subgraph "Account Management"
-        D --> F[Onboard Customer];
+    subgraph STOCKS
+        C(Check the inventory) --> D{Is the product in stock?}
+        D -- NO --> F
+        I(Deliver the order) --> H
+    end
+    subgraph FINANCE
+        D -- YES --> E(Check credit card)
+        E --> G{Is the card valid?}
+        G -- YES --> J(Processing the payment)
+        G -- NO --> F
+        J --> I
     end
 `,
   workflow: `flowchart TD
