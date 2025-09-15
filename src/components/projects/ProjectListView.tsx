@@ -3,7 +3,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { useProjects, Priority, TaskCard } from '@/contexts/ProjectsContext';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
@@ -34,6 +33,9 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
+import { ScrollArea } from '../ui/scroll-area';
+import { Card, CardContent } from '../ui/card';
+import { Badge } from '../ui/badge';
 
 type SortKey = 'title' | 'status' | 'priority' | 'dueDate';
 type SortDirection = 'asc' | 'desc';
@@ -384,15 +386,6 @@ export function ProjectListView() {
         setEditingTask(null);
     }
     
-    const SortableHeader = ({ tkey, label }: { tkey: SortKey, label: string}) => (
-        <TableHead onClick={() => handleSort(tkey)} className="cursor-pointer hover:bg-muted/50">
-            <div className="flex items-center gap-2">
-                {label}
-                {sortKey === tkey && (sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
-            </div>
-        </TableHead>
-    );
-
     return (
         <div className="w-full h-full flex flex-col gap-4">
             <div className="flex flex-col md:flex-row items-center gap-2">
@@ -407,7 +400,7 @@ export function ProjectListView() {
                 </div>
                 <div className="flex gap-2 w-full md:w-auto shrink-0">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-full md:w-auto">
+                        <SelectTrigger className="w-full md:w-[150px]">
                             <SelectValue placeholder="Filter by status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -421,9 +414,12 @@ export function ProjectListView() {
                     </Select>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="w-full md:w-auto justify-start px-2">
+                            <Button variant="outline" className="w-full md:w-[150px] justify-start">
                                 <Flag className={cn("mr-2 h-4 w-4", priorityFilter !== 'all' && priorityColors[priorityFilter])}/>
-                                <span className="hidden sm:inline">Priority</span>
+                                <span className="capitalize">{priorityFilter}</span>
+                                <span className="ml-auto">
+                                    {sortKey === 'priority' && (sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
+                                </span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
@@ -439,37 +435,21 @@ export function ProjectListView() {
                     <NewTaskDialog />
                 </div>
             </div>
-            <div className="border rounded-lg overflow-hidden bg-card">
-                <Table>
-                    <TableHeader className="bg-muted/50">
-                        <TableRow>
-                            <SortableHeader tkey="title" label="Task" />
-                            <SortableHeader tkey="status" label="Status" />
-                            <SortableHeader tkey="priority" label="Priority" />
-                            <SortableHeader tkey="dueDate" label="End Date" />
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredAndSortedTasks.length > 0 ? (
-                             filteredAndSortedTasks.map(task => (
-                                <TableRow key={task.id}>
-                                    <TableCell className="font-medium max-w-xs truncate">{task.title}</TableCell>
-                                    <TableCell>
-                                        <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs">
-                                            {task.status}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <Flag className={cn("h-4 w-4", priorityColors[task.priority])} />
-                                            <span className="capitalize hidden sm:inline">{task.priority === 'none' ? 'None' : task.priority}</span>
+            <ScrollArea className="flex-1 -mr-4">
+                <div className="space-y-3 pr-4">
+                    {filteredAndSortedTasks.length > 0 ? (
+                        filteredAndSortedTasks.map(task => (
+                            <Card key={task.id} className="p-3">
+                                <div className="flex justify-between items-start gap-4">
+                                    <div className="flex-1">
+                                        <p className="font-medium">{task.title}</p>
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                            <Badge variant="secondary">{task.status}</Badge>
+                                            {task.dueDate && <span>- Due {format(parseISO(task.dueDate), 'MMM d')}</span>}
                                         </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        {task.dueDate ? format(parseISO(task.dueDate), 'MMM d, yyyy') : <span className="text-muted-foreground">No date</span>}
-                                    </TableCell>
-                                    <TableCell className="text-right">
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Flag className={cn("h-4 w-4", priorityColors[task.priority])} />
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -501,19 +481,18 @@ export function ProjectListView() {
                                                 </AlertDialog>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                    No tasks found.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        ))
+                    ) : (
+                         <div className="h-24 flex items-center justify-center text-muted-foreground">
+                            No tasks found.
+                        </div>
+                    )}
+                </div>
+            </ScrollArea>
+
             <EditTaskDialog
                 task={editingTask}
                 isOpen={!!editingTask}
