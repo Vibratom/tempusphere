@@ -123,6 +123,18 @@ export function RecipesApp() {
     setRecipes(prev => [...prev, newRecipe]);
   }
 
+  const handleRemixRecipe = (originalRecipe: Recipe) => {
+    const remixedRecipe: Recipe = {
+      ...originalRecipe,
+      id: uuidv4(), // New ID for the remixed version
+      title: `${originalRecipe.title} (Remix)`,
+      createdAt: new Date().toISOString(),
+      remixedFrom: originalRecipe.id, // Link back to the original
+    };
+    // Open the form with the new remixed recipe, but it's not saved yet
+    setEditingRecipe(remixedRecipe);
+  }
+
   if (!isClient) {
       return (
          <div className="w-full max-w-7xl mx-auto">
@@ -186,6 +198,7 @@ export function RecipesApp() {
                                         </CardHeader>
                                         <CardFooter className="mt-auto flex justify-end gap-2">
                                             <Button variant="outline" size="sm" onClick={() => setEditingRecipe(recipe)}><Edit className="mr-2 h-4 w-4"/>Edit</Button>
+                                            <Button variant="outline" size="sm" onClick={() => handleRemixRecipe(recipe)}><GitBranch className="mr-2 h-4 w-4"/>Remix</Button>
                                         </CardFooter>
                                     </Card>
                                 ))}
