@@ -5,9 +5,9 @@ import React, { useMemo, useState } from 'react';
 import { useProjects, Priority, TaskCard } from '@/contexts/ProjectsContext';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { format, parseISO, startOfDay, isSameDay } from 'date-fns';
+import { format, parseISO, startOfDay, isSameDay, isToday, isFuture, addDays, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Flag, Plus, Edit, Trash2, GripVertical } from 'lucide-react';
+import { Flag, Plus, Edit, Trash2, GripVertical, CheckCircle, Calendar as CalendarIconLucide, FastForward } from 'lucide-react';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
 import {
@@ -279,6 +279,38 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
     );
 }
 
+const SummaryCard = ({ title, tasks, icon }: { title: string, tasks: TaskCard[], icon: React.ElementType }) => {
+    const Icon = icon;
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center justify-between text-base">
+                    <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        {title}
+                    </div>
+                    <span className="text-sm font-normal text-muted-foreground">{tasks.length}</span>
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                {tasks.length > 0 ? (
+                    <div className="space-y-2">
+                        {tasks.slice(0, 5).map(task => (
+                            <div key={task.id} className="flex items-center gap-2 text-sm">
+                                <div className={cn("h-2 w-2 rounded-full flex-shrink-0", priorityColors[task.priority])} />
+                                <span className="truncate">{task.title}</span>
+                            </div>
+                        ))}
+                        {tasks.length > 5 && <p className="text-xs text-muted-foreground text-center pt-1">...and {tasks.length - 5} more.</p>}
+                    </div>
+                ) : (
+                    <p className="text-sm text-muted-foreground text-center">No tasks found.</p>
+                )}
+            </CardContent>
+        </Card>
+    );
+};
+
 export function ProjectCalendarView() {
     const { board, updateTask, removeTask, setBoard } = useProjects();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -343,6 +375,26 @@ export function ProjectCalendarView() {
             updateTask({ ...task, dueDate: newDate.toISOString() });
         }
     };
+    
+    const { doneTasks, todaysTasks, upcomingTasks } = useMemo(() => {
+        const doneColumnIds = board.columnOrder.filter(id => board.columns[id].title.toLowerCase().includes('done'));
+        const doneTaskIds = new Set(doneColumnIds.flatMap(id => board.columns[id].taskIds));
+
+        const allTasks = Object.values(board.tasks);
+        const doneTasks = allTasks.filter(task => doneTaskIds.has(task.id)).sort((a, b) => new Date(b.dueDate!).getTime() - new Date(a.dueDate!).getTime());
+        
+        const activeTasks = allTasks.filter(task => !doneTaskIds.has(task.id));
+        
+        const todaysTasks = activeTasks.filter(task => task.dueDate && isToday(parseISO(task.dueDate)));
+        
+        const upcomingTasks = activeTasks.filter(task => {
+            if (!task.dueDate) return false;
+            const date = parseISO(task.dueDate);
+            return isFuture(date) && !isToday(date) && differenceInDays(date, new Date()) <= 7;
+        }).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+
+        return { doneTasks, todaysTasks, upcomingTasks };
+    }, [board]);
 
 
     return (
@@ -426,7 +478,7 @@ export function ProjectCalendarView() {
                     </CardContent>
                 </Card>
 
-                <Card className="flex flex-col">
+                <div className="flex flex-col">
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <div>
@@ -442,11 +494,11 @@ export function ProjectCalendarView() {
                     </CardHeader>
                     <CardContent className="flex-1 overflow-hidden">
                         <ScrollArea className="h-full -mr-4">
-                            <Droppable droppableId="task-list">
-                                {(provided) => (
-                                    <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-3 pr-4">
-                                        {selectedDayTasks.length > 0 ? (
-                                            selectedDayTasks.map((task, index) => {
+                             {selectedDayTasks.length > 0 ? (
+                                <Droppable droppableId="task-list">
+                                    {(provided) => (
+                                        <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-3 pr-4">
+                                            {selectedDayTasks.map((task, index) => {
                                                 const status = getTaskStatus(task.id);
                                                 return (
                                                     <Draggable key={task.id} draggableId={task.id} index={index}>
@@ -494,19 +546,21 @@ export function ProjectCalendarView() {
                                                         )}
                                                     </Draggable>
                                                 )
-                                            })
-                                        ) : (
-                                            <div className="text-center text-muted-foreground pt-12">
-                                                <p>{selectedDate ? 'No tasks due on this day.' : 'Select a day to see tasks.'}</p>
-                                            </div>
-                                        )}
-                                        {provided.placeholder}
-                                    </div>
-                                )}
-                            </Droppable>
+                                            })}
+                                            {provided.placeholder}
+                                        </div>
+                                    )}
+                                </Droppable>
+                            ) : (
+                               <div className="space-y-4 pr-4">
+                                    <SummaryCard title="Completed Tasks" tasks={doneTasks} icon={CheckCircle} />
+                                    <SummaryCard title="Today's Tasks" tasks={todaysTasks} icon={CalendarIconLucide} />
+                                    <SummaryCard title="Upcoming (7 days)" tasks={upcomingTasks} icon={FastForward} />
+                                </div>
+                            )}
                         </ScrollArea>
                     </CardContent>
-                </Card>
+                </div>
 
                 <EditTaskDialog
                     task={editingTask}
