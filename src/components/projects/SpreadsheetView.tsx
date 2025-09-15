@@ -97,7 +97,7 @@ export function SpreadsheetView() {
     const { row: activeRow, col: activeCol } = activeCell;
 
     if (e.ctrlKey || e.metaKey) {
-        if (e.shiftKey && e.key.toLowerCase() === ' ') {
+        if (e.shiftKey && e.key.toLowerCase() === ' ') { // Ctrl + Shift + Space
             e.preventDefault();
             setActiveCell({ row: 0, col: 0 });
             setSelection({ start: { row: 0, col: 0 }, end: { row: numRows - 1, col: numCols - 1 }});
