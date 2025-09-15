@@ -1,13 +1,12 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { cn } from '@/lib/utils';
-import { Plus, Trash2 } from 'lucide-react';
-import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { Plus, Trash2 as X } from 'lucide-react';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 const MIN_ROWS = 1;
 const MIN_COLS = 1;
@@ -27,26 +26,30 @@ export function SpreadsheetView() {
   };
 
   const addRow = () => {
-    const numCols = gridData[0]?.length || MIN_COLS;
-    setGridData([...gridData, Array(numCols).fill('')]);
+    // Ensure gridData is an array before spreading
+    const currentGrid = Array.isArray(gridData) ? gridData : [];
+    const numCols = currentGrid[0]?.length || MIN_COLS;
+    setGridData([...currentGrid, Array(numCols).fill('')]);
   };
   
   const addCol = () => {
-    setGridData(gridData.map(row => [...row, '']));
+    // Ensure gridData is an array before mapping
+    const currentGrid = Array.isArray(gridData) ? gridData : [[]];
+    setGridData(currentGrid.map(row => [...(Array.isArray(row) ? row : []), '']));
   };
 
   const removeRow = (rowIndex: number) => {
-    if (gridData.length <= MIN_ROWS) return;
+    if (!Array.isArray(gridData) || gridData.length <= MIN_ROWS) return;
     setGridData(gridData.filter((_, rIdx) => rIdx !== rowIndex));
   }
 
   const removeCol = (colIndex: number) => {
-    if (gridData[0]?.length <= MIN_COLS) return;
+    if (!Array.isArray(gridData) || !gridData[0] || gridData[0].length <= MIN_COLS) return;
     setGridData(gridData.map(row => row.filter((_, cIdx) => cIdx !== colIndex)));
   }
 
-  const numRows = gridData.length;
-  const numCols = gridData[0]?.length || 0;
+  const numRows = Array.isArray(gridData) ? gridData.length : 0;
+  const numCols = Array.isArray(gridData) && gridData[0] ? gridData[0].length : 0;
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
@@ -102,7 +105,7 @@ export function SpreadsheetView() {
                                     <td key={`${rowIndex}-${colIndex}`} className="p-0 border">
                                         <Input
                                             type="text"
-                                            value={gridData[rowIndex]?.[colIndex] || ''}
+                                            value={gridData?.[rowIndex]?.[colIndex] || ''}
                                             onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
                                             className="w-full h-full p-1.5 text-sm bg-transparent border-0 rounded-none shadow-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:z-10"
                                         />
