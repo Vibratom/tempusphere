@@ -19,7 +19,7 @@ import {
 
 
 const priorityColors: Record<Priority, string> = {
-    none: 'bg-muted-foreground/50',
+    none: 'bg-muted-foreground',
     low: 'bg-blue-500',
     medium: 'bg-yellow-500',
     high: 'bg-red-500',
@@ -201,7 +201,6 @@ export function GanttChartView() {
                                                             gridRow: index + 1, 
                                                             gridColumnStart: pos.gridColumnStart,
                                                             gridColumnEnd: pos.gridColumnEnd,
-                                                            backgroundColor: `var(--${priorityColors[task.priority].replace('bg-', '')})`
                                                         }}
                                                     >
                                                         <span className="truncate">{task.title}</span>
