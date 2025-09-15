@@ -50,7 +50,7 @@ function ProjectsContent() {
                 <Header />
                 <main className="flex-1 flex flex-col">
                     <div className="flex-1 flex flex-col items-center p-4 md:p-8">
-                      <Tabs defaultValue="calendar-view" className="w-full max-w-7xl flex flex-col flex-1">
+                      <Tabs defaultValue="mindmap" className="w-full max-w-7xl flex flex-col flex-1">
                           <TabsList className="grid w-full grid-cols-8 md:grid-cols-8 lg:grid-cols-8">
                               <ResponsiveTabsTrigger value="calendar-view" icon={Calendar}>Calendar</ResponsiveTabsTrigger>
                               <ResponsiveTabsTrigger value="board" icon={KanbanSquare}>Board</ResponsiveTabsTrigger>

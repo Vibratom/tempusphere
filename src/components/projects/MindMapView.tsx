@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, useDragControls, useMotionValue } from 'framer-motion';
+import React, { useState, useRef, useCallback } from 'react';
+import { motion, useMotionValue } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
@@ -55,7 +55,7 @@ const NodeComponent = ({ node, onUpdate, onUpdateText, onAddChild, onDelete, onC
             node.id === 'root' ? 'bg-primary text-primary-foreground' : 'bg-card text-card-foreground border',
             isSelected && "ring-2 ring-accent"
         )}
-        style={{ x: node.x, y: node.y }}
+        style={{ x: node.x, y: node.y, top: 0, left: 0 }}
         onDragEnd={(event, info) => {
             onUpdate(node.id, { x: node.x + info.offset.x, y: node.y + info.offset.y });
         }}
@@ -123,12 +123,15 @@ export function MindMapView() {
     if (!parentNode) return;
     
     const childrenCount = nodes.filter(n => n.parentId === parentId).length;
+    
+    const newX = parentNode.x + 250;
+    const newY = parentNode.y + (childrenCount * 100);
 
     const newNode: Node = {
       id: `node-${Date.now()}`,
       text: 'New Idea',
-      x: parentNode.x + 250,
-      y: parentNode.y + (childrenCount * 100),
+      x: newX,
+      y: newY,
       parentId: parentId,
     };
     setNodes([...nodes, newNode]);
@@ -183,54 +186,39 @@ export function MindMapView() {
       setScale(s => direction === 'in' ? Math.min(s * 1.2, 2) : Math.max(s / 1.2, 0.2));
   };
   
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey) {
-        e.preventDefault();
-        setScale(s => {
-          const newScale = s - e.deltaY * 0.001;
-          return Math.min(Math.max(newScale, 0.2), 2);
-        });
-      }
-    };
-
-    const container = containerRef.current;
-    container?.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container?.removeEventListener('wheel', handleWheel);
-  }, []);
-
   return (
     <Card className="w-full h-full flex flex-col">
         <CardContent className="p-0 flex-1 relative overflow-hidden" ref={containerRef} onClick={() => setSelectedNodeId(null)}>
            <motion.div 
-             className="mindmap-canvas absolute top-0 left-0 origin-top-left"
-             style={{ scale, x: panX, y: panY }}
-             drag 
-             dragMomentum={false}
-             _dragX={panX} 
-             _dragY={panY}
-             dragConstraints={containerRef}
+             className="absolute top-0 left-0 w-full h-full"
+             style={{ x: panX, y: panY, scale }}
+             onPan={(event, info) => {
+                 panX.set(panX.get() + info.delta.x);
+                 panY.set(panY.get() + info.delta.y);
+             }}
            >
-                <svg className="absolute w-[200vw] h-[200vh] pointer-events-none" style={{ top: 0, left: 0, overflow: 'visible' }}>
-                    {nodes.map(node => {
-                        const parent = nodes.find(p => p.id === node.parentId);
-                        if (!parent) return null;
-                        return <Line key={`${parent.id}-${node.id}`} fromNode={parent} toNode={node} />
-                    })}
-                </svg>
-                {nodes.map(node => (
-                    <NodeComponent
-                    key={node.id}
-                    node={node}
-                    onUpdate={handleUpdateNodePosition}
-                    onUpdateText={handleUpdateText}
-                    onAddChild={handleAddChild}
-                    onDelete={handleDelete}
-                    onConvertToTask={handleConvertToTask}
-                    isSelected={selectedNodeId === node.id}
-                    onSelect={setSelectedNodeId}
-                    />
-                ))}
+                <div className="relative w-full h-full transform-origin-top-left">
+                    <svg className="absolute w-[400vw] h-[400vh] pointer-events-none" style={{ top: '-100vh', left: '-100vw', overflow: 'visible' }}>
+                        {nodes.map(node => {
+                            const parent = nodes.find(p => p.id === node.parentId);
+                            if (!parent) return null;
+                            return <Line key={`${parent.id}-${node.id}`} fromNode={parent} toNode={node} />
+                        })}
+                    </svg>
+                    {nodes.map(node => (
+                        <NodeComponent
+                        key={node.id}
+                        node={node}
+                        onUpdate={handleUpdateNodePosition}
+                        onUpdateText={handleUpdateText}
+                        onAddChild={handleAddChild}
+                        onDelete={handleDelete}
+                        onConvertToTask={handleConvertToTask}
+                        isSelected={selectedNodeId === node.id}
+                        onSelect={setSelectedNodeId}
+                        />
+                    ))}
+                </div>
             </motion.div>
 
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
@@ -241,9 +229,11 @@ export function MindMapView() {
                 </div>
             </div>
              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-muted/80 p-2 rounded-lg text-sm text-muted-foreground z-10">
-                <p><strong>Double-click</strong> to edit. <strong>Click</strong> a node for options. <strong>Drag</strong> background to pan. <strong>Ctrl + Scroll</strong> to zoom.</p>
+                <p><strong>Double-click</strong> to edit. <strong>Click</strong> a node for options. <strong>Drag</strong> background to pan. <strong>Scroll</strong> to zoom.</p>
             </div>
         </CardContent>
     </Card>
   );
 }
+
+    
