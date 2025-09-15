@@ -52,6 +52,7 @@ type CanvasObject = PathObject | ImageObject | TextObject;
 type HistoryEntry = { objects: CanvasObject[] };
 
 const colors = ['#000000', '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'];
+const GRID_SIZE = 50;
 
 const serializeObjects = (objects: CanvasObject[]): string => JSON.stringify(objects);
 const deserializeObjects = (json: string): CanvasObject[] => {
@@ -199,19 +200,17 @@ export function CanvasView() {
         
         // Draw grid
         ctx.save();
-        ctx.strokeStyle = 'rgba(0,0,0,0.05)';
-        if (document.body.classList.contains('dark')) {
-            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-        }
+        const gridColor = document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+        ctx.strokeStyle = gridColor;
         ctx.lineWidth = 1;
-        const gridSize = 50 * scale;
-        for (let x = viewOffset.x % gridSize; x < canvas.width; x += gridSize) {
+        const scaledGridSize = GRID_SIZE * scale;
+        for (let x = viewOffset.x % scaledGridSize; x < canvas.width; x += scaledGridSize) {
             ctx.beginPath();
             ctx.moveTo(x, 0);
             ctx.lineTo(x, canvas.height);
             ctx.stroke();
         }
-        for (let y = viewOffset.y % gridSize; y < canvas.height; y += gridSize) {
+        for (let y = viewOffset.y % scaledGridSize; y < canvas.height; y += scaledGridSize) {
             ctx.beginPath();
             ctx.moveTo(0, y);
             ctx.lineTo(canvas.width, y);
@@ -265,7 +264,7 @@ export function CanvasView() {
     };
 
     const handleMouseDown = (e: React.MouseEvent) => {
-        const pos = getCoords(e);
+        let pos = getCoords(e);
 
         if (isPanning || e.button === 1) return;
 
@@ -276,11 +275,13 @@ export function CanvasView() {
                 setIsMoving({x: pos.x - getObjectBounds(clickedObject)!.x, y: pos.y - getObjectBounds(clickedObject)!.y });
             }
         } else if (tool === 'TEXT') {
+            const snappedX = Math.round(pos.x / GRID_SIZE) * GRID_SIZE;
+            const snappedY = Math.round(pos.y / GRID_SIZE) * GRID_SIZE;
             const newTextObject: TextObject = {
                 id: uuidv4(),
                 type: 'TEXT',
-                x: pos.x,
-                y: pos.y,
+                x: snappedX,
+                y: snappedY,
                 text: 'Hello World',
                 font: '20px sans-serif',
                 color: strokeColor,
@@ -335,9 +336,21 @@ export function CanvasView() {
             setIsDrawing(false);
             updateHistory(objects);
         }
-        if (isMoving) {
+        if (isMoving && selectedObjectId) {
+            const snappedObjects = objects.map(obj => {
+                if (obj.id === selectedObjectId) {
+                    return {
+                        ...obj,
+                        x: Math.round(obj.x / GRID_SIZE) * GRID_SIZE,
+                        y: Math.round(obj.y / GRID_SIZE) * GRID_SIZE,
+                    };
+                }
+                return obj;
+            });
             setIsMoving(null);
-            updateHistory(objects);
+            updateHistory(snappedObjects);
+        } else if(isMoving) {
+            setIsMoving(null);
         }
     };
 
@@ -446,11 +459,13 @@ export function CanvasView() {
             reader.onload = (event) => {
                 const img = new Image();
                 img.onload = () => {
+                    const snappedX = Math.round((-viewOffset.x / scale) / GRID_SIZE) * GRID_SIZE;
+                    const snappedY = Math.round((-viewOffset.y / scale) / GRID_SIZE) * GRID_SIZE;
                     const newImage: ImageObject = {
                         id: uuidv4(),
                         type: 'IMAGE',
-                        x: -viewOffset.x / scale,
-                        y: -viewOffset.y / scale,
+                        x: snappedX,
+                        y: snappedY,
                         width: img.width,
                         height: img.height,
                         data: img.src

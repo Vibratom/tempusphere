@@ -10,6 +10,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 // Types
 interface Node {
@@ -37,6 +38,7 @@ const colors = ['#ffffff', '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'
 
 const defaultColor = 'hsl(var(--card))';
 const darkAwareDefaultColor = '#ffffff';
+const GRID_SIZE = 20;
 
 export function MindMapView() {
   const [nodes, setNodes] = useLocalStorage<Node[]>('mindmap:nodes-v3', []);
@@ -44,11 +46,16 @@ export function MindMapView() {
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isClient, setIsClient] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.mindmap-node')) {
@@ -57,12 +64,15 @@ export function MindMapView() {
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
+    
+    const x = Math.round((e.clientX - rect.left - 75) / GRID_SIZE) * GRID_SIZE;
+    const y = Math.round((e.clientY - rect.top - 50) / GRID_SIZE) * GRID_SIZE;
 
     const newNode: Node = {
       id: uuidv4(),
       text: 'New Idea',
-      x: e.clientX - rect.left - 75,
-      y: e.clientY - rect.top - 50,
+      x,
+      y,
       width: 150,
       height: 70,
       color: darkAwareDefaultColor,
@@ -293,7 +303,13 @@ export function MindMapView() {
             </div>
             <div 
                 ref={canvasRef} 
-                className="w-full h-full relative overflow-hidden bg-muted/30" 
+                className={cn(
+                    "w-full h-full relative overflow-hidden",
+                    "bg-muted/30 dark:bg-muted/10",
+                    isClient && "[--grid-color:hsl(var(--border)_/_0.3)] dark:[--grid-color:hsl(var(--border)_/_0.2)]",
+                    isClient && "[background-image:radial-gradient(var(--grid-color)_1px,_transparent_1px)]",
+                    "[background-size:20px_20px]"
+                )}
                 onDoubleClick={handleCanvasDoubleClick}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleCanvasMouseUp}
@@ -324,11 +340,12 @@ export function MindMapView() {
                     key={node.id}
                     drag
                     onDragEnd={(event, info) => {
-                        const rect = canvasRef.current?.getBoundingClientRect();
-                        if (!rect) return;
+                        const newX = Math.round(info.point.x / GRID_SIZE) * GRID_SIZE;
+                        const newY = Math.round(info.point.y / GRID_SIZE) * GRID_SIZE;
+
                         setNodes(
                             nodes.map(n =>
-                            n.id === node.id ? { ...n, x: info.point.x, y: info.point.y } : n
+                                n.id === node.id ? { ...n, x: newX, y: newY } : n
                             )
                         );
                     }}
