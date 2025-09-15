@@ -34,6 +34,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 type SortKey = 'title' | 'status' | 'priority' | 'dueDate';
 type SortDirection = 'asc' | 'desc';
@@ -166,7 +167,7 @@ const NewTaskDialog = () => {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-    );
+    )
 }
 
 const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard | null, isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (updatedTask: TaskCard, newStatusTitle?: string) => void }) => {
@@ -384,8 +385,8 @@ export function SpreadsheetView() {
         setEditingTask(null);
     }
     
-    const SortableHeader = ({ tkey, label }: { tkey: SortKey, label: string}) => (
-        <TableHead onClick={() => handleSort(tkey)} className="cursor-pointer hover:bg-muted/50">
+    const SortableHeader = ({ tkey, label, className }: { tkey: SortKey, label: string, className?: string }) => (
+        <TableHead onClick={() => handleSort(tkey)} className={cn("cursor-pointer hover:bg-muted/50", className)}>
             <div className="flex items-center gap-2">
                 {label}
                 {sortKey === tkey && (sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />)}
@@ -439,11 +440,11 @@ export function SpreadsheetView() {
                     <NewTaskDialog />
                 </div>
             </div>
-            <div className="border rounded-lg overflow-hidden bg-card flex-1">
-                <Table>
-                    <TableHeader className="bg-muted/50 sticky top-0">
+            <ScrollArea className="border rounded-lg bg-card flex-1">
+                <Table className="min-w-[600px]">
+                    <TableHeader className="bg-muted/50 sticky top-0 z-10">
                         <TableRow>
-                            <SortableHeader tkey="title" label="Task" />
+                            <SortableHeader tkey="title" label="Task" className="w-[40%]" />
                             <SortableHeader tkey="status" label="Status" />
                             <SortableHeader tkey="priority" label="Priority" />
                             <SortableHeader tkey="dueDate" label="End Date" />
@@ -513,7 +514,8 @@ export function SpreadsheetView() {
                         )}
                     </TableBody>
                 </Table>
-            </div>
+                <ScrollBar orientation="horizontal" />
+            </ScrollArea>
             <EditTaskDialog
                 task={editingTask}
                 isOpen={!!editingTask}
@@ -523,5 +525,3 @@ export function SpreadsheetView() {
         </div>
     );
 }
-
-    
