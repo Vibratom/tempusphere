@@ -10,7 +10,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle, Users, Milestone, CalendarClock, GitBranch, Palette } from 'lucide-react';
+import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle, Users, Milestone, CalendarClock, GitBranch, Palette, MousePointerClick } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const diagramTemplates = {
@@ -144,6 +144,12 @@ stylingDemo: `flowchart TD
     
     linkStyle 0 stroke-width:2px,fill:none,stroke:green;
     linkStyle 1 stroke-width:4px,fill:none,stroke:orange;
+`,
+interactive: `flowchart TD
+    A[Start] --> B[Go to Google];
+    B --> C[End];
+    
+    click B "https://www.google.com" "This is a tooltip for the Google link"
 `
 };
 
@@ -227,7 +233,7 @@ export function FlowchartView() {
       <Card>
           <CardHeader>
               <CardTitle>Templates</CardTitle>
-              <CardDescription>Start from a pre-made template to learn the syntax.</CardDescription>
+              <CardDescription>Start from a pre-made template to learn the syntax for various diagram types, including interactive ones.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => setCode(diagramTemplates.flowchart)}><Waypoints className="mr-2"/>Flowchart</Button>
@@ -242,6 +248,7 @@ export function FlowchartView() {
               <Button variant="outline" onClick={() => setCode(diagramTemplates.orgChart)}><Users className="mr-2"/>Org Chart</Button>
               <Button variant="outline" onClick={() => setCode(diagramTemplates.timeline)}><CalendarClock className="mr-2"/>Timeline</Button>
               <Button variant="outline" onClick={() => setCode(diagramTemplates.stylingDemo)}><Palette className="mr-2"/>Styling Demo</Button>
+              <Button variant="outline" onClick={() => setCode(diagramTemplates.interactive)}><MousePointerClick className="mr-2"/>Interactive</Button>
           </CardContent>
       </Card>
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
