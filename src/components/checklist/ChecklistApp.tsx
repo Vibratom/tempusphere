@@ -1,7 +1,7 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -35,21 +35,8 @@ import { PlatformLink } from '../tempusphere/PlatformLink';
 import { useSearchParams } from 'next/navigation';
 import * as pako from 'pako';
 import { Base64 } from 'js-base64';
+import { useChecklist, type Checklist, type Task, type ListState, type NewTaskState, type Priority, type SortBy, type SharedChecklistData } from '@/contexts/ChecklistContext';
 
-
-type Priority = 'none' | 'low' | 'medium' | 'high';
-type SortBy = 'manual' | 'priority' | 'dueDate' | 'createdAt';
-
-interface Task {
-  id: string;
-  text: string;
-  completed: boolean;
-  createdAt: number; // timestamp
-  dueDate?: string; // ISO string
-  priority: Priority;
-  subtasks: Task[];
-  isRecurring?: boolean;
-}
 
 const listColors = [
     { name: 'Default', value: 'hsl(var(--border))' },
@@ -61,31 +48,6 @@ const listColors = [
     { name: 'Purple', value: 'hsl(270, 70%, 65%)' },
     { name: 'Pink', value: 'hsl(330, 80%, 60%)' },
 ];
-
-interface Checklist {
-  id: string;
-  title: string;
-  tasks: Task[];
-  color?: string;
-}
-
-interface NewTaskState {
-    text: string;
-    dueDate?: Date;
-    isRecurring?: boolean;
-}
-
-interface ListState {
-    filter: string;
-    sortBy: SortBy;
-    showCompleted: boolean;
-}
-
-interface SharedChecklistData {
-  lists: Checklist[];
-  listStates: Record<string, ListState>;
-}
-
 
 const findTask = (tasks: Task[], taskId: string): Task | null => {
     for (const task of tasks) {
@@ -138,13 +100,26 @@ function decodeData(encoded: string): SharedChecklistData | null {
 }
 
 export function ChecklistApp() {
-  const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV7', []);
+  const { 
+      lists, setLists, 
+      listStates, setListStates,
+      addTask: contextAddTask, 
+      addList: contextAddList,
+      removeList: contextRemoveList,
+      setListColor,
+      removeTask,
+      toggleTask,
+      setTaskRecurring,
+      setTaskPriority,
+      findAndModifyTask,
+      findAndAddTask
+  } = useChecklist();
+
   const [newListName, setNewListName] = useState('');
   const [newTaskState, setNewTaskState] = useState<Record<string, NewTaskState>>({});
-  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV6', {});
   const [isClient, setIsClient] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState('default');
-  const [notifiedTasks, setNotifiedTasks] = useLocalStorage<string[]>('checklist:notifiedTasks', []);
+  const [notifiedTasks, setNotifiedTasks] = useState<string[]>([]);
   const { toast } = useToast();
   const { addEvent, removeEvent, setEvents: setCalendarEvents } = useCalendar();
   const importFileRef = useRef<HTMLInputElement>(null);
@@ -220,33 +195,6 @@ export function ChecklistApp() {
     });
   };
 
-  const findAndModifyTask = (tasks: Task[], taskId: string, modifier: (task: Task) => Task | null): Task[] => {
-    return tasks.reduce((acc, task) => {
-        if (task.id === taskId) {
-            const modified = modifier(task);
-            if(modified) acc.push(modified);
-        } else {
-            acc.push({
-                ...task,
-                subtasks: findAndModifyTask(task.subtasks, taskId, modifier)
-            });
-        }
-        return acc;
-    }, [] as Task[]);
-  };
-  
-  const findAndAddTask = (tasks: Task[], parentId: string, newTask: Task): Task[] => {
-      return tasks.map(task => {
-          if (task.id === parentId) {
-              return {...task, subtasks: [newTask, ...task.subtasks]}
-          }
-          return {
-            ...task,
-            subtasks: findAndAddTask(task.subtasks, parentId, newTask)
-          };
-      });
-  };
-
   const addTask = (listId: string, parentId?: string) => {
     const taskDetails = newTaskState[parentId || listId];
     if (taskDetails && taskDetails.text.trim()) {
@@ -260,17 +208,9 @@ export function ChecklistApp() {
         isRecurring: taskDetails.isRecurring || false,
         subtasks: []
       };
-      setLists(
-        lists.map((list) => {
-          if (list.id === listId) {
-            if(parentId) {
-                return {...list, tasks: findAndAddTask(list.tasks, parentId, newTask)};
-            }
-            return { ...list, tasks: [newTask, ...list.tasks] };
-          }
-          return list;
-        })
-      );
+      
+      contextAddTask(listId, newTask, parentId);
+
       if (newTask.dueDate) {
           addEvent({
               id: newTask.id,
@@ -301,80 +241,11 @@ export function ChecklistApp() {
         tasks: [],
         color: 'hsl(var(--border))'
       };
-      setLists([...lists, newList]);
+      contextAddList(newList);
       setNewListName('');
     }
   };
-
-  const removeList = (listId: string) => {
-    const listToRemove = lists.find(list => list.id === listId);
-    if (listToRemove) {
-        const tasksToRemove = (tasks: Task[]) => {
-            tasks.forEach(task => {
-                if (task.dueDate) removeEvent(task.id);
-                if (task.subtasks) tasksToRemove(task.subtasks);
-            })
-        }
-        tasksToRemove(listToRemove.tasks);
-    }
-    setLists(lists.filter((list) => list.id !== listId));
-    const newStates = {...listStates};
-    delete newStates[listId];
-    setListStates(newStates);
-  };
-
-  const setListColor = (listId: string, color: string) => {
-    setLists(lists.map(list => list.id === listId ? { ...list, color } : list));
-  }
-
-  const removeTask = (listId: string, taskId: string) => {
-    const taskToRemove = findTask(lists.flatMap(l => l.tasks), taskId);
-    if(taskToRemove && taskToRemove.dueDate) {
-        removeEvent(taskId);
-    }
-    setLists(lists.map(list => list.id === listId
-        ? { ...list, tasks: findAndModifyTask(list.tasks, taskId, () => null) }
-        : list
-    ));
-  };
-
-  const toggleTask = (listId: string, taskId: string) => {
-    setLists(lists.map(list => {
-      if (list.id === listId) {
-        let newTasks = findAndModifyTask(list.tasks, taskId, (task) => {
-          if (task.isRecurring) {
-            return {
-              ...task,
-              dueDate: task.dueDate ? startOfDay(addDays(new Date(task.dueDate), 1)).toISOString() : undefined,
-              completed: false, // It never stays completed
-            };
-          }
-          const newCompleted = !task.completed;
-          const updateSubtasks = (subtasks: Task[]): Task[] => {
-            return subtasks.map(st => ({ ...st, completed: newCompleted, subtasks: updateSubtasks(st.subtasks) }));
-          };
-          return { ...task, completed: newCompleted, subtasks: updateSubtasks(task.subtasks) };
-        });
-        return { ...list, tasks: newTasks };
-      }
-      return list;
-    }));
-  };
-
-  const setTaskRecurring = (listId: string, taskId: string, isRecurring: boolean) => {
-    setLists(lists.map(list => list.id === listId
-        ? { ...list, tasks: findAndModifyTask(list.tasks, taskId, (task) => ({...task, isRecurring})) }
-        : list
-    ));
-  }
   
-  const setTaskPriority = (listId: string, taskId: string, priority: Priority) => {
-    setLists(lists.map(list => list.id === listId
-        ? { ...list, tasks: findAndModifyTask(list.tasks, taskId, (task) => ({...task, priority})) }
-        : list
-    ));
-  };
-
   const calculateProgress = (tasks: Task[]): { completed: number, total: number } => {
     let completed = 0;
     let total = 0;
@@ -952,7 +823,7 @@ export function ChecklistApp() {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => removeList(list.id)}>Delete</AlertDialogAction>
+                                            <AlertDialogAction onClick={() => contextRemoveList(list.id)}>Delete</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
