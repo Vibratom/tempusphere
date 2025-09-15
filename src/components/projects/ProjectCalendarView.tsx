@@ -28,6 +28,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const priorityColors: Record<Priority, string> = {
     none: 'bg-muted-foreground',
@@ -243,10 +249,6 @@ export function ProjectCalendarView() {
     const tasksWithDueDate = useMemo(() => {
         return Object.values(board.tasks).filter(task => !!task.dueDate);
     }, [board.tasks]);
-
-    const daysWithTasks = useMemo(() => {
-        return tasksWithDueDate.map(task => startOfDay(parseISO(task.dueDate!)));
-    }, [tasksWithDueDate]);
     
     const tasksByDay = useMemo(() => {
         return tasksWithDueDate.reduce((acc, task) => {
@@ -309,28 +311,31 @@ export function ProjectCalendarView() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
                 <Card className="lg:col-span-2">
                     <CardContent className="p-2 sm:p-4">
+                        <TooltipProvider>
                         <Calendar
                             mode="single"
                             selected={selectedDate}
                             onSelect={setSelectedDate}
                             className="p-0 [&_td]:p-0"
-                            modifiers={{ hasTask: daysWithTasks }}
-                            modifiersClassNames={{ hasTask: 'has-task' }}
+                            classNames={{
+                                day_hasTask: "rdp-day_hasTask",
+                            }}
+                            modifiers={{ hasTask: (date) => tasksByDay[format(date, 'yyyy-MM-dd')]?.length > 0 }}
                             components={{
                                 Day: ({ date, displayMonth }) => {
                                     const dayKey = format(date, 'yyyy-MM-dd');
                                     const dayTasks = tasksByDay[dayKey] || [];
                                     const isOutside = date.getMonth() !== displayMonth.getMonth();
                                     
-                                    return (
+                                    const DayContent = (
                                         <Droppable droppableId={`day-${dayKey}`} isDropEnabled={!isOutside}>
                                             {(provided, snapshot) => (
                                                 <div
                                                     ref={provided.innerRef}
                                                     {...provided.droppableProps}
                                                     className={cn(
-                                                        "h-full w-full relative flex items-center justify-center rounded-md",
-                                                        snapshot.isDraggingOver && "bg-primary/20"
+                                                        "h-full w-full relative flex items-center justify-center rounded-md text-sm",
+                                                        snapshot.isDraggingOver && "bg-primary/20 ring-2 ring-primary"
                                                     )}
                                                 >
                                                     <p>{date.getDate()}</p>
@@ -341,14 +346,39 @@ export function ProjectCalendarView() {
                                                             ))}
                                                         </div>
                                                     )}
-                                                     {provided.placeholder}
+                                                    {provided.placeholder}
                                                 </div>
                                             )}
                                         </Droppable>
                                     );
+
+                                    if (dayTasks.length > 0) {
+                                        return (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    {DayContent}
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p className="font-bold mb-2">{dayTasks.length} task{dayTasks.length > 1 ? 's' : ''}</p>
+                                                    <ul className="space-y-1">
+                                                        {dayTasks.slice(0, 5).map(task => (
+                                                            <li key={task.id} className="flex items-center gap-2">
+                                                                <div className={cn("w-2 h-2 rounded-full", priorityColors[task.priority])} />
+                                                                <span className="text-xs">{task.title}</span>
+                                                            </li>
+                                                        ))}
+                                                        {dayTasks.length > 5 && <li className="text-xs text-muted-foreground">...and {dayTasks.length - 5} more</li>}
+                                                    </ul>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )
+                                    }
+
+                                    return DayContent;
                                 },
                             }}
                         />
+                        </TooltipProvider>
                     </CardContent>
                 </Card>
 

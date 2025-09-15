@@ -86,11 +86,11 @@ body {
   body {
     @apply bg-background text-foreground;
   }
-  .rdp-day_hasTask:not(.rdp-day_selected):not(.rdp-day_today):not(.rdp-day_outside) {
-    @apply bg-accent/10;
+  .rdp-day_hasTask:not(.rdp-day_selected) {
+    @apply bg-primary/10;
   }
-  .rdp-day_hasTask.rdp-day_today:not(.rdp-day_selected) {
-      @apply bg-accent/80;
+  .rdp-day_today:not(.rdp-day_selected) .rdp-day_hasTask {
+      @apply bg-primary/20;
   }
   .rdp-button {
     height: 100% !important;
@@ -104,14 +104,5 @@ body {
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
-  }
-  .rdp-day_selected {
-    @apply bg-primary text-primary-foreground;
-  }
-  .rdp-day_selected:hover {
-      @apply bg-primary/90;
-  }
-  .rdp-day_today {
-    @apply bg-accent text-accent-foreground;
   }
 }
