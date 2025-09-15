@@ -194,6 +194,12 @@ export function CanvasView() {
                   panX.set(panX.get() + info.delta.x);
                   panY.set(panY.get() + info.delta.y);
               }}
+              style={{
+                  '--grid-size': '30px',
+                  '--dot-color': 'hsl(var(--border))',
+                  backgroundImage: `radial-gradient(circle at center, var(--dot-color) 1px, transparent 1px)`,
+                  backgroundSize: `var(--grid-size) var(--grid-size)`
+              } as React.CSSProperties}
             >
               <motion.div 
                 className="relative w-full h-full"
