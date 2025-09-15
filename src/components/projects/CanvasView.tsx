@@ -141,6 +141,14 @@ export function CanvasView() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  // Save to local storage effect
+  useEffect(() => {
+    if (isClient) {
+      setSavedObjects(serializeObjects(objects));
+    }
+  }, [objects, isClient, setSavedObjects]);
+
 
   const getCanvasContext = (): CanvasRenderingContext2D | null => {
       const canvas = canvasRef.current;
@@ -207,10 +215,7 @@ export function CanvasView() {
     // Restore context to pre-transform state
     ctx.restore();
     
-    if(isClient) {
-      setSavedObjects(serializeObjects(objects));
-    }
-  }, [objects, selectedObjectId, isClient, editingTextId, scale, viewOffset, setSavedObjects]);
+  }, [objects, selectedObjectId, editingTextId, scale, viewOffset]);
 
   const drawGrid = (ctx: CanvasRenderingContext2D) => {
     const canvasWidth = ctx.canvas.width;
