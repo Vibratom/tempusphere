@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -7,7 +8,7 @@ import { Plus, Trash2, GripVertical, Calendar as CalendarIcon, FileText, Share2,
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -500,7 +501,7 @@ export function ProjectsApp() {
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="all-columns" direction="horizontal" type="COLUMN">
             {(provided) => (
-                <ScrollArea className="flex-1 w-full">
+                <ScrollArea className="w-full whitespace-nowrap">
                     <div 
                         {...provided.droppableProps} 
                         ref={provided.innerRef}
@@ -516,9 +517,9 @@ export function ProjectsApp() {
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
-                                  className="w-80 flex-shrink-0"
+                                  className="w-80 flex-shrink-0 inline-block align-top"
                                 >
-                                  <Card className="bg-muted/50 flex flex-col max-h-full">
+                                  <Card className="bg-muted/50 flex flex-col h-full">
                                       <div {...provided.dragHandleProps} className="p-3 border-b flex justify-between items-center cursor-grab">
                                           <h3 className="font-semibold">{column.title}</h3>
                                           <GripVertical className="h-5 w-5 text-muted-foreground" />
@@ -598,6 +599,7 @@ export function ProjectsApp() {
                         })}
                         {provided.placeholder}
                     </div>
+                    <ScrollBar orientation="horizontal" />
                 </ScrollArea>
             )}
         </Droppable>
