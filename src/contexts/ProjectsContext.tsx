@@ -229,7 +229,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
 
 const ProjectTaskSync = () => {
     const { board } = useProjects();
-    const { addEvent, removeEventsBySourceId, updateEventsBySourceId } = useCalendar();
+    const { addEvent, setEvents } = useCalendar();
     
     // Sync logic to update calendar events when project tasks change
     React.useEffect(() => {
@@ -237,7 +237,7 @@ const ProjectTaskSync = () => {
         // For now, we clear and re-add all project-related tasks.
         
         // 1. Remove all old 'Work' events
-        useCalendar.getState().setEvents(prev => prev.filter(e => e.type !== 'Work'));
+        setEvents(prev => prev.filter(e => e.type !== 'Work'));
 
         // 2. Add all current tasks from board
         Object.values(board.tasks).forEach(task => {
@@ -254,7 +254,7 @@ const ProjectTaskSync = () => {
             }
         });
 
-    }, [board.tasks, addEvent]);
+    }, [board.tasks, addEvent, setEvents]);
 
     return null;
 }
