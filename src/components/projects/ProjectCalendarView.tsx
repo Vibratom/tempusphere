@@ -356,11 +356,9 @@ export function ProjectCalendarView() {
                             onSelect={setSelectedDate}
                             className="p-0 [&_td]:p-0"
                             classNames={{
-                                day_button: "w-full h-full p-0 relative",
                                 day: cn(
-                                  "h-full w-full p-0 relative",
+                                  "h-24 w-full p-1 relative",
                                   "focus-within:relative focus-within:z-20",
-                                  "[&:has([aria-selected])]:bg-transparent"
                                 ),
                                 day_selected: "text-primary-foreground",
                                 day_today: "text-accent-foreground",
@@ -368,8 +366,6 @@ export function ProjectCalendarView() {
                             modifiers={{ hasTask: (date) => tasksByDay[format(date, 'yyyy-MM-dd')]?.length > 0 }}
                             modifiersClassNames={{
                                 hasTask: 'rdp-day_hasTask',
-                                selected: 'rdp-day_selected',
-                                today: 'rdp-day_today',
                             }}
                             components={{
                                 Day: ({ date, displayMonth }) => {
@@ -384,19 +380,18 @@ export function ProjectCalendarView() {
                                                     ref={provided.innerRef}
                                                     {...provided.droppableProps}
                                                     className={cn(
-                                                        "h-full w-full relative flex items-center justify-center rounded-md text-sm",
+                                                        "h-full w-full relative flex flex-col items-start p-1 rounded-md text-sm",
                                                         snapshot.isDraggingOver && "bg-primary/20 ring-2 ring-primary"
                                                     )}
                                                     {...props}
                                                 >
-                                                    <p>{date.getDate()}</p>
-                                                    {dayTasks.length > 0 && (
-                                                        <div className="absolute bottom-1.5 flex space-x-1">
-                                                            {dayTasks.slice(0, 4).map(task => (
-                                                                <div key={task.id} className={cn("h-1.5 w-1.5 rounded-full", priorityColors[task.priority])} />
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                    <p className={cn("font-semibold", isSameDay(date, selectedDate || new Date(0)) && "text-primary")}>{date.getDate()}</p>
+                                                    <div className="flex-1 mt-1 space-y-1 w-full overflow-hidden">
+                                                        {dayTasks.slice(0, 3).map(task => (
+                                                             <div key={task.id} className={cn("h-1.5 w-full rounded-full", priorityColors[task.priority])} />
+                                                        ))}
+                                                        {dayTasks.length > 3 && <p className="text-xs text-muted-foreground text-center">+{dayTasks.length - 3} more</p>}
+                                                    </div>
                                                     {provided.placeholder}
                                                 </div>
                                             )}
@@ -528,3 +523,5 @@ export function ProjectCalendarView() {
         </DragDropContext>
     );
 }
+
+    
