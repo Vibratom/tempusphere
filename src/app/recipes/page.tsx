@@ -13,8 +13,8 @@ import { CalendarProvider } from '@/contexts/CalendarContext';
 function RecipesContent() {
   return (
     <SettingsProvider>
-      <ChecklistProvider>
-        <CalendarProvider>
+      <CalendarProvider>
+        <ChecklistProvider>
           <div className="min-h-screen w-full bg-background flex flex-col">
             <Header />
             <main className="flex-1 flex flex-col items-center p-4 md:p-8">
@@ -22,8 +22,8 @@ function RecipesContent() {
             </main>
             <Footer />
           </div>
-        </CalendarProvider>
-      </ChecklistProvider>
+        </ChecklistProvider>
+      </CalendarProvider>
     </SettingsProvider>
   );
 }
