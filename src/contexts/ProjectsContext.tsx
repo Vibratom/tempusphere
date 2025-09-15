@@ -6,6 +6,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import * as pako from 'pako';
 import { Base64 } from 'js-base64';
 import { OnDragEndResponder } from '@hello-pangea/dnd';
+import { create } from 'zustand';
 
 export type Priority = 'none' | 'low' | 'medium' | 'high';
 
@@ -74,9 +75,9 @@ export function decodeBoardData(encoded: string): BoardData | null {
   }
 }
 
-interface ProjectsContextType {
+interface ProjectsState {
   board: BoardData;
-  setBoard: Dispatch<SetStateAction<BoardData>>;
+  setBoard: (board: BoardData | ((prev: BoardData) => BoardData)) => void;
   addTask: (columnId: string, taskDetails: Partial<TaskCard> & { title: string }) => void;
   removeTask: (taskId: string, columnId: string) => void;
   updateTask: (updatedTask: TaskCard) => void;
@@ -84,176 +85,132 @@ interface ProjectsContextType {
   handleDragEnd: OnDragEndResponder;
 }
 
-const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined);
-
-export function ProjectsProvider({ children }: { children: ReactNode }) {
-  const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV1', initialData);
-
-  const addColumn = (title: string) => {
+export const useProjects = create<ProjectsState>((set) => ({
+  board: initialData,
+  setBoard: (updater) => set(state => ({ board: typeof updater === 'function' ? updater(state.board) : updater })),
+  addColumn: (title) => set(state => {
     const newColumnId = `column-${Date.now()}`;
     const newColumn: Column = {
       id: newColumnId,
       title: title,
       taskIds: [],
     };
-
-    setBoard(prev => ({
-      ...prev,
-      columns: {
-        ...prev.columns,
-        [newColumnId]: newColumn,
-      },
-      columnOrder: [...prev.columnOrder, newColumnId],
-    }));
-  };
-
-  const addTask = (columnId: string, taskDetails: Partial<TaskCard> & { title: string }) => {
+    return {
+      board: {
+        ...state.board,
+        columns: {
+          ...state.board.columns,
+          [newColumnId]: newColumn,
+        },
+        columnOrder: [...state.board.columnOrder, newColumnId],
+      }
+    }
+  }),
+  addTask: (columnId, taskDetails) => set(state => {
     const newTaskId = `task-${Date.now()}`;
     const newTask: TaskCard = {
       id: newTaskId,
       priority: 'none',
       ...taskDetails,
     };
-
-    setBoard(prev => {
-      const column = prev.columns[columnId];
-      if (!column) return prev;
-      return {
-        ...prev,
-        tasks: {
-          ...prev.tasks,
-          [newTaskId]: newTask,
-        },
+    const column = state.board.columns[columnId];
+    if (!column) return state;
+    return {
+      board: {
+        ...state.board,
+        tasks: { ...state.board.tasks, [newTaskId]: newTask },
         columns: {
-          ...prev.columns,
+          ...state.board.columns,
           [columnId]: {
             ...column,
             taskIds: [...column.taskIds, newTaskId],
           }
         }
       }
-    });
-  }
-
-  const removeTask = (taskId: string, columnId: string) => {
-    setBoard(prev => {
-      const newTasks = { ...prev.tasks };
+    }
+  }),
+  removeTask: (taskId, columnId) => set(state => {
+      const newTasks = { ...state.board.tasks };
       delete newTasks[taskId];
       
-      const column = prev.columns[columnId];
+      const column = state.board.columns[columnId];
+      if (!column) return state;
+
       const newTaskIds = column.taskIds.filter(id => id !== taskId);
 
       return {
-        ...prev,
-        tasks: newTasks,
-        columns: {
-          ...prev.columns,
-          [columnId]: {
-            ...column,
-            taskIds: newTaskIds,
+        board: {
+          ...state.board,
+          tasks: newTasks,
+          columns: {
+            ...state.board.columns,
+            [columnId]: { ...column, taskIds: newTaskIds }
           }
         }
       }
-    })
-  }
-
-  const updateTask = (updatedTask: TaskCard) => {
-    if(!updatedTask) return;
-    setBoard(prev => ({
-      ...prev,
-      tasks: {
-        ...prev.tasks,
-        [updatedTask.id]: updatedTask
+  }),
+  updateTask: (updatedTask) => set(state => {
+      if(!updatedTask) return state;
+      return {
+        board: {
+          ...state.board,
+          tasks: { ...state.board.tasks, [updatedTask.id]: updatedTask }
+        }
       }
-    }))
-  }
-  
-  const handleDragEnd: OnDragEndResponder = (result) => {
+  }),
+  handleDragEnd: (result) => set(state => {
     const { destination, source, draggableId, type } = result;
+    if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) return state;
 
-    if (!destination) return;
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+    if (type === 'COLUMN') {
+      const newColumnOrder = Array.from(state.board.columnOrder);
+      newColumnOrder.splice(source.index, 1);
+      newColumnOrder.splice(destination.index, 0, draggableId);
+      return { board: { ...state.board, columnOrder: newColumnOrder } };
+    }
+
+    const startColumn = state.board.columns[source.droppableId];
+    const endColumn = state.board.columns[destination.droppableId];
+
+    if (startColumn === endColumn) {
+      const newTaskIds = Array.from(startColumn.taskIds);
+      newTaskIds.splice(source.index, 1);
+      newTaskIds.splice(destination.index, 0, draggableId);
+      const newColumn = { ...startColumn, taskIds: newTaskIds };
+      return { board: { ...state.board, columns: { ...state.board.columns, [newColumn.id]: newColumn } } };
+    } else {
+      const startTaskIds = Array.from(startColumn.taskIds);
+      startTaskIds.splice(source.index, 1);
+      const newStartColumn = { ...startColumn, taskIds: startTaskIds };
+
+      const endTaskIds = Array.from(endColumn.taskIds);
+      endTaskIds.splice(destination.index, 0, draggableId);
+      const newEndColumn = { ...endColumn, taskIds: endTaskIds };
+      
+      return { board: { ...state.board, columns: { ...state.board.columns, [newStartColumn.id]: newStartColumn, [newEndColumn.id]: newEndColumn } } };
+    }
+  }),
+}));
+
+// This provider component is now simpler. It ensures the hook is initialized from localStorage.
+export function ProjectsProvider({ children }: { children: ReactNode }) {
+    const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV2', initialData);
+    const setProjectsState = useProjects.setState;
+
+    React.useEffect(() => {
+        setProjectsState({ board });
+    }, [board, setProjectsState]);
     
-    setBoard(prev => {
-        // Reordering columns
-        if (type === 'COLUMN') {
-          const newColumnOrder = Array.from(prev.columnOrder);
-          newColumnOrder.splice(source.index, 1);
-          newColumnOrder.splice(destination.index, 0, draggableId);
+    // Subscribe to Zustand store changes and update localStorage
+    React.useEffect(() => {
+        const unsubscribe = useProjects.subscribe(
+            (state) => setBoard(state.board)
+        );
+        return unsubscribe;
+    }, [setBoard]);
 
-          return {
-            ...prev,
-            columnOrder: newColumnOrder,
-          };
-        }
 
-        // Reordering tasks
-        const startColumn = prev.columns[source.droppableId];
-        const endColumn = prev.columns[destination.droppableId];
-
-        if (startColumn === endColumn) {
-          // Reordering within the same column
-          const newTaskIds = Array.from(startColumn.taskIds);
-          newTaskIds.splice(source.index, 1);
-          newTaskIds.splice(destination.index, 0, draggableId);
-
-          const newColumn = {
-            ...startColumn,
-            taskIds: newTaskIds,
-          };
-
-          return {
-            ...prev,
-            columns: {
-              ...prev.columns,
-              [newColumn.id]: newColumn,
-            }
-          };
-        } else {
-          // Moving from one column to another
-          const startTaskIds = Array.from(startColumn.taskIds);
-          startTaskIds.splice(source.index, 1);
-          const newStartColumn = {
-            ...startColumn,
-            taskIds: startTaskIds,
-          };
-
-          const endTaskIds = Array.from(endColumn.taskIds);
-          endTaskIds.splice(destination.index, 0, draggableId);
-          const newEndColumn = {
-            ...endColumn,
-            taskIds: endTaskIds,
-          };
-          
-          return {
-            ...prev,
-            columns: {
-              ...prev.columns,
-              [newStartColumn.id]: newStartColumn,
-              [newEndColumn.id]: newEndColumn,
-            }
-          };
-        }
-    });
-  };
-
-  const value = {
-    board,
-    setBoard,
-    addTask,
-    removeTask,
-    updateTask,
-    addColumn,
-    handleDragEnd
-  };
-
-  return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>;
+  return <>{children}</>;
 }
 
-export function useProjects() {
-  const context = useContext(ProjectsContext);
-  if (context === undefined) {
-    throw new Error('useProjects must be used within a ProjectsProvider');
-  }
-  return context;
-}
+    

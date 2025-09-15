@@ -77,6 +77,25 @@ export function ProjectsApp() {
             toast({ variant: 'destructive', title: 'Load Failed', description: 'Could not load the shared board from the URL.' });
         }
     }
+    
+    // Board update broadcaster for live share
+    const originalSetBoard = setBoard;
+    // @ts-ignore
+    setBoard = (updater) => {
+      originalSetBoard(prevBoard => {
+        const newBoard = typeof updater === 'function' ? updater(prevBoard) : updater;
+        if (peerRef.current && peerRef.current.connected) {
+          peerRef.current.send(JSON.stringify(newBoard));
+        }
+        return newBoard;
+      });
+    }
+
+    return () => {
+      // @ts-ignore
+      setBoard = originalSetBoard;
+      peerRef.current?.destroy();
+    }
   }, []);
 
   const handleNewTaskTitleChange = (columnId: string, title: string) => {
@@ -135,15 +154,26 @@ export function ProjectsApp() {
     });
 
     peer.on('data', (data) => {
-      // Received data from the other peer
-      const receivedBoard = JSON.parse(data.toString());
-      setBoard(receivedBoard);
-      toast({ title: 'Board Updated', description: 'The board has been updated by your collaborator.' });
+      try {
+        // Received data from the other peer
+        const receivedBoard = JSON.parse(data.toString());
+        // Directly set board state without broadcasting back
+        const originalSetBoard = useProjects.getState().setBoard;
+        originalSetBoard(receivedBoard);
+        toast({ title: 'Board Updated', description: 'The board has been updated by your collaborator.' });
+      } catch (e) {
+        console.error('Failed to parse received board data:', e);
+      }
     });
 
     peer.on('close', () => {
       toast({ variant: 'destructive', title: 'Session Closed', description: 'The live share session has ended.' });
       peerRef.current = undefined;
+    });
+
+    peer.on('error', (err) => {
+        toast({ variant: 'destructive', title: 'Connection Error', description: err.message });
+        console.error('Peer error:', err);
     });
 
     peerRef.current = peer;
@@ -166,8 +196,8 @@ export function ProjectsApp() {
           <DialogTitle>{isHost ? 'Start a Live Share Session' : 'Join a Live Share Session'}</DialogTitle>
           <DialogDescription>
             {isHost
-              ? "Copy this signal data and send it to your collaborator. They will use it to connect."
-              : "Paste the signal data you received from the host here to connect to the session."}
+              ? "Copy this signal data and send it to your collaborator. They will paste it to generate a response signal for you."
+              : "Paste the signal data you received from the host here. Then, copy the generated response and send it back to them."}
           </DialogDescription>
         </DialogHeader>
         <Textarea
@@ -177,12 +207,12 @@ export function ProjectsApp() {
           rows={6}
           readOnly={isHost}
         />
-        <DialogFooter>
+        <DialogFooter className="sm:justify-between">
           <Button variant="outline" onClick={() => {
             navigator.clipboard.writeText(liveShareSignal);
             toast({ title: 'Copied to Clipboard!' });
-          }}>Copy</Button>
-          {!isHost && <Button onClick={connectToPeer}>Connect</Button>}
+          }}>Copy Signal</Button>
+          {!isHost && <Button onClick={connectToPeer}>Generate Response & Connect</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -323,7 +353,36 @@ export function ProjectsApp() {
                                   <Card className="bg-muted/50 flex flex-col h-full">
                                       <div {...provided.dragHandleProps} className="p-3 border-b flex justify-between items-center cursor-grab">
                                           <h3 className="font-semibold">{column.title}</h3>
-                                          <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                          <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                               <Button variant="ghost" size="icon" className="h-7 w-7"><Trash2 className="h-4 w-4"/></Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Delete Column?</AlertDialogTitle>
+                                                    <AlertDialogDescription>Are you sure you want to delete the "{column.title}" column? All tasks within it will also be deleted. This cannot be undone.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => {
+                                                        setBoard(prev => {
+                                                            const newBoard = {...prev};
+                                                            const tasksToDelete = newBoard.columns[columnId].taskIds;
+                                                            
+                                                            tasksToDelete.forEach(taskId => {
+                                                                delete newBoard.tasks[taskId];
+                                                            });
+                                                            
+                                                            delete newBoard.columns[columnId];
+                                                            
+                                                            newBoard.columnOrder = newBoard.columnOrder.filter(id => id !== columnId);
+                                                            
+                                                            return newBoard;
+                                                        })
+                                                    }}>Delete</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                          </AlertDialog>
                                       </div>
                                       <ScrollArea className="flex-grow">
                                         <Droppable droppableId={column.id} type="TASK">
@@ -408,3 +467,5 @@ export function ProjectsApp() {
     </div>
   );
 }
+
+    
