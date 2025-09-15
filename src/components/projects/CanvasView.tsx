@@ -6,11 +6,12 @@ import { motion, useMotionValue, PanInfo } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
-import { Plus, Trash2, Zap, ZoomIn, ZoomOut } from 'lucide-react';
+import { Plus, Trash2, Zap, ZoomIn, ZoomOut, Sparkles, Loader } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectsContext';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { brainstormIdeas } from '@/ai/flows/brainstorm-flow';
 
 interface Node {
   id: string;
@@ -24,12 +25,14 @@ const initialNodes: Node[] = [
   { id: 'root', text: 'My Project Idea', x: 0, y: 0 },
 ];
 
-const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTask, isSelected, onSelect, onNodeDrag }: {
+const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTask, onGenerateIdeas, isGenerating, isSelected, onSelect, onNodeDrag }: {
     node: Node;
     onUpdateText: (id: string, text: string) => void;
     onAddChild: (parentId: string) => void;
     onDelete: (id: string) => void;
     onConvertToTask: (text: string) => void;
+    onGenerateIdeas: (parentId: string, topic: string) => void;
+    isGenerating: boolean;
     isSelected: boolean;
     onSelect: (id: string | null) => void;
     onNodeDrag: (id: string, info: PanInfo) => void;
@@ -81,6 +84,9 @@ const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTa
                 <Button size="icon" variant="ghost" onClick={() => onAddChild(node.id)} className="h-7 w-7"><Plus/></Button>
                 {node.id !== 'root' && <Button size="icon" variant="ghost" onClick={() => onDelete(node.id)} className="h-7 w-7 text-destructive"><Trash2/></Button>}
                 <Button size="icon" variant="ghost" onClick={() => onConvertToTask(node.text)} className="h-7 w-7 text-green-500"><Zap/></Button>
+                <Button size="icon" variant="ghost" onClick={() => onGenerateIdeas(node.id, node.text)} className="h-7 w-7 text-purple-500" disabled={isGenerating}>
+                    {isGenerating ? <Loader className="animate-spin" /> : <Sparkles/>}
+                </Button>
            </div>
        )}
     </motion.div>
@@ -108,6 +114,7 @@ const Line = ({ fromNode, toNode }: { fromNode: Node, toNode: Node }) => {
 export function CanvasView() {
   const [nodes, setNodes] = useLocalStorage<Node[]>('projects:canvas', initialNodes);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const addTask = useProjects(state => state.addTask);
   const { toast } = useToast();
   
@@ -115,23 +122,33 @@ export function CanvasView() {
   const panX = useMotionValue(0);
   const panY = useMotionValue(0);
 
-  const handleAddChild = (parentId: string) => {
+  const handleAddChild = (parentId: string, text = 'New Idea') => {
     const parentNode = nodes.find(n => n.id === parentId);
     if (!parentNode) return;
     
-    const childrenCount = nodes.filter(n => n.parentId === parentId).length;
+    const children = nodes.filter(n => n.parentId === parentId);
+    const childrenCount = children.length;
     
-    const newX = parentNode.x + 250;
-    const newY = parentNode.y + (childrenCount * 100);
+    // Attempt to position new nodes without overlapping
+    let newX = parentNode.x + 250;
+    let newY = parentNode.y + (childrenCount * 100);
+
+    const isOccupied = (x: number, y: number) => {
+        return children.some(child => Math.abs(child.x - x) < 20 && Math.abs(child.y - y) < 20);
+    }
+
+    while(isOccupied(newX, newY)) {
+        newY += 20;
+    }
 
     const newNode: Node = {
-      id: `node-${Date.now()}`,
-      text: 'New Idea',
+      id: `node-${Date.now()}-${Math.random()}`,
+      text: text,
       x: newX,
       y: newY,
       parentId: parentId,
     };
-    setNodes([...nodes, newNode]);
+    setNodes(prev => [...prev, newNode]);
   };
 
   const handleNodeDrag = (id: string, info: PanInfo) => {
@@ -179,6 +196,31 @@ export function CanvasView() {
       }
   }
 
+  const handleGenerateIdeas = async (parentId: string, topic: string) => {
+    setIsGenerating(true);
+    try {
+        const result = await brainstormIdeas(topic);
+        if (result && result.ideas) {
+            result.ideas.forEach(idea => {
+                handleAddChild(parentId, idea);
+            });
+            toast({
+                title: "Ideas Generated!",
+                description: `${result.ideas.length} new ideas have been added.`
+            });
+        }
+    } catch(e) {
+        console.error(e);
+        toast({
+            variant: "destructive",
+            title: "AI Error",
+            description: "Could not generate ideas. Please try again."
+        });
+    } finally {
+        setIsGenerating(false);
+    }
+  }
+
   const handleZoom = (direction: 'in' | 'out') => {
       setScale(s => direction === 'in' ? Math.min(s * 1.2, 2) : Math.max(s / 1.2, 0.2));
   };
@@ -218,9 +260,11 @@ export function CanvasView() {
                             key={node.id}
                             node={node}
                             onUpdateText={handleUpdateText}
-                            onAddChild={handleAddChild}
+                            onAddChild={(parentId) => handleAddChild(parentId)}
                             onDelete={handleDelete}
                             onConvertToTask={handleConvertToTask}
+                            onGenerateIdeas={handleGenerateIdeas}
+                            isGenerating={isGenerating && selectedNodeId === node.id}
                             isSelected={selectedNodeId === node.id}
                             onSelect={setSelectedNodeId}
                             onNodeDrag={(id, info) => {
