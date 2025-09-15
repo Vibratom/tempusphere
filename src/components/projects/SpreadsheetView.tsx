@@ -97,6 +97,13 @@ export function SpreadsheetView() {
     const { row: activeRow, col: activeCol } = activeCell;
 
     if (e.ctrlKey || e.metaKey) {
+        if (e.shiftKey && e.key.toLowerCase() === ' ') {
+            e.preventDefault();
+            setActiveCell({ row: 0, col: 0 });
+            setSelection({ start: { row: 0, col: 0 }, end: { row: numRows - 1, col: numCols - 1 }});
+            return;
+        }
+
         switch (e.key.toLowerCase()) {
             case 'a':
                 e.preventDefault();
@@ -148,6 +155,38 @@ export function SpreadsheetView() {
     
     if (isEditing) return;
 
+    if (e.shiftKey) {
+        let endRow = selection?.end.row ?? activeRow;
+        let endCol = selection?.end.col ?? activeCol;
+
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                endRow = Math.min(numRows - 1, endRow + 1);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                endRow = Math.max(0, endRow - 1);
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                endCol = Math.max(0, endCol - 1);
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                endCol = Math.min(numCols - 1, endCol + 1);
+                break;
+            case ' ': // Shift + Space
+                e.preventDefault();
+                setSelection({ start: { row: activeRow, col: 0 }, end: { row: activeRow, col: numCols - 1 } });
+                return;
+            default:
+                return;
+        }
+        setSelection({ start: selection?.start ?? activeCell, end: { row: endRow, col: endCol } });
+        return;
+    }
+
     let nextRow = activeRow;
     let nextCol = activeCol;
 
@@ -192,7 +231,7 @@ export function SpreadsheetView() {
     setActiveCell({ row: nextRow, col: nextCol });
     setSelection({ start: { row: nextRow, col: nextCol }, end: { row: nextRow, col: nextCol } });
     cellRefs.current[nextRow]?.[nextCol]?.focus();
-  }, [activeCell, isEditing, numRows, numCols, handleUndo, handleRedo]);
+  }, [activeCell, isEditing, numRows, numCols, handleUndo, handleRedo, selection]);
 
   const addRow = () => {
     if (!Array.isArray(gridData)) {
@@ -419,36 +458,47 @@ export function SpreadsheetView() {
                                     colIndex <= Math.max(selection.start.col, selection.end.col);
 
                                   return (
-                                    <td key={`${rowIndex}-${colIndex}`} className={cn(
-                                        "p-0 border relative",
-                                        isSelected && "bg-primary/20",
-                                    )}>
-                                        <Input
-                                            type="text"
+                                    <td key={`${rowIndex}-${colIndex}`} 
+                                        className={cn( "p-0 border relative", isSelected && "bg-primary/20" )}
+                                        onMouseDown={() => {
+                                            setActiveCell({ row: rowIndex, col: colIndex });
+                                            setSelection({ start: { row: rowIndex, col: colIndex }, end: { row: rowIndex, col: colIndex } });
+                                        }}
+                                        onMouseOver={(e) => {
+                                            if (e.buttons === 1) { // If left mouse button is held down
+                                                setSelection(prev => prev ? { ...prev, end: { row: rowIndex, col: colIndex } } : null);
+                                            }
+                                        }}
+                                        onDoubleClick={() => setIsEditing(true)}
+                                    >
+                                        <div
                                             ref={el => {
                                               if (cellRefs.current[rowIndex]) {
-                                                cellRefs.current[rowIndex][colIndex] = el;
+                                                cellRefs.current[rowIndex][colIndex] = el as HTMLInputElement; // This is a div, but we need focus. We'll handle input separately.
                                               }
                                             }}
-                                            value={cellData.value}
-                                            onFocus={() => {
-                                              if (!isEditing) {
-                                                setActiveCell({ row: rowIndex, col: colIndex });
-                                                setSelection({ start: { row: rowIndex, col: colIndex }, end: { row: rowIndex, col: colIndex } });
-                                              }
-                                            }}
-                                            onDoubleClick={() => setIsEditing(true)}
-                                            onBlur={finishEditing}
-                                            onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                                            readOnly={!isEditing && isActive}
+                                            tabIndex={0}
                                             className={cn(
-                                              "w-full h-full p-1.5 text-sm bg-transparent border-0 rounded-none shadow-none focus-visible:ring-0",
+                                              "w-full h-full p-1.5 text-sm outline-none",
                                               isActive && "ring-2 ring-primary z-10",
                                               cellData.bold && "font-bold",
                                               cellData.italic && "italic",
                                               cellData.underline && "underline"
                                             )}
-                                        />
+                                        >
+                                          {isEditing && isActive ? (
+                                              <Input
+                                                type="text"
+                                                autoFocus
+                                                value={cellData.value}
+                                                onBlur={finishEditing}
+                                                onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                                                className="w-full h-full p-0 bg-transparent border-0 rounded-none shadow-none text-sm absolute inset-0 focus-visible:ring-0"
+                                              />
+                                          ) : (
+                                            cellData.value || <>&nbsp;</>
+                                          )}
+                                        </div>
                                     </td>
                                   )
                                 })}
@@ -462,5 +512,3 @@ export function SpreadsheetView() {
     </div>
   );
 }
-
-    
