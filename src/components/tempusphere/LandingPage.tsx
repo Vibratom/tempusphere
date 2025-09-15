@@ -74,12 +74,12 @@ const features = [
 ];
 
 const otherPlatforms = [
-    { name: 'Momentum', category: 'Finance', icon: Landmark, href: '#', color: 'bg-indigo-500 hover:bg-indigo-600', description: 'Track expenses and manage budgets with ease.' },
-    { name: 'EchoLearn', category: 'Education', icon: BrainCircuit, href: '#', color: 'bg-amber-500 hover:bg-amber-600', description: 'Create and share interactive learning modules.' },
+    { name: 'Finance', category: 'Finance', icon: Landmark, href: '#', color: 'bg-indigo-500 hover:bg-indigo-600', description: 'Track expenses and manage budgets with ease.' },
+    { name: 'Education', category: 'Education', icon: BrainCircuit, href: '#', color: 'bg-amber-500 hover:bg-amber-600', description: 'Create and share interactive learning modules.' },
     { name: 'Canvas', category: 'Whiteboard', icon: DraftingCompass, href: '#', color: 'bg-sky-500 hover:bg-sky-600', description: 'Collaborate visually with a digital whiteboard.' },
-    { name: 'Scribe', category: 'Notes', icon: FileText, href: '#', color: 'bg-gray-500 hover:bg-gray-600', description: 'A clean space for your thoughts and documents.' },
-    { name: 'Gridify', category: 'Spreadsheets', icon: Table, href: '#', color: 'bg-emerald-500 hover:bg-emerald-600', description: 'Organize and analyze data in spreadsheets.' },
-    { name: 'Epicure', category: 'Recipes', icon: UtensilsCrossed, href: '#', color: 'bg-yellow-500 hover:bg-yellow-600', description: 'Organize recipes and plan your meals.' },
+    { name: 'Notes', category: 'Notes', icon: FileText, href: '#', color: 'bg-gray-500 hover:bg-gray-600', description: 'A clean space for your thoughts and documents.' },
+    { name: 'Spreadsheets', category: 'Spreadsheets', icon: Table, href: '#', color: 'bg-emerald-500 hover:bg-emerald-600', description: 'Organize and analyze data in spreadsheets.' },
+    { name: 'Recipes', category: 'Recipes', icon: UtensilsCrossed, href: '#', color: 'bg-yellow-500 hover:bg-yellow-600', description: 'Organize recipes and plan your meals.' },
     { name: 'NexusFlow', category: 'Projects', icon: KanbanSquare, href: '/nexusflow', color: 'bg-rose-500 hover:bg-rose-600', description: 'Manage projects with Kanban-style boards.' },
     { name: 'Checklist', category: 'To-Do List', icon: ListChecks, href: '/checklist', color: 'bg-blue-500 hover:bg-blue-600', description: 'Simple checklists for daily tasks and goals.' },
 ]
