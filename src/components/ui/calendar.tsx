@@ -62,7 +62,7 @@ function Calendar({
           <ChevronRight className={cn("h-4 w-4", className)} {...props} />
         ),
          DayContent: (props: DayContentProps) => {
-            return <div className="w-full h-full">{props.date.getDate()}</div>
+            return <div className="w-full h-full text-foreground">{props.date.getDate()}</div>
          }
       }}
       {...props}
