@@ -84,8 +84,16 @@ const deserializeObjects = (serialized: any[]): Promise<CanvasObject[]> => {
 
 export function CanvasView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Main state for objects being rendered
   const [objects, setObjects] = useState<CanvasObject[]>([]);
+  // Local storage for persistence
   const [savedObjects, setSavedObjects] = useLocalStorage<any[]>('projects:canvasObjects-v2', []);
+  // History for undo/redo
+  const [history, setHistory] = useState<CanvasObject[][]>([[]]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
   
   const [tool, setTool] = useState<Tool>('select');
   const [color, setColor] = useState('#000000');
@@ -100,15 +108,42 @@ export function CanvasView() {
 
   const [isClient, setIsClient] = useState(false);
   const editingInputRef = useRef<HTMLInputElement>(null);
+  
+  // Function to update canvas state and manage history
+  const updateCanvasState = (newObjects: CanvasObject[], newHistoryEntry = true) => {
+    setObjects(newObjects);
+    if (newHistoryEntry) {
+        const newHistory = history.slice(0, historyIndex + 1);
+        setHistory([...newHistory, newObjects]);
+        setHistoryIndex(newHistory.length);
+    }
+  };
+
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setObjects(history[newIndex]);
+    }
+  }, [history, historyIndex]);
+
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+        const newIndex = historyIndex + 1;
+        setHistoryIndex(newIndex);
+        setObjects(history[newIndex]);
+    }
+  }, [history, historyIndex]);
 
   // Load objects from localStorage on initial mount
   useEffect(() => {
     setIsClient(true);
     if(savedObjects.length > 0) {
         deserializeObjects(savedObjects).then(loadedObjects => {
-            setObjects(loadedObjects);
+            updateCanvasState(loadedObjects);
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getCanvasContext = (): CanvasRenderingContext2D | null => {
@@ -243,7 +278,7 @@ export function CanvasView() {
         x: 0, // Path points are absolute for simplicity now
         y: 0,
       };
-      setObjects(prev => [...prev, newPath]);
+      updateCanvasState([...objects, newPath]);
       setSelectedObjectId(newPath.id);
     } else if (tool === 'select') {
         const clickedObject = getObjectAtPosition(x, y);
@@ -263,7 +298,7 @@ export function CanvasView() {
             fontSize: 24,
             color,
         };
-        setObjects(prev => [...prev, newText]);
+        updateCanvasState([...objects, newText]);
         setSelectedObjectId(newText.id);
         setTool('select'); // Switch back to select tool after adding text
         setEditingTextId(newText.id);
@@ -273,7 +308,7 @@ export function CanvasView() {
   const handleMouseMove = (e: React.MouseEvent) => {
     const { x, y } = getCoords(e);
     if (isDrawing && tool === 'pencil') {
-      setObjects(prev => prev.map(obj => {
+      const newObjects = objects.map(obj => {
         if (obj.id === selectedObjectId && obj.type === 'path') {
           return {
             ...obj,
@@ -281,18 +316,26 @@ export function CanvasView() {
           };
         }
         return obj;
-      }));
+      });
+      updateCanvasState(newObjects, false); // No history entry during drawing
     } else if (isDragging && tool === 'select' && selectedObjectId) {
-        setObjects(prev => prev.map(obj => {
+        const newObjects = objects.map(obj => {
             if(obj.id === selectedObjectId) {
                 return { ...obj, x: x - dragStart.x, y: y - dragStart.y };
             }
             return obj;
-        }));
+        });
+        updateCanvasState(newObjects, false); // No history entry during dragging
     }
   };
 
   const handleMouseUp = () => {
+    if (isDrawing || isDragging) {
+        // Create a new history entry when drawing/dragging is finished
+        const newHistory = history.slice(0, historyIndex + 1);
+        setHistory([...newHistory, objects]);
+        setHistoryIndex(newHistory.length);
+    }
     setIsDrawing(false);
     setIsDragging(false);
   };
@@ -305,9 +348,30 @@ export function CanvasView() {
           setSelectedObjectId(clickedObject.id); // Also select it
       }
   }
+
+  // Keyboard events for undo/redo
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z') {
+            e.preventDefault();
+            handleUndo();
+        } else if (e.key === 'y') {
+            e.preventDefault();
+            handleRedo();
+        }
+    }
+  }, [handleUndo, handleRedo]);
+
+  useEffect(() => {
+    const cont = containerRef.current;
+    cont?.addEventListener('keydown', handleKeyDown);
+    return () => {
+        cont?.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [handleKeyDown]);
   
   const handleClear = () => {
-    setObjects([]);
+    updateCanvasState([]);
     setSelectedObjectId(null);
   };
   
@@ -327,7 +391,7 @@ export function CanvasView() {
                   width: img.width,
                   height: img.height,
               };
-              setObjects(prev => [...prev, newImage]);
+              updateCanvasState([...objects, newImage]);
               setSelectedObjectId(newImage.id);
           };
           img.src = event.target?.result as string;
@@ -337,7 +401,7 @@ export function CanvasView() {
   
   const handleDeleteSelected = () => {
     if(!selectedObjectId) return;
-    setObjects(prev => prev.filter(o => o.id !== selectedObjectId));
+    updateCanvasState(objects.filter(o => o.id !== selectedObjectId));
     setSelectedObjectId(null);
   }
   
@@ -362,7 +426,7 @@ export function CanvasView() {
             newObjects.unshift(item);
           }
       }
-      setObjects(newObjects);
+      updateCanvasState(newObjects);
   }
 
   // Effect to focus the input when editing starts
@@ -374,22 +438,27 @@ export function CanvasView() {
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if(!editingTextId) return;
-      setObjects(prev => prev.map(obj => {
+      const newObjects = objects.map(obj => {
           if (obj.id === editingTextId && obj.type === 'text') {
               return { ...obj, text: e.target.value };
           }
           return obj;
-      }))
+      });
+      updateCanvasState(newObjects, false); // No history during text input
   }
 
   const handleTextEditBlur = () => {
+      // Create history entry after text edit is done
+      const newHistory = history.slice(0, historyIndex + 1);
+      setHistory([...newHistory, objects]);
+      setHistoryIndex(newHistory.length);
       setEditingTextId(null);
   }
 
   const editingTextObject = editingTextId ? objects.find(o => o.id === editingTextId) as TextObject : null;
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="w-full h-full flex items-center justify-center" ref={containerRef} tabIndex={-1}>
       <Card className="w-full flex flex-col" style={{ height: '800px' }}>
         <CardContent className="p-0 flex-1 relative overflow-hidden flex flex-col">
             <div className="absolute top-2 left-2 z-10 bg-background/80 border rounded-lg p-1 flex gap-1 items-center shadow-md flex-wrap">
@@ -467,5 +536,3 @@ export function CanvasView() {
     </div>
   );
 }
-
-    
