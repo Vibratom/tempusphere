@@ -38,14 +38,17 @@ const NewTaskDialog = () => {
     const { board, addTask } = useProjects();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [status, setStatus] = useState(board.columnOrder[0] || '');
+    const [status, setStatus] = useState(board.columnOrder.length > 0 ? board.columns[board.columnOrder[0]].title : '');
     const [priority, setPriority] = useState<Priority>('none');
     const [dueDate, setDueDate] = useState<Date | undefined>();
     const [isOpen, setIsOpen] = useState(false);
 
     const handleSubmit = () => {
         if (!title.trim() || !status) return;
-        addTask(status, {
+        const columnId = Object.values(board.columns).find(c => c.title === status)?.id;
+        if (!columnId) return;
+
+        addTask(columnId, {
             title,
             description: description || undefined,
             priority,
@@ -225,7 +228,7 @@ export function ProjectListView() {
                         className="pl-8 w-full"
                     />
                 </div>
-                <div className="flex gap-2 w-full md:w-auto">
+                <div className="flex gap-2 w-full md:w-auto shrink-0">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="w-full md:w-[180px]">
                             <SelectValue placeholder="Filter by status" />
@@ -241,7 +244,7 @@ export function ProjectListView() {
                     </Select>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="w-full md:w-auto flex-shrink-0 px-4">
+                            <Button variant="outline" className="w-full md:w-auto justify-start px-4">
                                 <Flag className={cn("mr-2 h-4 w-4", priorityFilter !== 'all' && priorityColors[priorityFilter])}/>
                                 <span>Priority</span>
                             </Button>
