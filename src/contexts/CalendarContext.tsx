@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction, useCallback } from 'react';
+import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction, useCallback, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 export type EventType = string;
@@ -31,8 +31,17 @@ interface CalendarContextType {
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
-  const [events, setEvents] = useLocalStorage<CalendarEvent[]>('calendar:eventsV4', []);
-  const [eventTypes, setEventTypes] = useLocalStorage<EventType[]>('calendar:eventTypesV1', ['Personal', 'Work']);
+  const [events, setEvents] = useLocalStorage<CalendarEvent[]>('calendar:eventsV5', []);
+  const [eventTypes, setEventTypes] = useLocalStorage<EventType[]>('calendar:eventTypesV2', ['Personal', 'Work']);
+
+  useEffect(() => {
+    // Sync any legacy events that might not have a type
+    if (events.some(e => !e.type)) {
+        setEvents(prev => prev.map(e => e.type ? e : {...e, type: 'Personal' }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const addEventType = useCallback((type: EventType) => {
     if (type && !eventTypes.includes(type)) {
