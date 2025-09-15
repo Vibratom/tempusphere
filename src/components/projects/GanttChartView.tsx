@@ -117,15 +117,15 @@ export function GanttChartView() {
         });
 
         return (
-             <>
+             <div style={{ gridColumn: '2 / -1' }} className="contents">
                 {Object.entries(months).map(([month, daysInMonth]) => (
                     <React.Fragment key={month}>
-                        <div className="text-center font-semibold p-2 border-b border-r bg-muted/30 sticky top-0 z-20" style={{ gridColumn: `${differenceInDays(daysInMonth[0], dateRange[0]) + 1} / span ${daysInMonth.length}` }}>
+                        <div className="text-center font-semibold p-2 border-b border-r bg-muted/30 sticky top-0 z-20" style={{ gridColumn: `${differenceInDays(daysInMonth[0], dateRange[0]) + 2} / span ${daysInMonth.length}` }}>
                             {month}
                         </div>
-                        {daysInMonth.map(date => (
+                         {daysInMonth.map(date => (
                             <div key={date.toISOString()} className={cn(
-                                "text-center border-r border-b p-2 whitespace-nowrap sticky top-[49px] bg-muted/30 text-xs md:text-sm",
+                                "text-center border-r border-b p-2 whitespace-nowrap sticky top-[49px] bg-muted/30 text-xs md:text-sm z-20",
                                 isToday(date) && "bg-primary/20",
                                 isWeekend(date) && "bg-muted/50",
                             )}>
@@ -135,7 +135,7 @@ export function GanttChartView() {
                         ))}
                     </React.Fragment>
                 ))}
-            </>
+            </div>
         )
     };
     
@@ -147,7 +147,6 @@ export function GanttChartView() {
     }
     
     const taskColWidth = 'minmax(150px, 1fr)';
-    const stickyLeft = '150px';
 
     return (
         <Card className="flex flex-col">
@@ -172,20 +171,19 @@ export function GanttChartView() {
             </CardHeader>
             <CardContent>
                 <ScrollArea className="w-full">
-                    <div className="grid min-w-max relative" style={{ gridTemplateColumns: `${taskColWidth} ${gridTemplateColumns}`, gridAutoRows: 'minmax(2.5rem, auto)' }}>
+                    <div className="grid min-w-max relative" style={{ gridTemplateColumns: `${taskColWidth} ${gridTemplateColumns}`, gridAutoRows: 'auto' }}>
                         {/* Headers */}
                         <div className="font-semibold p-2 border-b border-r bg-background sticky top-0 left-0 z-30" style={{gridRow: '1 / span 2'}}>Task</div>
                         <Header />
                         
                          {/* Vertical Grid Lines underneath tasks */}
-                        <div className="absolute top-0 right-0 bottom-0 grid pointer-events-none z-0" style={{left: stickyLeft, gridTemplateColumns, gridAutoRows: 'minmax(2.5rem, auto)'}}>
-                             {Array.from({ length: numColumns }).map((_, i) => (
-                                <div key={i} className="border-r h-full" style={{gridColumn: i + 1, gridRow: `3 / span ${tasks.length + 1}`}}></div>
-                             ))}
-                        </div>
+                        {Array.from({ length: numColumns }).map((_, i) => (
+                           <div key={i} className="border-r h-full" style={{gridColumn: i + 2, gridRow: `3 / span ${tasks.length + 1}`}}></div>
+                        ))}
+
                         {/* Today Marker */}
                          {todayPosition !== undefined && (
-                            <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-20" style={{ left: `calc(${stickyLeft} + ${todayPosition} * ${columnWidth}px)` }}></div>
+                            <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-20" style={{ left: `calc(${taskColWidth} + ${todayPosition} * ${columnWidth}px)` }}></div>
                          )}
 
                         {/* Task List & Timeline Grid */}
@@ -217,7 +215,7 @@ export function GanttChartView() {
                                                                 className="absolute h-6 w-6 self-center cursor-pointer hover:opacity-90 z-10"
                                                                 style={{ 
                                                                     top: '50%',
-                                                                    left: `calc((${pos.gridColumn.split(' / ')[0].trim()} - 0.5) / ${numColumns} * 100%)`,
+                                                                    left: `calc((${pos.gridColumn.split(' / ')[0].trim()} - 1) / ${numColumns} * 100%)`,
                                                                     transform: 'translateY(-50%) translateX(-50%) rotate(45deg)'
                                                                 }}
                                                             >
@@ -260,7 +258,3 @@ export function GanttChartView() {
         </Card>
     )
 }
-
-    
-
-    
