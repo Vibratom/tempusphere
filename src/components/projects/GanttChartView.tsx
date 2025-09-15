@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
-import { format, addDays, differenceInDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isToday, isWeekend, isSameMonth, addMonths } from 'date-fns';
+import { format, addDays, differenceInDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isToday, isWeekend, addMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -135,7 +135,7 @@ export function GanttChartView() {
             return (
                 <>
                     {weeks.map(weekStart => (
-                        <div key={weekStart.toISOString()} className="text-center border-l p-2 font-semibold bg-muted/30">
+                        <div key={weekStart.toISOString()} className="text-center border-r border-b p-2 font-semibold bg-muted/30">
                             Week of {format(weekStart, 'MMM d')}
                         </div>
                     ))}
@@ -154,15 +154,15 @@ export function GanttChartView() {
             });
 
             return (
-                 <div className="contents">
+                 <>
                     {Object.entries(months).map(([month, days]) => (
                         <React.Fragment key={month}>
-                            <div className="col-span-full text-center font-semibold p-2 border-b border-l bg-muted/30" style={{ gridColumn: `${differenceInDays(days[0], dateRange[0]) + 1} / span ${days.length}` }}>
+                            <div className="col-span-full text-center font-semibold p-2 border-b border-r bg-muted/30" style={{ gridColumn: `${differenceInDays(days[0], dateRange[0]) + 1} / span ${days.length}` }}>
                                 {month}
                             </div>
                             {days.map(date => (
                                 <div key={date.toISOString()} className={cn(
-                                    "text-center border-l p-2 whitespace-nowrap",
+                                    "text-center border-r border-b p-2 whitespace-nowrap",
                                     isToday(date) && "bg-primary/20",
                                     isWeekend(date) && "bg-muted/30",
                                 )}>
@@ -172,7 +172,7 @@ export function GanttChartView() {
                             ))}
                         </React.Fragment>
                     ))}
-                </div>
+                </>
             )
         }
 
@@ -180,7 +180,7 @@ export function GanttChartView() {
             <>
                 {dateRange.map(date => (
                     <div key={date.toISOString()} className={cn(
-                        "text-center border-l p-2 whitespace-nowrap",
+                        "text-center border-r border-b p-2 whitespace-nowrap",
                         isToday(date) && "bg-primary/20",
                         isWeekend(date) && "bg-muted/30",
                     )}>
@@ -195,14 +195,14 @@ export function GanttChartView() {
     const todayIndex = differenceInDays(new Date(), dateRange[0]);
     let todayPosition;
     if (viewMode === 'week') {
-        todayPosition = (todayIndex / 7) + 1;
+        todayPosition = (todayIndex / 7);
     } else {
-        todayPosition = todayIndex + (new Date().getHours() / 24) + 1;
+        todayPosition = todayIndex + (new Date().getHours() / 24);
     }
 
     return (
         <Card className="h-[75vh] flex flex-col">
-            <CardHeader className="flex-row items-center justify-between">
+            <CardHeader className="flex-row items-center justify-between flex-shrink-0">
                 <div>
                     <CardTitle>Gantt Chart</CardTitle>
                     <CardDescription>A timeline of your project tasks.</CardDescription>
@@ -223,13 +223,20 @@ export function GanttChartView() {
                     </Select>
                 </div>
             </CardHeader>
-            <CardContent className="flex-1 flex overflow-hidden">
-                <div className="flex w-full">
-                    <div className="w-56 sticky left-0 bg-background z-20 border-r">
-                         <div className="h-[96px] flex items-center p-2 font-semibold border-b bg-muted/30">Task</div>
-                         <ScrollArea className="h-[calc(100%-96px)]">
-                            {tasks.map(task => (
-                                <div key={task.id} className="h-12 flex items-center p-2 border-b truncate">
+            <CardContent className="flex-1 overflow-hidden">
+                <ScrollArea className="w-full h-full">
+                    <div className="relative min-w-max" style={{ gridTemplateRows: `auto repeat(${tasks.length}, 3rem)` }}>
+                        <div className="sticky top-0 z-20 grid" style={{ gridTemplateColumns: `224px ${gridTemplateColumns}` }}>
+                            <div className="font-semibold p-2 border-b border-r bg-muted/30 sticky left-0 z-10">Task</div>
+                            <div className="contents">
+                                <Header />
+                            </div>
+                        </div>
+
+                        {/* Task List */}
+                        <div className="grid" style={{ gridTemplateColumns: `224px`, gridTemplateRows: `repeat(${tasks.length}, 3rem)`}}>
+                           {tasks.map((task, index) => (
+                                <div key={task.id} className="h-12 flex items-center p-2 border-b border-r truncate sticky left-0 bg-background z-10" style={{ gridRow: index + 1}}>
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger className="truncate text-left w-full">
@@ -242,69 +249,68 @@ export function GanttChartView() {
                                     </TooltipProvider>
                                 </div>
                             ))}
-                         </ScrollArea>
-                    </div>
-
-                    <ScrollArea className="flex-1 h-full whitespace-nowrap">
-                        <div className="min-w-max h-full flex flex-col">
-                             <div className="grid border-b sticky top-0 bg-background z-10" style={{ gridTemplateColumns }}>
-                                <Header />
-                            </div>
-                            <div className="relative grid flex-1" style={{ gridTemplateColumns, gridTemplateRows: `repeat(${tasks.length}, 3rem)` }}>
-                                {dateRange.map((date, i) => {
-                                    if (viewMode === 'week' && i % 7 !== 0) return null;
-                                    const colIndex = viewMode === 'week' ? Math.floor(i / 7) : i;
-                                    
-                                    return (
-                                        <div key={i} className={cn(
-                                            "border-l h-full",
-                                            isWeekend(date) && viewMode !== 'week' && "bg-muted/30",
-                                        )} style={{gridColumn: colIndex + 1}}></div>
-                                    )
-                                })}
-                                 {todayIndex >= 0 && todayIndex < dateRange.length && (
-                                     <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-10" style={{ left: `calc(${todayPosition} * (100% / ${gridTemplateColumns.split(',').length}))`,
-                                        gridColumn: `1 / -1`
-                                     }}></div>
-                                 )}
-                                {tasks.map((task, index) => {
-                                    const pos = getTaskPosition(task);
-                                    if (!pos) return null;
-                                    const status = getTaskStatus(task.id);
-                                    return (
-                                        <TooltipProvider key={task.id}>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div 
-                                                        className="h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden relative self-center" 
-                                                        style={{ 
-                                                            gridRow: index + 1, 
-                                                            gridColumnStart: pos.gridColumnStart,
-                                                            gridColumnEnd: pos.gridColumnEnd,
-                                                        }}
-                                                    >
-                                                        <div className={cn("absolute left-0 top-0 bottom-0 w-1", priorityColors[task.priority])}></div>
-                                                        <span className="truncate pl-2">{task.title}</span>
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <div className="font-bold mb-2">{task.title}</div>
-                                                    <div className="space-y-1 text-sm">
-                                                        <p><span className="font-semibold">Start:</span> {task.startDate ? format(parseISO(task.startDate), 'PPP') : 'N/A'}</p>
-                                                        <p><span className="font-semibold">End:</span> {task.dueDate ? format(parseISO(task.dueDate), 'PPP') : 'N/A'}</p>
-                                                        <p><span className="font-semibold">Status:</span> {status}</p>
-                                                        <div className="flex items-center gap-2"><span className="font-semibold">Priority:</span> <Flag className={cn("h-4 w-4", priorityColors[task.priority].replace('bg-','text-'))} /> <span className="capitalize">{task.priority}</span></div>
-                                                    </div>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    )
-                                })}
-                            </div>
                         </div>
-                        <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
-                </div>
+
+                        {/* Timeline Grid & Task Bars */}
+                        <div className="absolute top-[53px] left-[224px] right-0 bottom-0 grid" style={{ gridTemplateColumns, gridTemplateRows: `repeat(${tasks.length}, 3rem)` }}>
+                             {/* Vertical Grid Lines */}
+                            {dateRange.map((date, i) => {
+                                if (viewMode === 'week' && i % 7 !== 0) return null;
+                                const colIndex = viewMode === 'week' ? Math.floor(i / 7) : i;
+                                return (
+                                    <div key={i} className={cn(
+                                        "border-r h-full",
+                                        isWeekend(date) && viewMode !== 'week' && "bg-muted/30",
+                                    )} style={{gridColumn: colIndex + 1, gridRow: `1 / -1`}}></div>
+                                )
+                            })}
+                            {/* Horizontal Grid Lines */}
+                            {tasks.map((_, index) => (
+                                <div key={index} className="border-b w-full" style={{gridRow: index + 1, gridColumn: `1 / -1`}}></div>
+                            ))}
+
+                            {/* Today Marker */}
+                             {todayIndex >= 0 && todayIndex < dateRange.length && (
+                                 <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-10" style={{ left: `calc(${todayPosition} * (100% / ${gridTemplateColumns.split(',').length}))` }}></div>
+                             )}
+
+                            {/* Task Bars */}
+                            {tasks.map((task, index) => {
+                                const pos = getTaskPosition(task);
+                                if (!pos) return null;
+                                const status = getTaskStatus(task.id);
+                                return (
+                                    <TooltipProvider key={task.id}>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div 
+                                                    className="h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden relative self-center" 
+                                                    style={{ 
+                                                        gridRow: index + 1, 
+                                                        gridColumn: `${pos.gridColumnStart} / ${pos.gridColumnEnd}`,
+                                                    }}
+                                                >
+                                                    <div className={cn("absolute left-0 top-0 bottom-0 w-1", priorityColors[task.priority])}></div>
+                                                    <span className="truncate pl-2">{task.title}</span>
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <div className="font-bold mb-2">{task.title}</div>
+                                                <div className="space-y-1 text-sm">
+                                                    <p><span className="font-semibold">Start:</span> {task.startDate ? format(parseISO(task.startDate), 'PPP') : 'N/A'}</p>
+                                                    <p><span className="font-semibold">End:</span> {task.dueDate ? format(parseISO(task.dueDate), 'PPP') : 'N/A'}</p>
+                                                    <p><span className="font-semibold">Status:</span> {status}</p>
+                                                    <div className="flex items-center gap-2"><span className="font-semibold">Priority:</span> <Flag className={cn("h-4 w-4", priorityColors[task.priority].replace('bg-','text-'))} /> <span className="capitalize">{task.priority}</span></div>
+                                                </div>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                )
+                            })}
+                        </div>
+                    </div>
+                    <ScrollBar orientation="horizontal" />
+                </ScrollArea>
             </CardContent>
         </Card>
     )
