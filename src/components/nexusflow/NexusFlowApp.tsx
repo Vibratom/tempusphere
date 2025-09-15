@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
-import { Plus, Trash2, GripVertical, Calendar as CalendarIcon, FileText, Flag, Share2, Copy } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Calendar as CalendarIcon, FileText, Share2, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
@@ -32,6 +32,8 @@ import { useSearchParams } from 'next/navigation';
 import { pako } from 'pako';
 import { Base64 } from 'js-base64';
 import { useToast } from '@/hooks/use-toast';
+import Peer, { Instance as PeerInstance } from 'simple-peer';
+
 
 type Priority = 'none' | 'low' | 'medium' | 'high';
 
@@ -113,6 +115,10 @@ export function NexusFlowApp() {
   const [newTaskTitles, setNewTaskTitles] = useState<Record<string, string>>({});
   const [editingTask, setEditingTask] = useState<TaskCard | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [isLiveShareModalOpen, setLiveShareModalOpen] = useState(false);
+  const [liveShareSignal, setLiveShareSignal] = useState('');
+  const [isHost, setIsHost] = useState(false);
+  const peerRef = useRef<PeerInstance>();
   const { toast } = useToast();
   const searchParams = useSearchParams();
 
@@ -304,6 +310,83 @@ export function NexusFlowApp() {
     }
   };
 
+  const startLiveShare = (initiator: boolean) => {
+    setIsHost(initiator);
+    setLiveShareModalOpen(true);
+    
+    const peer = new Peer({
+      initiator: initiator,
+      trickle: false, // Simplifies signaling by exchanging all data at once
+    });
+
+    peer.on('signal', (data) => {
+      // For the host, this is the offer to be shared. For the guest, this is the answer.
+      setLiveShareSignal(JSON.stringify(data));
+    });
+
+    peer.on('connect', () => {
+      toast({ title: 'Live Session Connected!', description: 'You are now collaborating in real-time.' });
+      setLiveShareModalOpen(false);
+      if (initiator) {
+        // Host sends the current board state to the new peer
+        peer.send(JSON.stringify(board));
+      }
+    });
+
+    peer.on('data', (data) => {
+      // Received data from the other peer
+      const receivedBoard = JSON.parse(data);
+      setBoard(receivedBoard);
+      toast({ title: 'Board Updated', description: 'The board has been updated by your collaborator.' });
+    });
+
+    peer.on('close', () => {
+      toast({ variant: 'destructive', title: 'Session Closed', description: 'The live share session has ended.' });
+      peerRef.current = undefined;
+    });
+
+    peerRef.current = peer;
+  };
+
+  const connectToPeer = () => {
+    if (peerRef.current && liveShareSignal) {
+      try {
+        peerRef.current.signal(JSON.parse(liveShareSignal));
+      } catch (e) {
+        toast({ variant: 'destructive', title: 'Connection Failed', description: 'The signal data seems to be invalid.' });
+      }
+    }
+  };
+  
+  const renderLiveShareModal = () => (
+    <Dialog open={isLiveShareModalOpen} onOpenChange={setLiveShareModalOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isHost ? 'Start a Live Share Session' : 'Join a Live Share Session'}</DialogTitle>
+          <DialogDescription>
+            {isHost
+              ? "Copy this signal data and send it to your collaborator. They will use it to connect."
+              : "Paste the signal data you received from the host here to connect to the session."}
+          </DialogDescription>
+        </DialogHeader>
+        <Textarea
+          value={liveShareSignal}
+          onChange={(e) => !isHost && setLiveShareSignal(e.target.value)}
+          placeholder={isHost ? 'Generating signal...' : 'Paste signal data here...'}
+          rows={6}
+          readOnly={isHost}
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => {
+            navigator.clipboard.writeText(liveShareSignal);
+            toast({ title: 'Copied to Clipboard!' });
+          }}>Copy</Button>
+          {!isHost && <Button onClick={connectToPeer}>Connect</Button>}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   const renderEditModal = () => {
     if (!editingTask) return null;
 
@@ -374,6 +457,7 @@ export function NexusFlowApp() {
   return (
     <div className="w-full h-full flex flex-col">
         {renderEditModal()}
+        {renderLiveShareModal()}
         <div className="flex flex-col items-center text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">NexusFlow</h1>
             <p className="text-lg text-muted-foreground mt-2">Visualize your workflow with a Kanban board.</p>
@@ -389,9 +473,29 @@ export function NexusFlowApp() {
                 />
                 <Button onClick={addColumn}><Plus className="mr-2 h-4 w-4"/>Add Column</Button>
             </div>
-             <Button variant="outline" onClick={handleShare}>
-                <Share2 className="mr-2 h-4 w-4"/> Share Board
-            </Button>
+             <div className="flex gap-2">
+                <Button variant="outline" onClick={handleShare}>
+                    <Share2 className="mr-2 h-4 w-4"/> Share Board
+                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="outline"><Wifi className="mr-2 h-4 w-4" /> Live Share</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Live Share Session</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Start a new session to host and share your board, or join an existing session using signal data from a host.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => startLiveShare(false)}>Join Session</AlertDialogAction>
+                            <AlertDialogAction onClick={() => startLiveShare(true)}>Start Hosting</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
@@ -405,7 +509,7 @@ export function NexusFlowApp() {
                     >
                         {board.columnOrder.map((columnId, index) => {
                             const column = board.columns[columnId];
-                            const tasks = column.taskIds.map(taskId => board.tasks[taskId]);
+                            const tasks = column.taskIds.map(taskId => board.tasks[taskId]).filter(Boolean);
 
                             return (
                               <Draggable key={column.id} draggableId={column.id} index={index}>
