@@ -1,12 +1,13 @@
 
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Plus, Trash2 as X } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { Skeleton } from '../ui/skeleton';
 
 const MIN_ROWS = 1;
 const MIN_COLS = 1;
@@ -15,8 +16,12 @@ export function SpreadsheetView() {
   const [gridData, setGridData] = useLocalStorage<string[][]>('projects:spreadsheet-v2', 
     () => Array(5).fill(null).map(() => Array(4).fill(''))
   );
+  const [isClient, setIsClient] = useState(false);
   const cellRefs = useRef<(HTMLInputElement | null)[][]>([]);
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
     const newGridData = gridData.map((row, rIdx) => 
@@ -26,6 +31,9 @@ export function SpreadsheetView() {
     );
     setGridData(newGridData);
   };
+  
+  const numRows = Array.isArray(gridData) ? gridData.length : 0;
+  const numCols = Array.isArray(gridData) && gridData[0] ? gridData[0].length : 0;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, rowIndex: number, colIndex: number) => {
     let nextRow = rowIndex;
@@ -43,9 +51,19 @@ export function SpreadsheetView() {
         case 'Tab':
             e.preventDefault();
             if (e.shiftKey) {
-                nextCol = Math.max(0, colIndex - 1); // Shift + Tab moves left
+                if (colIndex > 0) {
+                    nextCol = colIndex - 1;
+                } else if (rowIndex > 0) {
+                    nextRow = rowIndex - 1;
+                    nextCol = numCols - 1;
+                }
             } else {
-                nextCol = Math.min(numCols - 1, colIndex + 1); // Tab moves right
+                if (colIndex < numCols - 1) {
+                    nextCol = colIndex + 1;
+                } else if (rowIndex < numRows - 1) {
+                    nextRow = rowIndex + 1;
+                    nextCol = 0;
+                }
             }
             break;
         case 'ArrowDown':
@@ -78,13 +96,21 @@ export function SpreadsheetView() {
   }
 
   const addRow = () => {
-    const currentGrid = Array.isArray(gridData) ? gridData : [];
+    if (!Array.isArray(gridData)) {
+      setGridData([Array(MIN_COLS).fill('')]);
+      return;
+    }
+    const currentGrid = gridData;
     const numCols = currentGrid[0]?.length || MIN_COLS;
     setGridData([...currentGrid, Array(numCols).fill('')]);
   };
   
   const addCol = () => {
-    const currentGrid = Array.isArray(gridData) ? gridData : [[]];
+    if (!Array.isArray(gridData)) {
+      setGridData([['']]);
+      return;
+    }
+    const currentGrid = gridData.length > 0 ? gridData : [[]];
     setGridData(currentGrid.map(row => [...(Array.isArray(row) ? row : []), '']));
   };
 
@@ -97,12 +123,23 @@ export function SpreadsheetView() {
     if (!Array.isArray(gridData) || !gridData[0] || gridData[0].length <= MIN_COLS) return;
     setGridData(gridData.map(row => row.filter((_, cIdx) => cIdx !== colIndex)));
   }
-
-  const numRows = Array.isArray(gridData) ? gridData.length : 0;
-  const numCols = Array.isArray(gridData) && gridData[0] ? gridData[0].length : 0;
   
   // Ensure refs array is up to date
   cellRefs.current = Array(numRows).fill(null).map(() => Array(numCols).fill(null));
+
+  if (!isClient) {
+    return (
+        <div className="w-full h-full flex flex-col gap-4">
+            <div className="flex gap-2">
+                <Skeleton className="h-10 w-32"/>
+                <Skeleton className="h-10 w-36"/>
+            </div>
+            <div className="flex-1 relative border rounded-lg overflow-hidden p-2">
+                <Skeleton className="h-full w-full"/>
+            </div>
+        </div>
+    );
+  }
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
