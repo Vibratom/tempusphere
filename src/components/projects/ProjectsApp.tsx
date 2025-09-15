@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 import { Plus, Trash2, GripVertical, Calendar as CalendarIcon, FileText, Share2, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,61 +28,10 @@ import { Calendar } from '../ui/calendar';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useSearchParams } from 'next/navigation';
-import * as pako from 'pako';
-import { Base64 } from 'js-base64';
 import { useToast } from '@/hooks/use-toast';
 import Peer, { Instance as PeerInstance } from 'simple-peer';
+import { useProjects, Priority, TaskCard, Column, BoardData, encodeBoardData, decodeBoardData } from '@/contexts/ProjectsContext';
 
-
-type Priority = 'none' | 'low' | 'medium' | 'high';
-
-interface TaskCard {
-  id: string;
-  title: string;
-  description?: string;
-  dueDate?: string; // ISO string
-  priority: Priority;
-}
-
-interface Column {
-  id: string;
-  title: string;
-  taskIds: string[];
-}
-
-interface BoardData {
-  tasks: Record<string, TaskCard>;
-  columns: Record<string, Column>;
-  columnOrder: string[];
-}
-
-const initialData: BoardData = {
-  tasks: {
-    'task-1': { id: 'task-1', title: 'Brainstorm feature ideas', priority: 'medium' },
-    'task-2': { id: 'task-2', title: 'Design the UI mockups', priority: 'high', description: 'Create mockups in Figma for all screen sizes.' },
-    'task-3': { id: 'task-3', title: 'Develop the Kanban components', priority: 'high' },
-    'task-4': { id: 'task-4', title: 'Implement drag and drop', priority: 'medium', dueDate: new Date().toISOString() },
-    'task-5': { id: 'task-5', title: 'Review and test the board', priority: 'low' },
-  },
-  columns: {
-    'column-1': {
-      id: 'column-1',
-      title: 'To Do',
-      taskIds: ['task-1', 'task-2'],
-    },
-    'column-2': {
-      id: 'column-2',
-      title: 'In Progress',
-      taskIds: ['task-3', 'task-4'],
-    },
-    'column-3': {
-      id: 'column-3',
-      title: 'Done',
-      taskIds: ['task-5'],
-    },
-  },
-  columnOrder: ['column-1', 'column-2', 'column-3'],
-};
 
 const priorityColors: Record<Priority, string> = {
     none: 'bg-transparent',
@@ -92,25 +40,18 @@ const priorityColors: Record<Priority, string> = {
     high: 'bg-red-500',
 }
 
-function encodeBoardData(board: BoardData): string {
-  const jsonString = JSON.stringify(board);
-  const compressed = pako.deflate(jsonString);
-  return Base64.fromUint8Array(compressed, true);
-}
-
-function decodeBoardData(encoded: string): BoardData | null {
-  try {
-    const compressed = Base64.toUint8Array(encoded);
-    const jsonString = pako.inflate(compressed, { to: 'string' });
-    return JSON.parse(jsonString) as BoardData;
-  } catch (error) {
-    console.error("Failed to decode board data:", error);
-    return null;
-  }
-}
 
 export function ProjectsApp() {
-  const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV1', initialData);
+  const { 
+    board, 
+    setBoard, 
+    addColumn: contextAddColumn,
+    addTask: contextAddTask,
+    removeTask: contextRemoveTask,
+    updateTask: contextUpdateTask,
+    handleDragEnd
+  } = useProjects();
+
   const [newColumnName, setNewColumnName] = useState('');
   const [newTaskTitles, setNewTaskTitles] = useState<Record<string, string>>({});
   const [editingTask, setEditingTask] = useState<TaskCard | null>(null);
@@ -144,87 +85,15 @@ export function ProjectsApp() {
 
   const addColumn = () => {
     if(!newColumnName.trim()) return;
-
-    const newColumnId = `column-${Date.now()}`;
-    const newColumn: Column = {
-      id: newColumnId,
-      title: newColumnName.trim(),
-      taskIds: [],
-    };
-
-    setBoard(prev => ({
-      ...prev,
-      columns: {
-        ...prev.columns,
-        [newColumnId]: newColumn,
-      },
-      columnOrder: [...prev.columnOrder, newColumnId],
-    }));
+    contextAddColumn(newColumnName.trim());
     setNewColumnName('');
   };
 
   const addTask = (columnId: string) => {
     const title = newTaskTitles[columnId]?.trim();
     if(!title) return;
-
-    const newTaskId = `task-${Date.now()}`;
-    const newTask: TaskCard = {
-      id: newTaskId,
-      title,
-      priority: 'none'
-    };
-
-    setBoard(prev => {
-      const column = prev.columns[columnId];
-      return {
-        ...prev,
-        tasks: {
-          ...prev.tasks,
-          [newTaskId]: newTask,
-        },
-        columns: {
-          ...prev.columns,
-          [columnId]: {
-            ...column,
-            taskIds: [...column.taskIds, newTaskId],
-          }
-        }
-      }
-    });
+    contextAddTask(columnId, title);
     setNewTaskTitles(prev => ({...prev, [columnId]: ''}));
-  }
-
-  const removeTask = (taskId: string, columnId: string) => {
-    setBoard(prev => {
-      const newTasks = { ...prev.tasks };
-      delete newTasks[taskId];
-      
-      const column = prev.columns[columnId];
-      const newTaskIds = column.taskIds.filter(id => id !== taskId);
-
-      return {
-        ...prev,
-        tasks: newTasks,
-        columns: {
-          ...prev.columns,
-          [columnId]: {
-            ...column,
-            taskIds: newTaskIds,
-          }
-        }
-      }
-    })
-  }
-
-  const updateTask = (updatedTask: TaskCard) => {
-    if(!updatedTask) return;
-    setBoard(prev => ({
-      ...prev,
-      tasks: {
-        ...prev.tasks,
-        [updatedTask.id]: updatedTask
-      }
-    }))
   }
 
   const handleShare = () => {
@@ -235,77 +104,9 @@ export function ProjectsApp() {
     toast({ title: "Link Copied!", description: "A shareable link to this board has been copied to your clipboard."});
   };
 
-  const onDragEnd: OnDragEndResponder = (result) => {
-    const { destination, source, draggableId, type } = result;
-
-    if (!destination) return;
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
-    
-    // Reordering columns
-    if (type === 'COLUMN') {
-      const newColumnOrder = Array.from(board.columnOrder);
-      newColumnOrder.splice(source.index, 1);
-      newColumnOrder.splice(destination.index, 0, draggableId);
-
-      setBoard(prev => ({
-        ...prev,
-        columnOrder: newColumnOrder,
-      }));
-      return;
-    }
-
-    // Reordering tasks
-    const startColumn = board.columns[source.droppableId];
-    const endColumn = board.columns[destination.droppableId];
-
-    if (startColumn === endColumn) {
-      // Reordering within the same column
-      const newTaskIds = Array.from(startColumn.taskIds);
-      newTaskIds.splice(source.index, 1);
-      newTaskIds.splice(destination.index, 0, draggableId);
-
-      const newColumn = {
-        ...startColumn,
-        taskIds: newTaskIds,
-      };
-
-      setBoard(prev => ({
-        ...prev,
-        columns: {
-          ...prev.columns,
-          [newColumn.id]: newColumn,
-        }
-      }));
-    } else {
-      // Moving from one column to another
-      const startTaskIds = Array.from(startColumn.taskIds);
-      startTaskIds.splice(source.index, 1);
-      const newStartColumn = {
-        ...startColumn,
-        taskIds: startTaskIds,
-      };
-
-      const endTaskIds = Array.from(endColumn.taskIds);
-      endTaskIds.splice(destination.index, 0, draggableId);
-      const newEndColumn = {
-        ...endColumn,
-        taskIds: endTaskIds,
-      };
-      
-      setBoard(prev => ({
-        ...prev,
-        columns: {
-          ...prev.columns,
-          [newStartColumn.id]: newStartColumn,
-          [newEndColumn.id]: newEndColumn,
-        }
-      }));
-    }
-  };
-  
   const handleSaveEditingTask = () => {
     if (editingTask) {
-      updateTask(editingTask);
+      contextUpdateTask(editingTask);
       setEditingTask(null);
     }
   };
@@ -459,7 +260,7 @@ export function ProjectsApp() {
         {renderEditModal()}
         {renderLiveShareModal()}
         <div className="flex flex-col items-center text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Projects</h1>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Board</h1>
             <p className="text-lg text-muted-foreground mt-2">Visualize your workflow with a Kanban board.</p>
         </div>
 
@@ -498,7 +299,7 @@ export function ProjectsApp() {
             </div>
         </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
+      <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="all-columns" direction="horizontal" type="COLUMN">
             {(provided) => (
                 <ScrollArea className="w-full whitespace-nowrap">
@@ -560,7 +361,7 @@ export function ProjectsApp() {
                                                                           </AlertDialogHeader>
                                                                           <AlertDialogFooter>
                                                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                            <AlertDialogAction onClick={() => removeTask(task.id, column.id)}>Delete</AlertDialogAction>
+                                                                            <AlertDialogAction onClick={() => contextRemoveTask(task.id, column.id)}>Delete</AlertDialogAction>
                                                                           </AlertDialogFooter>
                                                                         </AlertDialogContent>
                                                                       </AlertDialog>

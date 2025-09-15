@@ -12,6 +12,8 @@ import { KanbanSquare, ListChecks, Table, DraftingCompass, List, BarChartHorizon
 import { ChecklistApp } from '@/components/checklist/ChecklistApp';
 import { ChecklistProvider } from '@/contexts/ChecklistContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ProjectsProvider } from '@/contexts/ProjectsContext';
+import { ProjectListView } from '@/components/projects/ProjectListView';
 
 const PlaceholderTool = ({ name, icon: Icon }: { name: string, icon: React.ComponentType<any> }) => (
     <Card className="w-full h-full flex flex-col items-center justify-center text-center p-8">
@@ -40,6 +42,7 @@ function ProjectsContent() {
     <SettingsProvider>
       <CalendarProvider>
         <ChecklistProvider>
+          <ProjectsProvider>
             <div className="min-h-screen w-full bg-background flex flex-col">
                 <Header />
                 <main className="flex-1 flex flex-col items-center p-4 md:p-8">
@@ -58,7 +61,7 @@ function ProjectsContent() {
                             <ProjectsApp />
                         </TabsContent>
                         <TabsContent value="list" className="mt-4">
-                            <PlaceholderTool name="List View" icon={List} />
+                            <ProjectListView />
                         </TabsContent>
                         <TabsContent value="gantt" className="mt-4">
                             <PlaceholderTool name="Gantt Chart" icon={BarChartHorizontal} />
@@ -82,6 +85,7 @@ function ProjectsContent() {
                 </main>
                 <Footer />
             </div>
+          </ProjectsProvider>
         </ChecklistProvider>
       </CalendarProvider>
     </SettingsProvider>
