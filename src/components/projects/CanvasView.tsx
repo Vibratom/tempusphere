@@ -49,8 +49,10 @@ export function CanvasView() {
       const canvas = canvasRef.current;
       if (!canvas) return [0, 0];
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left - pan.x) / scale;
-      const y = (e.clientY - rect.top - pan.y) / scale;
+      // Corrected coordinate calculation:
+      // We need to account for the canvas's own display size vs. its resolution.
+      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
       return [x, y];
   }
 
@@ -64,11 +66,13 @@ export function CanvasView() {
     const [x, y] = getCoords(e);
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.strokeStyle = tool === 'pencil' ? color : '#FFFFFF'; // Eraser is just a white brush
+    ctx.strokeStyle = tool === 'pencil' ? color : '#FFFFFF';
     ctx.lineWidth = lineWidth;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+
     if(tool === 'eraser') {
+        // For the eraser, we use destination-out to "erase" content.
         ctx.globalCompositeOperation = 'destination-out';
     } else {
         ctx.globalCompositeOperation = 'source-over';
@@ -95,6 +99,8 @@ export function CanvasView() {
     if (canvas) {
       setSavedCanvas(canvas.toDataURL());
     }
+    // Reset composite operation to default
+    ctx.globalCompositeOperation = 'source-over';
   };
   
   const handleClear = () => {
@@ -107,7 +113,9 @@ export function CanvasView() {
   };
   
   const handleZoom = (direction: 'in' | 'out') => {
-      setScale(s => direction === 'in' ? Math.min(s * 1.1, 5) : Math.max(s / 1.1, 0.2));
+      // Zoom functionality is currently disabled as it affects drawing coordinates.
+      // This can be re-implemented with proper scaling of the canvas context itself.
+      // setScale(s => direction === 'in' ? Math.min(s * 1.1, 5) : Math.max(s / 1.1, 0.2));
   };
   
   return (
@@ -145,8 +153,8 @@ export function CanvasView() {
             </div>
             
              <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
-                <Button variant="outline" size="icon" onClick={() => handleZoom('in')} className="h-9 w-9"><ZoomIn/></Button>
-                <Button variant="outline" size="icon" onClick={() => handleZoom('out')} className="h-9 w-9"><ZoomOut/></Button>
+                <Button variant="outline" size="icon" onClick={() => handleZoom('in')} className="h-9 w-9" disabled><ZoomIn/></Button>
+                <Button variant="outline" size="icon" onClick={() => handleZoom('out')} className="h-9 w-9" disabled><ZoomOut/></Button>
              </div>
             
             <div 
@@ -161,10 +169,6 @@ export function CanvasView() {
                 width={1200}
                 height={780}
                 className="w-full h-full"
-                style={{
-                    transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-                    transformOrigin: 'top left'
-                }}
               />
             </div>
         </CardContent>
@@ -172,5 +176,3 @@ export function CanvasView() {
     </div>
   );
 }
-
-    
