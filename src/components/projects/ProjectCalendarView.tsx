@@ -19,6 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
@@ -376,7 +377,7 @@ export function ProjectCalendarView() {
                                     const dayTasks = tasksByDay[dayKey] || [];
                                     const isOutside = date.getMonth() !== displayMonth.getMonth();
                                     
-                                    const DayContent = (
+                                    const DayContent = ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
                                         <Droppable droppableId={`day-${dayKey}`} isDropEnabled={!isOutside}>
                                             {(provided, snapshot) => (
                                                 <div
@@ -386,6 +387,7 @@ export function ProjectCalendarView() {
                                                         "h-full w-full relative flex items-center justify-center rounded-md text-sm",
                                                         snapshot.isDraggingOver && "bg-primary/20 ring-2 ring-primary"
                                                     )}
+                                                    {...props}
                                                 >
                                                     <p>{date.getDate()}</p>
                                                     {dayTasks.length > 0 && (
@@ -404,8 +406,8 @@ export function ProjectCalendarView() {
                                     if (dayTasks.length > 0 && !isOutside) {
                                         return (
                                             <Popover>
-                                                <PopoverTrigger asChild onFocus={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()}>
-                                                    <div className="h-full w-full">{DayContent}</div>
+                                                <PopoverTrigger asChild onFocus={(e) => e.preventDefault()}>
+                                                    <div className="h-full w-full cursor-pointer">{DayContent({})}</div>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-64 p-2">
                                                     <div className="font-bold mb-2">{dayTasks.length} task{dayTasks.length > 1 ? 's' : ''} on {format(date, 'MMM d')}</div>
@@ -422,7 +424,7 @@ export function ProjectCalendarView() {
                                         )
                                     }
 
-                                    return DayContent;
+                                    return <DayContent />;
                                 },
                             }}
                         />
