@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -9,7 +10,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database } from 'lucide-react';
+import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle } from 'lucide-react';
 
 const diagramTemplates = {
   flowchart: `flowchart TD
@@ -82,6 +83,7 @@ const diagramTemplates = {
 export function FlowchartView() {
   const [code, setCode] = useLocalStorage('flowchart:mermaid-code-v3', diagramTemplates.flowchart);
   const [svg, setSvg] = useState('');
+  const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const mermaidRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -103,9 +105,13 @@ export function FlowchartView() {
 
     const renderMermaid = async () => {
       try {
-        const { svg: renderedSvg } = await mermaid.render('mermaid-graph', code);
+        // The render function requires a unique ID for each render.
+        const uniqueId = `mermaid-graph-${Date.now()}`;
+        const { svg: renderedSvg } = await mermaid.render(uniqueId, code);
         setSvg(renderedSvg);
+        setRenderError(null);
       } catch (error) {
+        setRenderError('Invalid syntax. Please check your diagram code.');
         console.error("Mermaid render error:", error);
       }
     };
@@ -115,15 +121,16 @@ export function FlowchartView() {
         renderMermaid();
       } else {
         setSvg('');
+        setRenderError(null);
       }
-    }, 300);
+    }, 50); // Reduced delay for a more responsive feel
 
     return () => clearTimeout(timeoutId);
   }, [code, isClient]);
   
   const handleExportSvg = () => {
-    if (!svg) {
-        toast({ title: "Nothing to Export", description: "The diagram is empty.", variant: "destructive"});
+    if (!svg || renderError) {
+        toast({ title: "Nothing to Export", description: "The diagram is empty or has errors.", variant: "destructive"});
         return;
     }
     const blob = new Blob([svg], { type: 'image/svg+xml' });
@@ -162,7 +169,10 @@ export function FlowchartView() {
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
         <Card className="flex flex-col flex-1">
             <CardHeader className="flex flex-row justify-between items-center">
-                <CardTitle>Mermaid Code</CardTitle>
+                 <div>
+                    <CardTitle>Create a Diagram</CardTitle>
+                    <CardDescription>Describe your structure using Mermaid.js syntax.</CardDescription>
+                </div>
                 <Button variant="outline" size="sm" onClick={handleExportSvg}><Download className="mr-2"/>Export as SVG</Button>
             </CardHeader>
             <CardContent className="p-0 flex-1">
@@ -180,7 +190,12 @@ export function FlowchartView() {
             </CardHeader>
             <CardContent className="p-4 flex-1">
             <ScrollArea className="h-full w-full">
-              {svg ? (
+              {renderError ? (
+                 <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
+                    <AlertCircle className="w-10 h-10 mb-2"/>
+                    <p className="font-semibold">{renderError}</p>
+                 </div>
+              ) : svg ? (
                   <div
                     ref={mermaidRef}
                     dangerouslySetInnerHTML={{ __html: svg }}
