@@ -42,7 +42,7 @@ export function GanttChartView() {
             });
     }, [board.tasks]);
 
-    const { dateRange, gridTemplateColumns } = useMemo(() => {
+    const { dateRange, gridTemplateColumns, numColumns } = useMemo(() => {
         let start, end;
         switch (viewMode) {
             case 'day':
@@ -55,21 +55,24 @@ export function GanttChartView() {
                 break;
             case 'month':
             default:
-                start = startOfMonth(addMonths(currentDate, -1));
+                start = startOfMonth(currentDate);
                 end = endOfMonth(addMonths(currentDate, 1));
                 break;
         }
         
         const validDateRange = eachDayOfInterval({ start, end });
+        
         let columns;
+        let numCols = validDateRange.length;
+
         if (viewMode === 'week') {
-            const weekCount = Math.ceil(validDateRange.length / 7);
-            columns = `repeat(${weekCount}, minmax(140px, 1fr))`;
+            numCols = Math.ceil(validDateRange.length / 7);
+            columns = `repeat(${numCols}, minmax(140px, 1fr))`;
         } else {
-            columns = `repeat(${validDateRange.length}, minmax(40px, 1fr))`;
+            columns = `repeat(${numCols}, minmax(50px, 1fr))`;
         }
         
-        return { dateRange: validDateRange, gridTemplateColumns: columns };
+        return { dateRange: validDateRange, gridTemplateColumns: columns, numColumns: numCols };
     }, [viewMode, currentDate]);
 
 
@@ -90,38 +93,38 @@ export function GanttChartView() {
     
     const getTaskPosition = (task: TaskCard) => {
         const startDate = task.startDate ? parseISO(task.startDate) : parseISO(task.dueDate!);
-        const endDate = task.dueDate ? parseISO(task.dueDate) : startDate;
+        const endDate = task.dueDate ? parseISO(task.dueDate!) : startDate;
         
         if (startDate > endDate) return null; // Invalid date range
 
-        const startDayIndex = differenceInDays(startDate, dateRange[0]);
-        const endDayIndex = differenceInDays(endDate, dateRange[0]);
-        const isMilestone = startDayIndex === endDayIndex || !task.startDate || !task.dueDate;
+        const isMilestone = !task.startDate || !task.dueDate || task.startDate === task.dueDate;
 
         if (viewMode === 'week') {
+            const startDayIndex = differenceInDays(startDate, dateRange[0]);
+            const endDayIndex = differenceInDays(endDate, dateRange[0]);
             const startWeekIndex = Math.floor(startDayIndex / 7);
             const endWeekIndex = Math.floor(endDayIndex / 7);
             
             const startOffset = (startDayIndex % 7) / 7;
             const endOffset = ((endDayIndex % 7) + 1) / 7;
 
-            const gridColumnStart = isMilestone 
-                ? (startWeekIndex + startOffset)
-                : Math.max(0, startWeekIndex + startOffset);
+            const gridColumnStart = startWeekIndex + 1 + startOffset;
+            const gridColumnEnd = endWeekIndex + 1 + endOffset;
             
-            const gridColumnEnd = Math.min(dateRange.length / 7, endWeekIndex + endOffset);
+            if (gridColumnStart > numColumns || gridColumnEnd < 1) return null;
 
-            if (!isMilestone && gridColumnStart >= gridColumnEnd) return null;
-            
-            return { gridColumnStart: gridColumnStart + 1, gridColumnEnd: gridColumnEnd + 1, isMilestone };
+            return { gridColumn: `${gridColumnStart} / ${gridColumnEnd}`, isMilestone };
         }
         
-        const gridColumnStart = isMilestone ? startDayIndex : Math.max(0, startDayIndex);
-        const gridColumnEnd = Math.min(dateRange.length, endDayIndex + 1);
-
-        if (!isMilestone && gridColumnStart >= gridColumnEnd) return null;
+        const startDayIndex = differenceInDays(startDate, dateRange[0]) + 1;
+        const endDayIndex = differenceInDays(endDate, dateRange[0]) + 1;
         
-        return { gridColumnStart: gridColumnStart + 1, gridColumnEnd: gridColumnEnd + 1, isMilestone };
+        if (startDayIndex > dateRange.length || endDayIndex < 1) return null;
+
+        const gridColumnStart = Math.max(1, startDayIndex);
+        const gridColumnEnd = Math.min(dateRange.length + 1, endDayIndex + 1);
+
+        return { gridColumn: `${gridColumnStart} / ${gridColumnEnd}`, isMilestone };
     }
     
     const getTaskStatus = (taskId: string) => {
@@ -139,7 +142,7 @@ export function GanttChartView() {
             return (
                 <>
                     {weeks.map(weekStart => (
-                        <div key={weekStart.toISOString()} className="text-center border-r border-b p-2 font-semibold bg-muted/30">
+                        <div key={weekStart.toISOString()} className="text-center border-r border-b p-2 font-semibold bg-muted/30 sticky top-0">
                             Week of {format(weekStart, 'MMM d')}
                         </div>
                     ))}
@@ -147,63 +150,48 @@ export function GanttChartView() {
             );
         }
         
-        if (viewMode === 'month') {
-            const months: { [key: string]: Date[] } = {};
-            dateRange.forEach(date => {
-                const monthKey = format(date, 'MMMM yyyy');
-                if (!months[monthKey]) {
-                    months[monthKey] = [];
-                }
-                months[monthKey].push(date);
-            });
-
-            return (
-                 <>
-                    {Object.entries(months).map(([month, days]) => (
-                        <React.Fragment key={month}>
-                            <div className="col-span-full text-center font-semibold p-2 border-b border-r bg-muted/30" style={{ gridColumn: `${differenceInDays(days[0], dateRange[0]) + 1} / span ${days.length}` }}>
-                                {month}
-                            </div>
-                            {days.map(date => (
-                                <div key={date.toISOString()} className={cn(
-                                    "text-center border-r border-b p-2 whitespace-nowrap",
-                                    isToday(date) && "bg-primary/20",
-                                    isWeekend(date) && "bg-muted/30",
-                                )}>
-                                    <div className="text-xs">{format(date, 'E')}</div>
-                                    <div className="font-semibold">{format(date, 'd')}</div>
-                                </div>
-                            ))}
-                        </React.Fragment>
-                    ))}
-                </>
-            )
-        }
+        const months: { [key: string]: Date[] } = {};
+        dateRange.forEach(date => {
+            const monthKey = format(date, 'MMMM yyyy');
+            if (!months[monthKey]) {
+                months[monthKey] = [];
+            }
+            months[monthKey].push(date);
+        });
 
         return (
-            <>
-                {dateRange.map(date => (
-                    <div key={date.toISOString()} className={cn(
-                        "text-center border-r border-b p-2 whitespace-nowrap",
-                        isToday(date) && "bg-primary/20",
-                        isWeekend(date) && "bg-muted/30",
-                    )}>
-                        <div className="text-xs">{format(date, 'E')}</div>
-                        <div className="font-semibold">{format(date, 'd')}</div>
-                    </div>
+             <>
+                {Object.entries(months).map(([month, days]) => (
+                    <React.Fragment key={month}>
+                        <div className="text-center font-semibold p-2 border-b border-r bg-muted/30 sticky top-0" style={{ gridColumn: `${differenceInDays(days[0], dateRange[0]) + 1} / span ${days.length}` }}>
+                            {month}
+                        </div>
+                        {days.map(date => (
+                            <div key={date.toISOString()} className={cn(
+                                "text-center border-r border-b p-2 whitespace-nowrap sticky top-[49px]",
+                                isToday(date) && "bg-primary/20",
+                                isWeekend(date) && viewMode !== 'week' && "bg-muted/30",
+                                viewMode !== 'day' && 'bg-muted/30'
+                            )}>
+                                {viewMode === 'day' && <div className="text-xs">{format(date, 'E')}</div>}
+                                <div className="font-semibold">{format(date, 'd')}</div>
+                            </div>
+                        ))}
+                    </React.Fragment>
                 ))}
             </>
         )
     };
     
     const todayIndex = differenceInDays(new Date(), dateRange[0]);
-    let todayPosition: number;
-    if (viewMode === 'week') {
-        todayPosition = (todayIndex / 7);
-    } else {
-        todayPosition = todayIndex + (new Date().getHours() / 24);
+    let todayPosition: number | undefined;
+    if (todayIndex >= 0 && todayIndex < dateRange.length) {
+        if (viewMode === 'week') {
+            todayPosition = (todayIndex / 7);
+        } else {
+            todayPosition = todayIndex + (new Date().getHours() / 24);
+        }
     }
-    const numColumns = viewMode === 'week' ? Math.ceil(dateRange.length / 7) : dateRange.length;
 
 
     return (
@@ -231,97 +219,85 @@ export function GanttChartView() {
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden">
                 <ScrollArea className="w-full h-full">
-                    <div className="relative grid min-w-max" style={{ gridTemplateColumns: `224px ${gridTemplateColumns}`, gridTemplateRows: `auto repeat(${tasks.length}, 3rem)` }}>
+                    <div className="grid min-w-max" style={{ gridTemplateColumns: `224px ${gridTemplateColumns}`, gridTemplateRows: `auto auto repeat(${tasks.length}, 3rem)` }}>
                         {/* Headers */}
-                        <div className="font-semibold p-2 border-b border-r bg-muted/30 sticky top-0 left-0 z-20">Task</div>
-                        <div className="contents sticky top-0 z-10">
-                            <Header />
-                        </div>
+                        <div className="font-semibold p-2 border-b border-r bg-muted/30 sticky top-0 left-0 z-20" style={{gridRow: '1 / span 2'}}>Task</div>
+                        <Header />
                         
-                        {/* Task List */}
+                        {/* Task List & Timeline Grid */}
                         {tasks.map((task, index) => (
-                             <div key={task.id} className="h-12 flex items-center p-2 border-b border-r truncate sticky left-0 bg-background z-10" style={{ gridRow: index + 2}}>
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger className="truncate text-left w-full">
-                                            {task.title}
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{task.title}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </div>
-                        ))}
-
-                        {/* Timeline Grid & Task Bars Area */}
-                        <div className="absolute top-[53px] left-[224px] right-0 bottom-0 grid" style={{ gridTemplateColumns, gridTemplateRows: `repeat(${tasks.length}, 3rem)` }}>
-                             {/* Vertical Grid Lines */}
-                            {Array.from({ length: numColumns }).map((_, i) => {
-                                const dateForLine = viewMode === 'week' ? dateRange[i*7] : dateRange[i];
-                                return (
-                                    <div key={i} className={cn(
-                                        "border-r h-full",
-                                        isWeekend(dateForLine) && viewMode !== 'week' && "bg-muted/30",
-                                    )} style={{gridColumn: i + 1, gridRow: `1 / -1`}}></div>
-                                )
-                            })}
-                            {/* Horizontal Grid Lines */}
-                            {tasks.map((_, index) => (
-                                <div key={index} className="border-b w-full" style={{gridRow: index + 1, gridColumn: `1 / -1`}}></div>
-                            ))}
-
-                            {/* Today Marker */}
-                             {todayIndex >= 0 && todayIndex < dateRange.length && (
-                                <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-10" style={{ left: `calc(${todayPosition} * (100% / ${numColumns}))` }}></div>
-                             )}
-
-                            {/* Task Bars & Milestones */}
-                            {tasks.map((task, index) => {
-                                const pos = getTaskPosition(task);
-                                if (!pos) return null;
-                                const status = getTaskStatus(task.id);
-                                return (
-                                    <TooltipProvider key={task.id}>
+                             <React.Fragment key={task.id}>
+                                <div className="h-12 flex items-center p-2 border-b border-r truncate sticky left-0 bg-background z-10" style={{ gridRow: index + 3}}>
+                                    <TooltipProvider>
                                         <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                {pos.isMilestone ? (
-                                                     <div 
-                                                        className="relative h-7 w-7 self-center cursor-pointer hover:opacity-90"
-                                                        style={{ 
-                                                            gridRow: index + 1, 
-                                                            gridColumn: `${pos.gridColumnStart}`,
-                                                            transform: 'translateX(-50%) rotate(45deg)'
-                                                        }}
-                                                    >
-                                                        <div className={cn("w-full h-full rounded-sm", priorityColors[task.priority])}></div>
-                                                     </div>
-                                                ) : (
-                                                    <div 
-                                                        className="h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden relative self-center" 
-                                                        style={{ 
-                                                            gridRow: index + 1, 
-                                                            gridColumn: `${pos.gridColumnStart} / ${pos.gridColumnEnd}`,
-                                                        }}
-                                                    >
-                                                        <div className={cn("absolute left-0 top-0 bottom-0 w-1", priorityColors[task.priority])}></div>
-                                                        <span className="truncate pl-2">{task.title}</span>
-                                                    </div>
-                                                )}
+                                            <TooltipTrigger className="truncate text-left w-full">
+                                                {task.title}
                                             </TooltipTrigger>
                                             <TooltipContent>
-                                                <div className="font-bold mb-2">{task.title} {pos.isMilestone && '(Milestone)'}</div>
-                                                <div className="space-y-1 text-sm">
-                                                    {!pos.isMilestone && <p><span className="font-semibold">Start:</span> {task.startDate ? format(parseISO(task.startDate), 'PPP') : 'N/A'}</p>}
-                                                    <p><span className="font-semibold">{pos.isMilestone ? 'Date' : 'End'}:</span> {task.dueDate ? format(parseISO(task.dueDate), 'PPP') : 'N/A'}</p>
-                                                    <p><span className="font-semibold">Status:</span> {status}</p>
-                                                    <div className="flex items-center gap-2"><span className="font-semibold">Priority:</span> <Flag className={cn("h-4 w-4", priorityColors[task.priority].replace('bg-','text-'))} /> <span className="capitalize">{task.priority}</span></div>
-                                                </div>
+                                                <p>{task.title}</p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
-                                )
-                            })}
+                                </div>
+                                <div className="relative border-b" style={{gridRow: index + 3, gridColumn: `2 / -1`}}>
+                                    {/* Task Bar */}
+                                    {(pos => {
+                                        if (!pos) return null;
+                                        const status = getTaskStatus(task.id);
+                                        return (
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        {pos.isMilestone ? (
+                                                            <div 
+                                                                className="absolute h-7 w-7 self-center cursor-pointer hover:opacity-90 z-10"
+                                                                style={{ 
+                                                                    top: '50%',
+                                                                    left: `calc((${pos.gridColumn.split('/')[0].trim()}) / ${numColumns} * 100%)`,
+                                                                    transform: 'translateY(-50%) translateX(-50%) rotate(45deg)'
+                                                                }}
+                                                            >
+                                                                <div className={cn("w-full h-full rounded-sm", priorityColors[task.priority])}></div>
+                                                            </div>
+                                                        ) : (
+                                                            <div 
+                                                                className="absolute h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden self-center" 
+                                                                style={{ 
+                                                                    top: '50%',
+                                                                    transform: 'translateY(-50%)',
+                                                                    gridColumn: pos.gridColumn,
+                                                                }}
+                                                            >
+                                                                <div className={cn("absolute left-0 top-0 bottom-0 w-1", priorityColors[task.priority])}></div>
+                                                                <span className="truncate pl-2">{task.title}</span>
+                                                            </div>
+                                                        )}
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <div className="font-bold mb-2">{task.title} {pos.isMilestone && '(Milestone)'}</div>
+                                                        <div className="space-y-1 text-sm">
+                                                            {!pos.isMilestone && <p><span className="font-semibold">Start:</span> {task.startDate ? format(parseISO(task.startDate), 'PPP') : 'N/A'}</p>}
+                                                            <p><span className="font-semibold">{pos.isMilestone ? 'Date' : 'End'}:</span> {task.dueDate ? format(parseISO(task.dueDate), 'PPP') : 'N/A'}</p>
+                                                            <p><span className="font-semibold">Status:</span> {status}</p>
+                                                            <div className="flex items-center gap-2"><span className="font-semibold">Priority:</span> <Flag className={cn("h-4 w-4", priorityColors[task.priority].replace('bg-','text-'))} /> <span className="capitalize">{task.priority}</span></div>
+                                                        </div>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        )
+                                    })(getTaskPosition(task))}
+                                </div>
+                             </React.Fragment>
+                        ))}
+                        {/* Vertical Grid Lines underneath tasks */}
+                        <div className="absolute top-0 right-0 bottom-0 grid pointer-events-none" style={{left: '224px', gridTemplateColumns, gridTemplateRows: `auto auto repeat(${tasks.length}, 3rem)`}}>
+                             {Array.from({ length: numColumns }).map((_, i) => (
+                                <div key={i} className="border-r h-full" style={{gridColumn: i + 1, gridRow: `1 / -1`}}></div>
+                             ))}
+                             {/* Today Marker */}
+                             {todayPosition !== undefined && (
+                                <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-20" style={{ left: `calc(${todayPosition} * (100% / ${numColumns}))` }}></div>
+                             )}
                         </div>
                     </div>
                     <ScrollBar orientation="horizontal" />
@@ -330,3 +306,5 @@ export function GanttChartView() {
         </Card>
     )
 }
+
+    
