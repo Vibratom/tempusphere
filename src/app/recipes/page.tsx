@@ -1,3 +1,4 @@
+
 'use client';
 
 import { RecipesApp } from '@/components/recipes/RecipesApp';
@@ -5,6 +6,7 @@ import { Header } from '@/components/tempusphere/Header';
 import { Footer } from '@/components/tempusphere/Footer';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { Suspense } from 'react';
+import { NextUIProvider } from '@nextui-org/react';
 
 function RecipesContent() {
   return (
@@ -23,7 +25,11 @@ function RecipesContent() {
 export default function RecipesPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <RecipesContent />
+      <NextUIProvider>
+        <RecipesContent />
+      </NextUIProvider>
     </Suspense>
   );
 }
+
+    

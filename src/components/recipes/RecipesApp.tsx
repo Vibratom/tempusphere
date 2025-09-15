@@ -26,6 +26,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { starterRecipes, type StarterRecipe } from '@/lib/starter-recipes';
 import { Separator } from '../ui/separator';
+import Image from 'next/image';
 
 interface Recipe {
   id: string;
@@ -43,6 +44,7 @@ const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => 
     const [description, setDescription] = useState(recipe?.description || '');
     const [ingredients, setIngredients] = useState(recipe?.ingredients || '');
     const [instructions, setInstructions] = useState(recipe?.instructions || '');
+    const [imageUrl, setImageUrl] = useState(recipe?.imageUrl || '');
 
     useEffect(() => {
         if (recipe) {
@@ -50,11 +52,13 @@ const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => 
             setDescription(recipe.description);
             setIngredients(recipe.ingredients);
             setInstructions(recipe.instructions);
+            setImageUrl(recipe.imageUrl || '');
         } else {
             setTitle('');
             setDescription('');
             setIngredients('');
             setInstructions('');
+            setImageUrl('');
         }
     }, [recipe]);
 
@@ -66,6 +70,7 @@ const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => 
             description,
             ingredients,
             instructions,
+            imageUrl,
             createdAt: recipe?.createdAt || new Date().toISOString(),
             remixedFrom: recipe?.remixedFrom
         };
@@ -88,6 +93,10 @@ const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => 
                 <div className="grid gap-2">
                     <Label htmlFor="description">Description / Story</Label>
                     <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="A short description or the story behind this recipe." />
+                </div>
+                 <div className="grid gap-2">
+                    <Label htmlFor="imageUrl">Image URL (Optional)</Label>
+                    <Input id="imageUrl" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://example.com/image.jpg" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="grid gap-2">
@@ -148,10 +157,14 @@ const RecipeDetailView = ({ recipe, onBack, onViewRecipe, onEdit, onRemix, onDel
             </CardHeader>
             <CardContent className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-4">
-                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground">
-                        <Sparkles className="w-12 h-12" />
+                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground overflow-hidden relative">
+                         {recipe.imageUrl ? (
+                            <Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized />
+                        ) : (
+                            <UtensilsCrossed className="w-12 h-12" />
+                        )}
                     </div>
-                     <div className="md:col-span-2 space-y-4">
+                     <div className="space-y-4">
                         <h3 className="text-xl font-semibold border-b pb-2">Ingredients</h3>
                         <p className="whitespace-pre-wrap text-muted-foreground">{recipe.ingredients}</p>
                     </div>
@@ -217,7 +230,7 @@ const useRecipesContext = () => {
 };
 
 export function RecipesApp() {
-  const [recipes, setRecipes] = useLocalStorage<Recipe[]>('recipes:listV2', []);
+  const [recipes, setRecipes] = useLocalStorage<Recipe[]>('recipes:listV3', []);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null | undefined>(undefined);
   const [viewingRecipe, setViewingRecipe] = useState<Recipe | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -344,6 +357,11 @@ export function RecipesApp() {
                           {recipes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(recipe => (
                               <Card key={recipe.id} className="flex flex-col hover:shadow-lg transition-shadow">
                                   <CardHeader>
+                                      {recipe.imageUrl && (
+                                        <div className="aspect-video relative w-full overflow-hidden rounded-md mb-4">
+                                            <Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized/>
+                                        </div>
+                                      )}
                                       <CardTitle className="text-lg">{recipe.title}</CardTitle>
                                       <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
                                   </CardHeader>
@@ -370,3 +388,5 @@ export function RecipesApp() {
     </RecipesContext.Provider>
   );
 }
+
+    
