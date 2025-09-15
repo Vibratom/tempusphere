@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -407,7 +406,7 @@ export function SpreadsheetView() {
                 </div>
                 <div className="flex gap-2 w-full md:w-auto shrink-0">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-full md:w-auto">
+                        <SelectTrigger className="w-full md:w-[150px]">
                             <SelectValue placeholder="Filter by status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -439,15 +438,15 @@ export function SpreadsheetView() {
                     <NewTaskDialog />
                 </div>
             </div>
-            <div className="border rounded-lg overflow-hidden bg-card">
+            <div className="border rounded-lg overflow-hidden bg-card flex-1">
                 <Table>
-                    <TableHeader className="bg-muted/50">
+                    <TableHeader className="bg-muted/50 sticky top-0">
                         <TableRow>
                             <SortableHeader tkey="title" label="Task" />
                             <SortableHeader tkey="status" label="Status" />
                             <SortableHeader tkey="priority" label="Priority" />
                             <SortableHeader tkey="dueDate" label="End Date" />
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="text-right w-[100px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -492,7 +491,7 @@ export function SpreadsheetView() {
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                                             <AlertDialogDescription>This will permanently delete the task "{task.title}".</AlertDialogDescription>
-                                                        </AlertDialogHeader>
+                                                        </Header>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                                                             <AlertDialogAction onClick={() => removeTask(task.id, task.columnId)}>Delete</AlertDialogAction>
@@ -523,5 +522,3 @@ export function SpreadsheetView() {
         </div>
     );
 }
-
-    
