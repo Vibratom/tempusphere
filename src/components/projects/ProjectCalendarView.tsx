@@ -311,16 +311,24 @@ export function ProjectCalendarView() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
                 <Card className="lg:col-span-2">
                     <CardContent className="p-2 sm:p-4">
-                        <TooltipProvider>
                         <Calendar
                             mode="single"
                             selected={selectedDate}
                             onSelect={setSelectedDate}
                             className="p-0 [&_td]:p-0"
                             classNames={{
-                                day_hasTask: "rdp-day_hasTask",
+                                day: cn(
+                                  "h-full w-full p-0 relative",
+                                  "[&:has([aria-selected])]:bg-transparent"
+                                ),
+                                day_selected:
+                                  "bg-primary/10 text-primary-foreground hover:bg-primary/20",
+                                day_today: "bg-accent/10 text-accent-foreground",
                             }}
                             modifiers={{ hasTask: (date) => tasksByDay[format(date, 'yyyy-MM-dd')]?.length > 0 }}
+                            modifiersClassNames={{
+                                hasTask: 'rdp-day_hasTask',
+                            }}
                             components={{
                                 Day: ({ date, displayMonth }) => {
                                     const dayKey = format(date, 'yyyy-MM-dd');
@@ -352,25 +360,24 @@ export function ProjectCalendarView() {
                                         </Droppable>
                                     );
 
-                                    if (dayTasks.length > 0) {
+                                    if (dayTasks.length > 0 && !isOutside) {
                                         return (
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
                                                     {DayContent}
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p className="font-bold mb-2">{dayTasks.length} task{dayTasks.length > 1 ? 's' : ''}</p>
-                                                    <ul className="space-y-1">
-                                                        {dayTasks.slice(0, 5).map(task => (
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-64 p-2">
+                                                    <div className="font-bold mb-2">{dayTasks.length} task{dayTasks.length > 1 ? 's' : ''} on {format(date, 'MMM d')}</div>
+                                                    <ul className="space-y-1 max-h-48 overflow-y-auto">
+                                                        {dayTasks.map(task => (
                                                             <li key={task.id} className="flex items-center gap-2">
-                                                                <div className={cn("w-2 h-2 rounded-full", priorityColors[task.priority])} />
-                                                                <span className="text-xs">{task.title}</span>
+                                                                <div className={cn("w-2 h-2 rounded-full flex-shrink-0", priorityColors[task.priority])} />
+                                                                <span className="text-xs truncate">{task.title}</span>
                                                             </li>
                                                         ))}
-                                                        {dayTasks.length > 5 && <li className="text-xs text-muted-foreground">...and {dayTasks.length - 5} more</li>}
                                                     </ul>
-                                                </TooltipContent>
-                                            </Tooltip>
+                                                </PopoverContent>
+                                            </Popover>
                                         )
                                     }
 
@@ -378,7 +385,6 @@ export function ProjectCalendarView() {
                                 },
                             }}
                         />
-                        </TooltipProvider>
                     </CardContent>
                 </Card>
 
