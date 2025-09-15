@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui
 import { Button } from '../ui/button';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { ChevronLeft, ChevronRight, Flag, ZoomIn, ZoomOut } from 'lucide-react';
-import { format, addDays, differenceInDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isToday, isWeekend, addMonths, getDaysInMonth } from 'date-fns';
+import { format, addDays, differenceInDays, startOfMonth, eachDayOfInterval, parseISO, isToday, isWeekend, addMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -25,17 +25,17 @@ const priorityColors: Record<Priority, string> = {
 };
 
 const zoomLevels = [
-    { name: 'Day', days: 30, columnWidth: 50 },
-    { name: 'Week', days: 90, columnWidth: 35 },
-    { name: 'Month', days: 180, columnWidth: 25 },
     { name: 'Quarter', days: 365, columnWidth: 20 },
+    { name: 'Month', days: 180, columnWidth: 25 },
+    { name: 'Week', days: 90, columnWidth: 35 },
+    { name: 'Day', days: 30, columnWidth: 50 },
 ];
 
 
 export function GanttChartView() {
     const { board } = useProjects();
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [zoomLevel, setZoomLevel] = useState(1); // Index of zoomLevels array
+    const [zoomLevel, setZoomLevel] = useState(2); // Index of zoomLevels array, default to 'Week'
 
     const tasks = useMemo(() => {
         return Object.values(board.tasks)
@@ -47,32 +47,32 @@ export function GanttChartView() {
             });
     }, [board.tasks]);
 
-    const { dateRange, gridTemplateColumns, numColumns } = useMemo(() => {
-        const { days, columnWidth } = zoomLevels[zoomLevel];
-        const start = addDays(startOfMonth(currentDate), -Math.floor(days/2));
+    const { dateRange, gridTemplateColumns, numColumns, columnWidth } = useMemo(() => {
+        const { days, columnWidth: cw } = zoomLevels[zoomLevel];
+        const start = addMonths(startOfMonth(currentDate), -Math.floor(days/30/2));
         const end = addDays(start, days);
         
         const range = eachDayOfInterval({ start, end });
         
         return { 
             dateRange: range, 
-            gridTemplateColumns: `repeat(${range.length}, minmax(${columnWidth}px, 1fr))`,
-            numColumns: range.length 
+            gridTemplateColumns: `repeat(${range.length}, minmax(${cw}px, 1fr))`,
+            numColumns: range.length,
+            columnWidth: cw,
         };
     }, [zoomLevel, currentDate]);
 
 
     const handleDateChange = (direction: 'prev' | 'next') => {
         const amount = direction === 'prev' ? -1 : 1;
-        const { days } = zoomLevels[zoomLevel];
-        setCurrentDate(addDays(currentDate, amount * Math.floor(days/4)));
+        setCurrentDate(current => addMonths(current, amount));
     };
     
     const handleZoom = (direction: 'in' | 'out') => {
         if (direction === 'in') {
-            setZoomLevel(prev => Math.max(0, prev - 1));
-        } else {
             setZoomLevel(prev => Math.min(zoomLevels.length - 1, prev + 1));
+        } else {
+            setZoomLevel(prev => Math.max(0, prev - 1));
         }
     };
     
@@ -84,13 +84,13 @@ export function GanttChartView() {
 
         const isMilestone = !task.startDate || !task.dueDate || task.startDate === task.dueDate;
         
-        const startDayIndex = differenceInDays(startDate, dateRange[0]) + 1;
-        const endDayIndex = differenceInDays(endDate, dateRange[0]) + 1;
+        const startDayIndex = differenceInDays(startDate, dateRange[0]);
+        const endDayIndex = differenceInDays(endDate, dateRange[0]);
         
-        if (startDayIndex > dateRange.length || endDayIndex < 1) return null;
+        if (endDayIndex < 0 || startDayIndex >= dateRange.length) return null;
 
-        const gridColumnStart = Math.max(1, startDayIndex);
-        const gridColumnEnd = Math.min(dateRange.length + 1, endDayIndex + 1);
+        const gridColumnStart = Math.max(1, startDayIndex + 1);
+        const gridColumnEnd = Math.min(dateRange.length + 1, endDayIndex + 2);
 
         return { gridColumn: `${gridColumnStart} / ${gridColumnEnd}`, isMilestone };
     }
@@ -112,14 +112,14 @@ export function GanttChartView() {
 
         return (
              <>
-                {Object.entries(months).map(([month, days]) => (
+                {Object.entries(months).map(([month, daysInMonth]) => (
                     <React.Fragment key={month}>
-                        <div className="text-center font-semibold p-2 border-b border-r bg-muted/30 sticky top-0" style={{ gridColumn: `${differenceInDays(days[0], dateRange[0]) + 1} / span ${days.length}` }}>
+                        <div className="text-center font-semibold p-2 border-b border-r bg-muted/30 sticky top-0 z-20" style={{ gridColumn: `${differenceInDays(daysInMonth[0], dateRange[0]) + 1} / span ${daysInMonth.length}` }}>
                             {month}
                         </div>
-                        {days.map(date => (
+                        {daysInMonth.map(date => (
                             <div key={date.toISOString()} className={cn(
-                                "text-center border-r border-b p-2 whitespace-nowrap sticky top-[49px] bg-muted/30",
+                                "text-center border-r border-b p-2 whitespace-nowrap sticky top-[49px] bg-muted/30 text-xs md:text-sm",
                                 isToday(date) && "bg-primary/20",
                                 isWeekend(date) && "bg-muted/50",
                             )}>
@@ -136,26 +136,29 @@ export function GanttChartView() {
     const todayIndex = differenceInDays(new Date(), dateRange[0]);
     let todayPosition: number | undefined;
     if (todayIndex >= 0 && todayIndex < dateRange.length) {
-        todayPosition = todayIndex + (new Date().getHours() / 24);
+        const now = new Date();
+        todayPosition = todayIndex + (now.getHours() * 60 + now.getMinutes()) / (24 * 60);
     }
-
+    
+    const taskColWidth = 'minmax(120px, 1fr)';
+    const stickyLeft = '120px';
 
     return (
-        <Card className="h-[75vh] flex flex-col">
-            <CardHeader className="flex-row items-center justify-between flex-shrink-0">
-                <div>
+        <Card className="h-[80vh] flex flex-col">
+            <CardHeader className="flex-col md:flex-row items-center justify-between flex-shrink-0 gap-4">
+                <div className="text-center md:text-left">
                     <CardTitle>Gantt Chart</CardTitle>
                     <CardDescription>A timeline of your project tasks.</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={() => handleDateChange('prev')}><ChevronLeft/></Button>
-                    <span className="font-semibold text-lg w-48 text-center">{format(currentDate, 'MMMM yyyy')}</span>
+                    <span className="font-semibold text-base md:text-lg w-32 md:w-48 text-center">{format(currentDate, 'MMM yyyy')}</span>
                     <Button variant="outline" size="icon" onClick={() => handleDateChange('next')}><ChevronRight/></Button>
-                    <div className="flex items-center gap-1 ml-4">
-                        <Button variant="outline" size="icon" onClick={() => handleZoom('out')} disabled={zoomLevel === zoomLevels.length - 1}>
+                    <div className="flex items-center gap-1 ml-2 md:ml-4">
+                        <Button variant="outline" size="icon" onClick={() => handleZoom('out')} disabled={zoomLevel === 0}>
                             <ZoomOut />
                         </Button>
-                         <Button variant="outline" size="icon" onClick={() => handleZoom('in')} disabled={zoomLevel === 0}>
+                         <Button variant="outline" size="icon" onClick={() => handleZoom('in')} disabled={zoomLevel === zoomLevels.length - 1}>
                             <ZoomIn />
                         </Button>
                     </div>
@@ -163,26 +166,26 @@ export function GanttChartView() {
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden">
                 <ScrollArea className="w-full h-full">
-                    <div className="grid min-w-max relative" style={{ gridTemplateColumns: `224px ${gridTemplateColumns}`, gridTemplateRows: `auto auto repeat(${tasks.length}, 3rem)` }}>
+                    <div className="grid min-w-max relative" style={{ gridTemplateColumns: `${taskColWidth} ${gridTemplateColumns}`, gridAutoRows: 'minmax(2.5rem, auto)' }}>
                         {/* Headers */}
-                        <div className="font-semibold p-2 border-b border-r bg-background sticky top-0 left-0 z-20" style={{gridRow: '1 / span 2'}}>Task</div>
+                        <div className="font-semibold p-2 border-b border-r bg-background sticky top-0 left-0 z-30" style={{gridRow: '1 / span 2'}}>Task</div>
                         <Header />
                         
                          {/* Vertical Grid Lines underneath tasks */}
-                        <div className="absolute top-0 right-0 bottom-0 grid pointer-events-none" style={{left: '224px', gridTemplateColumns, gridTemplateRows: `auto auto repeat(${tasks.length}, 3rem)`}}>
+                        <div className="absolute top-0 right-0 bottom-0 grid pointer-events-none z-0" style={{left: stickyLeft, gridTemplateColumns, gridAutoRows: 'minmax(2.5rem, auto)'}}>
                              {Array.from({ length: numColumns }).map((_, i) => (
-                                <div key={i} className="border-r h-full" style={{gridColumn: i + 1, gridRow: `1 / -1`}}></div>
+                                <div key={i} className="border-r h-full" style={{gridColumn: i + 1, gridRow: `3 / span ${tasks.length + 1}`}}></div>
                              ))}
-                             {/* Today Marker */}
-                             {todayPosition !== undefined && (
-                                <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-20" style={{ left: `calc(${todayPosition} * (100% / ${numColumns}))` }}></div>
-                             )}
                         </div>
+                        {/* Today Marker */}
+                         {todayPosition !== undefined && (
+                            <div className="absolute top-0 bottom-0 border-r-2 border-destructive z-20" style={{ left: `calc(${stickyLeft} + ${todayPosition} * ${columnWidth}px)` }}></div>
+                         )}
 
                         {/* Task List & Timeline Grid */}
                         {tasks.map((task, index) => (
                              <React.Fragment key={task.id}>
-                                <div className="h-12 flex items-center p-2 border-b border-r truncate sticky left-0 bg-background z-10" style={{ gridRow: index + 3}}>
+                                <div className="h-10 flex items-center p-2 border-b border-r truncate sticky left-0 bg-background z-10 text-xs md:text-sm" style={{ gridRow: index + 3}}>
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger className="truncate text-left w-full">
@@ -194,7 +197,7 @@ export function GanttChartView() {
                                         </Tooltip>
                                     </TooltipProvider>
                                 </div>
-                                <div className="relative border-b" style={{gridRow: index + 3, gridColumn: `2 / -1`}}>
+                                <div className="relative border-b h-10" style={{gridRow: index + 3, gridColumn: `2 / -1`}}>
                                     {/* Task Bar */}
                                     {(pos => {
                                         if (!pos) return null;
@@ -205,7 +208,7 @@ export function GanttChartView() {
                                                     <TooltipTrigger asChild>
                                                         {pos.isMilestone ? (
                                                             <div 
-                                                                className="absolute h-7 w-7 self-center cursor-pointer hover:opacity-90 z-10"
+                                                                className="absolute h-6 w-6 self-center cursor-pointer hover:opacity-90 z-10"
                                                                 style={{ 
                                                                     top: '50%',
                                                                     left: `calc((${pos.gridColumn.split(' / ')[0].trim()} - 0.5) / ${numColumns} * 100%)`,
@@ -216,7 +219,7 @@ export function GanttChartView() {
                                                             </div>
                                                         ) : (
                                                             <div 
-                                                                className="absolute h-8 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden self-center" 
+                                                                className="absolute h-7 bg-primary rounded-md flex items-center px-2 text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 overflow-hidden self-center" 
                                                                 style={{ 
                                                                     top: '50%',
                                                                     transform: 'translateY(-50%)',
@@ -251,3 +254,5 @@ export function GanttChartView() {
         </Card>
     )
 }
+
+    
