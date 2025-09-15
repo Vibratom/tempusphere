@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Slider } from '../ui/slider';
-import { Brush, Eraser, Palette, Trash2, MousePointer, Upload, Square, BringToFront, SendToBack, Layers, Type } from 'lucide-react';
+import { Brush, Eraser, Palette, Trash2, MousePointer, Upload, Square, BringToFront, SendToBack, Layers, Type, ZoomIn, ZoomOut, Grab } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 // Types for our canvas objects
@@ -40,7 +40,7 @@ interface TextObject extends BaseObject {
   font: string;
   fontSize: number;
   color: string;
-  width?: number; // For wrapping, to be implemented
+  width?: number;
 }
 
 type Tool = 'select' | 'pencil' | 'text';
@@ -49,7 +49,6 @@ const colors = [
   '#000000', '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e',
 ];
 
-// Re-serialize objects for localStorage by converting images to data URLs
 const serializeObjects = (objects: CanvasObject[]): any[] => {
     return objects.map(obj => {
         if (obj.type === 'image') {
@@ -60,7 +59,6 @@ const serializeObjects = (objects: CanvasObject[]): any[] => {
     });
 };
 
-// De-serialize objects from localStorage by creating Image elements
 const deserializeObjects = (serialized: any[]): Promise<CanvasObject[]> => {
     const promises = serialized.map(obj => {
         if (obj.type === 'image' && obj.src) {
@@ -70,7 +68,6 @@ const deserializeObjects = (serialized: any[]): Promise<CanvasObject[]> => {
                     resolve({ ...obj, image: img } as ImageObject);
                 };
                 img.onerror = () => {
-                    // If image fails, resolve with a placeholder-like object
                     resolve({ ...obj, image: new Image(100, 100) } as ImageObject); 
                 }
                 img.src = obj.src;
@@ -86,14 +83,10 @@ export function CanvasView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Main state for objects being rendered
   const [objects, setObjects] = useState<CanvasObject[]>([]);
-  // Local storage for persistence
   const [savedObjects, setSavedObjects] = useLocalStorage<any[]>('projects:canvasObjects-v2', []);
-  // History for undo/redo
   const [history, setHistory] = useState<CanvasObject[][]>([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
-
   
   const [tool, setTool] = useState<Tool>('select');
   const [color, setColor] = useState('#000000');
@@ -101,20 +94,24 @@ export function CanvasView() {
   
   const [isDrawing, setIsDrawing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [viewOffset, setViewOffset] = useState({ x: 0, y: 0 });
+  const [scale, setScale] = useState(1);
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
-
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const [isClient, setIsClient] = useState(false);
   const editingInputRef = useRef<HTMLInputElement>(null);
   
-  // Function to update canvas state and manage history
-  const updateCanvasState = (newObjects: CanvasObject[], newHistoryEntry = true) => {
-    setObjects(newObjects);
+  const updateCanvasState = (newObjects: CanvasObject[] | ((prev: CanvasObject[]) => CanvasObject[]), newHistoryEntry = true) => {
+    const updatedObjects = typeof newObjects === 'function' ? newObjects(objects) : newObjects;
+    setObjects(updatedObjects);
+
     if (newHistoryEntry) {
         const newHistory = history.slice(0, historyIndex + 1);
-        setHistory([...newHistory, newObjects]);
+        setHistory([...newHistory, updatedObjects]);
         setHistoryIndex(newHistory.length);
     }
   };
@@ -135,7 +132,6 @@ export function CanvasView() {
     }
   }, [history, historyIndex]);
 
-  // Load objects from localStorage on initial mount
   useEffect(() => {
     setIsClient(true);
     if(savedObjects.length > 0) {
@@ -151,12 +147,20 @@ export function CanvasView() {
       return canvas ? canvas.getContext('2d') : null;
   }
   
-  // Redraw canvas whenever objects change
+  // Redraw canvas whenever objects, scale, or offset change
   useEffect(() => {
     const ctx = getCanvasContext();
     if (!ctx) return;
     
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    
+    // Save context, apply transformations
+    ctx.save();
+    ctx.translate(viewOffset.x, viewOffset.y);
+    ctx.scale(scale, scale);
+    
+    // Draw grid
+    drawGrid(ctx);
 
     objects.forEach(obj => {
         ctx.save();
@@ -174,7 +178,7 @@ export function CanvasView() {
               ctx.stroke();
             }
         } else if (obj.type === 'image') {
-            ctx.drawImage(obj.image, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+            ctx.drawImage(obj.image, 0, 0, obj.width, obj.height);
         } else if (obj.type === 'text') {
             if (obj.id !== editingTextId) {
                 ctx.font = `${obj.fontSize}px ${obj.font}`;
@@ -193,18 +197,44 @@ export function CanvasView() {
       ctx.save();
       ctx.translate(selectedObject.x, selectedObject.y);
       ctx.strokeStyle = '#09f';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 1 / scale;
+      ctx.setLineDash([5 / scale, 5 / scale]);
       const bounds = getObjectBounds(selectedObject);
       ctx.strokeRect(bounds.minX, bounds.minY, bounds.width, bounds.height);
       ctx.restore();
     }
+
+    // Restore context to pre-transform state
+    ctx.restore();
     
-    // Save to localStorage after drawing
     if(isClient) {
       setSavedObjects(serializeObjects(objects));
     }
-  }, [objects, selectedObjectId, isClient, setSavedObjects, editingTextId]);
+  }, [objects, selectedObjectId, isClient, setSavedObjects, editingTextId, scale, viewOffset]);
+
+  const drawGrid = (ctx: CanvasRenderingContext2D) => {
+    const canvasWidth = ctx.canvas.width;
+    const canvasHeight = ctx.canvas.height;
+    
+    const gridSize = 50;
+    const dotRadius = 1;
+
+    ctx.fillStyle = 'hsl(var(--border))';
+
+    const startX = Math.floor(-viewOffset.x / scale / gridSize) * gridSize;
+    const startY = Math.floor(-viewOffset.y / scale / gridSize) * gridSize;
+    const endX = (canvasWidth - viewOffset.x) / scale;
+    const endY = (canvasHeight - viewOffset.y) / scale;
+
+    for (let x = startX; x < endX; x += gridSize) {
+        for (let y = startY; y < endY; y += gridSize) {
+            ctx.beginPath();
+            ctx.arc(x, y, dotRadius / scale, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    }
+  }
+
 
   const getObjectBounds = (obj: CanvasObject): { minX: number, minY: number, width: number, height: number } => {
     if(obj.type === 'path') {
@@ -217,9 +247,8 @@ export function CanvasView() {
         });
         return { minX, minY, width: maxX - minX, height: maxY - minY };
     } else if (obj.type === 'image') {
-        return { minX: -obj.width/2, minY: -obj.height/2, width: obj.width, height: obj.height };
+        return { minX: 0, minY: 0, width: obj.width, height: obj.height };
     } else if (obj.type === 'text') {
-        // This is an approximation. For accurate bounds, we'd need to measure text.
         const ctx = getCanvasContext();
         if (ctx) {
             ctx.font = `${obj.fontSize}px ${obj.font}`;
@@ -237,13 +266,12 @@ export function CanvasView() {
       const rect = canvas.getBoundingClientRect();
       const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      const x = (clientX - rect.left);
-      const y = (clientY - rect.top);
+      const x = (clientX - rect.left - viewOffset.x) / scale;
+      const y = (clientY - rect.top - viewOffset.y) / scale;
       return { x, y };
   }
   
   const getObjectAtPosition = (x: number, y: number): CanvasObject | null => {
-      // Iterate backwards to select top-most object
       for (let i = objects.length - 1; i >= 0; i--) {
         const obj = objects[i];
         const bounds = getObjectBounds(obj);
@@ -258,12 +286,16 @@ export function CanvasView() {
   const handleMouseDown = (e: React.MouseEvent) => {
     const { x, y } = getCoords(e);
     
+    if (isPanning) {
+        setPanStart({ x: e.clientX - viewOffset.x, y: e.clientY - viewOffset.y });
+        return;
+    }
+
     if (editingTextId) {
         const clickedObject = getObjectAtPosition(x, y);
         if (clickedObject?.id !== editingTextId) {
             setEditingTextId(null);
         }
-        // If clicking outside the text input, finish editing
         return;
     }
 
@@ -272,14 +304,27 @@ export function CanvasView() {
       const newPath: PathObject = {
         id: uuidv4(),
         type: 'path',
-        points: [{ x, y }],
+        points: [],
         color,
         lineWidth,
-        x: 0, // Path points are absolute for simplicity now
+        x: 0, 
         y: 0,
       };
-      updateCanvasState([...objects, newPath]);
-      setSelectedObjectId(newPath.id);
+
+      const pathWithStartPoint: PathObject = {
+          ...newPath,
+          points: [{ x: x, y: y }],
+          x: 0,
+          y: 0,
+      }
+      // Re-center the path
+      const bounds = getObjectBounds(pathWithStartPoint);
+      pathWithStartPoint.x = bounds.minX;
+      pathWithStartPoint.y = bounds.minY;
+      pathWithStartPoint.points = pathWithStartPoint.points.map(p => ({ x: p.x - bounds.minX, y: p.y - bounds.minY }));
+
+      updateCanvasState(prev => [...prev, pathWithStartPoint]);
+      setSelectedObjectId(pathWithStartPoint.id);
     } else if (tool === 'select') {
         const clickedObject = getObjectAtPosition(x, y);
         setSelectedObjectId(clickedObject?.id || null);
@@ -298,46 +343,68 @@ export function CanvasView() {
             fontSize: 24,
             color,
         };
-        updateCanvasState([...objects, newText]);
+        updateCanvasState(prev => [...prev, newText]);
         setSelectedObjectId(newText.id);
-        setTool('select'); // Switch back to select tool after adding text
+        setTool('select');
         setEditingTextId(newText.id);
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const { x, y } = getCoords(e);
+
+    if (isPanning) {
+        setViewOffset({
+            x: e.clientX - panStart.x,
+            y: e.clientY - panStart.y,
+        });
+        return;
+    }
+
     if (isDrawing && tool === 'pencil') {
-      const newObjects = objects.map(obj => {
+      updateCanvasState(prev => prev.map(obj => {
         if (obj.id === selectedObjectId && obj.type === 'path') {
-          return {
-            ...obj,
-            points: [...obj.points, { x, y }],
-          };
+            const newPoints = [...obj.points, { x: x - obj.x, y: y - obj.y }];
+            return { ...obj, points: newPoints };
         }
         return obj;
-      });
-      updateCanvasState(newObjects, false); // No history entry during drawing
+      }), false);
     } else if (isDragging && tool === 'select' && selectedObjectId) {
-        const newObjects = objects.map(obj => {
+        updateCanvasState(prev => prev.map(obj => {
             if(obj.id === selectedObjectId) {
                 return { ...obj, x: x - dragStart.x, y: y - dragStart.y };
             }
             return obj;
-        });
-        updateCanvasState(newObjects, false); // No history entry during dragging
+        }), false);
     }
   };
 
   const handleMouseUp = () => {
     if (isDrawing || isDragging) {
-        // Create a new history entry when drawing/dragging is finished
-        const newHistory = history.slice(0, historyIndex + 1);
-        setHistory([...newHistory, objects]);
-        setHistoryIndex(newHistory.length);
+        const currentPath = objects.find(o => o.id === selectedObjectId);
+        if (currentPath && currentPath.type === 'path' && currentPath.points.length > 1) {
+             updateCanvasState(prev => prev.map(obj => {
+                if (obj.id === selectedObjectId && obj.type === 'path') {
+                    const bounds = getObjectBounds(obj);
+                    return {
+                        ...obj,
+                        x: obj.x + bounds.minX,
+                        y: obj.y + bounds.minY,
+                        points: obj.points.map(p => ({ x: p.x - bounds.minX, y: p.y - bounds.minY }))
+                    };
+                }
+                return obj;
+            }));
+        } else {
+             // Create history entry on mouse up for non-path or short-path objects
+            const newHistory = history.slice(0, historyIndex + 1);
+            setHistory([...newHistory, objects]);
+            setHistoryIndex(newHistory.length);
+        }
     }
     setIsDrawing(false);
     setIsDragging(false);
+    setIsPanning(false);
   };
   
   const handleDoubleClick = (e: React.MouseEvent) => {
@@ -345,12 +412,17 @@ export function CanvasView() {
       const clickedObject = getObjectAtPosition(x,y);
       if(clickedObject?.type === 'text') {
           setEditingTextId(clickedObject.id);
-          setSelectedObjectId(clickedObject.id); // Also select it
+          setSelectedObjectId(clickedObject.id);
       }
   }
 
-  // Keyboard events for undo/redo
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+
+    if (e.code === 'Space') {
+      e.preventDefault();
+      setIsPanning(true);
+    }
     if (e.ctrlKey || e.metaKey) {
         if (e.key === 'z') {
             e.preventDefault();
@@ -361,14 +433,23 @@ export function CanvasView() {
         }
     }
   }, [handleUndo, handleRedo]);
+  
+  const handleKeyUp = useCallback((e: KeyboardEvent) => {
+    if (e.code === 'Space') {
+        e.preventDefault();
+        setIsPanning(false);
+    }
+  }, []);
 
   useEffect(() => {
     const cont = containerRef.current;
     cont?.addEventListener('keydown', handleKeyDown);
+    cont?.addEventListener('keyup', handleKeyUp);
     return () => {
         cont?.removeEventListener('keydown', handleKeyDown);
+        cont?.removeEventListener('keyup', handleKeyUp);
     }
-  }, [handleKeyDown]);
+  }, [handleKeyDown, handleKeyUp]);
   
   const handleClear = () => {
     updateCanvasState([]);
@@ -382,16 +463,17 @@ export function CanvasView() {
       reader.onload = (event) => {
           const img = new Image();
           img.onload = () => {
+              const {x, y} = getCoords(e as any); // Bit of a hack for coords
               const newImage: ImageObject = {
                   id: uuidv4(),
                   type: 'image',
                   image: img,
-                  x: canvasRef.current!.width / 2,
-                  y: canvasRef.current!.height / 2,
+                  x,
+                  y,
                   width: img.width,
                   height: img.height,
               };
-              updateCanvasState([...objects, newImage]);
+              updateCanvasState(prev => [...prev, newImage]);
               setSelectedObjectId(newImage.id);
           };
           img.src = event.target?.result as string;
@@ -429,7 +511,6 @@ export function CanvasView() {
       updateCanvasState(newObjects);
   }
 
-  // Effect to focus the input when editing starts
   useEffect(() => {
     if (editingTextId && editingInputRef.current) {
         editingInputRef.current.focus();
@@ -444,15 +525,23 @@ export function CanvasView() {
           }
           return obj;
       });
-      updateCanvasState(newObjects, false); // No history during text input
+      updateCanvasState(newObjects, false);
   }
 
   const handleTextEditBlur = () => {
-      // Create history entry after text edit is done
       const newHistory = history.slice(0, historyIndex + 1);
       setHistory([...newHistory, objects]);
       setHistoryIndex(newHistory.length);
       setEditingTextId(null);
+  }
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey) {
+        e.preventDefault();
+        const zoomIntensity = 0.1;
+        const newScale = scale - e.deltaY * zoomIntensity * 0.1;
+        setScale(Math.min(Math.max(0.1, newScale), 10));
+    }
   }
 
   const editingTextObject = editingTextId ? objects.find(o => o.id === editingTextId) as TextObject : null;
@@ -493,10 +582,17 @@ export function CanvasView() {
                      <Button variant="ghost" size="icon" onClick={handleDeleteSelected} className="h-9 w-9 text-destructive"><Trash2/></Button>
                 </div>
              )}
+
+             <div className="absolute bottom-2 left-2 z-10 bg-background/80 border rounded-lg p-1 flex gap-1 items-center shadow-md">
+                <Button variant="ghost" size="icon" onClick={() => setScale(s => s - 0.1)} className="h-9 w-9"><ZoomOut/></Button>
+                <span className="text-sm font-medium w-12 text-center">{Math.round(scale * 100)}%</span>
+                <Button variant="ghost" size="icon" onClick={() => setScale(s => s + 0.1)} className="h-9 w-9"><ZoomIn/></Button>
+             </div>
             
             <div 
               className="flex-1 w-full h-full bg-card relative"
-              style={{ cursor: tool === 'pencil' ? 'crosshair' : (tool === 'text' ? 'text' : 'default') }}
+              style={{ cursor: isPanning ? 'grabbing' : (tool === 'pencil' ? 'crosshair' : (tool === 'text' ? 'text' : 'default')) }}
+              onWheel={handleWheel}
             >
               <canvas
                 ref={canvasRef}
@@ -519,14 +615,15 @@ export function CanvasView() {
                     onKeyDown={(e) => { if(e.key === 'Enter') handleTextEditBlur()}}
                     style={{
                         position: 'absolute',
-                        left: `${editingTextObject.x}px`,
-                        top: `${editingTextObject.y}px`,
-                        font: `${editingTextObject.fontSize}px ${editingTextObject.font}`,
+                        left: `${(editingTextObject.x * scale) + viewOffset.x}px`,
+                        top: `${(editingTextObject.y * scale) + viewOffset.y}px`,
+                        font: `${editingTextObject.fontSize * scale}px ${editingTextObject.font}`,
                         color: editingTextObject.color,
                         background: 'transparent',
                         border: '1px dashed #09f',
                         outline: 'none',
                         zIndex: 100,
+                        transformOrigin: 'top left',
                     }}
                   />
               )}
@@ -536,3 +633,5 @@ export function CanvasView() {
     </div>
   );
 }
+
+    
