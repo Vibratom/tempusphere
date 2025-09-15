@@ -33,6 +33,21 @@ export function SpreadsheetView() {
 
     switch (e.key) {
         case 'Enter':
+            e.preventDefault();
+            if (e.shiftKey) {
+                nextRow = Math.max(0, rowIndex - 1); // Shift + Enter moves up
+            } else {
+                nextRow = Math.min(numRows - 1, rowIndex + 1); // Enter moves down
+            }
+            break;
+        case 'Tab':
+            e.preventDefault();
+            if (e.shiftKey) {
+                nextCol = Math.max(0, colIndex - 1); // Shift + Tab moves left
+            } else {
+                nextCol = Math.min(numCols - 1, colIndex + 1); // Tab moves right
+            }
+            break;
         case 'ArrowDown':
             e.preventDefault();
             nextRow = Math.min(numRows - 1, rowIndex + 1);
