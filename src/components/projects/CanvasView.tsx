@@ -1,257 +1,176 @@
 
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { motion, useMotionValue, PanInfo } from 'framer-motion';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
-import { Input } from '../ui/input';
-import { Plus, Trash2, Zap, ZoomIn, ZoomOut } from 'lucide-react';
-import { useProjects } from '@/contexts/ProjectsContext';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Slider } from '../ui/slider';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { Brush, Eraser, Palette, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 
-interface Node {
-  id: string;
-  text: string;
-  x: number;
-  y: number;
-  parentId?: string;
-}
+type Tool = 'pencil' | 'eraser';
 
-const initialNodes: Node[] = [
-  { id: 'root', text: 'My Project Idea', x: 0, y: 0 },
+const colors = [
+  '#000000', '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e',
 ];
 
-const NodeComponent = ({ node, onUpdateText, onAddChild, onDelete, onConvertToTask, isSelected, onSelect, onNodeDrag }: {
-    node: Node;
-    onUpdateText: (id: string, text: string) => void;
-    onAddChild: (parentId: string) => void;
-    onDelete: (id: string) => void;
-    onConvertToTask: (text: string) => void;
-    isSelected: boolean;
-    onSelect: (id: string | null) => void;
-    onNodeDrag: (id: string, info: PanInfo) => void;
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(node.text);
-  
-  const handleUpdate = () => {
-    onUpdateText(node.id, editText);
-    setIsEditing(false);
-  };
-  
-  return (
-    <motion.div
-        layout
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1, x: node.x, y: node.y }}
-        exit={{ opacity: 0, scale: 0.5 }}
-        drag
-        dragMomentum={false}
-        onDrag={(event, info) => onNodeDrag(node.id, info)}
-        className={cn(
-            "absolute p-2 rounded-lg shadow-lg cursor-grab z-10",
-            node.id === 'root' ? 'bg-primary text-primary-foreground' : 'bg-card text-card-foreground border',
-            isSelected && "ring-2 ring-accent"
-        )}
-        style={{ top: 0, left: 0 }}
-        onClick={(e) => { e.stopPropagation(); onSelect(node.id); }}
-        onDoubleClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-    >
-      {isEditing ? (
-        <Input
-          value={editText}
-          onChange={(e) => setEditText(e.target.value)}
-          onBlur={handleUpdate}
-          onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
-          autoFocus
-          className="w-40"
-          onClick={(e) => e.stopPropagation()}
-        />
-      ) : (
-        <div className="p-2 w-40 truncate">
-          {node.text}
-        </div>
-      )}
-      
-       {isSelected && (
-           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex gap-1 bg-background p-1 rounded-md border shadow-lg z-20">
-                <Button size="icon" variant="ghost" onClick={() => onAddChild(node.id)} className="h-7 w-7"><Plus/></Button>
-                {node.id !== 'root' && <Button size="icon" variant="ghost" onClick={() => onDelete(node.id)} className="h-7 w-7 text-destructive"><Trash2/></Button>}
-                <Button size="icon" variant="ghost" onClick={() => onConvertToTask(node.text)} className="h-7 w-7 text-green-500"><Zap/></Button>
-           </div>
-       )}
-    </motion.div>
-  );
-};
-
-const Line = ({ fromNode, toNode }: { fromNode: Node, toNode: Node }) => {
-    const fromX = fromNode.x + 88; // approx center of the node (160/2 + p-2)
-    const fromY = fromNode.y + 26; // approx middle
-    const toX = toNode.x + 88;
-    const toY = toNode.y + 26;
-    
-    return (
-        <motion.path
-            d={`M ${fromX} ${fromY} L ${toX} ${toY}`}
-            stroke="hsl(var(--border))"
-            strokeWidth="2"
-            fill="none"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-        />
-    )
-}
-
 export function CanvasView() {
-  const [nodes, setNodes] = useLocalStorage<Node[]>('projects:canvas', initialNodes);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const addTask = useProjects(state => state.addTask);
-  const { toast } = useToast();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [tool, setTool] = useState<Tool>('pencil');
+  const [color, setColor] = useState('#000000');
+  const [lineWidth, setLineWidth] = useState(5);
+  const [savedCanvas, setSavedCanvas] = useLocalStorage<string | null>('projects:drawingCanvas', null);
+  const [isClient, setIsClient] = useState(false);
   
   const [scale, setScale] = useState(1);
-  const panX = useMotionValue(0);
-  const panY = useMotionValue(0);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
 
-  const handleAddChild = (parentId: string, text = 'New Idea') => {
-    const parentNode = nodes.find(n => n.id === parentId);
-    if (!parentNode) return;
-    
-    const children = nodes.filter(n => n.parentId === parentId);
-    const childrenCount = children.length;
-    
-    let newX = parentNode.x + 250;
-    let newY = parentNode.y + (childrenCount * 100);
-
-    const isOccupied = (x: number, y: number) => {
-        return children.some(child => Math.abs(child.x - x) < 20 && Math.abs(child.y - y) < 20);
-    }
-
-    while(isOccupied(newX, newY)) {
-        newY += 20;
-    }
-
-    const newNode: Node = {
-      id: `node-${Date.now()}-${Math.random()}`,
-      text: text,
-      x: newX,
-      y: newY,
-      parentId: parentId,
-    };
-    setNodes(prev => [...prev, newNode]);
-  };
-
-  const handleNodeDrag = (id: string, info: PanInfo) => {
-    setNodes(nodes.map(n => n.id === id ? { ...n, x: n.x + info.delta.x, y: n.y + info.delta.y } : n));
-  };
-  
-  const handleUpdateText = (id: string, text: string) => {
-    setNodes(nodes.map(n => n.id === id ? { ...n, text } : n));
-  };
-
-  const handleDelete = (id: string) => {
-    const idsToDelete = new Set<string>();
-    const queue = [id];
-
-    while (queue.length > 0) {
-      const currentId = queue.shift()!;
-      idsToDelete.add(currentId);
-      nodes.forEach(n => {
-        if (n.parentId === currentId) {
-          queue.push(n.id);
-        }
-      });
-    }
-
-    setNodes(nodes.filter(n => !idsToDelete.has(n.id)));
-    setSelectedNodeId(null);
-  };
-  
-  const handleConvertToTask = (text: string) => {
-      const board = useProjects.getState().board;
-      const todoColumnId = board.columnOrder.length > 0 ? board.columnOrder[0] : null;
-
-      if(todoColumnId) {
-          addTask(todoColumnId, { title: text });
-          toast({
-              title: "Task Created!",
-              description: `"${text}" has been added to your "To Do" list.`
-          })
-      } else {
-          toast({
-              variant: "destructive",
-              title: "No 'To Do' column found",
-              description: "Please create a 'To Do' column on your board first."
-          })
+  useEffect(() => {
+    setIsClient(true);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx && savedCanvas) {
+        const image = new Image();
+        image.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(image, 0, 0);
+        };
+        image.src = savedCanvas;
       }
+    }
+  }, [savedCanvas]);
+  
+  const getCoords = (e: React.MouseEvent): [number, number] => {
+      const canvas = canvasRef.current;
+      if (!canvas) return [0, 0];
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left - pan.x) / scale;
+      const y = (e.clientY - rect.top - pan.y) / scale;
+      return [x, y];
   }
 
+  const startDrawing = (e: React.MouseEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    setIsDrawing(true);
+    const [x, y] = getCoords(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.strokeStyle = tool === 'pencil' ? color : '#FFFFFF'; // Eraser is just a white brush
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    if(tool === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+    } else {
+        ctx.globalCompositeOperation = 'source-over';
+    }
+  };
+
+  const draw = (e: React.MouseEvent) => {
+    if (!isDrawing) return;
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    const [x, y] = getCoords(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (!isDrawing) return;
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    ctx.closePath();
+    setIsDrawing(false);
+    
+    const canvas = canvasRef.current;
+    if (canvas) {
+      setSavedCanvas(canvas.toDataURL());
+    }
+  };
+  
+  const handleClear = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setSavedCanvas(null);
+  };
+  
   const handleZoom = (direction: 'in' | 'out') => {
-      setScale(s => direction === 'in' ? Math.min(s * 1.2, 2) : Math.max(s / 1.2, 0.2));
+      setScale(s => direction === 'in' ? Math.min(s * 1.1, 5) : Math.max(s / 1.1, 0.2));
   };
   
   return (
     <div className="w-full h-full flex items-center justify-center">
-        <Card className="w-full flex flex-col" style={{height: '800px'}}>
-            <CardContent className="p-0 flex-1 relative overflow-hidden" onClick={() => setSelectedNodeId(null)}>
-                <motion.div 
-                  className="w-full h-full"
-                  drag
-                  dragMomentum={false}
-                  onDrag={(e, info) => {
-                      panX.set(panX.get() + info.delta.x);
-                      panY.set(panY.get() + info.delta.y);
-                  }}
-                  style={{
-                      '--grid-size': '30px',
-                      '--dot-color': 'hsl(var(--border))',
-                      backgroundImage: `radial-gradient(circle at center, var(--dot-color) 1px, transparent 1px)`,
-                      backgroundSize: `var(--grid-size) var(--grid-size)`
-                  } as React.CSSProperties}
-                >
-                  <motion.div 
-                    className="relative w-full h-full"
-                    style={{ x: panX, y: panY, scale, transformOrigin: "50% 50%" }}
-                  >
-                      <svg className="absolute w-[400vw] h-[400vh] pointer-events-none" style={{ top: '-200vh', left: '-200vw' }}>
-                          {nodes.map(node => {
-                              const parent = nodes.find(p => p.id === node.parentId);
-                              if (!parent) return null;
-                              return <Line key={`${parent.id}-${node.id}`} fromNode={parent} toNode={node} />
-                          })}
-                      </svg>
-                      {nodes.map(node => (
-                          <NodeComponent
-                            key={node.id}
-                            node={node}
-                            onUpdateText={handleUpdateText}
-                            onAddChild={(parentId) => handleAddChild(parentId)}
-                            onDelete={handleDelete}
-                            onConvertToTask={handleConvertToTask}
-                            isSelected={selectedNodeId === node.id}
-                            onSelect={setSelectedNodeId}
-                            onNodeDrag={(id, info) => {
-                              setNodes(nodes.map(n => n.id === id ? { ...n, x: n.x + info.delta.x / scale, y: n.y + info.delta.y / scale } : n));
-                            }}
-                          />
-                      ))}
-                  </motion.div>
-                </motion.div>
-
-                <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
-                    <Button variant="outline" size="icon" onClick={() => handleZoom('in')}><ZoomIn/></Button>
-                    <Button variant="outline" size="icon" onClick={() => handleZoom('out')}><ZoomOut/></Button>
-                    <div className="p-2 bg-muted/80 text-muted-foreground rounded-md text-xs font-mono text-center">
-                        {Math.round(scale * 100)}%
-                    </div>
-                </div>
-                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-muted/80 p-2 rounded-lg text-sm text-muted-foreground z-20">
-                    <p><strong>Double-click</strong> node to edit. <strong>Click</strong> node for options. <strong>Drag</strong> background to pan.</p>
-                </div>
-            </CardContent>
-        </Card>
+      <Card className="w-full flex flex-col" style={{height: '800px'}}>
+        <CardContent className="p-0 flex-1 relative overflow-hidden flex flex-col">
+            <div className="absolute top-2 left-2 z-10 bg-background/80 border rounded-lg p-1 flex gap-1 items-center shadow-md">
+                <Button variant={tool === 'pencil' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('pencil')} className="h-9 w-9"><Brush/></Button>
+                <Button variant={tool === 'eraser' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('eraser')} className="h-9 w-9"><Eraser/></Button>
+                 <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9">
+                            <div className="w-5 h-5 rounded-full border" style={{ backgroundColor: color }} />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2">
+                        <div className="grid grid-cols-6 gap-1">
+                            {colors.map(c => (
+                                <button key={c} onClick={() => setColor(c)} className={cn("w-6 h-6 rounded-full border hover:scale-110 transition-transform", c === color && 'ring-2 ring-ring ring-offset-2 ring-offset-background') } style={{ backgroundColor: c }}/>
+                            ))}
+                        </div>
+                    </PopoverContent>
+                 </Popover>
+                 <Popover>
+                    <PopoverTrigger asChild>
+                         <Button variant="ghost" size="icon" className="h-9 w-9">
+                            <Palette/>
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-2">
+                        <Slider value={[lineWidth]} onValueChange={(v) => setLineWidth(v[0])} min={1} max={50} step={1}/>
+                    </PopoverContent>
+                 </Popover>
+                <Button variant="ghost" size="icon" onClick={handleClear} className="h-9 w-9 text-destructive"><Trash2/></Button>
+            </div>
+            
+             <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
+                <Button variant="outline" size="icon" onClick={() => handleZoom('in')} className="h-9 w-9"><ZoomIn/></Button>
+                <Button variant="outline" size="icon" onClick={() => handleZoom('out')} className="h-9 w-9"><ZoomOut/></Button>
+             </div>
+            
+            <div 
+              className="flex-1 w-full h-full bg-card cursor-crosshair"
+              onMouseDown={startDrawing}
+              onMouseMove={draw}
+              onMouseUp={stopDrawing}
+              onMouseLeave={stopDrawing}
+            >
+              <canvas
+                ref={canvasRef}
+                width={1200}
+                height={780}
+                className="w-full h-full"
+                style={{
+                    transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+                    transformOrigin: 'top left'
+                }}
+              />
+            </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
+    
