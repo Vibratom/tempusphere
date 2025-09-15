@@ -8,18 +8,16 @@ import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Slider } from '../ui/slider';
-import { Brush, Eraser, Palette, Trash2, MousePointer, Upload, Square, BringToFront, SendToBack, Layers } from 'lucide-react';
+import { Brush, Eraser, Palette, Trash2, MousePointer, Upload, Square, BringToFront, SendToBack, Layers, Type } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 // Types for our canvas objects
-type CanvasObject = PathObject | ImageObject;
+type CanvasObject = PathObject | ImageObject | TextObject;
 
 interface BaseObject {
   id: string;
   x: number;
   y: number;
-  rotation: number;
-  scale: number;
 }
 
 interface PathObject extends BaseObject {
@@ -36,7 +34,16 @@ interface ImageObject extends BaseObject {
   height: number;
 }
 
-type Tool = 'select' | 'pencil';
+interface TextObject extends BaseObject {
+  type: 'text';
+  text: string;
+  font: string;
+  fontSize: number;
+  color: string;
+  width?: number; // For wrapping, to be implemented
+}
+
+type Tool = 'select' | 'pencil' | 'text';
 
 const colors = [
   '#000000', '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e',
@@ -60,11 +67,11 @@ const deserializeObjects = (serialized: any[]): Promise<CanvasObject[]> => {
             return new Promise<CanvasObject>((resolve) => {
                 const img = new Image();
                 img.onload = () => {
-                    resolve({ ...obj, image: img });
+                    resolve({ ...obj, image: img } as ImageObject);
                 };
                 img.onerror = () => {
-                    // If image fails, resolve with a placeholder-like object or null
-                    resolve({ ...obj, image: new Image(100, 100) }); 
+                    // If image fails, resolve with a placeholder-like object
+                    resolve({ ...obj, image: new Image(100, 100) } as ImageObject); 
                 }
                 img.src = obj.src;
             });
@@ -78,7 +85,7 @@ const deserializeObjects = (serialized: any[]): Promise<CanvasObject[]> => {
 export function CanvasView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [objects, setObjects] = useState<CanvasObject[]>([]);
-  const [savedObjects, setSavedObjects] = useLocalStorage<any[]>('projects:canvasObjects-v1', []);
+  const [savedObjects, setSavedObjects] = useLocalStorage<any[]>('projects:canvasObjects-v2', []);
   
   const [tool, setTool] = useState<Tool>('select');
   const [color, setColor] = useState('#000000');
@@ -87,9 +94,12 @@ export function CanvasView() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
+
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const [isClient, setIsClient] = useState(false);
+  const editingInputRef = useRef<HTMLInputElement>(null);
 
   // Load objects from localStorage on initial mount
   useEffect(() => {
@@ -101,14 +111,17 @@ export function CanvasView() {
     }
   }, []);
 
+  const getCanvasContext = (): CanvasRenderingContext2D | null => {
+      const canvas = canvasRef.current;
+      return canvas ? canvas.getContext('2d') : null;
+  }
+  
   // Redraw canvas whenever objects change
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = getCanvasContext();
     if (!ctx) return;
     
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
     objects.forEach(obj => {
         ctx.save();
@@ -127,6 +140,13 @@ export function CanvasView() {
             }
         } else if (obj.type === 'image') {
             ctx.drawImage(obj.image, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+        } else if (obj.type === 'text') {
+            if (obj.id !== editingTextId) {
+                ctx.font = `${obj.fontSize}px ${obj.font}`;
+                ctx.fillStyle = obj.color;
+                ctx.textBaseline = 'top';
+                ctx.fillText(obj.text, 0, 0);
+            }
         }
 
         ctx.restore();
@@ -140,12 +160,8 @@ export function CanvasView() {
       ctx.strokeStyle = '#09f';
       ctx.lineWidth = 1;
       ctx.setLineDash([5, 5]);
-      if(selectedObject.type === 'path') {
-         const bounds = getPathBounds(selectedObject.points);
-         ctx.strokeRect(bounds.minX, bounds.minY, bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
-      } else if (selectedObject.type === 'image') {
-         ctx.strokeRect(-selectedObject.width/2, -selectedObject.height/2, selectedObject.width, selectedObject.height);
-      }
+      const bounds = getObjectBounds(selectedObject);
+      ctx.strokeRect(bounds.minX, bounds.minY, bounds.width, bounds.height);
       ctx.restore();
     }
     
@@ -153,25 +169,41 @@ export function CanvasView() {
     if(isClient) {
       setSavedObjects(serializeObjects(objects));
     }
-  }, [objects, selectedObjectId, isClient, setSavedObjects]);
-  
-  const getPathBounds = (points: {x:number, y:number}[]) => {
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      points.forEach(p => {
-          minX = Math.min(minX, p.x);
-          minY = Math.min(minY, p.y);
-          maxX = Math.max(maxX, p.x);
-          maxY = Math.max(maxY, p.y);
-      });
-      return {minX, minY, maxX, maxY};
+  }, [objects, selectedObjectId, isClient, setSavedObjects, editingTextId]);
+
+  const getObjectBounds = (obj: CanvasObject): { minX: number, minY: number, width: number, height: number } => {
+    if(obj.type === 'path') {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        obj.points.forEach(p => {
+            minX = Math.min(minX, p.x);
+            minY = Math.min(minY, p.y);
+            maxX = Math.max(maxX, p.x);
+            maxY = Math.max(maxY, p.y);
+        });
+        return { minX, minY, width: maxX - minX, height: maxY - minY };
+    } else if (obj.type === 'image') {
+        return { minX: -obj.width/2, minY: -obj.height/2, width: obj.width, height: obj.height };
+    } else if (obj.type === 'text') {
+        // This is an approximation. For accurate bounds, we'd need to measure text.
+        const ctx = getCanvasContext();
+        if (ctx) {
+            ctx.font = `${obj.fontSize}px ${obj.font}`;
+            const metrics = ctx.measureText(obj.text);
+            return { minX: 0, minY: 0, width: metrics.width, height: obj.fontSize };
+        }
+        return { minX: 0, minY: 0, width: obj.text.length * (obj.fontSize / 2), height: obj.fontSize };
+    }
+    return { minX: 0, minY: 0, width: 0, height: 0 };
   }
   
-  const getCoords = (e: React.MouseEvent): { x: number; y: number } => {
+  const getCoords = (e: React.MouseEvent | React.TouchEvent<HTMLCanvasElement>): { x: number; y: number } => {
       const canvas = canvasRef.current;
       if (!canvas) return { x: 0, y: 0 };
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      const x = (clientX - rect.left);
+      const y = (clientY - rect.top);
       return { x, y };
   }
   
@@ -179,15 +211,10 @@ export function CanvasView() {
       // Iterate backwards to select top-most object
       for (let i = objects.length - 1; i >= 0; i--) {
         const obj = objects[i];
-        if (obj.type === 'path') {
-            const bounds = getPathBounds(obj.points);
-            if (x >= obj.x + bounds.minX && x <= obj.x + bounds.maxX && y >= obj.y + bounds.minY && y <= obj.y + bounds.maxY) {
-                return obj;
-            }
-        } else if (obj.type === 'image') {
-            if (x >= obj.x - obj.width/2 && x <= obj.x + obj.width/2 && y >= obj.y - obj.height/2 && y <= obj.y + obj.height/2) {
-                return obj;
-            }
+        const bounds = getObjectBounds(obj);
+        if (x >= obj.x + bounds.minX && x <= obj.x + bounds.minX + bounds.width && 
+            y >= obj.y + bounds.minY && y <= obj.y + bounds.minY + bounds.height) {
+            return obj;
         }
       }
       return null;
@@ -196,18 +223,25 @@ export function CanvasView() {
   const handleMouseDown = (e: React.MouseEvent) => {
     const { x, y } = getCoords(e);
     
+    if (editingTextId) {
+        const clickedObject = getObjectAtPosition(x, y);
+        if (clickedObject?.id !== editingTextId) {
+            setEditingTextId(null);
+        }
+        // If clicking outside the text input, finish editing
+        return;
+    }
+
     if (tool === 'pencil') {
       setIsDrawing(true);
       const newPath: PathObject = {
         id: uuidv4(),
         type: 'path',
-        points: [{ x: 0, y: 0 }],
+        points: [{ x, y }],
         color,
         lineWidth,
-        x: x,
-        y: y,
-        rotation: 0,
-        scale: 1,
+        x: 0, // Path points are absolute for simplicity now
+        y: 0,
       };
       setObjects(prev => [...prev, newPath]);
       setSelectedObjectId(newPath.id);
@@ -218,6 +252,21 @@ export function CanvasView() {
             setIsDragging(true);
             setDragStart({ x: x - clickedObject.x, y: y - clickedObject.y });
         }
+    } else if (tool === 'text') {
+        const newText: TextObject = {
+            id: uuidv4(),
+            type: 'text',
+            text: 'Hello World',
+            x,
+            y,
+            font: 'Arial',
+            fontSize: 24,
+            color,
+        };
+        setObjects(prev => [...prev, newText]);
+        setSelectedObjectId(newText.id);
+        setTool('select'); // Switch back to select tool after adding text
+        setEditingTextId(newText.id);
     }
   };
 
@@ -228,7 +277,7 @@ export function CanvasView() {
         if (obj.id === selectedObjectId && obj.type === 'path') {
           return {
             ...obj,
-            points: [...obj.points, { x: x - obj.x, y: y - obj.y }],
+            points: [...obj.points, { x, y }],
           };
         }
         return obj;
@@ -247,6 +296,15 @@ export function CanvasView() {
     setIsDrawing(false);
     setIsDragging(false);
   };
+  
+  const handleDoubleClick = (e: React.MouseEvent) => {
+      const { x, y } = getCoords(e);
+      const clickedObject = getObjectAtPosition(x,y);
+      if(clickedObject?.type === 'text') {
+          setEditingTextId(clickedObject.id);
+          setSelectedObjectId(clickedObject.id); // Also select it
+      }
+  }
   
   const handleClear = () => {
     setObjects([]);
@@ -268,8 +326,6 @@ export function CanvasView() {
                   y: canvasRef.current!.height / 2,
                   width: img.width,
                   height: img.height,
-                  rotation: 0,
-                  scale: 1,
               };
               setObjects(prev => [...prev, newImage]);
               setSelectedObjectId(newImage.id);
@@ -294,12 +350,43 @@ export function CanvasView() {
       const [item] = newObjects.splice(index, 1);
       
       if(direction === 'front') {
-          newObjects.push(item);
+          if (index < newObjects.length) {
+            newObjects.splice(index + 1, 0, item);
+          } else {
+            newObjects.push(item);
+          }
       } else {
-          newObjects.unshift(item);
+          if (index > 0) {
+            newObjects.splice(index - 1, 0, item);
+          } else {
+            newObjects.unshift(item);
+          }
       }
       setObjects(newObjects);
   }
+
+  // Effect to focus the input when editing starts
+  useEffect(() => {
+    if (editingTextId && editingInputRef.current) {
+        editingInputRef.current.focus();
+    }
+  }, [editingTextId]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if(!editingTextId) return;
+      setObjects(prev => prev.map(obj => {
+          if (obj.id === editingTextId && obj.type === 'text') {
+              return { ...obj, text: e.target.value };
+          }
+          return obj;
+      }))
+  }
+
+  const handleTextEditBlur = () => {
+      setEditingTextId(null);
+  }
+
+  const editingTextObject = editingTextId ? objects.find(o => o.id === editingTextId) as TextObject : null;
 
   return (
     <div className="w-full h-full flex items-center justify-center">
@@ -308,6 +395,7 @@ export function CanvasView() {
             <div className="absolute top-2 left-2 z-10 bg-background/80 border rounded-lg p-1 flex gap-1 items-center shadow-md flex-wrap">
                 <Button variant={tool === 'select' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('select')} className="h-9 w-9"><MousePointer/></Button>
                 <Button variant={tool === 'pencil' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('pencil')} className="h-9 w-9"><Brush/></Button>
+                <Button variant={tool === 'text' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('text')} className="h-9 w-9"><Type/></Button>
                  <Popover>
                     <PopoverTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -333,27 +421,51 @@ export function CanvasView() {
                 <div className="absolute top-2 right-2 z-10 bg-background/80 border rounded-lg p-1 flex flex-col gap-1 items-center shadow-md">
                      <Button variant="ghost" size="icon" onClick={() => moveLayer('front')} className="h-9 w-9"><BringToFront/></Button>
                      <Button variant="ghost" size="icon" onClick={() => moveLayer('back')} className="h-9 w-9"><SendToBack/></Button>
-                     <Button variant="ghost" size="icon" onClick={handleDeleteSelected} className="h-9 w-9 text-destructive"><Square/></Button>
+                     <Button variant="ghost" size="icon" onClick={handleDeleteSelected} className="h-9 w-9 text-destructive"><Trash2/></Button>
                 </div>
              )}
             
             <div 
-              className="flex-1 w-full h-full bg-card"
-              style={{ cursor: tool === 'pencil' ? 'crosshair' : 'default' }}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
+              className="flex-1 w-full h-full bg-card relative"
+              style={{ cursor: tool === 'pencil' ? 'crosshair' : (tool === 'text' ? 'text' : 'default') }}
             >
               <canvas
                 ref={canvasRef}
                 width={1200}
                 height={780}
                 className="w-full h-full"
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onDoubleClick={handleDoubleClick}
               />
+              {editingTextObject && (
+                  <input
+                    ref={editingInputRef}
+                    type="text"
+                    value={editingTextObject.text}
+                    onChange={handleTextChange}
+                    onBlur={handleTextEditBlur}
+                    onKeyDown={(e) => { if(e.key === 'Enter') handleTextEditBlur()}}
+                    style={{
+                        position: 'absolute',
+                        left: `${editingTextObject.x}px`,
+                        top: `${editingTextObject.y}px`,
+                        font: `${editingTextObject.fontSize}px ${editingTextObject.font}`,
+                        color: editingTextObject.color,
+                        background: 'transparent',
+                        border: '1px dashed #09f',
+                        outline: 'none',
+                        zIndex: 100,
+                    }}
+                  />
+              )}
             </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    
