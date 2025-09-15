@@ -184,63 +184,65 @@ export function CanvasView() {
   };
   
   return (
-    <Card className="w-full h-full flex flex-col">
-        <CardContent className="p-0 flex-1 relative overflow-hidden" onClick={() => setSelectedNodeId(null)}>
-            <motion.div 
-              className="w-full h-full"
-              drag
-              dragMomentum={false}
-              onDrag={(e, info) => {
-                  panX.set(panX.get() + info.delta.x);
-                  panY.set(panY.get() + info.delta.y);
-              }}
-              style={{
-                  '--grid-size': '30px',
-                  '--dot-color': 'hsl(var(--border))',
-                  backgroundImage: `radial-gradient(circle at center, var(--dot-color) 1px, transparent 1px)`,
-                  backgroundSize: `var(--grid-size) var(--grid-size)`
-              } as React.CSSProperties}
-            >
-              <motion.div 
-                className="relative w-full h-full"
-                style={{ x: panX, y: panY, scale, transformOrigin: "50% 50%" }}
-              >
-                  <svg className="absolute w-[400vw] h-[400vh] pointer-events-none" style={{ top: '-200vh', left: '-200vw' }}>
-                      {nodes.map(node => {
-                          const parent = nodes.find(p => p.id === node.parentId);
-                          if (!parent) return null;
-                          return <Line key={`${parent.id}-${node.id}`} fromNode={parent} toNode={node} />
-                      })}
-                  </svg>
-                  {nodes.map(node => (
-                      <NodeComponent
-                        key={node.id}
-                        node={node}
-                        onUpdateText={handleUpdateText}
-                        onAddChild={handleAddChild}
-                        onDelete={handleDelete}
-                        onConvertToTask={handleConvertToTask}
-                        isSelected={selectedNodeId === node.id}
-                        onSelect={setSelectedNodeId}
-                        onNodeDrag={(id, info) => {
-                          setNodes(nodes.map(n => n.id === id ? { ...n, x: n.x + info.delta.x / scale, y: n.y + info.delta.y / scale } : n));
-                        }}
-                      />
-                  ))}
-              </motion.div>
-            </motion.div>
+    <div className="w-full h-full flex items-center justify-center">
+        <Card className="w-full flex flex-col" style={{height: '800px'}}>
+            <CardContent className="p-0 flex-1 relative overflow-hidden" onClick={() => setSelectedNodeId(null)}>
+                <motion.div 
+                  className="w-full h-full"
+                  drag
+                  dragMomentum={false}
+                  onDrag={(e, info) => {
+                      panX.set(panX.get() + info.delta.x);
+                      panY.set(panY.get() + info.delta.y);
+                  }}
+                  style={{
+                      '--grid-size': '30px',
+                      '--dot-color': 'hsl(var(--border))',
+                      backgroundImage: `radial-gradient(circle at center, var(--dot-color) 1px, transparent 1px)`,
+                      backgroundSize: `var(--grid-size) var(--grid-size)`
+                  } as React.CSSProperties}
+                >
+                  <motion.div 
+                    className="relative w-full h-full"
+                    style={{ x: panX, y: panY, scale, transformOrigin: "50% 50%" }}
+                  >
+                      <svg className="absolute w-[400vw] h-[400vh] pointer-events-none" style={{ top: '-200vh', left: '-200vw' }}>
+                          {nodes.map(node => {
+                              const parent = nodes.find(p => p.id === node.parentId);
+                              if (!parent) return null;
+                              return <Line key={`${parent.id}-${node.id}`} fromNode={parent} toNode={node} />
+                          })}
+                      </svg>
+                      {nodes.map(node => (
+                          <NodeComponent
+                            key={node.id}
+                            node={node}
+                            onUpdateText={handleUpdateText}
+                            onAddChild={handleAddChild}
+                            onDelete={handleDelete}
+                            onConvertToTask={handleConvertToTask}
+                            isSelected={selectedNodeId === node.id}
+                            onSelect={setSelectedNodeId}
+                            onNodeDrag={(id, info) => {
+                              setNodes(nodes.map(n => n.id === id ? { ...n, x: n.x + info.delta.x / scale, y: n.y + info.delta.y / scale } : n));
+                            }}
+                          />
+                      ))}
+                  </motion.div>
+                </motion.div>
 
-            <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
-                <Button variant="outline" size="icon" onClick={() => handleZoom('in')}><ZoomIn/></Button>
-                <Button variant="outline" size="icon" onClick={() => handleZoom('out')}><ZoomOut/></Button>
-                <div className="p-2 bg-muted/80 text-muted-foreground rounded-md text-xs font-mono text-center">
-                    {Math.round(scale * 100)}%
+                <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
+                    <Button variant="outline" size="icon" onClick={() => handleZoom('in')}><ZoomIn/></Button>
+                    <Button variant="outline" size="icon" onClick={() => handleZoom('out')}><ZoomOut/></Button>
+                    <div className="p-2 bg-muted/80 text-muted-foreground rounded-md text-xs font-mono text-center">
+                        {Math.round(scale * 100)}%
+                    </div>
                 </div>
-            </div>
-             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-muted/80 p-2 rounded-lg text-sm text-muted-foreground z-20">
-                <p><strong>Double-click</strong> node to edit. <strong>Click</strong> node for options. <strong>Drag</strong> background to pan.</p>
-            </div>
-        </CardContent>
-    </Card>
+                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-muted/80 p-2 rounded-lg text-sm text-muted-foreground z-20">
+                    <p><strong>Double-click</strong> node to edit. <strong>Click</strong> node for options. <strong>Drag</strong> background to pan.</p>
+                </div>
+            </CardContent>
+        </Card>
+    </div>
   );
 }
