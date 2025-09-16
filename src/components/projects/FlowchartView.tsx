@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -9,7 +8,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Textarea } from '../ui/textarea';
@@ -19,6 +18,7 @@ import 'prismjs/components/prism-markup';
 import 'prismjs/themes/prism-tomorrow.css';
 import { zoom, ZoomBehavior, zoomIdentity } from 'd3-zoom';
 import { select } from 'd3-selection';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
 
 const diagramTemplates = {
   flowAndProcess: {
@@ -120,6 +120,7 @@ export function FlowchartView() {
   
   const [mermaidTheme, setMermaidTheme] = useState<MermaidTheme>('default');
   const [customCSS, setCustomCSS] = useLocalStorage('flowchart:custom-css-v1', '/* Target elements with CSS classes */\n.node-style {\n  font-weight: bold;\n}');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const zoomBehaviorRef = useRef<ZoomBehavior<HTMLDivElement, unknown>>();
@@ -234,133 +235,141 @@ export function FlowchartView() {
   return (
     <div className="w-full h-full flex flex-col gap-4">
       <Card>
-          <CardHeader>
-              <CardTitle>Diagram from Text</CardTitle>
-              <CardDescription>Select a template to get started with your diagram.</CardDescription>
+          <CardHeader className="flex-row items-center justify-between">
+              <div>
+                <CardTitle>Diagram from Text</CardTitle>
+                <CardDescription>Select a template to get started with your diagram.</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline">Templates <ChevronDown className="ml-2"/></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                        <DropdownMenuLabel>Select a Template</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {Object.values(diagramTemplates).map(category => (
+                            <DropdownMenuSub key={category.label}>
+                                <DropdownMenuSubTrigger>{category.label}</DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                    <DropdownMenuSubContent>
+                                        {Object.values(category.templates).map(template => (
+                                            <DropdownMenuItem key={template.label} onClick={() => setCode(template.code)}>
+                                                {template.label}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                            </DropdownMenuSub>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                <Button variant="outline" size="sm" onClick={handleExportSvg}><Download className="mr-2"/>Export as SVG</Button>
+              </div>
           </CardHeader>
-          <CardContent className="space-y-2">
-             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline">Templates <ChevronDown className="ml-2"/></Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
-                    <DropdownMenuLabel>Select a Template</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {Object.values(diagramTemplates).map(category => (
-                        <DropdownMenuSub key={category.label}>
-                            <DropdownMenuSubTrigger>{category.label}</DropdownMenuSubTrigger>
-                            <DropdownMenuPortal>
-                                <DropdownMenuSubContent>
-                                    {Object.values(category.templates).map(template => (
-                                        <DropdownMenuItem key={template.label} onClick={() => setCode(template.code)}>
-                                            {template.label}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuSubContent>
-                            </DropdownMenuPortal>
-                        </DropdownMenuSub>
-                    ))}
-                </DropdownMenuContent>
-            </DropdownMenu>
-          </CardContent>
       </Card>
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
-        <div className="flex flex-col gap-4">
-            <Card className="flex flex-col flex-1">
-                <CardHeader className="flex flex-row justify-between items-center">
-                    <div>
+      <ResizablePanelGroup direction="horizontal" className="flex-1 rounded-lg border">
+        <ResizablePanel 
+          defaultSize={35}
+          minSize={20}
+          maxSize={50}
+          collapsedSize={0}
+          collapsible={true}
+          onCollapse={() => setIsSidebarCollapsed(true)}
+          onExpand={() => setIsSidebarCollapsed(false)}
+          className={isSidebarCollapsed ? "hidden" : "min-w-[300px]"}
+        >
+            <div className="flex flex-col gap-4 h-full p-4">
+                <Card className="flex flex-col flex-1">
+                    <CardHeader>
                         <CardTitle>Code Editor</CardTitle>
-                        <CardDescription>Edit your Mermaid.js syntax here.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0 flex-1 relative">
+                       <ScrollArea className="absolute inset-0">
+                            <Editor
+                                value={code}
+                                onValueChange={setCode}
+                                highlight={(code) => Prism.highlight(code, Prism.languages.markup, 'markup')}
+                                padding={16}
+                                className="font-mono text-sm"
+                                style={{
+                                    minHeight: '100%',
+                                }}
+                            />
+                       </ScrollArea>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Customization</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4">
+                         <div className="grid grid-cols-2 gap-4 items-center">
+                            <p>Theme</p>
+                            <Select value={mermaidTheme} onValueChange={(v) => setMermaidTheme(v as MermaidTheme)} disabled={resolvedTheme === 'dark'}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a theme" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="default">Default</SelectItem>
+                                    <SelectItem value="forest">Forest</SelectItem>
+                                    <SelectItem value="neutral">Neutral</SelectItem>
+                                    <SelectItem value="base">Base</SelectItem>
+                                    <SelectItem value="sunset">Sunset</SelectItem>
+                                    <SelectItem value="ocean">Ocean</SelectItem>
+                                    <SelectItem value="dark" disabled>Dark (auto)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="flex flex-col gap-2">
+                            <p>Custom CSS</p>
+                            <Textarea
+                                value={customCSS}
+                                onChange={(e) => setCustomCSS(e.target.value)}
+                                className="w-full resize-y border rounded-md p-2 font-mono text-xs"
+                                placeholder="e.g., .node-class { fill: #f00; }"
+                                rows={4}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={65}>
+            <Card className="flex flex-col h-full rounded-l-none border-l-0">
+                <CardHeader className="flex-row items-center justify-between">
+                    <CardTitle>Live Preview</CardTitle>
+                     <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleZoomAction('in')}><ZoomIn /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleZoomAction('out')}><ZoomOut /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleZoomAction('reset')}><Move /></Button>
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleExportSvg}><Download className="mr-2"/>Export as SVG</Button>
                 </CardHeader>
-                <CardContent className="p-0 flex-1 relative">
-                   <ScrollArea className="absolute inset-0">
-                        <Editor
-                            value={code}
-                            onValueChange={setCode}
-                            highlight={(code) => Prism.highlight(code, Prism.languages.markup, 'markup')}
-                            padding={16}
-                            className="font-mono text-sm"
-                            style={{
-                                minHeight: '100%',
-                            }}
+                <CardContent className="p-4 flex-1">
+                   <div className="w-full h-full p-4 rounded-lg overflow-hidden cursor-grab" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                    {renderError ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
+                            <AlertCircle className="w-10 h-10 mb-2"/>
+                            <p className="font-semibold text-center">Failed to render diagram.</p>
+                            <pre className="mt-2 text-xs bg-black/20 p-2 rounded-md whitespace-pre-wrap max-w-full text-left">{renderError}</pre>
+                        </div>
+                    ) : svg ? (
+                        <div
+                            ref={svgContainerRef}
+                            dangerouslySetInnerHTML={{ __html: svg }}
+                            className="w-full h-full flex items-center justify-center [&>svg]:max-w-none [&>svg]:max-h-none"
                         />
-                   </ScrollArea>
-                </CardContent>
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                            <p>Diagram will appear here.</p>
+                        </div>
+                    )}
+                   </div>
+              </CardContent>
             </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Customization</CardTitle>
-                    <CardDescription>Fine-tune the look and feel of your diagram.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                     <div className="grid grid-cols-2 gap-4 items-center">
-                        <p>Theme</p>
-                        <Select value={mermaidTheme} onValueChange={(v) => setMermaidTheme(v as MermaidTheme)} disabled={resolvedTheme === 'dark'}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a theme" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="default">Default</SelectItem>
-                                <SelectItem value="forest">Forest</SelectItem>
-                                <SelectItem value="neutral">Neutral</SelectItem>
-                                <SelectItem value="base">Base</SelectItem>
-                                <SelectItem value="sunset">Sunset</SelectItem>
-                                <SelectItem value="ocean">Ocean</SelectItem>
-                                <SelectItem value="dark" disabled>Dark (auto)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div className="flex flex-col gap-2">
-                        <p>Custom CSS</p>
-                        <Textarea
-                            value={customCSS}
-                            onChange={(e) => setCustomCSS(e.target.value)}
-                            className="w-full resize-y border rounded-md p-2 font-mono text-xs"
-                            placeholder="e.g., .node-class { fill: #f00; }"
-                            rows={4}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-        <Card className="flex flex-col">
-            <CardHeader className="flex-row items-center justify-between">
-                <CardTitle>Live Preview</CardTitle>
-                 <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => handleZoomAction('in')}><ZoomIn /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleZoomAction('out')}><ZoomOut /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleZoomAction('reset')}><Move /></Button>
-                </div>
-            </CardHeader>
-            <CardContent className="p-4 flex-1">
-               <div className="w-full h-full p-4 rounded-lg overflow-hidden cursor-grab" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-                {renderError ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
-                        <AlertCircle className="w-10 h-10 mb-2"/>
-                        <p className="font-semibold text-center">Failed to render diagram.</p>
-                        <pre className="mt-2 text-xs bg-black/20 p-2 rounded-md whitespace-pre-wrap max-w-full text-left">{renderError}</pre>
-                    </div>
-                ) : svg ? (
-                    <div
-                        ref={svgContainerRef}
-                        dangerouslySetInnerHTML={{ __html: svg }}
-                        className="w-full h-full flex items-center justify-center [&>svg]:max-w-none [&>svg]:max-h-none"
-                    />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        <p>Diagram will appear here.</p>
-                    </div>
-                )}
-               </div>
-          </CardContent>
-        </Card>
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 }
-
-    
-
-    
