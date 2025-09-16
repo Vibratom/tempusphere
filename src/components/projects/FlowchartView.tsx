@@ -189,19 +189,12 @@ interactive: `flowchart TD
 `,
   bpmn: `
 bpmn
-  title: Order Process
+  title: Sample BPMN Diagram
   
-  participant Customer
-  participant "Pizza Shop"
-  
-  Customer->>"Pizza Shop": places order
-  activate "Pizza Shop"
-  "Pizza Shop"-->>Customer: confirms order
-  
-  "Pizza Shop"->>"Pizza Shop": prepares pizza
-  
-  "Pizza Shop"-->>Customer: delivers pizza
-  deactivate "Pizza Shop"
+  startEvent -> task: User Task
+  task -> exclusiveGateway: Is it valid?
+  exclusiveGateway -- Yes --> endEvent: End
+  exclusiveGateway -- No --> task
 `,
 };
 
@@ -396,4 +389,3 @@ export function FlowchartView() {
   );
 }
 
-    
