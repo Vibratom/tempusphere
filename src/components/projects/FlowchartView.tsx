@@ -116,16 +116,20 @@ const getShapeSyntax = (shape: VisualNode['shape']) => {
 
 const getLinkSyntax = (type: VisualLink['type'], text: string) => {
     const linkText = text.trim();
-    const linkSymbol = {
-        'line': `---`,
-        'dotted': `-.->`,
-        'arrow': `-->`,
-    }[type];
-    
-    if (linkText) {
-        return `-- ${linkText} --`;
+    if (!linkText) {
+        return { 'arrow': '-->', 'line': '---', 'dotted': '-.->' }[type];
     }
-    return linkSymbol;
+
+    switch (type) {
+        case 'arrow':
+            return `-- ${linkText} -->`;
+        case 'line':
+            return `--- |${linkText}|`;
+        case 'dotted':
+            return`-. ${linkText} .->`;
+        default:
+            return '-->';
+    }
 };
 
 
