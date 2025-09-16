@@ -2,12 +2,12 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { ScrollArea } from '../ui/scroll-area';
 import { useTheme } from 'next-themes';
-import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2, Download } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
@@ -21,12 +21,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useToast } from '@/hooks/use-toast';
 
 
 // --- Types and Constants ---
 
 type EditorMode = 'visual' | 'code';
-type DiagramType = 'flowchart' | 'stateDiagram' | 'mindmap' | 'unknown';
+type DiagramType = 'flowchart';
 
 interface VisualNode {
   id: string;
@@ -124,16 +125,10 @@ export function DiagramEditor() {
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
+  const [diagramType] = useState<DiagramType>('flowchart');
   
   const { resolvedTheme } = useTheme();
-
-    const diagramType = useMemo((): DiagramType => {
-      const trimmedCode = code.trim().toLowerCase();
-      if (trimmedCode.startsWith('flowchart') || trimmedCode.startsWith('graph')) return 'flowchart';
-      if (trimmedCode.startsWith('statediagram') || trimmedCode.startsWith('state-diagram')) return 'stateDiagram';
-      if (trimmedCode.startsWith('mindmap')) return 'mindmap';
-      return 'unknown';
-  }, [code]);
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsClient(true);
@@ -144,7 +139,7 @@ export function DiagramEditor() {
   const generateMermaidCode = useCallback(() => {
     if (editorMode !== 'visual') return;
 
-    let newCode = `flowchart TD\n`;
+    let newCode = `${diagramType} TD\n`;
     const definedNodes = new Set<string>();
 
     visualColumns.forEach(col => {
@@ -169,7 +164,7 @@ export function DiagramEditor() {
     // Add cross-column links here in the future
 
     setCode(newCode);
-  }, [editorMode, visualColumns]);
+  }, [editorMode, visualColumns, diagramType]);
 
   useEffect(() => {
     generateMermaidCode();
@@ -241,6 +236,31 @@ export function DiagramEditor() {
       return col;
     }));
   };
+
+  const handleExportSVG = () => {
+    if (!svg) {
+      toast({
+        title: "Nothing to Export",
+        description: "The diagram preview is empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'diagram.svg';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({
+      title: "Export Successful",
+      description: "Your diagram has been downloaded as an SVG file.",
+    });
+  };
   
   const LinkEditorRow = ({ colId, linkIndex, link }: { colId: string, linkIndex: number, link: VisualLink }) => {
     const [currentLink, setCurrentLink] = useState(link);
@@ -303,8 +323,8 @@ export function DiagramEditor() {
   return (
     <div className="w-full h-full flex flex-col gap-4">
         <Card>
-            <CardHeader>
-              <div className="flex-1">
+            <CardHeader className="flex-col md:flex-row md:items-center md:justify-between">
+              <div>
                 <CardTitle>Chart Editor</CardTitle>
                 <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
               </div>
@@ -312,72 +332,80 @@ export function DiagramEditor() {
         </Card>
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
             <Card className="flex flex-col">
-                <CardContent className="p-0 flex-1">
-                    <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
-                        <div className="p-4 pb-0 border-b">
-                            <TabsList className="grid w-full max-w-sm grid-cols-2">
-                                <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
-                                <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
-                            </TabsList>
-                        </div>
-
-                        <TabsContent value="code" className="m-0 flex-1">
-                            <Textarea
-                                value={code}
-                                onChange={(e) => setCode(e.target.value)}
-                                className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
-                                placeholder="Write your Mermaid diagram code here..."
-                            />
-                        </TabsContent>
-                        <TabsContent value="visual" className="m-0 flex-1 flex flex-col">
-                            <div className="p-4 border-b">
-                                <Button onClick={addColumn}><Plus className="mr-2"/>Add Chain</Button>
-                            </div>
-                            <ScrollArea className="flex-1">
-                                <div className="flex gap-4 p-4 items-start">
-                                    {visualColumns.map((col) => (
-                                        <div key={col.id} className="w-64 bg-muted/50 p-3 rounded-lg space-y-2 flex-shrink-0">
-                                            <Button size="sm" variant="destructive" onClick={() => removeColumn(col.id)} className="w-full mb-2">
-                                                <Trash2 className="mr-2"/>Remove Chain
-                                            </Button>
-                                            <Accordion type="multiple" className="w-full space-y-2">
-                                                {col.nodes.map((node, nodeIndex) => (
-                                                    <React.Fragment key={node.id}>
-                                                        <AccordionItem value={`node-${node.id}`}>
-                                                            <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
-                                                              Node: {node.name || 'Untitled'}
-                                                            </AccordionTrigger>
-                                                            <AccordionContent className="p-2 pt-0">
-                                                                <div className="bg-background p-2 rounded border space-y-1">
-                                                                    <Label className="text-xs">Node Text & Shape</Label>
-                                                                    <Input placeholder="Text" value={node.name} onChange={e => handleNodeChange(col.id, nodeIndex, 'name', e.target.value)} />
-                                                                    <Select value={node.shape} onValueChange={v => handleNodeChange(col.id, nodeIndex, 'shape', v)}>
-                                                                        <SelectTrigger><SelectValue/></SelectTrigger>
-                                                                        <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                                                                    </Select>
-                                                                </div>
-                                                            </AccordionContent>
-                                                        </AccordionItem>
-                                                        
-                                                        {nodeIndex < col.links.length && (
-                                                            <LinkEditorRow colId={col.id} linkIndex={nodeIndex} link={col.links[nodeIndex]} />
-                                                        )}
-                                                    </React.Fragment>
-                                                ))}
-                                            </Accordion>
-                                            <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full mt-2">
-                                                <Plus className="mr-2"/>Add Node
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                        </TabsContent>
+                <CardHeader>
+                    <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)}>
+                        <TabsList className="grid w-full max-w-sm grid-cols-2">
+                            <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
+                            <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
+                        </TabsList>
                     </Tabs>
+                </CardHeader>
+                <CardContent className="p-0 flex-1 flex flex-col">
+                    <TabsContent value="code" className="m-0 flex-1">
+                        <Textarea
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
+                            placeholder="Write your Mermaid diagram code here..."
+                        />
+                    </TabsContent>
+                    <TabsContent value="visual" className="m-0 flex-1 flex flex-col">
+                        <div className="p-4 border-y">
+                            <Button onClick={addColumn}><Plus className="mr-2"/>Add Chain</Button>
+                        </div>
+                        <ScrollArea className="flex-1">
+                            <div className="flex gap-4 p-4 items-start">
+                                {visualColumns.map((col) => (
+                                    <div key={col.id} className="w-64 bg-muted/50 p-3 rounded-lg space-y-2 flex-shrink-0">
+                                        <Button size="sm" variant="destructive" onClick={() => removeColumn(col.id)} className="w-full mb-2">
+                                            <Trash2 className="mr-2"/>Remove Chain
+                                        </Button>
+                                        <Accordion type="multiple" className="w-full space-y-2">
+                                            {col.nodes.map((node, nodeIndex) => (
+                                                <React.Fragment key={node.id}>
+                                                    <AccordionItem value={`node-${node.id}`}>
+                                                        <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
+                                                          Node: {node.name || 'Untitled'}
+                                                        </AccordionTrigger>
+                                                        <AccordionContent className="p-2 pt-0">
+                                                            <div className="bg-background p-2 rounded border space-y-1">
+                                                                <Label className="text-xs">Node Text & Shape</Label>
+                                                                <Input placeholder="Text" value={node.name} onChange={e => handleNodeChange(col.id, nodeIndex, 'name', e.target.value)} />
+                                                                <Select value={node.shape} onValueChange={v => handleNodeChange(col.id, nodeIndex, 'shape', v)}>
+                                                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                                                    <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                                                                </Select>
+                                                            </div>
+                                                        </AccordionContent>
+                                                    </AccordionItem>
+                                                    
+                                                    {nodeIndex < col.links.length && (
+                                                        <LinkEditorRow colId={col.id} linkIndex={nodeIndex} link={col.links[nodeIndex]} />
+                                                    )}
+                                                </React.Fragment>
+                                            ))}
+                                        </Accordion>
+                                        <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full mt-2">
+                                            <Plus className="mr-2"/>Add Node
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </TabsContent>
                 </CardContent>
             </Card>
 
             <Card className="flex flex-col">
+                 <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>Live Preview</CardTitle>
+                        <Button variant="outline" onClick={handleExportSVG}>
+                            <Download className="mr-2"/>
+                            Download SVG
+                        </Button>
+                    </div>
+                </CardHeader>
                 <CardContent className="p-0 flex-1">
                      <ScrollArea className="h-full w-full p-4" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
                         {renderError ? (
