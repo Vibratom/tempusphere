@@ -17,6 +17,8 @@ import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { OnChange, Editor } from '@/components/Editor';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 mermaid.initialize({
   startOnLoad: false,
@@ -716,14 +718,18 @@ export function FlowchartView() {
       
       {isMobile ? (
         <div className="flex-1 flex flex-col gap-4">
-            <div className="border rounded-lg">{editorPanel}</div>
-            <div className="border rounded-lg">{previewPanel}</div>
+            <ResizablePanelGroup direction="vertical">
+                <ResizablePanel>{editorPanel}</ResizablePanel>
+                <ResizableHandle withHandle/>
+                <ResizablePanel>{previewPanel}</ResizablePanel>
+            </ResizablePanelGroup>
         </div>
       ) : (
-         <div className="flex-1 grid grid-cols-2 gap-4 border rounded-lg">
-            {editorPanel}
-            {previewPanel}
-        </div>
+         <ResizablePanelGroup direction="horizontal" className="flex-1 border rounded-lg">
+            <ResizablePanel>{editorPanel}</ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel>{previewPanel}</ResizablePanel>
+        </ResizablePanelGroup>
       )}
     </div>
   );
@@ -732,6 +738,8 @@ export function FlowchartView() {
 function Description({ children }: { children: React.ReactNode }) {
     return <p className="text-xs text-muted-foreground">{children}</p>;
 }
+    
+
     
 
     
