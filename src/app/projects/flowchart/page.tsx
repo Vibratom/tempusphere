@@ -1,6 +1,17 @@
 
+'use client';
+
 import { FlowchartView } from '@/components/projects/FlowchartView';
+import { Suspense } from 'react';
+
+function FlowchartPageContent() {
+  return <FlowchartView />;
+}
 
 export default function FlowchartPage() {
-  return <FlowchartView />;
+    return (
+        <Suspense>
+            <FlowchartPageContent />
+        </Suspense>
+    )
 }

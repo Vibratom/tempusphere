@@ -10,7 +10,13 @@ import { googleAI } from '@genkit-ai/googleai';
 
 export const ai = genkit({
   plugins: [
-    googleAI(),
+    googleAI({
+      // It is recommended to use a more specific model for production.
+      // See: https://firebase.google.com/docs/genkit/models#supported-models
+      // gemini-1.5-flash-latest is a good balance of performance and cost.
+      // gemini-1.5-pro-latest is a higher quality but more expensive model.
+      model: 'gemini-1.5-flash-latest',
+    }),
   ],
   logLevel: 'debug',
   enableTracingAndMetrics: true,

@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useTransition } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
@@ -10,8 +10,10 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle, Users, Milestone, CalendarClock, GitBranch, Palette, MousePointerClick, Spline, Network, FileCheck2, Briefcase } from 'lucide-react';
+import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle, Users, Milestone, CalendarClock, GitBranch, Palette, MousePointerClick, Spline, Network, FileCheck2, Briefcase, Sparkles, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { generateDiagram } from '@/ai/flows/generate-diagram-flow';
+import { useSearchParams } from 'next/navigation';
 
 const diagramTemplates = {
   flowchart: `flowchart TD
@@ -184,26 +186,27 @@ interactive: `flowchart TD
     F --> G((End));
 `,
   dataFlow: `graph TD
-    A((User)) -- Submits Form --> B(Process Login);
-    B -- Reads --> D[(User Database)];
-    B -- Generates Token --> A;
+    A[External Entity] -- Data --> B{Process Data};
+    B -- Stored Data --> C[(Data Store)];
 `,
   bpmn: `
 bpmn
-  title Pizza Order Process
+  title: Pizza Order Process (BPMN)
+
+  participant Customer
+  participant "Pizza Shop" as Shop
+
+  Customer->>Shop: places order
+  activate Shop
+
+  Shop-->>Customer: confirms order
   
-  participant C as Customer
-  participant S as Shop Clerk
-  participant Ch as Chef
-  participant D as Driver
+  Shop->>Shop: prepares pizza
   
-  C->>S: Order Pizza
-  S->>Ch: Prepare Order
-  Ch-->>S: Pizza Ready
-  S->>D: Deliver Pizza
-  D->>C: Give Pizza
-  C->>D: Pay
-  D-->>S: Give Money
+  Shop-->>Customer: delivers pizza
+  deactivate Shop
+  
+  Customer->>Shop: pays
 `,
 };
 
@@ -220,6 +223,10 @@ export function FlowchartView() {
   
   const [mermaidTheme, setMermaidTheme] = useState<MermaidTheme>('default');
   const [customCSS, setCustomCSS] = useLocalStorage('flowchart:custom-css-v1', '/* Target elements with CSS classes */\n.node-style {\n  font-weight: bold;\n}');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, startTransition] = useTransition();
+
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     setIsClient(true);
@@ -278,12 +285,45 @@ export function FlowchartView() {
     toast({ title: "SVG Exported", description: "Your diagram has been downloaded."});
   };
 
+  const handleAiGenerate = () => {
+    if (!aiPrompt.trim()) return;
+
+    startTransition(async () => {
+        try {
+            const diagramCode = await generateDiagram({ prompt: aiPrompt });
+            setCode(diagramCode);
+            toast({ title: "Diagram Generated!", description: "The AI has created your diagram."});
+        } catch (error) {
+            console.error("AI Generation Error:", error);
+            toast({ title: "Generation Failed", description: "The AI could not generate a diagram from your prompt.", variant: "destructive"});
+        }
+    });
+  }
+
   if (!isClient) {
     return <div className="w-full h-full bg-muted animate-pulse"></div>;
   }
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
+       <Card>
+          <CardHeader>
+              <CardTitle>AI Diagram Generator</CardTitle>
+              <CardDescription>Describe the diagram or process you want to visualize, and let the AI generate the Mermaid.js code for you.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row gap-2">
+            <Textarea
+              placeholder="e.g., A simple user login flow with success and failure paths..."
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              rows={1}
+            />
+            <Button onClick={handleAiGenerate} disabled={isGenerating || !aiPrompt.trim()} className="w-full sm:w-auto">
+                {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2"/>}
+                Generate
+            </Button>
+          </CardContent>
+      </Card>
       <Card>
           <CardHeader>
               <CardTitle>Templates</CardTitle>
