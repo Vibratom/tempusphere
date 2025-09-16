@@ -8,7 +8,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2 } from 'lucide-react';
+import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Link2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Textarea } from '../ui/textarea';
@@ -20,6 +20,8 @@ import { zoom, ZoomBehavior, zoomIdentity } from 'd3-zoom';
 import { select } from 'd3-selection';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
 import { ImperativePanelHandle } from 'react-resizable-panels';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Input } from '../ui/input';
 
 const diagramTemplates = {
   flowAndProcess: {
@@ -81,33 +83,21 @@ const diagramTemplates = {
   }
 };
 
+type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral';
 
-const customThemes = {
-    sunset: {
-        primaryColor: '#ff7e5f',
-        primaryTextColor: '#ffffff',
-        primaryBorderColor: '#ff7e5f',
-        lineColor: '#d65b40',
-        secondaryColor: '#feb47b',
-        tertiaryColor: '#ffac7f',
-        nodeBkg: '#ff7e5f',
-        nodeTextColor: '#ffffff',
-        mainBkg: '#fff8f4',
-    },
-    ocean: {
-        primaryColor: '#00b4d8',
-        primaryTextColor: '#ffffff',
-        primaryBorderColor: '#00b4d8',
-        lineColor: '#0077b6',
-        secondaryColor: '#90e0ef',
-        tertiaryColor: '#ade8f4',
-        nodeBkg: '#00b4d8',
-        nodeTextColor: '#ffffff',
-        mainBkg: '#f0f9ff'
-    }
+type EditorMode = 'visual' | 'code';
+type NodeType = 'node' | 'decision';
+interface FlowNode {
+  id: string;
+  text: string;
+  type: NodeType;
 }
-
-type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral' | 'base' | 'sunset' | 'ocean';
+interface FlowLink {
+  id: string;
+  source: string;
+  target: string;
+  label: string;
+}
 
 export function FlowchartView() {
   const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v5', diagramTemplates.flowAndProcess.templates.flowchart.code);
@@ -123,8 +113,23 @@ export function FlowchartView() {
   const { resolvedTheme } = useTheme();
   
   const [mermaidTheme, setMermaidTheme] = useState<MermaidTheme>('default');
-  const [customCSS, setCustomCSS] = useLocalStorage('flowchart:custom-css-v1', '/* Target elements with CSS classes */\n.node-style {\n  font-weight: bold;\n}');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [editorMode, setEditorMode] = useState<EditorMode>('code');
+
+  const [nodes, setNodes] = useState<FlowNode[]>(() => [
+    {id: 'A', text: 'Start', type: 'node'},
+    {id: 'B', text: 'Is it?', type: 'decision'},
+    {id: 'C', text: 'OK', type: 'node'},
+    {id: 'D', text: 'Rethink', type: 'node'},
+    {id: 'E', text: 'End', type: 'node'},
+  ]);
+  const [links, setLinks] = useState<FlowLink[]>(() => [
+      { id: 'l1', source: 'A', target: 'B', label: '' },
+      { id: 'l2', source: 'B', target: 'C', label: 'Yes' },
+      { id: 'l3', source: 'C', target: 'D', label: '' },
+      { id: 'l4', source: 'D', target: 'A', label: '' },
+      { id: 'l5', source: 'B', target: 'E', label: 'No' },
+  ]);
 
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const zoomBehaviorRef = useRef<ZoomBehavior<HTMLDivElement, unknown>>();
@@ -156,6 +161,35 @@ export function FlowchartView() {
       setCode(history[newIndex]);
     }
   }, [history, historyIndex]);
+  
+  // Visual Editor Code Generation
+  useEffect(() => {
+    if (editorMode === 'visual') {
+        let newCode = 'flowchart TD\n';
+        
+        nodes.forEach(node => {
+            const text = node.text || ' ';
+            if(node.type === 'node') newCode += `    ${node.id}["${text}"]\n`;
+            if(node.type === 'decision') newCode += `    ${node.id}{"${text}"}\n`;
+        });
+        
+        links.forEach(link => {
+            if (link.source && link.target) {
+                if (link.label) {
+                    newCode += `    ${link.source} -- "${link.label}" --> ${link.target}\n`;
+                } else {
+                    newCode += `    ${link.source} --> ${link.target}\n`;
+                }
+            }
+        });
+        
+        if (code !== newCode) {
+            handleCodeChange(newCode);
+        }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes, links, editorMode]);
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -173,7 +207,6 @@ export function FlowchartView() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo]);
 
-
   useEffect(() => {
     if (!svgContainerRef.current) return;
     
@@ -189,22 +222,12 @@ export function FlowchartView() {
     
   }, [svg]);
   
-
   useEffect(() => {
     if (!isClient) return;
 
-    let themeVariables = {};
-    let finalTheme: MermaidTheme | 'base' = mermaidTheme;
-
-    if (mermaidTheme === 'sunset' || mermaidTheme === 'ocean') {
-        themeVariables = customThemes[mermaidTheme];
-        finalTheme = 'base';
-    }
-
     mermaid.initialize({
       startOnLoad: false,
-      theme: resolvedTheme === 'dark' ? 'dark' : finalTheme,
-      themeVariables,
+      theme: resolvedTheme === 'dark' ? 'dark' : mermaidTheme,
       securityLevel: 'loose',
       fontFamily: 'sans-serif',
       logLevel: 5,
@@ -213,7 +236,7 @@ export function FlowchartView() {
     const renderMermaid = async () => {
       try {
         const uniqueId = `mermaid-graph-${Date.now()}`;
-        const finalCode = `${code}\n${customCSS ? `\n%%{init: {'themeCSS': '${customCSS.replace(/\n/g, ' ')}' }}%%` : ''}`;
+        const finalCode = `${code}`;
         const { svg: renderedSvg } = await mermaid.render(uniqueId, finalCode);
         setSvg(renderedSvg);
         setRenderError(null);
@@ -239,7 +262,7 @@ export function FlowchartView() {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [code, isClient, resolvedTheme, mermaidTheme, customCSS, setSavedCode]);
+  }, [code, isClient, resolvedTheme, mermaidTheme, setSavedCode]);
   
   const handleExportSvg = () => {
     if (!svg || renderError) {
@@ -276,6 +299,29 @@ export function FlowchartView() {
     }
   };
 
+  const addNode = (type: NodeType) => {
+    const existingIds = nodes.map(n => n.id.charCodeAt(0));
+    const nextIdChar = String.fromCharCode(Math.max(65, ...existingIds) + 1);
+    const newNode: FlowNode = { id: nextIdChar, text: 'New Node', type };
+    setNodes(prev => [...prev, newNode]);
+  }
+  const updateNode = (id: string, text: string) => {
+    setNodes(prev => prev.map(n => n.id === id ? {...n, text} : n));
+  }
+  const removeNode = (id: string) => {
+    setNodes(prev => prev.filter(n => n.id !== id));
+    setLinks(prev => prev.filter(l => l.source !== id && l.target !== id));
+  }
+  const addLink = () => {
+    setLinks(prev => [...prev, {id: `l${Date.now()}`, source: '', target: '', label: ''}]);
+  }
+  const updateLink = (id: string, part: Partial<FlowLink>) => {
+    setLinks(prev => prev.map(l => l.id === id ? {...l, ...part} : l));
+  }
+  const removeLink = (id: string) => {
+    setLinks(prev => prev.filter(l => l.id !== id));
+  }
+
   if (!isClient) {
     return (
         <div className="flex-1 flex items-center justify-center">
@@ -290,7 +336,7 @@ export function FlowchartView() {
           <CardHeader className="flex-row items-center justify-between">
               <div>
                 <CardTitle>Diagram from Text</CardTitle>
-                <CardDescription>Select a template to get started with your diagram.</CardDescription>
+                <CardDescription>Select a template or use the visual editor to build your diagram.</CardDescription>
               </div>
               <div className="flex items-center gap-2">
                  <DropdownMenu>
@@ -306,7 +352,7 @@ export function FlowchartView() {
                                 <DropdownMenuPortal>
                                     <DropdownMenuSubContent>
                                         {Object.values(category.templates).map(template => (
-                                            <DropdownMenuItem key={template.label} onClick={() => handleCodeChange(template.code)}>
+                                            <DropdownMenuItem key={template.label} onClick={() => { handleCodeChange(template.code); setEditorMode('code')}}>
                                                 {template.label}
                                             </DropdownMenuItem>
                                         ))}
@@ -332,67 +378,97 @@ export function FlowchartView() {
           onExpand={() => setIsSidebarCollapsed(false)}
           className={isSidebarCollapsed ? "hidden" : "min-w-[300px]"}
         >
-            <div className="flex flex-col gap-4 h-full p-4">
-                <Card className="flex flex-col flex-1">
-                    <CardHeader>
+            <div className="flex flex-col gap-4 h-full p-0">
+               <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="flex-1 flex flex-col">
+                  <div className="p-4 pb-0">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual Editor</TabsTrigger>
+                      <TabsTrigger value="code"><Code className="mr-2"/>Code Editor</TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <TabsContent value="visual" className="flex-1 flex flex-col gap-4 p-4 min-h-0">
+                    <Card>
+                      <CardHeader>
                         <div className="flex items-center justify-between">
-                            <CardTitle>Code Editor</CardTitle>
-                            <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIndex <= 0}><Undo2/></Button>
-                                <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIndex >= history.length - 1}><Redo2/></Button>
-                            </div>
+                          <CardTitle>Nodes</CardTitle>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => addNode('node')}>Add Node</Button>
+                            <Button size="sm" variant="outline" onClick={() => addNode('decision')}>Add Decision</Button>
+                          </div>
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-0 flex-1 relative">
-                       <ScrollArea className="absolute inset-0">
-                            <Editor
-                                value={code}
-                                onValueChange={setCode}
-                                onBlur={() => handleCodeChange(code)}
-                                highlight={(code) => Prism.highlight(code, Prism.languages.markup, 'markup')}
-                                padding={16}
-                                className="font-mono text-sm"
-                                style={{
-                                    minHeight: '100%',
-                                }}
-                            />
-                       </ScrollArea>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Customization</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                         <div className="grid grid-cols-2 gap-4 items-center">
-                            <p>Theme</p>
-                            <Select value={mermaidTheme} onValueChange={(v) => setMermaidTheme(v as MermaidTheme)} disabled={resolvedTheme === 'dark'}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a theme" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="default">Default</SelectItem>
-                                    <SelectItem value="forest">Forest</SelectItem>
-                                    <SelectItem value="neutral">Neutral</SelectItem>
-                                    <SelectItem value="base">Base</SelectItem>
-                                    <SelectItem value="sunset">Sunset</SelectItem>
-                                    <SelectItem value="ocean">Ocean</SelectItem>
-                                    <SelectItem value="dark" disabled>Dark (auto)</SelectItem>
-                                </SelectContent>
-                            </Select>
+                      </CardHeader>
+                      <CardContent>
+                        <ScrollArea className="h-48">
+                          <div className="space-y-2">
+                            {nodes.map(node => (
+                              <div key={node.id} className="flex items-center gap-2">
+                                <span className="font-mono text-sm text-muted-foreground p-2 bg-muted rounded-md">{node.id}</span>
+                                <Input value={node.text} onChange={(e) => updateNode(node.id, e.target.value)} className="flex-1"/>
+                                <Button size="icon" variant="ghost" onClick={() => removeNode(node.id)}><Trash2/></Button>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
+                    <Card className="flex-1">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle>Links</CardTitle>
+                          <Button size="sm" variant="outline" onClick={addLink}>Add Link</Button>
                         </div>
-                         <div className="flex flex-col gap-2">
-                            <p>Custom CSS</p>
-                            <Textarea
-                                value={customCSS}
-                                onChange={(e) => setCustomCSS(e.target.value)}
-                                className="w-full resize-y border rounded-md p-2 font-mono text-xs"
-                                placeholder="e.g., .node-class { fill: #f00; }"
-                                rows={4}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
+                      </CardHeader>
+                      <CardContent>
+                        <ScrollArea className="h-48">
+                          <div className="space-y-2">
+                            {links.map(link => (
+                              <div key={link.id} className="grid grid-cols-4 gap-2 items-center">
+                                <Select value={link.source} onValueChange={(v) => updateLink(link.id, {source: v})}>
+                                    <SelectTrigger><SelectValue placeholder="From"/></SelectTrigger>
+                                    <SelectContent>{nodes.map(n => <SelectItem key={n.id} value={n.id}>{n.id}: {n.text}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <Select value={link.target} onValueChange={(v) => updateLink(link.id, {target: v})}>
+                                    <SelectTrigger><SelectValue placeholder="To"/></SelectTrigger>
+                                    <SelectContent>{nodes.map(n => <SelectItem key={n.id} value={n.id}>{n.id}: {n.text}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <Input value={link.label} onChange={(e) => updateLink(link.id, {label: e.target.value})} placeholder="Label (optional)" className="col-span-2"/>
+                                <Button size="icon" variant="ghost" onClick={() => removeLink(link.id)} className="col-start-4"><Trash2/></Button>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  <TabsContent value="code" className="flex-1 flex flex-col p-4 pt-0 min-h-0">
+                    <Card className="flex flex-col flex-1">
+                      <CardHeader>
+                          <div className="flex items-center justify-between">
+                              <CardTitle>Code Editor</CardTitle>
+                              <div className="flex items-center gap-1">
+                                  <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIndex <= 0}><Undo2/></Button>
+                                  <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIndex >= history.length - 1}><Redo2/></Button>
+                              </div>
+                          </div>
+                      </CardHeader>
+                      <CardContent className="p-0 flex-1 relative">
+                        <ScrollArea className="absolute inset-0">
+                              <Editor
+                                  value={code}
+                                  onValueChange={setCode}
+                                  onBlur={() => handleCodeChange(code)}
+                                  highlight={(code) => Prism.highlight(code, Prism.languages.markup, 'markup')}
+                                  padding={16}
+                                  className="font-mono text-sm"
+                                  style={{ minHeight: '100%' }}
+                              />
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+               </Tabs>
             </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
@@ -438,5 +514,3 @@ export function FlowchartView() {
     </div>
   );
 }
-
-    
