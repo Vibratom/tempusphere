@@ -7,7 +7,7 @@ import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { ScrollArea } from '../ui/scroll-area';
 import { useTheme } from 'next-themes';
-import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2, Download } from 'lucide-react';
+import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2, Download, ArrowDown } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
@@ -321,7 +321,7 @@ export function FlowchartView() {
                             <div className="p-4 space-y-4">
                                 {visualRows.map((row, index) => (
                                 <Card key={row.id} className="p-3">
-                                    <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end">
+                                    <div className="flex flex-col gap-2">
                                       {/* From Node */}
                                       <div className="flex flex-col gap-1">
                                           <Label className="text-xs">From</Label>
@@ -330,10 +330,13 @@ export function FlowchartView() {
                                       </div>
 
                                       {/* Link */}
-                                      <div className="flex flex-col gap-1">
-                                          <Label className="text-xs">Link</Label>
-                                          <Select value={row.link_type} onValueChange={v => handleVisualRowChange(index, 'link_type', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                          <Input placeholder="Link Text" value={row.link_text} onChange={e => handleVisualRowChange(index, 'link_text', e.target.value)} />
+                                      <div className="flex flex-col items-center gap-1">
+                                          <ArrowDown className="text-muted-foreground"/>
+                                          <div className="w-full grid grid-cols-2 gap-2">
+                                            <Select value={row.link_type} onValueChange={v => handleVisualRowChange(index, 'link_type', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                            <Input placeholder="Link Text" value={row.link_text} onChange={e => handleVisualRowChange(index, 'link_text', e.target.value)} />
+                                          </div>
+                                          <ArrowDown className="text-muted-foreground"/>
                                       </div>
                                       
                                       {/* To Node */}
