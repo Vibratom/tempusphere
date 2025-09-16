@@ -16,7 +16,6 @@ import Editor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
 import 'prismjs/themes/prism-tomorrow.css';
-import { generateDiagram } from '@/ai/flows/generate-diagram-flow';
 import { zoom, ZoomBehavior, zoomIdentity } from 'd3-zoom';
 import { select } from 'd3-selection';
 
@@ -27,7 +26,6 @@ const diagramTemplates = {
       flowchart: { label: "Flowchart", code: `flowchart TD\n    A(Start) --> B{Is it?};\n    B -- Yes --> C(OK);\n    C --> D(Rethink);\n    D --> A;\n    B -- No --> E(End);`},
       state: { label: "State Diagram", code: `stateDiagram-v2\n    [*] --> Still\n    Still --> [*]\n\n    Still --> Moving\n    Moving --> Still\n    Moving --> Crash\n    Crash --> [*]`},
       userJourney: { label: "User Journey", code: `journey\n    title My Work Day\n    section Go to work\n      Make tea: 5: Me\n      Go to work: 3: Me\n      Sit down: 5: Me\n    section Work\n      Plan day: 5: Me\n      Review PRs: 3: Me, Friend\n      Write code: 5: Me`},
-      bpmn: { label: "BPMN", code: `bpmn\n    title BPMN Explorer\n\n    participant Initiator as i\n    participant Approver as a\n\n    i->>a: Reservation Request\n    a-->>i: Reservation Confirmed` }
     },
   },
   sequenceAndInteraction: {
@@ -112,11 +110,9 @@ type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral' | 'base' | 'sunset
 
 export function FlowchartView() {
   const [code, setCode] = useLocalStorage('flowchart:mermaid-code-v5', diagramTemplates.flowAndProcess.templates.flowchart.code);
-  const [aiPrompt, setAiPrompt] = useState('');
   const [svg, setSvg] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const [isAiLoading, setIsAiLoading] = useState(false);
   
   const { toast } = useToast();
   const { resolvedTheme } = useTheme();
@@ -214,25 +210,6 @@ export function FlowchartView() {
     toast({ title: "SVG Exported", description: "Your diagram has been downloaded."});
   };
 
-  const handleGenerateFromAI = async () => {
-    if (!aiPrompt.trim()) {
-        toast({ title: "Prompt is empty", description: "Please enter a description for the diagram.", variant: "destructive"});
-        return;
-    }
-    setIsAiLoading(true);
-    setRenderError(null);
-    try {
-        const result = await generateDiagram({ prompt: aiPrompt });
-        setCode(result);
-        toast({ title: "Diagram Generated!", description: "The AI has created your diagram code." });
-    } catch(e) {
-        console.error("AI Generation Error", e);
-        toast({ title: "Generation Failed", description: "Could not generate diagram from prompt.", variant: "destructive"});
-    } finally {
-        setIsAiLoading(false);
-    }
-  };
-
   const handleZoomAction = (direction: 'in' | 'out' | 'reset') => {
     if (!svgContainerRef.current || !zoomBehaviorRef.current) return;
     const selection = select(svgContainerRef.current);
@@ -258,20 +235,9 @@ export function FlowchartView() {
       <Card>
           <CardHeader>
               <CardTitle>Diagram from Text</CardTitle>
-              <CardDescription>Describe the diagram you want, or select a template to get started.</CardDescription>
+              <CardDescription>Select a template to get started with your diagram.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="flex gap-2">
-                <Textarea 
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="e.g., A flowchart for a user login process with success and failure paths."
-                    rows={1}
-                />
-                <Button onClick={handleGenerateFromAI} disabled={isAiLoading}>
-                    {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Generate'}
-                </Button>
-            </div>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline">Templates <ChevronDown className="ml-2"/></Button>
