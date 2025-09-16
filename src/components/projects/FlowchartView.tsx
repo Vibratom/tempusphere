@@ -9,7 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Diamond, RectangleHorizontal } from 'lucide-react';
+import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Diamond, RectangleHorizontal, Circle, Cylinder } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Textarea } from '../ui/textarea';
@@ -91,7 +91,7 @@ const diagramTemplates = {
 type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral';
 
 type EditorMode = 'visual' | 'code';
-type NodeType = 'node' | 'decision';
+type NodeType = 'node' | 'decision' | 'stadium' | 'cylinder';
 interface FlowNode {
   id: string;
   text: string;
@@ -123,11 +123,11 @@ export function FlowchartView() {
   const [smartMode, setSmartMode] = useLocalStorage('flowchart:smartMode', true); // Poka-yoke mode
 
   const [nodes, setNodes] = useState<FlowNode[]>(() => [
-    {id: 'A', text: 'Start', type: 'node'},
+    {id: 'A', text: 'Start', type: 'stadium'},
     {id: 'B', text: 'Is it?', type: 'decision'},
     {id: 'C', text: 'OK', type: 'node'},
     {id: 'D', text: 'Rethink', type: 'node'},
-    {id: 'E', text: 'End', type: 'node'},
+    {id: 'E', text: 'End', type: 'stadium'},
   ]);
   const [links, setLinks] = useState<FlowLink[]>(() => [
       { id: 'l1', source: 'A', target: 'B', label: '' },
@@ -177,6 +177,8 @@ export function FlowchartView() {
             const text = node.text || ' '; // Mermaid requires some text
             if(node.type === 'node') newCode += `    ${node.id}["${text}"]\n`;
             if(node.type === 'decision') newCode += `    ${node.id}{"${text}"}\n`;
+            if(node.type === 'stadium') newCode += `    ${node.id}("${text}")\n`;
+            if(node.type === 'cylinder') newCode += `    ${node.id}[("${text}")]\n`;
         });
         
         links.forEach(link => {
@@ -425,13 +427,25 @@ export function FlowchartView() {
                                     <TooltipTrigger asChild>
                                         <Button size="icon" variant="outline" onClick={() => addNode('node')}><RectangleHorizontal/></Button>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Add Node</p></TooltipContent>
+                                    <TooltipContent><p>Add Process</p></TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                          <Button size="icon" variant="outline" onClick={() => addNode('decision')}><Diamond/></Button>
                                     </TooltipTrigger>
                                     <TooltipContent><p>Add Decision</p></TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                         <Button size="icon" variant="outline" onClick={() => addNode('stadium')}><Circle/></Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Add Start/End</p></TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                         <Button size="icon" variant="outline" onClick={() => addNode('cylinder')}><Cylinder/></Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Add Database</p></TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                           </div>
