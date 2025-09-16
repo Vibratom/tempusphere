@@ -9,7 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Diamond, RectangleHorizontal, Circle, Cylinder, Link as LinkIcon, ArrowRight } from 'lucide-react';
+import { Download, AlertCircle, Loader2, ChevronDown, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Diamond, RectangleHorizontal, Circle, Cylinder, Link as LinkIcon, ArrowRight, CaseSensitive, Indent, Outdent } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Input } from '../ui/input';
@@ -172,17 +172,7 @@ const diagramTemplates = {
              : Backend Setup\
              : Frontend Components\
     2024-08-15 : Launch Beta Version`},
-      mindmap: { label: "Mind Map", code: `mindmap\
-  root((Mind Map))\
-    Easy to Use\
-      Just use indentation\
-      - Deeper\
-        - Even Deeper\
-    Powerful\
-      Supports Markdown\
-      **Bold**\
-      *Italic*\
-      \`Code\``},
+      mindmap: { label: "Mind Map", code: `mindmap\n  root((Mind Map))\n    Easy to Use\n      Just use indentation\n      - Deeper\n        - Even Deeper\n    Powerful\n      Supports Markdown\n      **Bold**\n      *Italic*\n      \`Code\``},
       kanban: { label: "Kanban Board", code: `kanban-beta\
     %%\ font-size: 14\
     %%\ lane-width: 200\
@@ -273,12 +263,15 @@ title: Quality attributes of a good report\
 
 type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral';
 
+type DiagramType = 'flowchart' | 'mindmap' | 'unknown';
+
 type EditorMode = 'visual' | 'code';
-type NodeType = 'node' | 'decision' | 'stadium' | 'cylinder';
+// --- Flowchart Specific Types ---
+type FlowNodeType = 'node' | 'decision' | 'stadium' | 'cylinder';
 interface FlowNode {
   id: string;
   text: string;
-  type: NodeType;
+  type: FlowNodeType;
 }
 interface FlowLink {
   id: string;
@@ -287,8 +280,16 @@ interface FlowLink {
   label: string;
 }
 
+// --- Mindmap Specific Types ---
+interface MindMapNode {
+  id: string;
+  text: string;
+  indent: number;
+}
+
+
 export function FlowchartView() {
-  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v5', diagramTemplates.flowAndProcess.templates.flowchart.code);
+  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v6', diagramTemplates.flowAndProcess.templates.flowchart.code);
   const [code, setCode] = useState(savedCode);
   const [svg, setSvg] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -303,34 +304,64 @@ export function FlowchartView() {
   
   const [mermaidTheme, setMermaidTheme] = useState<MermaidTheme>('default');
   const [editorMode, setEditorMode] = useState<EditorMode>('code');
-  const [smartMode, setSmartMode] = useLocalStorage('flowchart:smartMode', true); // Poka-yoke mode
+  const [smartMode, setSmartMode] = useLocalStorage('flowchart:smartMode', true);
   const [selectedDiagram, setSelectedDiagram] = useState<string>("Flowchart");
+  const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
 
-  const [nodes, setNodes] = useState<FlowNode[]>(() => [
-    {id: 'A', text: 'Start', type: 'stadium'},
-    {id: 'B', text: 'Is it?', type: 'decision'},
-    {id: 'C', text: 'OK', type: 'node'},
-    {id: 'D', text: 'Rethink', type: 'node'},
-    {id: 'E', text: 'End', type: 'stadium'},
-  ]);
-  const [links, setLinks] = useState<FlowLink[]>(() => [
-      { id: 'l1', source: 'A', target: 'B', label: '' },
-      { id: 'l2', source: 'B', target: 'C', label: 'Yes' },
-      { id: 'l3', source: 'C', target: 'D', label: '' },
-      { id: 'l4', source: 'D', target: 'A', label: '' },
-      { id: 'l5', source: 'B', target: 'E', label: 'No' },
-  ]);
+  // --- Visual Editor State ---
+  const [flowNodes, setFlowNodes] = useState<FlowNode[]>([]);
+  const [flowLinks, setFlowLinks] = useState<FlowLink[]>([]);
+  const [mindMapNodes, setMindMapNodes] = useState<MindMapNode[]>([]);
 
+  const parseCode = (currentCode: string) => {
+    const firstLine = currentCode.trim().split('\n')[0].trim();
+    if (firstLine.startsWith('flowchart')) {
+      setDiagramType('flowchart');
+      // Basic parser, not fully robust
+      const nodes: FlowNode[] = [];
+      const links: FlowLink[] = [];
+      const nodeRegex = /^\s*([a-zA-Z0-9]+)(?:\["([^"]+)"\]|\{"([^"]+)"\}|\("([^"]+)"\)|\(\("([^"]+)"\)\))?/gm;
+      let match;
+      while ((match = nodeRegex.exec(currentCode)) !== null) {
+          const id = match[1];
+          const text = match[2] || match[3] || match[4] || match[5] || id;
+          let type: FlowNodeType = 'node';
+          if(match[0].includes('{')) type = 'decision';
+          if(match[0].includes('((')) type = 'cylinder';
+          else if(match[0].includes('(')) type = 'stadium';
+          if(!nodes.find(n=>n.id === id)) nodes.push({ id, text, type });
+      }
+      // This part is incomplete and needs a better parser. Sticking to current for now.
+      setFlowNodes(nodes);
+    } else if (firstLine.startsWith('mindmap')) {
+      setDiagramType('mindmap');
+      const nodes = currentCode.split('\n').slice(1).map((line, index) => {
+        const indent = line.search(/\S|$/);
+        return {
+          id: `mm-${index}`,
+          text: line.trim(),
+          indent: Math.floor(indent / 2),
+        };
+      }).filter(node => node.text);
+      setMindMapNodes(nodes);
+    } else {
+      setDiagramType('unknown');
+    }
+  };
+  
   useEffect(() => {
     setIsClient(true);
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    parseCode(code);
   }, []);
 
-  const handleCodeChange = (newCode: string) => {
+  const handleCodeChange = (newCode: string, fromVisual?: boolean) => {
     setCode(newCode);
+    if (!fromVisual) {
+        parseCode(newCode);
+    }
     const newHistory = history.slice(0, historyIndex + 1);
     setHistory([...newHistory, newCode]);
     setHistoryIndex(newHistory.length);
@@ -341,6 +372,7 @@ export function FlowchartView() {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
       setCode(history[newIndex]);
+      parseCode(history[newIndex]);
     }
   }, [history, historyIndex]);
 
@@ -349,50 +381,15 @@ export function FlowchartView() {
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
       setCode(history[newIndex]);
+       parseCode(history[newIndex]);
     }
   }, [history, historyIndex]);
   
-  // Visual Editor Code Generation
-  useEffect(() => {
-    if (editorMode === 'visual') {
-        let newCode = 'flowchart TD\n';
-        
-        nodes.forEach(node => {
-            const text = node.text || ' '; // Mermaid requires some text
-            if(node.type === 'node') newCode += `    ${node.id}["${text}"]\n`;
-            if(node.type === 'decision') newCode += `    ${node.id}{"${text}"}\n`;
-            if(node.type === 'stadium') newCode += `    ${node.id}("${text}")\n`;
-            if(node.type === 'cylinder') newCode += `    ${node.id}[("${text}")]\n`;
-        });
-        
-        links.forEach(link => {
-            if (link.source && link.target) {
-                if (link.label) {
-                    newCode += `    ${link.source} -- "${link.label}" --> ${link.target}\n`;
-                } else {
-                    newCode += `    ${link.source} --> ${link.target}\n`;
-                }
-            }
-        });
-        
-        if (code !== newCode) {
-            handleCodeChange(newCode);
-        }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, links, editorMode]);
-
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'z') {
-          e.preventDefault();
-          handleUndo();
-        } else if (e.key === 'y') {
-          e.preventDefault();
-          handleRedo();
-        }
+        if (e.key === 'z') { e.preventDefault(); handleUndo(); }
+        else if (e.key === 'y') { e.preventDefault(); handleRedo(); }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -413,29 +410,20 @@ export function FlowchartView() {
     const renderMermaid = async () => {
       try {
         const uniqueId = `mermaid-graph-${Date.now()}`;
-        const finalCode = `${code}`;
-        const { svg: renderedSvg } = await mermaid.render(uniqueId, finalCode);
+        const { svg: renderedSvg } = await mermaid.render(uniqueId, code);
         setSvg(renderedSvg);
         setRenderError(null);
         setSavedCode(code);
       } catch (error: any) {
         setSvg('');
-        if (error.str) {
-             setRenderError(error.str);
-        } else {
-            setRenderError('Invalid syntax. Please check your diagram code.');
-        }
-        console.error("Mermaid render error:", error);
+        if (error.str) { setRenderError(error.str); }
+        else { setRenderError('Invalid syntax. Please check your diagram code.'); }
       }
     };
 
     const timeoutId = setTimeout(() => {
-      if (code.trim()) {
-        renderMermaid();
-      } else {
-        setSvg('');
-        setRenderError(null);
-      }
+      if (code.trim()) { renderMermaid(); }
+      else { setSvg(''); setRenderError(null); }
     }, 500);
 
     return () => clearTimeout(timeoutId);
@@ -457,50 +445,240 @@ export function FlowchartView() {
     URL.revokeObjectURL(url);
     toast({ title: "SVG Exported", description: "Your diagram has been downloaded."});
   };
+
+  const generateCodeFromVisual = () => {
+    let newCode = '';
+    if (diagramType === 'flowchart') {
+        newCode = 'flowchart TD\n';
+        flowNodes.forEach(node => {
+            const text = node.text || ' ';
+            if(node.type === 'node') newCode += `    ${node.id}["${text}"]\n`;
+            if(node.type === 'decision') newCode += `    ${node.id}{"${text}"}\n`;
+            if(node.type === 'stadium') newCode += `    ${node.id}("${text}")\n`;
+            if(node.type === 'cylinder') newCode += `    ${node.id}[("${text}")]\n`;
+        });
+        flowLinks.forEach(link => {
+            if (link.source && link.target) {
+                if (link.label) newCode += `    ${link.source} -- "${link.label}" --> ${link.target}\n`;
+                else newCode += `    ${link.source} --> ${link.target}\n`;
+            }
+        });
+    } else if (diagramType === 'mindmap') {
+        newCode = 'mindmap\n';
+        mindMapNodes.forEach(node => {
+          newCode += `${'  '.repeat(node.indent)}${node.text}\n`;
+        });
+    }
+    if (code !== newCode) {
+        handleCodeChange(newCode, true);
+    }
+  };
   
-  const addNode = (type: NodeType) => {
-    const existingIds = nodes.map(n => n.id.charCodeAt(0)).filter(n => n >= 65 && n <= 90);
-    const nextIdChar = String.fromCharCode(existingIds.length > 0 ? Math.max(...existingIds) + 1 : 65);
-    const newNode: FlowNode = { id: nextIdChar, text: 'New Node', type };
-    setNodes(prev => [...prev, newNode]);
-  }
-  const updateNode = (id: string, text: string) => {
-    setNodes(prev => prev.map(n => n.id === id ? {...n, text} : n));
-  }
-  const removeNode = (id: string) => {
-    setNodes(prev => prev.filter(n => n.id !== id));
-    setLinks(prev => prev.filter(l => l.source !== id && l.target !== id));
-  }
-  const addLink = () => {
-    setLinks(prev => [...prev, {id: `l${Date.now()}`, source: '', target: '', label: ''}]);
-  }
-  const updateLink = (id: string, part: Partial<FlowLink>) => {
-    setLinks(prev => prev.map(l => {
-      if (l.id === id) {
-        const newLink = {...l, ...part};
-        if (smartMode) {
-          if (newLink.source && newLink.source === newLink.target) {
+  // --- Visual Editor Components ---
+  
+  const FlowchartEditor = () => {
+    // All flowchart-specific functions like addNode, updateLink etc. go here
+    const addNode = (type: FlowNodeType) => {
+        const existingIds = flowNodes.map(n => n.id.charCodeAt(0)).filter(n => n >= 65 && n <= 90);
+        const nextIdChar = String.fromCharCode(existingIds.length > 0 ? Math.max(...existingIds) + 1 : 65);
+        const newNode: FlowNode = { id: nextIdChar, text: 'New Node', type };
+        setFlowNodes(prev => [...prev, newNode]);
+    }
+    const updateNode = (id: string, text: string) => {
+        setFlowNodes(prev => prev.map(n => n.id === id ? {...n, text} : n));
+    }
+    const removeNode = (id: string) => {
+        setFlowNodes(prev => prev.filter(n => n.id !== id));
+        setFlowLinks(prev => prev.filter(l => l.source !== id && l.target !== id));
+    }
+    const addLink = () => {
+        setFlowLinks(prev => [...prev, {id: `l${Date.now()}`, source: '', target: '', label: ''}]);
+    }
+    const updateLink = (id: string, part: Partial<FlowLink>) => {
+        setFlowLinks(prev => prev.map(l => {
+        if (l.id === id) {
+            const newLink = {...l, ...part};
+            if (smartMode && newLink.source && newLink.source === newLink.target) {
             toast({ title: "Invalid Link", description: "A node cannot link to itself in Smart Mode.", variant: "destructive"});
             return l; // revert
-          }
+            }
+            return newLink;
         }
-        return newLink;
-      }
-      return l;
-    }));
-  }
-  const removeLink = (id: string) => {
-    setLinks(prev => prev.filter(l => l.id !== id));
-  }
+        return l;
+        }));
+    }
+    const removeLink = (id: string) => {
+        setFlowLinks(prev => prev.filter(l => l.id !== id));
+    }
 
-  const nodeOptions = nodes.map(n => ({ value: n.id, label: `${n.id}: ${n.text}` }));
+    useEffect(() => {
+        generateCodeFromVisual();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [flowNodes, flowLinks]);
+    
+    const nodeOptions = flowNodes.map(n => ({ value: n.id, label: `${n.id}: ${n.text}` }));
 
-  if (!isClient) {
     return (
-        <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex-1 flex flex-col gap-4 p-4 pt-0 min-h-0">
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <Label>Smart Mode</Label>
+              <p className="text-xs text-muted-foreground">Prevents mistakes like self-linking.</p>
+            </div>
+            <Switch checked={smartMode} onCheckedChange={setSmartMode} />
+          </div>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Nodes</CardTitle>
+                <div className="flex gap-2">
+                    <TooltipProvider>
+                      <Tooltip><TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('node')}><RectangleHorizontal/></Button></TooltipTrigger><TooltipContent><p>Add Process</p></TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('decision')}><Diamond/></Button></TooltipTrigger><TooltipContent><p>Add Decision</p></TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('stadium')}><Circle/></Button></TooltipTrigger><TooltipContent><p>Add Start/End</p></TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('cylinder')}><Cylinder/></Button></TooltipTrigger><TooltipContent><p>Add Database</p></TooltipContent></Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-48">
+                <div className="space-y-4 pr-4">
+                  {flowNodes.map(node => (
+                    <div key={node.id} className="space-y-2 rounded-md border p-3">
+                        <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm text-muted-foreground p-2 bg-muted rounded-md">{node.id}</span>
+                        <Input value={node.text} onChange={(e) => updateNode(node.id, e.target.value)} className="flex-1"/>
+                        <Button size="icon" variant="ghost" onClick={() => removeNode(node.id)}><Trash2/></Button>
+                        </div>
+                        {flowLinks.filter(l => l.source === node.id || l.target === node.id).length > 0 && (
+                        <div className="pl-8 space-y-1">
+                            {flowLinks.filter(l => l.source === node.id || l.target === node.id).map(link => (
+                            <div key={link.id} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <LinkIcon className="h-3 w-3" />
+                                {link.source === node.id ? ( <><span className="font-mono">{node.id}</span><ArrowRight className="h-3 w-3" /><span className="font-mono">{link.target || '?'}</span></> ) : ( <><span className="font-mono">{link.source || '?'}</span><ArrowRight className="h-3 w-3" /><span className="font-mono">{node.id}</span></> )}
+                                {link.label && <span className="text-xs p-1 bg-muted rounded">({link.label})</span>}
+                            </div>
+                            ))}
+                        </div>
+                        )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+          <Card className="flex-1">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Links</CardTitle>
+                <Button size="sm" variant="outline" onClick={addLink}>Add Link</Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-48">
+                <div className="space-y-2 pr-4">
+                  {flowLinks.map(link => (
+                    <div key={link.id} className="grid grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center">
+                      {smartMode ? (
+                        <>
+                          <Select value={link.source} onValueChange={(v) => updateLink(link.id, {source: v})}>
+                              <SelectTrigger><SelectValue placeholder="From"/></SelectTrigger>
+                              <SelectContent>{nodeOptions.map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <Select value={link.target} onValueChange={(v) => updateLink(link.id, {target: v})}>
+                              <SelectTrigger><SelectValue placeholder="To"/></SelectTrigger>
+                              <SelectContent>{nodeOptions.filter(n => n.value !== link.source).map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </>
+                      ) : (
+                        <>
+                            <Input value={link.source} onChange={(e) => updateLink(link.id, {source: e.target.value})} placeholder="From ID" className="font-mono"/>
+                            <Input value={link.target} onChange={(e) => updateLink(link.id, {target: e.target.value})} placeholder="To ID" className="font-mono"/>
+                        </>
+                      )}
+                      <Input value={link.label} onChange={(e) => updateLink(link.id, {label: e.target.value})} placeholder="Label (optional)"/>
+                      <Button size="icon" variant="ghost" onClick={() => removeLink(link.id)}><Trash2/></Button>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
         </div>
     );
+  }
+
+  const MindMapEditor = () => {
+    const addNode = () => {
+        setMindMapNodes(prev => [...prev, { id: `mm-${Date.now()}`, text: 'New Idea', indent: 1 }]);
+    }
+    const updateNodeText = (id: string, text: string) => {
+        setMindMapNodes(prev => prev.map(n => n.id === id ? {...n, text} : n));
+    }
+    const updateNodeIndent = (id: string, direction: 'in' | 'out') => {
+        setMindMapNodes(prev => prev.map(n => {
+            if(n.id === id) {
+                const newIndent = direction === 'in' ? n.indent + 1 : Math.max(0, n.indent - 1);
+                return {...n, indent: newIndent};
+            }
+            return n;
+        }));
+    }
+    const removeNode = (id: string) => {
+        setMindMapNodes(prev => prev.filter(n => n.id !== id));
+    }
+    
+    useEffect(() => {
+        generateCodeFromVisual();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mindMapNodes]);
+
+    return (
+        <div className="flex-1 flex flex-col gap-4 p-4 pt-0 min-h-0">
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>Mind Map Editor</CardTitle>
+                        <Button size="sm" variant="outline" onClick={addNode}><Plus className="mr-2 h-4 w-4" /> Add Idea</Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <ScrollArea className="h-[70vh]">
+                        <div className="space-y-2 pr-4">
+                            {mindMapNodes.map(node => (
+                                <div key={node.id} className="flex items-center gap-2 group" style={{ paddingLeft: `${node.indent * 20}px`}}>
+                                    <Input value={node.text} onChange={(e) => updateNodeText(node.id, e.target.value)} className="flex-1" />
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button size="icon" variant="ghost" onClick={() => updateNodeIndent(node.id, 'out')} disabled={node.indent === 0}><Outdent /></Button>
+                                        <Button size="icon" variant="ghost" onClick={() => updateNodeIndent(node.id, 'in')}><Indent /></Button>
+                                        <Button size="icon" variant="ghost" onClick={() => removeNode(node.id)}><Trash2 /></Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
+
+  const VisualEditor = () => {
+    switch(diagramType) {
+        case 'flowchart':
+            return <FlowchartEditor />;
+        case 'mindmap':
+            return <MindMapEditor />;
+        default:
+            return (
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
+                    <Pencil className="w-12 h-12 mb-4" />
+                    <h3 className="font-semibold">No Visual Editor Available</h3>
+                    <p>A visual editor for "{selectedDiagram}" is not yet available. Please use the Code editor.</p>
+                </div>
+            );
+    }
   }
 
   const editorPanel = (
@@ -515,121 +693,7 @@ export function FlowchartView() {
         </div>
 
         { editorMode === 'visual' ? (
-          <div className="flex-1 flex flex-col gap-4 p-4 pt-0 min-h-0">
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="space-y-0.5">
-                <Label>Smart Mode</Label>
-                <p className="text-xs text-muted-foreground">Prevents mistakes like self-linking.</p>
-              </div>
-              <Switch checked={smartMode} onCheckedChange={setSmartMode} />
-            </div>
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Nodes</CardTitle>
-                  <div className="flex gap-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('node')}><RectangleHorizontal/></Button></TooltipTrigger>
-                            <TooltipContent><p>Add Process</p></TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('decision')}><Diamond/></Button></TooltipTrigger>
-                            <TooltipContent><p>Add Decision</p></TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('stadium')}><Circle/></Button></TooltipTrigger>
-                            <TooltipContent><p>Add Start/End</p></TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('cylinder')}><Cylinder/></Button></TooltipTrigger>
-                            <TooltipContent><p>Add Database</p></TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-48">
-                  <div className="space-y-4 pr-4">
-                    {nodes.map(node => {
-                      const nodeLinks = links.filter(l => l.source === node.id || l.target === node.id);
-                      return (
-                        <div key={node.id} className="space-y-2 rounded-md border p-3">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm text-muted-foreground p-2 bg-muted rounded-md">{node.id}</span>
-                            <Input value={node.text} onChange={(e) => updateNode(node.id, e.target.value)} className="flex-1"/>
-                            <Button size="icon" variant="ghost" onClick={() => removeNode(node.id)}><Trash2/></Button>
-                          </div>
-                           {nodeLinks.length > 0 && (
-                            <div className="pl-8 space-y-1">
-                              {nodeLinks.map(link => (
-                                <div key={link.id} className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <LinkIcon className="h-3 w-3" />
-                                    {link.source === node.id ? (
-                                        <>
-                                            <span className="font-mono">{node.id}</span>
-                                            <ArrowRight className="h-3 w-3" />
-                                            <span className="font-mono">{link.target || '?'}</span>
-                                            {link.label && <span className="text-xs p-1 bg-muted rounded">({link.label})</span>}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="font-mono">{link.source || '?'}</span>
-                                            <ArrowRight className="h-3 w-3" />
-                                            <span className="font-mono">{node.id}</span>
-                                             {link.label && <span className="text-xs p-1 bg-muted rounded">({link.label})</span>}
-                                        </>
-                                    )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-            <Card className="flex-1">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Links</CardTitle>
-                  <Button size="sm" variant="outline" onClick={addLink}>Add Link</Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-48">
-                  <div className="space-y-2 pr-4">
-                    {links.map(link => (
-                      <div key={link.id} className="grid grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center">
-                        {smartMode ? (
-                          <>
-                            <Select value={link.source} onValueChange={(v) => updateLink(link.id, {source: v})}>
-                                <SelectTrigger><SelectValue placeholder="From"/></SelectTrigger>
-                                <SelectContent>{nodeOptions.map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
-                            </Select>
-                            <Select value={link.target} onValueChange={(v) => updateLink(link.id, {target: v})}>
-                                <SelectTrigger><SelectValue placeholder="To"/></SelectTrigger>
-                                <SelectContent>{nodeOptions.filter(n => n.value !== link.source).map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
-                            </Select>
-                          </>
-                        ) : (
-                          <>
-                              <Input value={link.source} onChange={(e) => updateLink(link.id, {source: e.target.value})} placeholder="From ID" className="font-mono"/>
-                              <Input value={link.target} onChange={(e) => updateLink(link.id, {target: e.target.value})} placeholder="To ID" className="font-mono"/>
-                          </>
-                        )}
-                        <Input value={link.label} onChange={(e) => updateLink(link.id, {label: e.target.value})} placeholder="Label (optional)"/>
-                        <Button size="icon" variant="ghost" onClick={() => removeLink(link.id)}><Trash2/></Button>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
+          <VisualEditor />
         ) : (
            <div className="flex-1 flex flex-col p-4 pt-0 min-h-0">
               <Card className="flex flex-col flex-1">
@@ -669,10 +733,7 @@ export function FlowchartView() {
                     <pre className="mt-2 text-xs bg-black/20 p-2 rounded-md whitespace-pre-wrap max-w-full text-left">{renderError}</pre>
                 </div>
             ) : svg ? (
-                <div
-                    dangerouslySetInnerHTML={{ __html: svg }}
-                    className="w-full h-full flex items-center justify-center [&>svg]:max-w-none [&>svg]:max-h-none"
-                />
+                <div dangerouslySetInnerHTML={{ __html: svg }} className="w-full h-full flex items-center justify-center [&>svg]:max-w-none [&>svg]:max-h-none"/>
             ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                     {code.trim() ? <Loader2 className="h-8 w-8 animate-spin"/> : <p>Diagram will appear here.</p>}
@@ -682,6 +743,8 @@ export function FlowchartView() {
       </CardContent>
     </Card>
   );
+
+  if (!isClient) return <div className="flex-1 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
@@ -705,7 +768,7 @@ export function FlowchartView() {
                                 <DropdownMenuPortal>
                                     <DropdownMenuSubContent>
                                         {Object.values(category.templates).map(template => (
-                                            <DropdownMenuItem key={template.label} onClick={() => { handleCodeChange(template.code); setSelectedDiagram(template.label); setEditorMode('code'); }}>
+                                            <DropdownMenuItem key={template.label} onClick={() => { handleCodeChange(template.code); setSelectedDiagram(template.label); parseCode(template.code); }}>
                                                 {template.label}
                                             </DropdownMenuItem>
                                         ))}
@@ -746,14 +809,5 @@ export function FlowchartView() {
     </div>
   );
 }
-
-function Description({ children }: { children: React.ReactNode }) {
-    return <p className="text-xs text-muted-foreground">{children}</p>;
-}
-    
-
-    
-
-    
 
     
