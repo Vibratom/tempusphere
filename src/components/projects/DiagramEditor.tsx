@@ -303,18 +303,10 @@ export function DiagramEditor() {
   return (
     <div className="w-full h-full flex flex-col gap-4">
         <Card>
-            <CardHeader className="flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <CardHeader>
               <div className="flex-1">
                 <CardTitle>Chart Editor</CardTitle>
                 <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
-              </div>
-              <div className="w-full md:w-48">
-                  <Select value="flowchart" onValueChange={v => setCode(`${v} TD\n`)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="flowchart">Flowchart / Graph</SelectItem>
-                      </SelectContent>
-                  </Select>
               </div>
             </CardHeader>
         </Card>
