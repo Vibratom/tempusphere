@@ -10,35 +10,6 @@ import { ProjectsProvider } from '@/contexts/ProjectsContext';
 import { usePathname } from 'next/navigation';
 import { ProjectNav } from '@/components/projects/ProjectNav';
 import { Card, CardContent } from '@/components/ui/card';
-import BoardPage from './board/page';
-import CalendarViewPage from './calendar/page';
-import ListPage from './list/page';
-import GanttPage from './gantt/page';
-import SpreadsheetPage from './spreadsheet/page';
-import ChecklistPage from './checklist/page';
-import CanvasPage from './canvas/page';
-import MindMapPage from './mindmap/page';
-import ChartsPage from './charts/page';
-import FlowchartPage from './flowchart/page';
-
-const LoadingFallback = () => (
-    <div className="flex-1 flex items-center justify-center">
-        <p>Loading Tools...</p>
-    </div>
-);
-
-const toolComponents: Record<string, React.ComponentType> = {
-    board: BoardPage,
-    calendar: CalendarViewPage,
-    list: ListPage,
-    gantt: GanttPage,
-    spreadsheet: SpreadsheetPage,
-    checklist: ChecklistPage,
-    canvas: CanvasPage,
-    charts: ChartsPage,
-    mindmap: MindMapPage,
-    flowchart: FlowchartPage
-};
 
 export default function ProjectsLayout({
   children,
@@ -48,6 +19,31 @@ export default function ProjectsLayout({
   const pathname = usePathname();
   const activeTool = useMemo(() => pathname.split('/').pop() || 'board', [pathname]);
 
+  // If we are at the root /projects page, don't show the tabbed layout.
+  // The page.tsx for /projects will show the cards.
+  if (pathname === '/projects') {
+    return (
+       <Suspense fallback={<div className="w-full h-screen flex items-center justify-center">Loading Page...</div>}>
+          <SettingsProvider>
+            <CalendarProvider>
+              <ChecklistProvider>
+                <ProjectsProvider>
+                  <div className="min-h-screen w-full bg-background flex flex-col">
+                      <Header />
+                      <main className="flex-1 flex flex-col">
+                          {children}
+                      </main>
+                      <Footer />
+                  </div>
+                </ProjectsProvider>
+              </ChecklistProvider>
+            </CalendarProvider>
+          </SettingsProvider>
+       </Suspense>
+    );
+  }
+
+  // This is for /projects/[tool] pages
   return (
     <Suspense fallback={<div className="w-full h-screen flex items-center justify-center">Loading Page...</div>}>
       <SettingsProvider>
@@ -62,13 +58,7 @@ export default function ProjectsLayout({
                           <ProjectNav activeTool={activeTool} />
                            <Card className="flex-1">
                               <CardContent className="p-4 md:p-6 h-full">
-                                <Suspense fallback={<LoadingFallback />}>
-                                   {Object.entries(toolComponents).map(([toolName, ToolComponent]) => (
-                                       <div key={toolName} style={{ display: activeTool === toolName ? 'block' : 'none' }} className="h-full w-full">
-                                          <ToolComponent />
-                                       </div>
-                                   ))}
-                                </Suspense>
+                                {children}
                               </CardContent>
                           </Card>
                         </div>

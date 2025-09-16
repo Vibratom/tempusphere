@@ -1,4 +1,6 @@
 
+'use client';
+
 import { ProjectListView } from '@/components/projects/ProjectListView';
 
 export default function ListPage() {

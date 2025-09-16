@@ -1,9 +1,49 @@
 
 'use client';
 
-import { redirect } from 'next/navigation';
+import { KanbanSquare, List, BarChartHorizontal, DraftingCompass, Table, ListChecks, Calendar, Spline, Brain, GitCommit } from 'lucide-react';
+import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+const tools = [
+    { value: 'board', icon: KanbanSquare, label: 'Board', href: '/projects/board', description: 'Organize tasks with a drag-and-drop Kanban board.' },
+    { value: 'list', icon: List, label: 'List', href: '/projects/list', description: 'A detailed, filterable list of all your project tasks.' },
+    { value: 'calendar', icon: Calendar, label: 'Calendar', href: '/projects/calendar', description: 'View tasks with due dates in a calendar format.' },
+    { value: 'gantt', icon: BarChartHorizontal, label: 'Gantt', href: '/projects/gantt', description: 'Visualize project timelines with a Gantt chart.' },
+    { value: 'spreadsheet', icon: Table, label: 'Spreadsheet', href: '/projects/spreadsheet', description: 'Manage data in a flexible, powerful spreadsheet.' },
+    { value: 'checklist', icon: ListChecks, label: 'Checklist', href: '/projects/checklist', description: 'Track nested to-do items and progress.' },
+    { value: 'canvas', icon: DraftingCompass, label: 'Canvas', href: '/projects/canvas', description: 'A freeform canvas for drawing and brainstorming.' },
+    { value: 'flowchart', icon: GitCommit, label: 'Flowchart', href: '/projects/flowchart', description: 'Create diagrams using a visual or code editor.' },
+    { value: 'charts', icon: Spline, label: 'Charts', href: '/projects/charts', description: 'Build various charts and graphs from your data.' },
+    { value: 'mindmap', icon: Brain, label: 'Mind Map', href: '/projects/mindmap', description: 'Visually organize your thoughts with a mind map.' },
+];
 
 export default function ProjectsPage() {
-  // Redirect to the default tool, which is the board view.
-  redirect('/projects/board');
+  return (
+    <div className="container mx-auto px-4 py-12">
+        <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Project Tools</h1>
+            <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
+                A suite of integrated tools to help you plan, track, and manage your projects from start to finish.
+            </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tools.map((tool) => (
+                <Link key={tool.value} href={tool.href}>
+                    <Card className="h-full flex flex-col hover:shadow-lg hover:border-primary/50 transition-all">
+                        <CardHeader className="flex-row items-center gap-4">
+                           <div className="p-3 bg-primary/10 text-primary rounded-lg">
+                             <tool.icon className="w-6 h-6" />
+                           </div>
+                           <CardTitle>{tool.label}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                           <CardDescription>{tool.description}</CardDescription>
+                        </CardContent>
+                    </Card>
+                </Link>
+            ))}
+        </div>
+    </div>
+  );
 }
