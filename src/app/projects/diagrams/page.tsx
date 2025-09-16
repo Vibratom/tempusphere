@@ -1,7 +1,7 @@
 'use client';
 
-import { DiagramEditor } from '@/components/projects/DiagramEditor';
+import { ChartEditor } from '@/components/projects/DiagramEditor';
 
-export default function DiagramsPage() {
-    return <DiagramEditor />;
+export default function ChartPage() {
+    return <ChartEditor />;
 }

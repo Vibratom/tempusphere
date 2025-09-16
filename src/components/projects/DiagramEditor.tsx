@@ -9,7 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useTheme } from 'next-themes';
 import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2, Download, ArrowDown } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -134,7 +134,7 @@ const getLinkSyntax = (type: VisualLink['type'], text: string) => {
 
 // --- Component ---
 
-export function DiagramEditor() {
+export function ChartEditor() {
   const [savedCode, setSavedCode] = useLocalStorage('diagram:mermaid-code-v1', defaultCode);
   const [visualRows, setVisualRows] = useLocalStorage<VisualRow[]>('diagram:visual-rows-v1', [createNewVisualRow()]);
   
@@ -279,7 +279,7 @@ export function DiagramEditor() {
         <div className="grid md:grid-cols-2 gap-4">
           <Card>
               <CardHeader>
-                  <CardTitle>Diagram Editor</CardTitle>
+                  <CardTitle>Chart Editor</CardTitle>
                   <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
               </CardHeader>
           </Card>

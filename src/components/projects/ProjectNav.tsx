@@ -14,7 +14,7 @@ const tools = [
     { value: 'spreadsheet', icon: Table, label: 'Spreadsheet', href: '/projects/spreadsheet' },
     { value: 'checklist', icon: ListChecks, label: 'Checklist', href: '/projects/checklist' },
     { value: 'canvas', icon: DraftingCompass, label: 'Canvas', href: '/projects/canvas' },
-    { value: 'diagrams', icon: GitCommit, label: 'Diagrams', href: '/projects/diagrams' },
+    { value: 'chart', icon: GitCommit, label: 'Chart', href: '/projects/diagrams' },
     { value: 'mindmap', icon: Brain, label: 'Mind Map', href: '/projects/mindmap' },
 ];
 
@@ -28,8 +28,9 @@ const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: s
 );
 
 export function ProjectNav({ activeTool }: { activeTool: string }) {
+    const adjustedActiveTool = activeTool === 'diagrams' ? 'chart' : activeTool;
     return (
-        <Tabs defaultValue={activeTool} value={activeTool} className="flex justify-center">
+        <Tabs defaultValue={adjustedActiveTool} value={adjustedActiveTool} className="flex justify-center">
             <TabsList className="h-auto">
                 {tools.map(tool => (
                     <ResponsiveTabsTrigger key={tool.value} value={tool.value} href={tool.href} icon={tool.icon}>
