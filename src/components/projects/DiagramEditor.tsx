@@ -332,89 +332,91 @@ export function DiagramEditor() {
               </div>
             </CardHeader>
         </Card>
-        <ResizablePanelGroup direction={panelDirection} className="flex-1 rounded-lg border">
-            <ResizablePanel defaultSize={panelDirection === 'vertical' ? 50 : 60} minSize={30}>
-                 <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
-                    <div className="p-4 pb-0 border-b">
-                        <TabsList className="grid w-full max-w-sm grid-cols-2">
-                            <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
-                            <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
-                        </TabsList>
-                    </div>
+        <div className="flex-1 min-h-0">
+            <ResizablePanelGroup direction={panelDirection} className="h-full rounded-lg border">
+                <ResizablePanel defaultSize={panelDirection === 'vertical' ? 50 : 60} minSize={30}>
+                     <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
+                        <div className="p-4 pb-0 border-b">
+                            <TabsList className="grid w-full max-w-sm grid-cols-2">
+                                <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
+                                <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
+                            </TabsList>
+                        </div>
 
-                    <TabsContent value="code" className="m-0 flex-1">
-                        <Textarea
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
-                            placeholder="Write your Mermaid diagram code here..."
-                        />
-                    </TabsContent>
-                    <TabsContent value="visual" className="m-0 flex-1 flex flex-col">
-                        <div className="p-4 border-b">
-                            <Button onClick={addColumn}><Plus className="mr-2"/>Add Chain</Button>
-                        </div>
-                        <ScrollArea className="flex-1">
-                            <div className="flex gap-4 p-4 items-start">
-                                {visualColumns.map((col) => (
-                                    <div key={col.id} className="w-64 bg-muted/50 p-3 rounded-lg space-y-2 flex-shrink-0">
-                                        <Button size="sm" variant="destructive" onClick={() => removeColumn(col.id)} className="w-full mb-2">
-                                            <Trash2 className="mr-2"/>Remove Chain
-                                        </Button>
-                                        <Accordion type="multiple" className="w-full space-y-2">
-                                            {col.nodes.map((node, nodeIndex) => (
-                                                <React.Fragment key={node.id}>
-                                                    <AccordionItem value={`node-${node.id}`}>
-                                                        <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
-                                                          Node: {node.name || 'Untitled'}
-                                                        </AccordionTrigger>
-                                                        <AccordionContent className="p-2 pt-0">
-                                                            <div className="bg-background p-2 rounded border space-y-1">
-                                                                <Label className="text-xs">Node Text & Shape</Label>
-                                                                <Input placeholder="Text" value={node.name} onChange={e => handleNodeChange(col.id, nodeIndex, 'name', e.target.value)} />
-                                                                <Select value={node.shape} onValueChange={v => handleNodeChange(col.id, nodeIndex, 'shape', v)}>
-                                                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                                                    <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                        </AccordionContent>
-                                                    </AccordionItem>
-                                                    
-                                                    {nodeIndex < col.links.length && (
-                                                        <LinkEditorRow colId={col.id} linkIndex={nodeIndex} link={col.links[nodeIndex]} />
-                                                    )}
-                                                </React.Fragment>
-                                            ))}
-                                        </Accordion>
-                                        <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full mt-2">
-                                            <Plus className="mr-2"/>Add Node
-                                        </Button>
-                                    </div>
-                                ))}
+                        <TabsContent value="code" className="m-0 flex-1">
+                            <Textarea
+                                value={code}
+                                onChange={(e) => setCode(e.target.value)}
+                                className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
+                                placeholder="Write your Mermaid diagram code here..."
+                            />
+                        </TabsContent>
+                        <TabsContent value="visual" className="m-0 flex-1 flex flex-col">
+                            <div className="p-4 border-b">
+                                <Button onClick={addColumn}><Plus className="mr-2"/>Add Chain</Button>
                             </div>
-                        </ScrollArea>
-                    </TabsContent>
-                </Tabs>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={panelDirection === 'vertical' ? 50 : 40} minSize={30}>
-                <ScrollArea className="h-full w-full p-4" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-                    {renderError ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
-                            <AlertCircle className="w-10 h-10 mb-2"/>
-                            <p className="font-semibold text-center">Failed to render diagram.</p>
-                            <pre className="mt-2 text-xs bg-black/20 p-2 rounded-md whitespace-pre-wrap max-w-full text-left">{renderError}</pre>
-                        </div>
-                    ) : svg ? (
-                        <div dangerouslySetInnerHTML={{ __html: svg }} className="w-full h-full flex items-center justify-center [&>svg]:max-w-none [&>svg]:max-h-none"/>
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            {code.trim() ? <Loader2 className="h-8 w-8 animate-spin"/> : <p>Diagram will appear here.</p>}
-                        </div>
-                    )}
-                </ScrollArea>
-            </ResizablePanel>
-        </ResizablePanelGroup>
+                            <ScrollArea className="flex-1">
+                                <div className="flex gap-4 p-4 items-start">
+                                    {visualColumns.map((col) => (
+                                        <div key={col.id} className="w-64 bg-muted/50 p-3 rounded-lg space-y-2 flex-shrink-0">
+                                            <Button size="sm" variant="destructive" onClick={() => removeColumn(col.id)} className="w-full mb-2">
+                                                <Trash2 className="mr-2"/>Remove Chain
+                                            </Button>
+                                            <Accordion type="multiple" className="w-full space-y-2">
+                                                {col.nodes.map((node, nodeIndex) => (
+                                                    <React.Fragment key={node.id}>
+                                                        <AccordionItem value={`node-${node.id}`}>
+                                                            <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
+                                                              Node: {node.name || 'Untitled'}
+                                                            </AccordionTrigger>
+                                                            <AccordionContent className="p-2 pt-0">
+                                                                <div className="bg-background p-2 rounded border space-y-1">
+                                                                    <Label className="text-xs">Node Text & Shape</Label>
+                                                                    <Input placeholder="Text" value={node.name} onChange={e => handleNodeChange(col.id, nodeIndex, 'name', e.target.value)} />
+                                                                    <Select value={node.shape} onValueChange={v => handleNodeChange(col.id, nodeIndex, 'shape', v)}>
+                                                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                                                        <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                                                                    </Select>
+                                                                </div>
+                                                            </AccordionContent>
+                                                        </AccordionItem>
+                                                        
+                                                        {nodeIndex < col.links.length && (
+                                                            <LinkEditorRow colId={col.id} linkIndex={nodeIndex} link={col.links[nodeIndex]} />
+                                                        )}
+                                                    </React.Fragment>
+                                                ))}
+                                            </Accordion>
+                                            <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full mt-2">
+                                                <Plus className="mr-2"/>Add Node
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                        </TabsContent>
+                    </Tabs>
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={panelDirection === 'vertical' ? 50 : 40} minSize={30}>
+                    <ScrollArea className="h-full w-full p-4" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                        {renderError ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
+                                <AlertCircle className="w-10 h-10 mb-2"/>
+                                <p className="font-semibold text-center">Failed to render diagram.</p>
+                                <pre className="mt-2 text-xs bg-black/20 p-2 rounded-md whitespace-pre-wrap max-w-full text-left">{renderError}</pre>
+                            </div>
+                        ) : svg ? (
+                            <div dangerouslySetInnerHTML={{ __html: svg }} className="w-full h-full flex items-center justify-center [&>svg]:max-w-none [&>svg]:max-h-none"/>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                {code.trim() ? <Loader2 className="h-8 w-8 animate-spin"/> : <p>Diagram will appear here.</p>}
+                            </div>
+                        )}
+                    </ScrollArea>
+                </ResizablePanel>
+            </ResizablePanelGroup>
+        </div>
     </div>
   );
 }
