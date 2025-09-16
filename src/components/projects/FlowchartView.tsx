@@ -304,6 +304,7 @@ export function FlowchartView() {
   const [mermaidTheme, setMermaidTheme] = useState<MermaidTheme>('default');
   const [editorMode, setEditorMode] = useState<EditorMode>('code');
   const [smartMode, setSmartMode] = useLocalStorage('flowchart:smartMode', true); // Poka-yoke mode
+  const [selectedDiagram, setSelectedDiagram] = useState<string>("Flowchart");
 
   const [nodes, setNodes] = useState<FlowNode[]>(() => [
     {id: 'A', text: 'Start', type: 'stadium'},
@@ -687,8 +688,8 @@ export function FlowchartView() {
       <Card>
           <CardHeader className="flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <CardTitle>Diagram from Text</CardTitle>
-                <CardDescription>Select a template or use the visual/code editor to build your diagram.</CardDescription>
+                <CardTitle>Diagram: {selectedDiagram}</CardTitle>
+                <CardDescription>Select a template or use the editor to build your diagram.</CardDescription>
               </div>
               <div className="flex items-center gap-2">
                  <DropdownMenu>
@@ -704,7 +705,7 @@ export function FlowchartView() {
                                 <DropdownMenuPortal>
                                     <DropdownMenuSubContent>
                                         {Object.values(category.templates).map(template => (
-                                            <DropdownMenuItem key={template.label} onClick={() => { handleCodeChange(template.code); setEditorMode('code')}}>
+                                            <DropdownMenuItem key={template.label} onClick={() => { handleCodeChange(template.code); setSelectedDiagram(template.label); setEditorMode('code'); }}>
                                                 {template.label}
                                             </DropdownMenuItem>
                                         ))}
