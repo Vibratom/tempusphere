@@ -1,11 +1,10 @@
-
 'use client';
 
-import { DiagramEditor } from '@/components/projects/DiagramEditor';
+import { SpreadsheetView } from '@/components/projects/SpreadsheetView';
 import { Suspense } from 'react';
 
 function SpreadsheetPageContent() {
-  return <DiagramEditor />;
+  return <SpreadsheetView />;
 }
 
 export default function SpreadsheetPage() {
