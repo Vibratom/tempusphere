@@ -157,7 +157,7 @@ export function DiagramEditor() {
   const generateMermaidCode = useCallback(() => {
     if (editorMode !== 'visual') return;
 
-    let newCode = `${diagramType} TD\n`;
+    let newCode = `flowchart TD\n`;
     const definedNodes = new Set<string>();
 
     visualColumns.forEach(col => {
@@ -182,7 +182,7 @@ export function DiagramEditor() {
     // Add cross-column links here in the future
 
     setCode(newCode);
-  }, [editorMode, visualColumns, diagramType]);
+  }, [editorMode, visualColumns]);
 
   useEffect(() => {
     generateMermaidCode();
@@ -318,15 +318,14 @@ export function DiagramEditor() {
         <Card>
             <CardHeader className="flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex-1">
-                <CardTitle>Diagram Editor</CardTitle>
+                <CardTitle>Chart Editor</CardTitle>
                 <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
               </div>
               <div className="w-full md:w-48">
-                  <Select value={diagramType} onValueChange={v => setCode(`${v} TD\n`)}>
+                  <Select value="flowchart" onValueChange={v => setCode(`${v} TD\n`)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                           <SelectItem value="flowchart">Flowchart / Graph</SelectItem>
-                          <SelectItem value="stateDiagram">State Diagram</SelectItem>
                       </SelectContent>
                   </Select>
               </div>
