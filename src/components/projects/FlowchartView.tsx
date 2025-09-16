@@ -287,6 +287,32 @@ interface MindMapNode {
   indent: number;
 }
 
+const LinkEditorRow = React.memo(({ link, nodeOptions, onUpdate, onRemove, smartMode }: { link: FlowLink, nodeOptions: {value: string, label: string}[], onUpdate: (id: string, part: Partial<FlowLink>) => void, onRemove: (id: string) => void, smartMode: boolean}) => {
+    return (
+        <div className="grid grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center">
+            {smartMode ? (
+            <>
+                <Select value={link.source} onValueChange={(v) => onUpdate(link.id, {source: v})}>
+                    <SelectTrigger><SelectValue placeholder="From"/></SelectTrigger>
+                    <SelectContent>{nodeOptions.map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
+                </Select>
+                <Select value={link.target} onValueChange={(v) => onUpdate(link.id, {target: v})}>
+                    <SelectTrigger><SelectValue placeholder="To"/></SelectTrigger>
+                    <SelectContent>{nodeOptions.filter(n => n.value !== link.source).map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
+                </Select>
+            </>
+            ) : (
+            <>
+                <Input value={link.source} onChange={(e) => onUpdate(link.id, {source: e.target.value})} placeholder="From ID" className="font-mono"/>
+                <Input value={link.target} onChange={(e) => onUpdate(link.id, {target: e.target.value})} placeholder="To ID" className="font-mono"/>
+            </>
+            )}
+            <Input value={link.label} onChange={(e) => onUpdate(link.id, {label: e.target.value})} placeholder="Label (optional)"/>
+            <Button size="icon" variant="ghost" onClick={() => onRemove(link.id)}><Trash2/></Button>
+        </div>
+    );
+});
+LinkEditorRow.displayName = 'LinkEditorRow';
 
 export function FlowchartView() {
   const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v6', diagramTemplates.flowAndProcess.templates.flowchart.code);
@@ -495,22 +521,24 @@ export function FlowchartView() {
     const addLink = () => {
         setFlowLinks(prev => [...prev, {id: `l${Date.now()}`, source: '', target: '', label: ''}]);
     }
-    const updateLink = (id: string, part: Partial<FlowLink>) => {
+
+    const updateLink = useCallback((id: string, part: Partial<FlowLink>) => {
         setFlowLinks(prev => prev.map(l => {
-        if (l.id === id) {
-            const newLink = {...l, ...part};
-            if (smartMode && newLink.source && newLink.source === newLink.target) {
-            toast({ title: "Invalid Link", description: "A node cannot link to itself in Smart Mode.", variant: "destructive"});
-            return l; // revert
+            if (l.id === id) {
+                const newLink = {...l, ...part};
+                if (smartMode && newLink.source && newLink.source === newLink.target) {
+                    toast({ title: "Invalid Link", description: "A node cannot link to itself in Smart Mode.", variant: "destructive"});
+                    return l; // revert
+                }
+                return newLink;
             }
-            return newLink;
-        }
-        return l;
+            return l;
         }));
-    }
-    const removeLink = (id: string) => {
+    }, [smartMode, toast]);
+
+    const removeLink = useCallback((id: string) => {
         setFlowLinks(prev => prev.filter(l => l.id !== id));
-    }
+    }, []);
 
     useEffect(() => {
         generateCodeFromVisual();
@@ -583,27 +611,14 @@ export function FlowchartView() {
               <ScrollArea className="h-48">
                 <div className="space-y-2 pr-4">
                   {flowLinks.map(link => (
-                    <div key={link.id} className="grid grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center">
-                      {smartMode ? (
-                        <>
-                          <Select value={link.source} onValueChange={(v) => updateLink(link.id, {source: v})}>
-                              <SelectTrigger><SelectValue placeholder="From"/></SelectTrigger>
-                              <SelectContent>{nodeOptions.map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
-                          </Select>
-                          <Select value={link.target} onValueChange={(v) => updateLink(link.id, {target: v})}>
-                              <SelectTrigger><SelectValue placeholder="To"/></SelectTrigger>
-                              <SelectContent>{nodeOptions.filter(n => n.value !== link.source).map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
-                          </Select>
-                        </>
-                      ) : (
-                        <>
-                            <Input value={link.source} onChange={(e) => updateLink(link.id, {source: e.target.value})} placeholder="From ID" className="font-mono"/>
-                            <Input value={link.target} onChange={(e) => updateLink(link.id, {target: e.target.value})} placeholder="To ID" className="font-mono"/>
-                        </>
-                      )}
-                      <Input value={link.label} onChange={(e) => updateLink(link.id, {label: e.target.value})} placeholder="Label (optional)"/>
-                      <Button size="icon" variant="ghost" onClick={() => removeLink(link.id)}><Trash2/></Button>
-                    </div>
+                    <LinkEditorRow 
+                        key={link.id}
+                        link={link}
+                        nodeOptions={nodeOptions}
+                        onUpdate={updateLink}
+                        onRemove={removeLink}
+                        smartMode={smartMode}
+                    />
                   ))}
                 </div>
               </ScrollArea>
