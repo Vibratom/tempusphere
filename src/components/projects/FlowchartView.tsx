@@ -289,6 +289,11 @@ interface MindMapNode {
 
 const LinkEditorRow = ({ initialLink, nodeOptions, onUpdate, onRemove, smartMode }: { initialLink: FlowLink, nodeOptions: {value: string, label: string}[], onUpdate: (id: string, part: Partial<FlowLink>) => void, onRemove: (id: string) => void, smartMode: boolean}) => {
     const [link, setLink] = useState(initialLink);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        setLink(initialLink);
+    }, [initialLink]);
 
     const handleUpdate = (part: Partial<FlowLink>) => {
         const newLink = {...link, ...part};
@@ -488,7 +493,8 @@ export function FlowchartView() {
   const generateCodeFromVisual = () => {
     let newCode = '';
     if (diagramType === 'flowchart' || diagramType === 'stateDiagram') {
-        newCode = `${diagramType} TD\n`;
+        const diagramKeyword = diagramType === 'stateDiagram' ? 'stateDiagram-v2' : 'flowchart';
+        newCode = `${diagramKeyword} TD\n`;
         flowNodes.forEach(node => {
             const text = node.text || ' ';
             if(node.type === 'node') newCode += `    ${node.id}["${text}"]\n`;
@@ -498,7 +504,7 @@ export function FlowchartView() {
         });
         flowLinks.forEach(link => {
             if (link.source && link.target) {
-                if (link.label) newCode += `    ${link.source} -- "${link.label}" --> ${link.target}\n`;
+                if (link.label) newCode += `    ${link.source} --> ${link.label}: ${link.target}\n`;
                 else newCode += `    ${link.source} --> ${link.target}\n`;
             }
         });
