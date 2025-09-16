@@ -18,19 +18,16 @@ const diagramTemplates = {
     label: "Flow & Process",
     templates: {
         flowchart: { label: "Flowchart", code: `flowchart TD\n    A(Start) --> B{Is it?};\n    B -- Yes --> C(OK);\n    C --> D(Rethink);\n    D --> A;\n    B -- No --> E(End);`},
-        swimlane: { label: "Swimlane Chart", code: `flowchart TD\n    subgraph CUSTOMER\n        A[Place a Product Order] --> B\n        H[Finish]\n    end\n    subgraph SALES\n        B(Confirm if order is received) --> C\n        F{Cancel the order}\n    end\n    subgraph STOCKS\n        C(Check the inventory) --> D{Is the product in stock?}\n        D -- NO --> F\n        I(Deliver the order) --> H\n    end\n    subgraph FINANCE\n        D -- YES --> E(Check credit card)\n        E --> G{Is the card valid?}\n        G -- YES --> J(Processing the payment)\n        G -- NO --> F\n        J --> I\n    end`},
-        workflow: { label: "Workflow Diagram", code: `flowchart TD\n    A((Start)) --> B[Draft Document];\n    B --> C{Review Required?};\n    C -- Yes --> D[Submit for Review];\n    D --> E{Approved?};\n    E -- No --> B;\n    C -- No --> F[Publish Document];\n    E -- Yes --> F;\n    F --> G((End));`},
-        bpmn: { label: "BPMN", code: `bpmn\n    title Simple BPMN Process\n    task: Task 1\n    task: Task 2\n    exclusiveGateway: Is it valid?\n    task: Task 2a\n    task: Task 2b\n    endEvent: End\n\n    startEvent -> task: Task 1\n    task: Task 1 -> exclusiveGateway\n    exclusiveGateway -> task: Task 2a\n    exclusiveGateway -> task: Task 2b\n    task: Task 2a -> endEvent\n    task: Task 2b -> endEvent`},
         state: { label: "State Diagram", code: `stateDiagram-v2\n    [*] --> Still\n    Still --> [*]\n\n    Still --> Moving\n    Moving --> Still\n    Moving --> Crash\n    Crash --> [*]`},
-        decisionTree: { label: "Decision Tree", code: `flowchart TD\n    A{Should I deploy on Friday?}\n    A -- Yes --> B{Is there a critical bug fix?};\n    A -- No --> C[Enjoy the weekend!];\n    \n    B -- Yes --> D[Deploy with monitoring];\n    B -- No --> E{Can it wait until Monday?};\n    \n    E -- Yes --> F[Schedule for Monday morning];\n    E -- No --> G[Deploy... but be ready for a long night];`},
+        userJourney: { label: "User Journey", code: `journey\n    title My Work Day\n    section Go to work\n      Make tea: 5: Me\n      Go to work: 3: Me\n      Sit down: 5: Me\n    section Work\n      Plan day: 5: Me\n      Review PRs: 3: Me, Friend\n      Write code: 5: Me`},
     },
   },
   sequenceAndInteraction: {
       label: "Sequence & Interaction",
       templates: {
           sequence: { label: "Sequence Diagram", code: `sequenceDiagram\n    participant Alice\n    participant Bob\n    Alice->>John: Hello John, how are you?\n    loop Healthcheck\n        John->>John: Fight against hypochondria\n    end\n    Note right of John: Rational thoughts <br/>prevail...\n    John-->>Alice: Great!\n    John->>Bob: How about you?\n    Bob-->>John: Jolly good!`},
-          uiFlow: { label: "UI Flow", code: `flowchart LR\n    subgraph "User Login Flow"\n        A[Start: User visits Login Page] --> B{Enters credentials};\n        B --> C[Clicks 'Log In' button];\n        C --> D{API: Authenticate user};\n        D -- Success --> E[Redirect to Dashboard];\n        D -- Failure --> F[Show 'Invalid credentials' error];\n        F --> B;\n        E --> G[End: User is logged in];\n    end`},
-          interactive: { label: "Interactive Diagram", code: `flowchart TD\n    A[Start] --> B[Go to Google];\n    B --> C[End];\n    \n    click B "https://www.google.com" "This is a tooltip for the Google link"`},
+          zenuml: { label: "ZenUML", code: `zenuml\n    Alice->Bob: Hello Bob\n    Bob->>Alice: Hi Alice`},
+          packet: { label: "Packet Diagram", code: `packet-diagram\n    "Source Port"\n    "Destination Port"\n    "Sequence Number"\n    "Ack Number"\n    "Data Offset"\n    "Reserved"\n    "Flags"\n    "Window Size"\n    "Checksum"\n    "Urgent Pointer"` },
       }
   },
   dataAndStructure: {
@@ -38,26 +35,55 @@ const diagramTemplates = {
       templates: {
           class: { label: "Class Diagram", code: `classDiagram\n    class Animal {\n      +String name\n      +int age\n      +void makeSound()\n    }\n    class Dog {\n      +String breed\n      +void bark()\n    }\n    class Cat {\n      +String color\n      +void meow()\n    }\n    Animal <|-- Dog\n    Animal <|-- Cat`},
           er: { label: "ER Diagram", code: `erDiagram\n    CUSTOMER ||--o{ ORDER : places\n    ORDER ||--|{ LINE-ITEM : contains\n    CUSTOMER }|..|{ DELIVERY-ADDRESS : uses`},
-          dataFlow: { label: "Data Flow", code: `graph TD\n    A[External Entity] -- Data --> B{Process Data};\n    B -- Stored Data --> C[(Data Store)];`},
-          orgChart: { label: "Org Chart", code: `flowchart TD\n    subgraph "Executive Team"\n        A(CEO)\n    end\n    subgraph "Product Division"\n        B(Head of Product)\n        C(Product Manager)\n        D(UX/UI Designer)\n    end\n    subgraph "Engineering Division"\n        E(CTO)\n        F(Engineering Lead)\n        G[Developer 1]\n        H[Developer 2]\n    end\n    A --> B;\n    A --> E;\n    B --> C;\n    B --> D;\n    E --> F;\n    F --> G;\n    F --> H;`},
+          requirement: { label: "Requirement Diagram", code: `requirementDiagram\n\n    requirement test_req {\n    id: 1\n    text: the test text.\n    risk: high\n    verifymethod: test\n    }\n\n    element test_entity {\n    type: external_entity\n    }\n\n    test_entity - satisfies -> test_req`},
+          sankey: { label: "Sankey Diagram", code: `sankey-beta\n    source,target,value\n    Agricultural 'Waste',Bio-conversion,124.729\n    Bio-conversion,Liquid,0.597\n    Bio-conversion,Losses,26.862`},
+          treemap: { label: "Treemap", code: `treemap-beta\n    root(Root)\n      A\n        B\n          C(30)\n          D(50)\n        E(100)`},
+          
       }
+  },
+  architecture: {
+    label: "Architecture",
+    templates: {
+        block: { label: "Block Diagram", code: `block-beta\n    block:a\n        A\n    end\n    block:b\n        B\n    end\n    a -- "label" --> b`},
+        c4: { label: "C4 Diagram", code: `C4Context\n  title System Context diagram for Internet Banking System\n  Enterprise_Boundary(b0, "BankBoundary") {\n    Person(customer, "Personal Banking Customer", "A customer of the bank, with personal bank accounts.")\n    System(bankingSystem, "Internet Banking System", "Allows customers to view information about their bank accounts, and make payments.")\n\n    System_Ext(emailSystem, "E-mail system", "The internal Microsoft Exchange e-mail system.")\n    System_Ext(mainframe, "Mainframe Banking System", "Stores all of the core banking information about customers, accounts, transactions, etc.")\n  }\n\n  Rel(customer, bankingSystem, "Uses")\n  Rel(bankingSystem, emailSystem, "Sends e-mails", "SMTP")\n  Rel_Back(customer, emailSystem, "Sends e-mails to")\n  Rel(bankingSystem, mainframe, "Uses")`},
+    }
   },
   planning: {
       label: "Planning",
       templates: {
           gantt: { label: "Gantt Chart", code: `gantt\n    title A Gantt Diagram\n    dateFormat  YYYY-MM-DD\n    section Section\n    A task           :a1, 2014-01-01, 30d\n    Another task     :after a1  , 20d\n    section Another\n    Task in sec      :2014-01-12  , 12d\n    another task      : 24d`},
           timeline: { label: "Timeline", code: `timeline\n    title Project Development Timeline\n    2024-07-01 : Kick-off & Brainstorming\n    2024-07-15 : UI/UX Design Phase\n             : Initial Mockups\n             : User Feedback Session\n    2024-08-01 : Development Sprint 1\n             : Backend Setup\n             : Frontend Components\n    2024-08-15 : Launch Beta Version`},
+          mindmap: { label: "Mind Map", code: `mindmap\n  root((Mind Map))\n    Easy to Use\n      Just use indentation\n      - Deeper\n        - Even Deeper\n    Powerful\n      Supports Markdown\n      **Bold**\n      *Italic*\n      \`Code\``},
+          kanban: { label: "Kanban Board", code: `kanban-beta\n    %% font-size: 14\n    %% lane-width: 200\n    \n    lanes: To Do, In Progress, Done\n    \n    tasks:\n    task 1, 1, 2d\n    task 2, 1, 3d\n    task 3, 2, 2d\n    task 4, 2, 4d\n    task 5, 2, 5d`},
       }
   },
   charts: {
       label: "Charts",
       templates: {
           pie: { label: "Pie Chart", code: `pie\n    title Key-Value Distribution\n    "Databases" : 80\n    "Messaging" : 20`},
+          quadrant: { label: "Quadrant Chart", code: `quadrantChart\n    title Reach and engagement of campaigns\n    x-axis Low Reach --> High Reach\n    y-axis Low Engagement --> High Engagement\n    quadrant-1 We should expand\n    quadrant-2 Need to promote\n    quadrant-3 Re-evaluate\n    quadrant-4 May be improved\n    "Campaign A": [0.3, 0.6]\n    "Campaign B": [0.45, 0.23]\n    "Campaign C": [0.57, 0.69]\n    "Campaign D": [0.78, 0.34]\n    "Campaign E": [0.40, 0.34]\n    "Campaign F": [0.35, 0.78]`},
+          radar: { label: "Radar Chart", code: `radar-beta\n    ---
+title: Quality attributes of a good report
+---
+    radar-chart
+        "Excellent"
+        "Good"
+        "Passable"
+        "Bad"
+        "Awful"
+
+        "Clarity", 5, 4, 3, 2, 1
+        "Accuracy", 1, 2, 3, 4, 5
+        "Consistency", 5, 4, 3, 2, 1
+        "Completeness", 1, 2, 3, 4, 5
+        "Conciseness", 5, 4, 3, 2, 1`},
+          xy: { label: "XY Chart", code: `xychart-beta\n    title "Sales History"\n    x-axis [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]\n    y-axis "Sales" [10, 20, 15, 25, 30, 28, 35, 40, 38, 45, 50, 48]\n    line "sales-line" [10, 20, 15, 25, 30, 28, 35, 40, 38, 45, 50, 48]`},
       }
   },
-  styling: {
-      label: "Styling",
+  misc: {
+      label: "Misc",
       templates: {
+          git: { label: "Git Graph", code: `gitGraph\n   commit\n   commit\n   branch develop\n   commit\n   commit\n   commit\n   checkout main\n   commit\n   commit\n   merge develop\n   commit\n   commit`},
           stylingDemo: { label: "Styling Demo", code: `flowchart TD\n    A[Start] --> B(Styled Node);\n    B --> C{Decision};\n    \n    style A fill:#f9f,stroke:#333,stroke-width:4px\n    style B fill:#ccf,stroke:#333,stroke-width:2px,stroke-dasharray: 5, 5\n    \n    linkStyle 0 stroke-width:2px,fill:none,stroke:green;\n    linkStyle 1 stroke-width:4px,fill:none,stroke:orange;`},
       }
   }
