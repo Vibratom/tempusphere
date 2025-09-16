@@ -1,10 +1,10 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { ScrollArea } from '../ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -14,6 +14,7 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
 
 // --- Types and Constants ---
 
@@ -81,12 +82,17 @@ const getShapeSyntax = (shape: VisualNode['shape']) => {
   }
 };
 
-const getLinkSyntax = (type: VisualLink['type']) => {
-  switch (type) {
-    case 'line': return '---';
-    case 'dotted': return '-.->';
-    default: return '-->';
-  }
+const getLinkSyntax = (type: VisualLink['type'], text: string) => {
+    const linkType = {
+        'line': `---`,
+        'dotted': `-.->`,
+        'arrow': `-->`,
+    }[type];
+    
+    if (text.trim()) {
+        return `-- ${text.trim()} --${linkType}`;
+    }
+    return linkType;
 };
 
 const createNewNode = (id: string): VisualNode => ({ id, name: id, shape: 'rect' });
@@ -103,8 +109,8 @@ const createNewColumn = (): VisualColumn => {
 // --- Component ---
 
 export function FlowchartView() {
-  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v22', defaultCode);
-  const [visualColumns, setVisualColumns] = useLocalStorage<VisualColumn[]>('flowchart:visual-cols-v1', [createNewColumn()]);
+  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v23', defaultCode);
+  const [visualColumns, setVisualColumns] = useLocalStorage<VisualColumn[]>('flowchart:visual-cols-v2', [createNewColumn()]);
   
   const [code, setCode] = useState(savedCode);
   const [svg, setSvg] = useState('');
@@ -131,7 +137,7 @@ export function FlowchartView() {
       col.nodes.forEach((node, nodeIndex) => {
         if (node.name.trim() && !definedNodes.has(node.id)) {
           const [start, end] = getShapeSyntax(node.shape);
-          newCode += `    ${node.id}${start}${node.name}${end}\n`;
+          newCode += `    ${node.id}${start}"${node.name}"${end}\n`;
           definedNodes.add(node.id);
         }
         
@@ -139,9 +145,8 @@ export function FlowchartView() {
           const link = col.links[nodeIndex];
           const nextNode = col.nodes[nodeIndex + 1];
           if (nextNode) {
-            const linkSyntax = getLinkSyntax(link.type);
-            const linkText = link.text.trim() ? `-- ${link.text} --` : '';
-            newCode += `    ${node.id} ${linkText}${linkSyntax} ${nextNode.id}\n`;
+            const linkSyntax = getLinkSyntax(link.type, link.text);
+            newCode += `    ${node.id} ${linkSyntax} ${nextNode.id}\n`;
           }
         }
       });
@@ -167,9 +172,10 @@ export function FlowchartView() {
     });
 
     const detectType = (c: string): DiagramType => {
-      if (c.trim().startsWith('flowchart') || c.trim().startsWith('graph')) return 'flowchart';
-      if (c.trim().startsWith('stateDiagram')) return 'stateDiagram';
-      if (c.trim().startsWith('mindmap')) return 'mindmap';
+      const trimmedCode = c.trim().toLowerCase();
+      if (trimmedCode.startsWith('flowchart') || trimmedCode.startsWith('graph')) return 'flowchart';
+      if (trimmedCode.startsWith('statediagram') || trimmedCode.startsWith('state-diagram')) return 'stateDiagram';
+      if (trimmedCode.startsWith('mindmap')) return 'mindmap';
       return 'unknown';
     };
     setDiagramType(detectType(code));
@@ -231,17 +237,55 @@ export function FlowchartView() {
       return col;
     }));
   };
+  
+  const LinkEditorRow = ({ colId, linkIndex, link }: { colId: string, linkIndex: number, link: VisualLink }) => {
+    const [currentLink, setCurrentLink] = useState(link);
 
-  const handleLinkChange = (colId: string, linkIndex: number, field: 'type' | 'text', value: string) => {
-    setVisualColumns(prev => prev.map(col => {
-      if (col.id === colId) {
-        const newLinks = [...col.links];
-        newLinks[linkIndex] = { ...newLinks[linkIndex], [field]: value };
-        return { ...col, links: newLinks };
-      }
-      return col;
-    }));
-  };
+    useEffect(() => {
+        setCurrentLink(link);
+    }, [link]);
+
+    const handleLocalChange = (field: 'type' | 'text', value: string) => {
+        const updatedLink = { ...currentLink, [field]: value };
+        setCurrentLink(updatedLink);
+    };
+
+    const commitChanges = (field: 'type' | 'text', value: string) => {
+        setVisualColumns(prev => prev.map(col => {
+            if (col.id === colId) {
+                const newLinks = [...col.links];
+                newLinks[linkIndex] = { ...newLinks[linkIndex], [field]: value };
+                return { ...col, links: newLinks };
+            }
+            return col;
+        }));
+    };
+
+    return (
+        <div className="bg-background p-2 rounded border space-y-1">
+            <Label className="text-xs">Link</Label>
+            <div className="flex gap-1">
+                <Select
+                    value={currentLink.type}
+                    onValueChange={v => {
+                        handleLocalChange('type', v);
+                        commitChanges('type', v);
+                    }}
+                >
+                    <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
+                    <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                </Select>
+                <Input
+                    placeholder="Text"
+                    value={currentLink.text}
+                    onChange={e => handleLocalChange('text', e.target.value)}
+                    onBlur={e => commitChanges('text', e.target.value)}
+                />
+            </div>
+        </div>
+    );
+};
+
 
   if (!isClient) return <div className="w-full h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
@@ -293,16 +337,7 @@ export function FlowchartView() {
                                                      </Select>
                                                 </div>
                                                 {nodeIndex < col.links.length && (
-                                                    <div className="bg-background p-2 rounded border space-y-1">
-                                                        <Label className="text-xs">Link</Label>
-                                                        <div className="flex gap-1">
-                                                            <Select value={col.links[nodeIndex].type} onValueChange={v => handleLinkChange(col.id, nodeIndex, 'type', v)}>
-                                                                <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
-                                                                <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                                                            </Select>
-                                                            <Input placeholder="Text" value={col.links[nodeIndex].text} onChange={e => handleLinkChange(col.id, nodeIndex, 'text', e.target.value)} />
-                                                        </div>
-                                                    </div>
+                                                    <LinkEditorRow colId={col.id} linkIndex={nodeIndex} link={col.links[nodeIndex]} />
                                                 )}
                                             </React.Fragment>
                                         ))}
