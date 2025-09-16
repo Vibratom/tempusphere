@@ -27,7 +27,6 @@ import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 // --- Types and Constants ---
 
 type EditorMode = 'visual' | 'code';
-type DiagramType = 'flowchart';
 
 interface VisualNode {
   id: string;
@@ -114,7 +113,7 @@ const createNewColumn = (): VisualColumn => {
     };
 };
 
-const NodeEditorRow = ({ colId, nodeIndex, node, handleNodeChange }: { colId: string, nodeIndex: number, node: VisualNode, handleNodeChange: (colId: string, nodeIndex: number, field: keyof VisualNode, value: string) => void }) => {
+const NodeEditorRow = ({ colId, nodeIndex, node, link, handleNodeChange, onLinkChange }: { colId: string, nodeIndex: number, node: VisualNode, link?: VisualLink, handleNodeChange: (colId: string, nodeIndex: number, field: keyof VisualNode, value: string) => void, onLinkChange: (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => void }) => {
     const [currentNode, setCurrentNode] = useState(node);
 
     useEffect(() => {
@@ -167,6 +166,7 @@ const NodeEditorRow = ({ colId, nodeIndex, node, handleNodeChange }: { colId: st
                             <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
+                    {link && <LinkEditorRow colId={colId} linkIndex={nodeIndex} link={link} onLinkChange={onLinkChange} />}
                 </div>
             </AccordionContent>
         </AccordionItem>
@@ -190,34 +190,27 @@ const LinkEditorRow = ({ colId, linkIndex, link, onLinkChange }: { colId: string
     };
 
     return (
-        <AccordionItem value={`link-${link.id}`}>
-          <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background/50 rounded-md">
-            Link: {currentLink.text || 'Untitled'}
-          </AccordionTrigger>
-          <AccordionContent className="p-2 pt-0">
-            <div className="bg-background p-2 rounded border space-y-1">
-                <Label className="text-xs">Link Style & Text</Label>
-                <div className="flex gap-1">
-                    <Select
-                        value={currentLink.type}
-                        onValueChange={v => {
-                            handleLocalChange('type', v);
-                            onLinkChange(colId, linkIndex, 'type', v);
-                        }}
-                    >
-                        <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
-                        <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Input
-                        placeholder="Text on link"
-                        value={currentLink.text}
-                        onChange={e => handleLocalChange('text', e.target.value)}
-                        onBlur={commitChanges}
-                    />
-                </div>
+        <div className="pt-2 mt-2 border-t">
+            <Label className="text-xs">Outgoing Link</Label>
+            <div className="flex gap-1">
+                <Select
+                    value={currentLink.type}
+                    onValueChange={v => {
+                        handleLocalChange('type', v);
+                        onLinkChange(colId, linkIndex, 'type', v);
+                    }}
+                >
+                    <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
+                    <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                </Select>
+                <Input
+                    placeholder="Text on link"
+                    value={currentLink.text}
+                    onChange={e => handleLocalChange('text', e.target.value)}
+                    onBlur={commitChanges}
+                />
             </div>
-          </AccordionContent>
-        </AccordionItem>
+        </div>
     );
 };
 
@@ -438,22 +431,15 @@ export function DiagramEditor() {
                                             </Button>
                                             <Accordion type="multiple" className="w-full space-y-2">
                                                 {col.nodes.map((node, nodeIndex) => (
-                                                    <React.Fragment key={`node-frag-${node.id}`}>
-                                                      <NodeEditorRow
-                                                          colId={col.id}
-                                                          nodeIndex={nodeIndex}
-                                                          node={node}
-                                                          handleNodeChange={handleNodeChange}
-                                                      />
-                                                      {nodeIndex < col.links.length && (
-                                                          <LinkEditorRow 
-                                                              colId={col.id} 
-                                                              linkIndex={nodeIndex} 
-                                                              link={col.links[nodeIndex]}
-                                                              onLinkChange={handleLinkChange}
-                                                          />
-                                                      )}
-                                                    </React.Fragment>
+                                                    <NodeEditorRow
+                                                        key={`node-frag-${node.id}`}
+                                                        colId={col.id}
+                                                        nodeIndex={nodeIndex}
+                                                        node={node}
+                                                        link={nodeIndex < col.links.length ? col.links[nodeIndex] : undefined}
+                                                        handleNodeChange={handleNodeChange}
+                                                        onLinkChange={handleLinkChange}
+                                                    />
                                                 ))}
                                             </Accordion>
                                             <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full mt-2">
