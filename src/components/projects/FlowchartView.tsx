@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -184,24 +183,78 @@ interactive: `flowchart TD
     F --> G((End));
 `,
   dataFlow: `graph TD
-    A((User)) -->|Submits Form| B(Process Login);
-    B --> C[Read User Data];
-    C --> D[(User Database)];
-    B -->|Generates Token| A;
+    A((User)) -- Submits Form --> B(Process Login);
+    B -- Reads --> D[(User Database)];
+    B -- Generates Token --> A;
 `,
-  bpmn: `flowchart TD
-    subgraph "Hiring Process"
-        A(bpmn:startEvent) --> B(bpmn:userTask: Review Application);
-        B --> C(bpmn:exclusiveGateway: Qualifies?);
-        C -- Yes --> D(bpmn:userTask: Schedule Interview);
-        C -- No --> E(bpmn:userTask: Send Rejection Email);
-        D --> F(bpmn:userTask: Conduct Interview);
-        F --> G(bpmn:exclusiveGateway: Offer?);
-        G -- Yes --> H(bpmn:userTask: Send Offer);
-        G -- No --> E;
-        H --> I(bpmn:endEvent);
-        E --> I;
-    end
+  bpmn: `
+bpmn
+  participant Customer
+  participant Pizza shop clerk
+  participant Pizza chef
+  participant Pizza delivery guy
+
+  Customer->>Pizza shop clerk: Pizza order
+  Pizza shop clerk->>Pizza chef: Pizza
+  Pizza delivery guy->>Customer: Pizza received
+  Pizza delivery guy->>Pizza shop clerk: Money
+  Pizza shop clerk->>Pizza delivery guy: Receipt
+
+  box Customer
+    startEvent: Hungry
+    task: Select pizza
+    task: Order pizza
+    eventBasedGateway
+    intermediateCatchEvent: 60 mins
+    task: Ask for pizza
+    intermediateCatchEvent: Pizza received
+    task: Pay for pizza
+    task: Eat pizza
+    endEvent: Hunger satisfied
+  end
+
+  box Pizza shop clerk
+    intermediateCatchEvent: Order received
+    parallelGateway
+    intermediateCatchEvent: Where is my pizza?
+    task: Calm customer
+  end
+
+  box Pizza chef
+    task: Bake pizza
+  end
+
+  box Pizza delivery guy
+    task: Deliver pizza
+    task: Receive payment
+    endEvent: Order completed
+  end
+
+  startEvent -> Select pizza
+  Select pizza -> Order pizza
+  Order pizza -> eventBasedGateway
+  eventBasedGateway -> intermediateCatchEvent
+  intermediateCatchEvent -> Ask for pizza
+  eventBasedGateway -> intermediateCatchEvent2
+  intermediateCatchEvent2 -> Pay for pizza
+  Pay for pizza -> Eat pizza
+  Eat pizza -> endEvent
+
+  Order pizza -- Pizza order --> intermediateCatchEvent3
+  intermediateCatchEvent3 -> parallelGateway
+  parallelGateway -> Bake pizza
+  parallelGateway -> intermediateCatchEvent4
+
+  Ask for pizza -- Where is my pizza? --> intermediateCatchEvent4
+  intermediateCatchEvent4 -> Calm customer
+
+  Bake pizza -- Pizza --> Deliver pizza
+  Deliver pizza -> Receive payment
+  Receive payment -> endEvent2
+
+  Deliver pizza -- Pizza received --> intermediateCatchEvent2
+  Receive payment -- Money --> Pay for pizza
+  Pay for pizza -- Receipt --> Receive payment
 `,
 };
 
