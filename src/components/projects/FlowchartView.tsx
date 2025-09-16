@@ -189,12 +189,17 @@ interactive: `flowchart TD
 `,
   bpmn: `
 bpmn
-    title Simple BPMN
-    startEvent -> task: Log In
-    task -> gateway: OR
-    gateway -> task: Option 1
-    gateway -> task: Option 2
-    task -> endEvent
+  title Simple BPMN Diagram
+  start event: Start
+  task: Task 1
+  gateway: Is it good?
+  task: Task 2
+  end event: End
+  
+  start event -> task
+  task -> gateway
+  gateway -> task
+  gateway -> end event
 `,
 };
 
