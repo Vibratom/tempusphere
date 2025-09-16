@@ -1,21 +1,20 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Textarea } from '../ui/textarea';
-import { ScrollArea } from '../ui/scroll-area';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { v4 as uuidv4 } from 'uuid';
+import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 
 const defaultCode = `flowchart TD
@@ -26,120 +25,16 @@ const defaultCode = `flowchart TD
     B -- No --> E(End);`;
 
 type EditorMode = 'visual' | 'code';
-type NodeShape = 'rect' | 'stadium' | 'circle' | 'rhombus' | 'cylinder';
-type LinkType = 'arrow' | 'line' | 'dotted';
+const MIN_ROWS = 5;
+const MIN_COLS = 5;
 
-interface VisualRow {
-  id: string;
-  from_node_name: string;
-  from_node_shape: NodeShape;
-  link_type: LinkType;
-  link_name: string;
-  to_node_name: string;
-  to_node_shape: NodeShape;
-  link_type2: LinkType;
-  link_name2: string;
-  to_node_name2: string;
-  to_node_shape2: NodeShape;
-  link_type3: LinkType;
-  link_name3: string;
-  to_node_name3: string;
-  to_node_shape3: NodeShape;
-  link_type4: LinkType;
-  link_name4: string;
-  to_node_name4: string;
-  to_node_shape4: NodeShape;
-}
+// A simple approach: grid data is just a 2D array of strings.
+// The string can be the node ID and text, e.g., "A[Start]".
+type GridData = string[][];
 
-const nodeShapeOptions: { value: NodeShape, label: string }[] = [
-  { value: 'rect', label: 'Rectangle' },
-  { value: 'stadium', label: 'Stadium' },
-  { value: 'circle', label: 'Circle' },
-  { value: 'rhombus', label: 'Rhombus' },
-  { value: 'cylinder', label: 'Cylinder' },
-];
-
-const linkTypeOptions: { value: LinkType, label: string }[] = [
-  { value: 'arrow', label: '-->' },
-  { value: 'line', label: '---' },
-  { value: 'dotted', label: '-.->' },
-];
-
-const createEmptyRow = (): VisualRow => ({
-  id: uuidv4(),
-  from_node_name: '', from_node_shape: 'rect',
-  link_name: '', link_type: 'arrow',
-  to_node_name: '', to_node_shape: 'rect',
-  link_name2: '', link_type2: 'arrow',
-  to_node_name2: '', to_node_shape2: 'rect',
-  link_name3: '', link_type3: 'arrow',
-  to_node_name3: '', to_node_shape3: 'rect',
-  link_name4: '', link_type4: 'arrow',
-  to_node_name4: '', to_node_shape4: 'rect',
-});
-
-function generateMermaidCode(rows: VisualRow[]): string {
-    let code = 'flowchart TD\n';
-    const definedNodes = new Set<string>();
-
-    const defineNode = (nodeName: string, nodeShape: NodeShape) => {
-        if (nodeName && !definedNodes.has(nodeName)) {
-            let shapeSyntax;
-            switch (nodeShape) {
-                case 'stadium': shapeSyntax = `(${nodeName})`; break;
-                case 'circle': shapeSyntax = `((${nodeName}))`; break;
-                case 'rhombus': shapeSyntax = `{${nodeName}}`; break;
-                case 'cylinder': shapeSyntax = `([${nodeName}])`; break;
-                default: shapeSyntax = `[${nodeName}]`; break;
-            }
-            code += `    ${nodeName}${shapeSyntax}\n`;
-            definedNodes.add(nodeName);
-        }
-    };
-    
-    const getLinkSyntax = (linkType: LinkType, linkName: string) => {
-      let syntax;
-      switch (linkType) {
-          case 'line':
-              syntax = linkName ? `--- ${linkName} ---` : '---';
-              break;
-          case 'dotted':
-              syntax = linkName ? `-. ${linkName} .->` : '-.->';
-              break;
-          default: // arrow
-              syntax = linkName ? `-- ${linkName} -->` : '-->';
-              break;
-      }
-      return syntax;
-    }
-
-    rows.forEach(row => {
-        const nodes = [
-          { name: row.from_node_name, shape: row.from_node_shape },
-          { name: row.to_node_name, shape: row.to_node_shape },
-          { name: row.to_node_name2, shape: row.to_node_shape2 },
-          { name: row.to_node_name3, shape: row.to_node_shape3 },
-          { name: row.to_node_name4, shape: row.to_node_shape4 },
-        ];
-        const links = [
-            { from: row.from_node_name, to: row.to_node_name, type: row.link_type, name: row.link_name },
-            { from: row.to_node_name, to: row.to_node_name2, type: row.link_type2, name: row.link_name2 },
-            { from: row.to_node_name2, to: row.to_node_name3, type: row.link_type3, name: row.link_name3 },
-            { from: row.to_node_name3, to: row.to_node_name4, type: row.link_type4, name: row.link_name4 },
-        ];
-
-        nodes.forEach(node => defineNode(node.name, node.shape));
-
-        links.forEach(link => {
-            if (link.from && link.to) {
-                code += `    ${link.from} ${getLinkSyntax(link.type, link.name)} ${link.to}\n`;
-            }
-        });
-    });
-
-    return code;
-}
-
+const createEmptyGrid = (rows: number, cols: number): GridData => {
+  return Array(rows).fill(null).map(() => Array(cols).fill(''));
+};
 
 mermaid.initialize({
   startOnLoad: false,
@@ -149,13 +44,14 @@ mermaid.initialize({
 });
 
 export function FlowchartView() {
-  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v12', defaultCode);
+  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v20', defaultCode);
+  const [gridData, setGridData] = useLocalStorage<GridData>('flowchart:grid-data-v1', createEmptyGrid(10, 8));
+  
   const [code, setCode] = useState(savedCode);
   const [svg, setSvg] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
-  const [visualRows, setVisualRows] = useState<VisualRow[]>(() => [createEmptyRow()]);
   
   const { toast } = useToast();
   const { resolvedTheme } = useTheme();
@@ -164,15 +60,40 @@ export function FlowchartView() {
     setIsClient(true);
   }, []);
 
-  // Update code from visual editor
+  const numRows = gridData.length;
+  const numCols = gridData[0]?.length || 0;
+
+  // Generate code from grid data
   useEffect(() => {
     if (editorMode === 'visual') {
-      const newCode = generateMermaidCode(visualRows);
-      if(newCode.trim() !== code.trim()) {
+      let newCode = 'flowchart TD\n';
+      const definedNodes = new Set();
+      gridData.forEach(row => {
+        row.forEach(cell => {
+          if (cell.trim()) {
+            const nodeIdMatch = cell.match(/^([a-zA-Z0-9_]+)/);
+            if (nodeIdMatch) {
+              const nodeId = nodeIdMatch[1];
+              if (!definedNodes.has(nodeId)) {
+                newCode += `    ${cell}\n`;
+                definedNodes.add(nodeId);
+              }
+            }
+          }
+        });
+      });
+      
+      // Preserve links from existing code
+      const existingLinks = code.split('\n').filter(line => line.includes('-->') || line.includes('---') || line.includes('-.->'));
+      if(existingLinks.length > 0) {
+        newCode += existingLinks.join('\n');
+      }
+
+      if (newCode.trim() !== code.trim()) {
         setCode(newCode);
       }
     }
-  }, [visualRows, editorMode, code]);
+  }, [gridData, editorMode, code]);
 
 
   useEffect(() => {
@@ -208,19 +129,36 @@ export function FlowchartView() {
     return () => clearTimeout(timeoutId);
   }, [code, isClient, resolvedTheme, setSavedCode]);
 
-  const handleVisualRowChange = (index: number, field: keyof VisualRow, value: string) => {
-    const newRows = [...visualRows];
-    // @ts-ignore
-    newRows[index][field] = value;
-    setVisualRows(newRows);
+
+  const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
+    const newGridData = gridData.map((row, r) =>
+      r === rowIndex ? row.map((cell, c) => (c === colIndex ? value : cell)) : row
+    );
+    setGridData(newGridData);
   };
   
-  const addVisualRow = () => {
-    setVisualRows(prev => [...prev, createEmptyRow()]);
+  const addRow = () => {
+    setGridData(prev => [...prev, Array(numCols).fill('')]);
   };
   
-  const removeVisualRow = (index: number) => {
-    setVisualRows(prev => prev.filter((_, i) => i !== index));
+  const addCol = () => {
+    setGridData(prev => prev.map(row => [...row, '']));
+  };
+
+  const removeRow = (rowIndex: number) => {
+    if (numRows > MIN_ROWS) {
+        setGridData(prev => prev.filter((_, i) => i !== rowIndex));
+    } else {
+        toast({ variant: 'destructive', title: `Cannot remove row`, description: `A minimum of ${MIN_ROWS} rows is required.`})
+    }
+  };
+
+  const removeCol = (colIndex: number) => {
+    if (numCols > MIN_COLS) {
+        setGridData(prev => prev.map(row => row.filter((_, i) => i !== colIndex)));
+    } else {
+        toast({ variant: 'destructive', title: `Cannot remove column`, description: `A minimum of ${MIN_COLS} columns is required.`})
+    }
   };
   
   if (!isClient) return <div className="w-full h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -230,12 +168,12 @@ export function FlowchartView() {
         <Card>
             <CardHeader>
                 <CardTitle>Diagram Editor</CardTitle>
-                <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
+                <CardDescription>Use the visual grid or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
             </CardHeader>
         </Card>
         <ResizablePanelGroup direction="horizontal" className="flex-1 rounded-lg border">
             <ResizablePanel defaultSize={60}>
-                <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
+                 <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
                     <div className="p-4 pb-0">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
@@ -252,64 +190,51 @@ export function FlowchartView() {
                         />
                     </TabsContent>
                     <TabsContent value="visual" className="m-0 flex-1">
-                        <ScrollArea className="h-full w-full">
-                            <div className="p-4 space-y-2">
-                                {visualRows.map((row, index) => (
-                                    <div key={row.id} className="grid grid-cols-[repeat(8,_1fr)_auto] items-end gap-2 border p-2 rounded-lg relative">
-                                        {/* From Node */}
-                                        <div className="flex flex-col gap-1">
-                                            <Label className="text-xs">From</Label>
-                                            <Input placeholder="Node Name" value={row.from_node_name} onChange={e => handleVisualRowChange(index, 'from_node_name', e.target.value)} />
-                                            <Select value={row.from_node_shape} onValueChange={v => handleVisualRowChange(index, 'from_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                        </div>
-                                        {/* Link */}
-                                        <div className="flex flex-col gap-1">
-                                            <Label className="text-xs">Link</Label>
-                                            <Input placeholder="Link Text" value={row.link_name} onChange={e => handleVisualRowChange(index, 'link_name', e.target.value)} />
-                                            <Select value={row.link_type} onValueChange={v => handleVisualRowChange(index, 'link_type', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                        </div>
-                                        {/* To Node */}
-                                        <div className="flex flex-col gap-1">
-                                            <Label className="text-xs">To</Label>
-                                            <Input placeholder="Node Name" value={row.to_node_name} onChange={e => handleVisualRowChange(index, 'to_node_name', e.target.value)} />
-                                            <Select value={row.to_node_shape} onValueChange={v => handleVisualRowChange(index, 'to_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                        </div>
-                                         {/* Link 2 */}
-                                        <div className="flex flex-col gap-1">
-                                            <Label className="text-xs">Link</Label>
-                                            <Input placeholder="Link Text" value={row.link_name2} onChange={e => handleVisualRowChange(index, 'link_name2', e.target.value)} />
-                                            <Select value={row.link_type2} onValueChange={v => handleVisualRowChange(index, 'link_type2', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                        </div>
-                                        {/* To Node 2 */}
-                                        <div className="flex flex-col gap-1">
-                                            <Label className="text-xs">To</Label>
-                                            <Input placeholder="Node Name" value={row.to_node_name2} onChange={e => handleVisualRowChange(index, 'to_node_name2', e.target.value)} />
-                                            <Select value={row.to_node_shape2} onValueChange={v => handleVisualRowChange(index, 'to_node_shape2', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                        </div>
-                                         {/* Link 3 */}
-                                        <div className="flex flex-col gap-1">
-                                            <Label className="text-xs">Link</Label>
-                                            <Input placeholder="Link Text" value={row.link_name3} onChange={e => handleVisualRowChange(index, 'link_name3', e.target.value)} />
-                                            <Select value={row.link_type3} onValueChange={v => handleVisualRowChange(index, 'link_type3', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                        </div>
-                                        {/* To Node 3 */}
-                                        <div className="flex flex-col gap-1">
-                                            <Label className="text-xs">To</Label>
-                                            <Input placeholder="Node Name" value={row.to_node_name3} onChange={e => handleVisualRowChange(index, 'to_node_name3', e.target.value)} />
-                                            <Select value={row.to_node_shape3} onValueChange={v => handleVisualRowChange(index, 'to_node_shape3', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                        </div>
-                                         {/* Link 4 */}
-                                        <div className="flex flex-col gap-1">
-                                            <Label className="text-xs">Link</Label>
-                                            <Input placeholder="Link Text" value={row.link_name4} onChange={e => handleVisualRowChange(index, 'link_name4', e.target.value)} />
-                                            <Select value={row.link_type4} onValueChange={v => handleVisualRowChange(index, 'link_type4', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                        </div>
-                                        <Button variant="ghost" size="icon" className="self-center" onClick={() => removeVisualRow(index)}><Trash2 className="h-4 w-4"/></Button>
-                                    </div>
-                                ))}
-                                <Button onClick={addVisualRow} variant="outline"><Plus className="mr-2 h-4 w-4"/>Add Row</Button>
+                        <div className="p-4 space-y-2 h-full flex flex-col">
+                           <div className="flex gap-2">
+                                <Button onClick={addRow} variant="outline"><Plus className="mr-2"/> Add Row</Button>
+                                <Button onClick={addCol} variant="outline"><Plus className="mr-2"/> Add Column</Button>
                             </div>
-                        </ScrollArea>
+                            <ScrollArea className="flex-1 -mr-4">
+                                <div className="pr-4">
+                                    <table className="border-collapse table-fixed w-full">
+                                        <thead className="sticky top-0 bg-muted z-10">
+                                            <tr>
+                                                <th className="sticky left-0 bg-muted w-14 h-8 border-b border-r z-20"></th>
+                                                {Array.from({ length: numCols }).map((_, colIndex) => (
+                                                    <th key={colIndex} className="w-40 border p-0 text-center font-medium text-muted-foreground text-sm relative group">
+                                                        <div className="p-1">{String.fromCharCode(65 + colIndex)}</div>
+                                                        <Button variant="ghost" size="icon" className="absolute -right-2 -top-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeCol(colIndex)}><Trash2 className="h-3 w-3" /></Button>
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Array.from({ length: numRows }).map((_, rowIndex) => (
+                                                <tr key={rowIndex} className="group">
+                                                    <td className="sticky left-0 bg-muted w-14 border-r border-b p-0 text-center text-sm text-muted-foreground relative">
+                                                        <div className="p-1">{rowIndex + 1}</div>
+                                                        <Button variant="ghost" size="icon" className="absolute -right-2 -top-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeRow(rowIndex)}><Trash2 className="h-3 w-3" /></Button>
+                                                    </td>
+                                                    {Array.from({ length: numCols }).map((_, colIndex) => (
+                                                        <td key={colIndex} className="p-0 border">
+                                                            <Input 
+                                                                type="text"
+                                                                value={gridData[rowIndex]?.[colIndex] || ''}
+                                                                onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                                                                className="w-full h-full p-1.5 bg-transparent border-0 rounded-none shadow-none text-sm focus-visible:ring-2 focus-visible:ring-primary z-10 relative"
+                                                                placeholder={`e.g., N${rowIndex}${colIndex}[Text]`}
+                                                            />
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <ScrollBar orientation="horizontal" />
+                            </ScrollArea>
+                        </div>
                     </TabsContent>
                 </Tabs>
             </ResizablePanel>
@@ -335,5 +260,3 @@ export function FlowchartView() {
     </div>
   );
 }
-
-    
