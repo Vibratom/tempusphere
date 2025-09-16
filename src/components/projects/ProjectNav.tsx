@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -13,7 +14,7 @@ const tools = [
     { value: 'spreadsheet', icon: Table, label: 'Spreadsheet', href: '/projects/spreadsheet' },
     { value: 'checklist', icon: ListChecks, label: 'Checklist', href: '/projects/checklist' },
     { value: 'canvas', icon: DraftingCompass, label: 'Canvas', href: '/projects/canvas' },
-    { value: 'flowchart', icon: Spline, label: 'Flowchart', href: '/projects/flowchart' },
+    { value: 'charts', icon: Spline, label: 'Charts', href: '/projects/charts' },
     { value: 'mindmap', icon: Brain, label: 'Mind Map', href: '/projects/mindmap' },
 ];
 
