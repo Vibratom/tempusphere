@@ -20,6 +20,7 @@ const diagramTemplates = {
         flowchart: { label: "Flowchart", code: `flowchart TD\n    A(Start) --> B{Is it?};\n    B -- Yes --> C(OK);\n    C --> D(Rethink);\n    D --> A;\n    B -- No --> E(End);`},
         state: { label: "State Diagram", code: `stateDiagram-v2\n    [*] --> Still\n    Still --> [*]\n\n    Still --> Moving\n    Moving --> Still\n    Moving --> Crash\n    Crash --> [*]`},
         userJourney: { label: "User Journey", code: `journey\n    title My Work Day\n    section Go to work\n      Make tea: 5: Me\n      Go to work: 3: Me\n      Sit down: 5: Me\n    section Work\n      Plan day: 5: Me\n      Review PRs: 3: Me, Friend\n      Write code: 5: Me`},
+        bpmn: { label: "BPMN", code: `bpmn\n  title Order Pizza\n\n  process\n    start event: Start\n    user task: Order Pizza\n    service task: Prepare Ingredients\n    manual task: Assemble Pizza\n    send task: Notify Customer\n    end event: End\n\n  sequence flow\n    Start -> Order Pizza\n    Order Pizza -> Prepare Ingredients\n    Prepare Ingredients -> Assemble Pizza\n    Assemble Pizza -> Notify Customer\n    Notify Customer -> End`},
     },
   },
   sequenceAndInteraction: {
