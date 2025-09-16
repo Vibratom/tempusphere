@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { Suspense, useMemo } from 'react';
@@ -35,7 +34,7 @@ const toolComponents: Record<string, React.ComponentType> = {
     spreadsheet: SpreadsheetPage,
     checklist: ChecklistPage,
     canvas: CanvasPage,
-    charts: CanvasPage, // Use CanvasView for Charts
+    charts: ChartsPage,
     mindmap: MindMapPage,
 };
 
