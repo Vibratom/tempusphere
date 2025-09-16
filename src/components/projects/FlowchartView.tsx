@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
@@ -9,7 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { Download, Palette, AlertCircle, Loader2, ChevronDown } from 'lucide-react';
+import { Download, AlertCircle, Loader2, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
@@ -20,7 +20,6 @@ const diagramTemplates = {
         flowchart: { label: "Flowchart", code: `flowchart TD\n    A(Start) --> B{Is it?};\n    B -- Yes --> C(OK);\n    C --> D(Rethink);\n    D --> A;\n    B -- No --> E(End);`},
         state: { label: "State Diagram", code: `stateDiagram-v2\n    [*] --> Still\n    Still --> [*]\n\n    Still --> Moving\n    Moving --> Still\n    Moving --> Crash\n    Crash --> [*]`},
         userJourney: { label: "User Journey", code: `journey\n    title My Work Day\n    section Go to work\n      Make tea: 5: Me\n      Go to work: 3: Me\n      Sit down: 5: Me\n    section Work\n      Plan day: 5: Me\n      Review PRs: 3: Me, Friend\n      Write code: 5: Me`},
-        bpmn: { label: "BPMN", code: `bpmn\n  title Order Pizza\n\n  process\n    start event: Start\n    user task: Order Pizza\n    service task: Prepare Ingredients\n    manual task: Assemble Pizza\n    send task: Notify Customer\n    end event: End\n\n  sequence flow\n    Start -> Order Pizza\n    Order Pizza -> Prepare Ingredients\n    Prepare Ingredients -> Assemble Pizza\n    Assemble Pizza -> Notify Customer\n    Notify Customer -> End`},
     },
   },
   sequenceAndInteraction: {
@@ -63,21 +62,7 @@ const diagramTemplates = {
       templates: {
           pie: { label: "Pie Chart", code: `pie\n    title Key-Value Distribution\n    "Databases" : 80\n    "Messaging" : 20`},
           quadrant: { label: "Quadrant Chart", code: `quadrantChart\n    title Reach and engagement of campaigns\n    x-axis Low Reach --> High Reach\n    y-axis Low Engagement --> High Engagement\n    quadrant-1 We should expand\n    quadrant-2 Need to promote\n    quadrant-3 Re-evaluate\n    quadrant-4 May be improved\n    "Campaign A": [0.3, 0.6]\n    "Campaign B": [0.45, 0.23]\n    "Campaign C": [0.57, 0.69]\n    "Campaign D": [0.78, 0.34]\n    "Campaign E": [0.40, 0.34]\n    "Campaign F": [0.35, 0.78]`},
-          radar: { label: "Radar Chart", code: `radar-beta\n    ---
-title: Quality attributes of a good report
----
-    radar-chart
-        "Excellent"
-        "Good"
-        "Passable"
-        "Bad"
-        "Awful"
-
-        "Clarity", 5, 4, 3, 2, 1
-        "Accuracy", 1, 2, 3, 4, 5
-        "Consistency", 5, 4, 3, 2, 1
-        "Completeness", 1, 2, 3, 4, 5
-        "Conciseness", 5, 4, 3, 2, 1`},
+          radar: { label: "Radar Chart", code: `radar-beta\n    ---\ntitle: Quality attributes of a good report\n---\n    radar-chart\n        "Excellent"\n        "Good"\n        "Passable"\n        "Bad"\n        "Awful"\n\n        "Clarity", 5, 4, 3, 2, 1\n        "Accuracy", 1, 2, 3, 4, 5\n        "Consistency", 5, 4, 3, 2, 1\n        "Completeness", 1, 2, 3, 4, 5\n        "Conciseness", 5, 4, 3, 2, 1`},
           xy: { label: "XY Chart", code: `xychart-beta\n    title "Sales History"\n    x-axis [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]\n    y-axis "Sales" [10, 20, 15, 25, 30, 28, 35, 40, 38, 45, 50, 48]\n    line "sales-line" [10, 20, 15, 25, 30, 28, 35, 40, 38, 45, 50, 48]`},
       }
   },
@@ -90,8 +75,32 @@ title: Quality attributes of a good report
   }
 };
 
+const customThemes = {
+    sunset: {
+        primaryColor: '#ff7e5f',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#ff7e5f',
+        lineColor: '#d65b40',
+        secondaryColor: '#feb47b',
+        tertiaryColor: '#ffac7f',
+        nodeBkg: '#ff7e5f',
+        nodeTextColor: '#ffffff',
+        mainBkg: '#fff8f4',
+    },
+    ocean: {
+        primaryColor: '#00b4d8',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#00b4d8',
+        lineColor: '#0077b6',
+        secondaryColor: '#90e0ef',
+        tertiaryColor: '#ade8f4',
+        nodeBkg: '#00b4d8',
+        nodeTextColor: '#ffffff',
+        mainBkg: '#f0f9ff'
+    }
+}
 
-type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral';
+type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral' | 'base' | 'sunset' | 'ocean';
 
 export function FlowchartView() {
   const [code, setCode] = useLocalStorage('flowchart:mermaid-code-v4', diagramTemplates.flowAndProcess.templates.flowchart.code);
@@ -113,9 +122,18 @@ export function FlowchartView() {
   useEffect(() => {
     if (!isClient) return;
 
+    let themeVariables = {};
+    let finalTheme: MermaidTheme | 'base' = mermaidTheme;
+
+    if (mermaidTheme === 'sunset' || mermaidTheme === 'ocean') {
+        themeVariables = customThemes[mermaidTheme];
+        finalTheme = 'base';
+    }
+
     mermaid.initialize({
       startOnLoad: false,
-      theme: resolvedTheme === 'dark' ? 'dark' : mermaidTheme,
+      theme: resolvedTheme === 'dark' ? 'dark' : finalTheme,
+      themeVariables,
       securityLevel: 'loose',
       fontFamily: 'sans-serif',
       logLevel: 5,
@@ -239,6 +257,9 @@ export function FlowchartView() {
                                 <SelectItem value="default">Default</SelectItem>
                                 <SelectItem value="forest">Forest</SelectItem>
                                 <SelectItem value="neutral">Neutral</SelectItem>
+                                <SelectItem value="base">Base</SelectItem>
+                                <SelectItem value="sunset">Sunset</SelectItem>
+                                <SelectItem value="ocean">Ocean</SelectItem>
                                 <SelectItem value="dark" disabled>Dark (auto)</SelectItem>
                             </SelectContent>
                         </Select>
