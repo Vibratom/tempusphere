@@ -18,8 +18,8 @@ import { Switch } from '../ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Editor } from '@/components/Editor';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 mermaid.initialize({
@@ -267,17 +267,19 @@ type DiagramType = 'flowchart' | 'mindmap' | 'stateDiagram' | 'unknown';
 
 type EditorMode = 'visual' | 'code';
 // --- Flowchart Specific Types ---
-type FlowNodeType = 'node' | 'decision' | 'stadium' | 'cylinder';
+type FlowNodeType = 'node' | 'decision' | 'stadium' | 'cylinder' | 'circle';
 interface FlowNode {
   id: string;
   text: string;
   type: FlowNodeType;
 }
+type LinkType = 'arrow' | 'line' | 'dotted';
 interface FlowLink {
   id: string;
   source: string;
   target: string;
   label: string;
+  linkType: LinkType;
 }
 
 // --- Mindmap Specific Types ---
@@ -302,11 +304,11 @@ const LinkEditorRow = ({ initialLink, nodeOptions, onUpdate, onRemove, smartMode
             return;
         }
         setLink(newLink);
-        onUpdate(newLink.id, part);
+        onUpdate(newLink.id, newLink);
     };
-
+    
     return (
-        <div className="grid grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center">
+        <div className="grid grid-cols-[1fr_1fr_1fr_2fr_auto] gap-2 items-center">
             {smartMode ? (
             <>
                 <Select value={link.source} onValueChange={(v) => handleUpdate({source: v})}>
@@ -324,6 +326,14 @@ const LinkEditorRow = ({ initialLink, nodeOptions, onUpdate, onRemove, smartMode
                 <Input value={link.target} onChange={(e) => handleUpdate({target: e.target.value})} placeholder="To ID" className="font-mono"/>
             </>
             )}
+            <Select value={link.linkType} onValueChange={(v: LinkType) => handleUpdate({linkType: v})}>
+                <SelectTrigger><SelectValue placeholder="Link Type"/></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="arrow">Arrow --&gt;</SelectItem>
+                    <SelectItem value="line">Line ---</SelectItem>
+                    <SelectItem value="dotted">Dotted -.-></SelectItem>
+                </SelectContent>
+            </Select>
             <Input value={link.label} onChange={(e) => handleUpdate({label: e.target.value})} placeholder="Label (optional)"/>
             <Button size="icon" variant="ghost" onClick={() => onRemove(link.id)}><Trash2/></Button>
         </div>
@@ -332,7 +342,7 @@ const LinkEditorRow = ({ initialLink, nodeOptions, onUpdate, onRemove, smartMode
 
 
 export function FlowchartView() {
-  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v6', diagramTemplates.flowAndProcess.templates.flowchart.code);
+  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v7', diagramTemplates.flowAndProcess.templates.flowchart.code);
   const [code, setCode] = useState(savedCode);
   const [svg, setSvg] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -360,21 +370,51 @@ export function FlowchartView() {
     const firstLine = currentCode.trim().split('\n')[0].trim();
     if (firstLine.startsWith('flowchart')) {
       setDiagramType('flowchart');
-      // Basic parser, not fully robust
       const nodes: FlowNode[] = [];
       const links: FlowLink[] = [];
-      const nodeRegex = /^\s*([a-zA-Z0-9_]+)(?:\["([^"]+)"\]|\{"([^"]+)"\}|\("([^"]+)"\)|\(\("([^"]+)"\)\))?/gm;
-      let match;
-      while ((match = nodeRegex.exec(currentCode)) !== null) {
-          const id = match[1];
-          const text = match[2] || match[3] || match[4] || match[5] || id;
-          let type: FlowNodeType = 'node';
-          if(match[0].includes('{')) type = 'decision';
-          if(match[0].includes('((')) type = 'cylinder';
-          else if(match[0].includes('(')) type = 'stadium';
-          if(!nodes.find(n=>n.id === id)) nodes.push({ id, text, type });
-      }
+      const nodeRegex = /^\s*([a-zA-Z0-9_]+)(?:\["([^"]+)"\]|\{"([^"]+)"\}|\("([^"]+)"\)|\(\("([^"]+)"\)\)|\[\("([^"]+)"\)\])?/gm;
+      const linkRegex = /^\s*([a-zA-Z0-9_]+)\s*(?:--\s*(.*?)\s*--|---|-.-\s*(.*?)\s*-.->|==\s*(.*?)\s*==>)\s*([a-zA-Z0-9_]+)/;
+      
+      currentCode.split('\n').forEach((line, index) => {
+          let match;
+          // Node definitions
+          while ((match = nodeRegex.exec(line)) !== null) {
+              const id = match[1];
+              const text = match[2] || match[3] || match[4] || match[5] || match[6] || id;
+              let type: FlowNodeType = 'node';
+              if (match[0].includes('{')) type = 'decision';
+              else if (match[0].includes('((')) type = 'circle';
+              else if (match[0].includes('([')) type = 'cylinder';
+              else if (match[0].includes('(')) type = 'stadium';
+
+              if(!nodes.find(n=>n.id === id)) nodes.push({ id, text, type });
+          }
+
+          // Link definitions
+          const linkMatch = line.match(/^\s*(\S+)\s*(---|--\s*.*?\s*--|-.->|-->)\s*(\S+)/);
+          if (linkMatch) {
+              const source = linkMatch[1];
+              const linkSyntax = linkMatch[2];
+              let target = linkMatch[3];
+              let label = '';
+              let linkType: LinkType = 'arrow';
+              
+              if(linkSyntax.includes('-.->')) linkType = 'dotted';
+              else if(linkSyntax.includes('---')) linkType = 'line';
+
+              const labelMatch = linkSyntax.match(/--\s*(.*?)\s*--/);
+              if (labelMatch) {
+                  label = labelMatch[1];
+              }
+              if (target.endsWith(';')) target = target.slice(0, -1);
+              
+              links.push({ id: `link-${index}`, source, target, label, linkType });
+          }
+      });
+
       setFlowNodes(nodes);
+      setFlowLinks(links);
+
     } else if (firstLine.startsWith('mindmap')) {
       setDiagramType('mindmap');
       const nodes = currentCode.split('\n').slice(1).map((line, index) => {
@@ -388,6 +428,23 @@ export function FlowchartView() {
       setMindMapNodes(nodes);
     } else if (firstLine.startsWith('stateDiagram')) {
         setDiagramType('stateDiagram');
+        const nodes: FlowNode[] = [];
+        const links: FlowLink[] = [];
+
+        currentCode.split('\n').forEach((line, index) => {
+          const linkMatch = line.match(/^\s*(\S+)\s*-->\s*(\S+)(?:\s*:\s*(.*))?/);
+          if(linkMatch) {
+            const source = linkMatch[1];
+            let target = linkMatch[2];
+            const label = linkMatch[3] || '';
+            if (target.endsWith(';')) target = target.slice(0, -1);
+            links.push({ id: `link-${index}`, source, target, label, linkType: 'arrow' });
+            if(!nodes.find(n => n.id === source) && source !== '[*]') nodes.push({ id: source, text: source, type: 'stadium' });
+            if(!nodes.find(n => n.id === target) && target !== '[*]') nodes.push({ id: target, text: target, type: 'stadium' });
+          }
+        });
+        setFlowNodes(nodes);
+        setFlowLinks(links);
     } else {
       setDiagramType('unknown');
     }
@@ -398,8 +455,12 @@ export function FlowchartView() {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    parseCode(code);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+     if (isClient) parseCode(code);
+  }, [isClient]);
 
   const handleCodeChange = (newCode: string, fromVisual?: boolean) => {
     setCode(newCode);
@@ -415,8 +476,9 @@ export function FlowchartView() {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
-      setCode(history[newIndex]);
-      parseCode(history[newIndex]);
+      const newCode = history[newIndex];
+      setCode(newCode);
+      parseCode(newCode);
     }
   }, [history, historyIndex]);
 
@@ -424,8 +486,9 @@ export function FlowchartView() {
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
-      setCode(history[newIndex]);
-       parseCode(history[newIndex]);
+      const newCode = history[newIndex];
+      setCode(newCode);
+       parseCode(newCode);
     }
   }, [history, historyIndex]);
   
@@ -501,11 +564,18 @@ export function FlowchartView() {
             if(node.type === 'decision') newCode += `    ${node.id}{"${text}"}\n`;
             if(node.type === 'stadium') newCode += `    ${node.id}("${text}")\n`;
             if(node.type === 'cylinder') newCode += `    ${node.id}[("${text}")]\n`;
+            if(node.type === 'circle') newCode += `    ${node.id}(("${text}"))\n`;
         });
         flowLinks.forEach(link => {
             if (link.source && link.target) {
-                if (link.label) newCode += `    ${link.source} --> ${link.label}: ${link.target}\n`;
-                else newCode += `    ${link.source} --> ${link.target}\n`;
+                let linkStr = '';
+                switch(link.linkType) {
+                    case 'line': linkStr = '---'; break;
+                    case 'dotted': linkStr = '-.->'; break;
+                    case 'arrow': default: linkStr = '-->'; break;
+                }
+                if (link.label) newCode += `    ${link.source} -- ${link.label} --${link.linkType === 'arrow' ? '>' : ''} ${link.target}\n`;
+                else newCode += `    ${link.source} ${linkStr} ${link.target}\n`;
             }
         });
     } else if (diagramType === 'mindmap') {
@@ -522,7 +592,6 @@ export function FlowchartView() {
   // --- Visual Editor Components ---
   
   const FlowchartEditor = () => {
-    // All flowchart-specific functions like addNode, updateLink etc. go here
     const addNode = (type: FlowNodeType) => {
         const existingIds = flowNodes.map(n => n.id.charCodeAt(0)).filter(n => n >= 65 && n <= 90);
         const nextIdChar = String.fromCharCode(existingIds.length > 0 ? Math.max(...existingIds) + 1 : 65);
@@ -537,11 +606,11 @@ export function FlowchartView() {
         setFlowLinks(prev => prev.filter(l => l.source !== id && l.target !== id));
     }
     const addLink = () => {
-        setFlowLinks(prev => [...prev, {id: `l${Date.now()}`, source: '', target: '', label: ''}]);
+        setFlowLinks(prev => [...prev, {id: `l${Date.now()}`, source: '', target: '', label: '', linkType: 'arrow'}]);
     }
 
-    const updateLink = useCallback((id: string, part: Partial<FlowLink>) => {
-      setFlowLinks(prev => prev.map(l => l.id === id ? {...l, ...part} : l));
+    const updateLink = useCallback((id: string, updatedLink: FlowLink) => {
+      setFlowLinks(prev => prev.map(l => l.id === id ? updatedLink : l));
     }, []);
 
     const removeLink = useCallback((id: string) => {
@@ -577,6 +646,7 @@ export function FlowchartView() {
                       <Tooltip><TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('decision')}><Diamond/></Button></TooltipTrigger><TooltipContent><p>Add Decision</p></TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('stadium')}><Circle/></Button></TooltipTrigger><TooltipContent><p>Add Start/End</p></TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('cylinder')}><Cylinder/></Button></TooltipTrigger><TooltipContent><p>Add Database</p></TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button size="icon" variant="outline" onClick={() => addNode('circle')}><Circle/></Button></TooltipTrigger><TooltipContent><p>Add Circle</p></TooltipContent></Tooltip>
                   </TooltipProvider>
                 </div>
               </div>
