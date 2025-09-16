@@ -189,12 +189,12 @@ interactive: `flowchart TD
 `,
   bpmn: `
 bpmn
-    title Simple BPMN Process
-    participant Alice
-    participant Bob
-
-    Alice->>Bob: Hello Bob, how are you?
-    Bob-->>Alice: I am good thanks!
+    title Simple BPMN
+    startEvent -> task: Log In
+    task -> gateway: OR
+    gateway -> task: Option 1
+    gateway -> task: Option 2
+    task -> endEvent
 `,
 };
 
