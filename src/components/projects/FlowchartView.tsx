@@ -1,11 +1,9 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { Textarea } from '../ui/textarea';
-import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -14,8 +12,32 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resi
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
+
+// --- Types and Constants ---
+
+type EditorMode = 'visual' | 'code';
+type DiagramType = 'flowchart' | 'stateDiagram' | 'mindmap' | 'unknown';
+
+interface VisualNode {
+  id: string;
+  name: string;
+  shape: 'rect' | 'stadium' | 'circle' | 'rhombus' | 'cylinder';
+}
+
+interface VisualLink {
+  id: string;
+  type: 'arrow' | 'line' | 'dotted';
+  text: string;
+}
+
+// Each column is a chain of nodes and links
+interface VisualColumn {
+  id: string;
+  nodes: VisualNode[];
+  links: VisualLink[];
+}
 
 const defaultCode = `flowchart TD
     A[Start] --> B{Is it?};
@@ -24,77 +46,115 @@ const defaultCode = `flowchart TD
     D --> A;
     B -- No --> E(End);`;
 
-type EditorMode = 'visual' | 'code';
-const MIN_ROWS = 5;
-const MIN_COLS = 5;
+const nodeShapeOptions = [
+  { value: 'rect', label: 'Rectangle' },
+  { value: 'stadium', label: 'Stadium' },
+  { value: 'circle', label: 'Circle' },
+  { value: 'rhombus', label: 'Rhombus' },
+  { value: 'cylinder', label: 'Cylinder' },
+];
 
-// A simple approach: grid data is just a 2D array of strings.
-// The string can be the node ID and text, e.g., "A[Start]".
-type GridData = string[][];
+const linkTypeOptions = [
+  { value: 'arrow', label: '-->' },
+  { value: 'line', label: '---' },
+  { value: 'dotted', label: '-.->' },
+];
 
-const createEmptyGrid = (rows: number, cols: number): GridData => {
-  return Array(rows).fill(null).map(() => Array(cols).fill(''));
-};
+// --- Mermaid Initialization ---
 
 mermaid.initialize({
   startOnLoad: false,
   securityLevel: 'loose',
   fontFamily: 'sans-serif',
-  logLevel: 5, 
+  logLevel: 5,
 });
 
+// --- Helper Functions ---
+
+const getShapeSyntax = (shape: VisualNode['shape']) => {
+  switch (shape) {
+    case 'stadium': return ['(', ')'];
+    case 'circle': return ['((', '))'];
+    case 'rhombus': return ['{', '}'];
+    case 'cylinder': return ['([', '])'];
+    default: return ['[', ']'];
+  }
+};
+
+const getLinkSyntax = (type: VisualLink['type']) => {
+  switch (type) {
+    case 'line': return '---';
+    case 'dotted': return '-.->';
+    default: return '-->';
+  }
+};
+
+const createNewNode = (id: string): VisualNode => ({ id, name: id, shape: 'rect' });
+const createNewLink = (): VisualLink => ({ id: `link-${Math.random()}`, type: 'arrow', text: '' });
+const createNewColumn = (): VisualColumn => {
+    const nodeId = `N${Date.now()}`;
+    return {
+        id: `col-${Math.random()}`,
+        nodes: [createNewNode(nodeId)],
+        links: [],
+    };
+};
+
+// --- Component ---
+
 export function FlowchartView() {
-  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v20', defaultCode);
-  const [gridData, setGridData] = useLocalStorage<GridData>('flowchart:grid-data-v1', createEmptyGrid(10, 8));
+  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v22', defaultCode);
+  const [visualColumns, setVisualColumns] = useLocalStorage<VisualColumn[]>('flowchart:visual-cols-v1', [createNewColumn()]);
   
   const [code, setCode] = useState(savedCode);
   const [svg, setSvg] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
+  const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
   
-  const { toast } = useToast();
   const { resolvedTheme } = useTheme();
-  
+
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const numRows = gridData.length;
-  const numCols = gridData[0]?.length || 0;
+  // --- Code Generation & Parsing ---
 
-  // Generate code from grid data
-  useEffect(() => {
-    if (editorMode === 'visual') {
-      let newCode = 'flowchart TD\n';
-      const definedNodes = new Set();
-      gridData.forEach(row => {
-        row.forEach(cell => {
-          if (cell.trim()) {
-            const nodeIdMatch = cell.match(/^([a-zA-Z0-9_]+)/);
-            if (nodeIdMatch) {
-              const nodeId = nodeIdMatch[1];
-              if (!definedNodes.has(nodeId)) {
-                newCode += `    ${cell}\n`;
-                definedNodes.add(nodeId);
-              }
-            }
+  const generateMermaidCode = useCallback(() => {
+    if (editorMode !== 'visual') return;
+
+    let newCode = `${diagramType} TD\n`;
+    const definedNodes = new Set<string>();
+
+    visualColumns.forEach(col => {
+      col.nodes.forEach((node, nodeIndex) => {
+        if (node.name.trim() && !definedNodes.has(node.id)) {
+          const [start, end] = getShapeSyntax(node.shape);
+          newCode += `    ${node.id}${start}${node.name}${end}\n`;
+          definedNodes.add(node.id);
+        }
+        
+        if (nodeIndex < col.links.length) {
+          const link = col.links[nodeIndex];
+          const nextNode = col.nodes[nodeIndex + 1];
+          if (nextNode) {
+            const linkSyntax = getLinkSyntax(link.type);
+            const linkText = link.text.trim() ? `-- ${link.text} --` : '';
+            newCode += `    ${node.id} ${linkText}${linkSyntax} ${nextNode.id}\n`;
           }
-        });
+        }
       });
-      
-      // Preserve links from existing code
-      const existingLinks = code.split('\n').filter(line => line.includes('-->') || line.includes('---') || line.includes('-.->'));
-      if(existingLinks.length > 0) {
-        newCode += existingLinks.join('\n');
-      }
+    });
+    
+    // Add cross-column links here in the future
 
-      if (newCode.trim() !== code.trim()) {
-        setCode(newCode);
-      }
-    }
-  }, [gridData, editorMode, code]);
+    setCode(newCode);
+  }, [editorMode, visualColumns, diagramType]);
 
+  useEffect(() => {
+    generateMermaidCode();
+  }, [generateMermaidCode]);
 
   useEffect(() => {
     if (!isClient) return;
@@ -105,6 +165,14 @@ export function FlowchartView() {
       securityLevel: 'loose',
       fontFamily: 'sans-serif',
     });
+
+    const detectType = (c: string): DiagramType => {
+      if (c.trim().startsWith('flowchart') || c.trim().startsWith('graph')) return 'flowchart';
+      if (c.trim().startsWith('stateDiagram')) return 'stateDiagram';
+      if (c.trim().startsWith('mindmap')) return 'mindmap';
+      return 'unknown';
+    };
+    setDiagramType(detectType(code));
 
     const renderMermaid = async () => {
       try {
@@ -129,38 +197,52 @@ export function FlowchartView() {
     return () => clearTimeout(timeoutId);
   }, [code, isClient, resolvedTheme, setSavedCode]);
 
+  // --- Visual Editor Handlers ---
 
-  const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
-    const newGridData = gridData.map((row, r) =>
-      r === rowIndex ? row.map((cell, c) => (c === colIndex ? value : cell)) : row
-    );
-    setGridData(newGridData);
+  const addColumn = () => {
+    setVisualColumns(prev => [...prev, createNewColumn()]);
   };
   
-  const addRow = () => {
-    setGridData(prev => [...prev, Array(numCols).fill('')]);
+  const removeColumn = (colId: string) => {
+    setVisualColumns(prev => prev.filter(c => c.id !== colId));
   };
   
-  const addCol = () => {
-    setGridData(prev => prev.map(row => [...row, '']));
+  const addRow = (colId: string) => {
+    setVisualColumns(prev => prev.map(col => {
+      if (col.id === colId) {
+        const newNodeId = `N${Date.now()}`;
+        return {
+          ...col,
+          nodes: [...col.nodes, createNewNode(newNodeId)],
+          links: [...col.links, createNewLink()]
+        };
+      }
+      return col;
+    }));
   };
 
-  const removeRow = (rowIndex: number) => {
-    if (numRows > MIN_ROWS) {
-        setGridData(prev => prev.filter((_, i) => i !== rowIndex));
-    } else {
-        toast({ variant: 'destructive', title: `Cannot remove row`, description: `A minimum of ${MIN_ROWS} rows is required.`})
-    }
+  const handleNodeChange = (colId: string, nodeIndex: number, field: 'name' | 'shape', value: string) => {
+    setVisualColumns(prev => prev.map(col => {
+      if (col.id === colId) {
+        const newNodes = [...col.nodes];
+        newNodes[nodeIndex] = { ...newNodes[nodeIndex], [field]: value };
+        return { ...col, nodes: newNodes };
+      }
+      return col;
+    }));
   };
 
-  const removeCol = (colIndex: number) => {
-    if (numCols > MIN_COLS) {
-        setGridData(prev => prev.map(row => row.filter((_, i) => i !== colIndex)));
-    } else {
-        toast({ variant: 'destructive', title: `Cannot remove column`, description: `A minimum of ${MIN_COLS} columns is required.`})
-    }
+  const handleLinkChange = (colId: string, linkIndex: number, field: 'type' | 'text', value: string) => {
+    setVisualColumns(prev => prev.map(col => {
+      if (col.id === colId) {
+        const newLinks = [...col.links];
+        newLinks[linkIndex] = { ...newLinks[linkIndex], [field]: value };
+        return { ...col, links: newLinks };
+      }
+      return col;
+    }));
   };
-  
+
   if (!isClient) return <div className="w-full h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
   return (
@@ -168,7 +250,7 @@ export function FlowchartView() {
         <Card>
             <CardHeader>
                 <CardTitle>Diagram Editor</CardTitle>
-                <CardDescription>Use the visual grid or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
+                <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
             </CardHeader>
         </Card>
         <ResizablePanelGroup direction="horizontal" className="flex-1 rounded-lg border">
@@ -189,52 +271,48 @@ export function FlowchartView() {
                             placeholder="Write your Mermaid diagram code here..."
                         />
                     </TabsContent>
-                    <TabsContent value="visual" className="m-0 flex-1">
-                        <div className="p-4 space-y-2 h-full flex flex-col">
-                           <div className="flex gap-2">
-                                <Button onClick={addRow} variant="outline"><Plus className="mr-2"/> Add Row</Button>
-                                <Button onClick={addCol} variant="outline"><Plus className="mr-2"/> Add Column</Button>
-                            </div>
-                            <ScrollArea className="flex-1 -mr-4">
-                                <div className="pr-4">
-                                    <table className="border-collapse table-fixed w-full">
-                                        <thead className="sticky top-0 bg-muted z-10">
-                                            <tr>
-                                                <th className="sticky left-0 bg-muted w-14 h-8 border-b border-r z-20"></th>
-                                                {Array.from({ length: numCols }).map((_, colIndex) => (
-                                                    <th key={colIndex} className="w-40 border p-0 text-center font-medium text-muted-foreground text-sm relative group">
-                                                        <div className="p-1">{String.fromCharCode(65 + colIndex)}</div>
-                                                        <Button variant="ghost" size="icon" className="absolute -right-2 -top-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeCol(colIndex)}><Trash2 className="h-3 w-3" /></Button>
-                                                    </th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {Array.from({ length: numRows }).map((_, rowIndex) => (
-                                                <tr key={rowIndex} className="group">
-                                                    <td className="sticky left-0 bg-muted w-14 border-r border-b p-0 text-center text-sm text-muted-foreground relative">
-                                                        <div className="p-1">{rowIndex + 1}</div>
-                                                        <Button variant="ghost" size="icon" className="absolute -right-2 -top-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeRow(rowIndex)}><Trash2 className="h-3 w-3" /></Button>
-                                                    </td>
-                                                    {Array.from({ length: numCols }).map((_, colIndex) => (
-                                                        <td key={colIndex} className="p-0 border">
-                                                            <Input 
-                                                                type="text"
-                                                                value={gridData[rowIndex]?.[colIndex] || ''}
-                                                                onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                                                                className="w-full h-full p-1.5 bg-transparent border-0 rounded-none shadow-none text-sm focus-visible:ring-2 focus-visible:ring-primary z-10 relative"
-                                                                placeholder={`e.g., N${rowIndex}${colIndex}[Text]`}
-                                                            />
-                                                        </td>
-                                                    ))}
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <ScrollBar orientation="horizontal" />
-                            </ScrollArea>
+                    <TabsContent value="visual" className="m-0 flex-1 flex flex-col">
+                        <div className="p-4 border-b">
+                            <Button onClick={addColumn}><Plus className="mr-2"/>Add Chain</Button>
                         </div>
+                        <ScrollArea className="flex-1">
+                            <div className="flex gap-4 p-4 items-start">
+                                {visualColumns.map((col) => (
+                                    <div key={col.id} className="w-64 bg-muted/50 p-3 rounded-lg space-y-2 flex-shrink-0">
+                                        <Button size="sm" variant="destructive" onClick={() => removeColumn(col.id)} className="w-full mb-2">
+                                            <Trash2 className="mr-2"/>Remove Chain
+                                        </Button>
+                                        {col.nodes.map((node, nodeIndex) => (
+                                            <React.Fragment key={node.id}>
+                                                <div className="bg-background p-2 rounded border space-y-1">
+                                                     <Label className="text-xs">Node</Label>
+                                                     <Input placeholder="Text" value={node.name} onChange={e => handleNodeChange(col.id, nodeIndex, 'name', e.target.value)} />
+                                                     <Select value={node.shape} onValueChange={v => handleNodeChange(col.id, nodeIndex, 'shape', v)}>
+                                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                                        <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                                                     </Select>
+                                                </div>
+                                                {nodeIndex < col.links.length && (
+                                                    <div className="bg-background p-2 rounded border space-y-1">
+                                                        <Label className="text-xs">Link</Label>
+                                                        <div className="flex gap-1">
+                                                            <Select value={col.links[nodeIndex].type} onValueChange={v => handleLinkChange(col.id, nodeIndex, 'type', v)}>
+                                                                <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
+                                                                <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                                                            </Select>
+                                                            <Input placeholder="Text" value={col.links[nodeIndex].text} onChange={e => handleLinkChange(col.id, nodeIndex, 'text', e.target.value)} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </React.Fragment>
+                                        ))}
+                                        <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full">
+                                            <Plus className="mr-2"/>Add Node
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
                     </TabsContent>
                 </Tabs>
             </ResizablePanel>
