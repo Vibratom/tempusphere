@@ -27,7 +27,7 @@ export default function ProjectsPage() {
                 A suite of integrated tools to help you plan, track, and manage your projects from start to finish.
             </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {tools.map((tool) => (
                 <Link key={tool.value} href={tool.href} className="group">
                     <Card className="h-full flex flex-col bg-background/50 hover:bg-background transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1">
