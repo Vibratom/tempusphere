@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef, useTransition } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
@@ -12,16 +12,14 @@ import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
 import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle, Users, Milestone, CalendarClock, GitBranch, Palette, MousePointerClick, Spline, Network, FileCheck2, Briefcase, Sparkles, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { generateDiagram } from '@/ai/flows/generate-diagram-flow';
-import { useSearchParams } from 'next/navigation';
 
 const diagramTemplates = {
   flowchart: `flowchart TD
-    A[Start] --> B{Is it?};
-    B -- Yes --> C[OK];
-    C --> D[Rethink];
+    A(Start) --> B{Is it?};
+    B -- Yes --> C(OK);
+    C --> D(Rethink);
     D --> A;
-    B -- No --> E[End];
+    B -- No --> E(End);
 `,
   sequence: `sequenceDiagram
     participant Alice
@@ -223,10 +221,6 @@ export function FlowchartView() {
   
   const [mermaidTheme, setMermaidTheme] = useState<MermaidTheme>('default');
   const [customCSS, setCustomCSS] = useLocalStorage('flowchart:custom-css-v1', '/* Target elements with CSS classes */\n.node-style {\n  font-weight: bold;\n}');
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [isGenerating, startTransition] = useTransition();
-
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     setIsClient(true);
@@ -285,45 +279,12 @@ export function FlowchartView() {
     toast({ title: "SVG Exported", description: "Your diagram has been downloaded."});
   };
 
-  const handleAiGenerate = () => {
-    if (!aiPrompt.trim()) return;
-
-    startTransition(async () => {
-        try {
-            const diagramCode = await generateDiagram({ prompt: aiPrompt });
-            setCode(diagramCode);
-            toast({ title: "Diagram Generated!", description: "The AI has created your diagram."});
-        } catch (error) {
-            console.error("AI Generation Error:", error);
-            toast({ title: "Generation Failed", description: "The AI could not generate a diagram from your prompt.", variant: "destructive"});
-        }
-    });
-  }
-
   if (!isClient) {
     return <div className="w-full h-full bg-muted animate-pulse"></div>;
   }
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
-       <Card>
-          <CardHeader>
-              <CardTitle>AI Diagram Generator</CardTitle>
-              <CardDescription>Describe the diagram or process you want to visualize, and let the AI generate the Mermaid.js code for you.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col sm:flex-row gap-2">
-            <Textarea
-              placeholder="e.g., A simple user login flow with success and failure paths..."
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              rows={1}
-            />
-            <Button onClick={handleAiGenerate} disabled={isGenerating || !aiPrompt.trim()} className="w-full sm:w-auto">
-                {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2"/>}
-                Generate
-            </Button>
-          </CardContent>
-      </Card>
       <Card>
           <CardHeader>
               <CardTitle>Templates</CardTitle>
