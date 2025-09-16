@@ -9,7 +9,6 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useTheme } from 'next-themes';
 import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -126,8 +125,6 @@ export function DiagramEditor() {
   const [isClient, setIsClient] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
   
-  const [panelDirection, setPanelDirection] = useState<'horizontal' | 'vertical'>('horizontal');
-
   const { resolvedTheme } = useTheme();
 
     const diagramType = useMemo((): DiagramType => {
@@ -140,16 +137,6 @@ export function DiagramEditor() {
 
   useEffect(() => {
     setIsClient(true);
-    const checkScreenSize = () => {
-        if (window.innerWidth < 768) { // md breakpoint
-            setPanelDirection('vertical');
-        } else {
-            setPanelDirection('horizontal');
-        }
-    };
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
   // --- Code Generation & Parsing ---
@@ -331,10 +318,10 @@ export function DiagramEditor() {
               </div>
             </CardHeader>
         </Card>
-        <div className="flex-1 min-h-0">
-            <ResizablePanelGroup direction={panelDirection} className="h-full rounded-lg border">
-                <ResizablePanel defaultSize={panelDirection === 'vertical' ? 50 : 60} minSize={30}>
-                     <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
+            <Card className="flex flex-col">
+                <CardContent className="p-0 flex-1">
+                    <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
                         <div className="p-4 pb-0 border-b">
                             <TabsList className="grid w-full max-w-sm grid-cols-2">
                                 <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
@@ -395,10 +382,12 @@ export function DiagramEditor() {
                             </ScrollArea>
                         </TabsContent>
                     </Tabs>
-                </ResizablePanel>
-                <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={panelDirection === 'vertical' ? 50 : 40} minSize={30}>
-                    <ScrollArea className="h-full w-full p-4" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                </CardContent>
+            </Card>
+
+            <Card className="flex flex-col">
+                <CardContent className="p-0 flex-1">
+                     <ScrollArea className="h-full w-full p-4" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
                         {renderError ? (
                             <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
                                 <AlertCircle className="w-10 h-10 mb-2"/>
@@ -413,8 +402,8 @@ export function DiagramEditor() {
                             </div>
                         )}
                     </ScrollArea>
-                </ResizablePanel>
-            </ResizablePanelGroup>
+                </CardContent>
+            </Card>
         </div>
     </div>
   );
