@@ -103,7 +103,17 @@ const getLinkSyntax = (type: VisualLink['type'], text: string) => {
     return linkSymbol;
 };
 
-const createNewNode = (): VisualNode => ({ id: `Node${Math.floor(Math.random() * 1000)}`, name: 'New Node', shape: 'rect' });
+
+const createSafeId = (name: string) => {
+    if (!name) return `Node${Math.floor(Math.random() * 1000000)}`;
+    return name.replace(/[^a-zA-Z0-9_]/g, '_');
+};
+
+
+const createNewNode = (): VisualNode => {
+    const name = 'New Node';
+    return { id: createSafeId(name), name, shape: 'rect' };
+};
 const createNewLink = (): VisualLink => ({ id: `link-${Math.random()}`, type: 'arrow', text: '' });
 const createNewColumn = (): VisualColumn => {
     return {
@@ -114,53 +124,37 @@ const createNewColumn = (): VisualColumn => {
 };
 
 const NodeEditorRow = ({ colId, nodeIndex, node, link, handleNodeChange, onLinkChange }: { colId: string, nodeIndex: number, node: VisualNode, link?: VisualLink, handleNodeChange: (colId: string, nodeIndex: number, field: keyof VisualNode, value: string) => void, onLinkChange: (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => void }) => {
-    const [currentNode, setCurrentNode] = useState(node);
+    const [currentNodeName, setCurrentNodeName] = useState(node.name);
 
     useEffect(() => {
-        setCurrentNode(node);
-    }, [node]);
-
-    const handleLocalChange = (field: keyof VisualNode, value: string) => {
-        setCurrentNode(prev => ({ ...prev, [field]: value }));
-    };
-
-    const commitChanges = (field: keyof VisualNode, value: string) => {
-        handleNodeChange(colId, nodeIndex, field, value);
+        setCurrentNodeName(node.name);
+    }, [node.name]);
+    
+    const commitNameChange = (newName: string) => {
+        handleNodeChange(colId, nodeIndex, 'name', newName);
     };
 
     return (
         <AccordionItem value={`node-${node.id}`}>
             <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
-              Node: {currentNode.name || 'Untitled'}
+              Node: {currentNodeName || 'Untitled'}
             </AccordionTrigger>
             <AccordionContent className="p-2 pt-0">
                 <div className="bg-background p-2 rounded border space-y-2">
                     <div>
-                        <Label className="text-xs">Node ID</Label>
-                        <Input
-                            placeholder="Unique ID"
-                            value={currentNode.id}
-                            onChange={e => handleLocalChange('id', e.target.value.replace(/\s+/g, '_'))}
-                            onBlur={e => commitChanges('id', e.target.value.replace(/\s+/g, '_'))}
-                        />
-                    </div>
-                    <div>
                         <Label className="text-xs">Node Text</Label>
                         <Input
                             placeholder="Text"
-                            value={currentNode.name}
-                            onChange={e => handleLocalChange('name', e.target.value)}
-                            onBlur={e => commitChanges('name', e.target.value)}
+                            value={currentNodeName}
+                            onChange={e => setCurrentNodeName(e.target.value)}
+                            onBlur={e => commitNameChange(e.target.value)}
                         />
                     </div>
                     <div>
                         <Label className="text-xs">Shape</Label>
                         <Select
-                            value={currentNode.shape}
-                            onValueChange={v => {
-                                handleLocalChange('shape', v);
-                                commitChanges('shape', v);
-                            }}
+                            value={node.shape}
+                            onValueChange={v => handleNodeChange(colId, nodeIndex, 'shape', v)}
                         >
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
@@ -188,6 +182,11 @@ const LinkEditorRow = ({ colId, linkIndex, link, onLinkChange }: { colId: string
         onLinkChange(colId, linkIndex, 'type', currentLink.type);
         onLinkChange(colId, linkIndex, 'text', currentLink.text);
     };
+    
+    const handleTypeChange = (v: string) => {
+        handleLocalChange('type', v);
+        onLinkChange(colId, linkIndex, 'type', v);
+    }
 
     return (
         <div className="pt-2 mt-2 border-t">
@@ -195,10 +194,7 @@ const LinkEditorRow = ({ colId, linkIndex, link, onLinkChange }: { colId: string
             <div className="flex gap-1">
                 <Select
                     value={currentLink.type}
-                    onValueChange={v => {
-                        handleLocalChange('type', v);
-                        onLinkChange(colId, linkIndex, 'type', v);
-                    }}
+                    onValueChange={handleTypeChange}
                 >
                     <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
                     <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
@@ -330,7 +326,11 @@ export function DiagramEditor() {
     setVisualColumns(prev => prev.map(col => {
       if (col.id === colId) {
         const newNodes = [...col.nodes];
-        newNodes[nodeIndex] = { ...newNodes[nodeIndex], [field]: value };
+        const updatedNode = { ...newNodes[nodeIndex], [field]: value };
+        if (field === 'name') {
+            updatedNode.id = createSafeId(value);
+        }
+        newNodes[nodeIndex] = updatedNode;
         return { ...col, nodes: newNodes };
       }
       return col;
