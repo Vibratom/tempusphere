@@ -68,7 +68,7 @@ const diagramTemplates = {
       pie: { label: "Pie Chart", code: `pie\n    title Key-Value Distribution\n    "Databases" : 80\n    "Messaging" : 20`},
       quadrant: { label: "Quadrant Chart", code: `quadrantChart\n    title Reach and engagement of campaigns\n    x-axis Low Reach --> High Reach\n    y-axis Low Engagement --> High Engagement\n    quadrant-1 We should expand\n    quadrant-2 Need to promote\n    quadrant-3 Re-evaluate\n    quadrant-4 May be improved\n    "Campaign A": [0.3, 0.6]\n    "Campaign B": [0.45, 0.23]\n    "Campaign C": [0.57, 0.69]\n    "Campaign D": [0.78, 0.34]\n    "Campaign E": [0.40, 0.34]\n    "Campaign F": [0.35, 0.78]`},
       radar: { label: "Radar Chart", code: `radar-beta\n    ---\ntitle: Quality attributes of a good report\n---\n    radar-chart\n        "Excellent"\n        "Good"\n        "Passable"\n        "Bad"\n        "Awful"\n\n        "Clarity", 5, 4, 3, 2, 1\n        "Accuracy", 1, 2, 3, 4, 5\n        "Consistency", 5, 4, 3, 2, 1\n        "Completeness", 1, 2, 3, 4, 5\n        "Conciseness", 5, 4, 3, 2, 1`},
-      xy: { label: "XY Chart", code: `xychart-beta\n    title "Sales History"\n    x-axis [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]\n    y-axis "Sales" [10, 20, 15, 25, 30, 28, 35, 40, 38, 45, 50, 48]\n    line "sales-line" [10, 20, 15, 25, 30, 28, 35, 40, 38, 45, 50, 48]`},
+      xy: { label: "XY Chart", code: `xychart-beta\n    title "Sales Revenue"\n    x-axis "Months" ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]\n    y-axis "Revenue (in $)" 4000 --> 11000\n    bar [4900, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]\n    line [4900, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]`},
     }
   },
   misc: {
