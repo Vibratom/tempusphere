@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
@@ -21,7 +20,7 @@ const diagramTemplates = {
         flowchart: { label: "Flowchart", code: `flowchart TD\n    A(Start) --> B{Is it?};\n    B -- Yes --> C(OK);\n    C --> D(Rethink);\n    D --> A;\n    B -- No --> E(End);`},
         swimlane: { label: "Swimlane Chart", code: `flowchart TD\n    subgraph CUSTOMER\n        A[Place a Product Order] --> B\n        H[Finish]\n    end\n    subgraph SALES\n        B(Confirm if order is received) --> C\n        F{Cancel the order}\n    end\n    subgraph STOCKS\n        C(Check the inventory) --> D{Is the product in stock?}\n        D -- NO --> F\n        I(Deliver the order) --> H\n    end\n    subgraph FINANCE\n        D -- YES --> E(Check credit card)\n        E --> G{Is the card valid?}\n        G -- YES --> J(Processing the payment)\n        G -- NO --> F\n        J --> I\n    end`},
         workflow: { label: "Workflow Diagram", code: `flowchart TD\n    A((Start)) --> B[Draft Document];\n    B --> C{Review Required?};\n    C -- Yes --> D[Submit for Review];\n    D --> E{Approved?};\n    E -- No --> B;\n    C -- No --> F[Publish Document];\n    E -- Yes --> F;\n    F --> G((End));`},
-        bpmn: { label: "BPMN", code: `bpmn\n    title Simple BPMN Process\n\n    start event: Start\n    task: Step 1\n    exclusive gateway: Is it valid?\n    task: Step 2a\n    task: Step 2b\n    end event: End\n\n    start event -> task\n    task -> exclusive gateway\n    exclusive gateway -- Yes --> task\n    exclusive gateway -- No --> task\n    task -> end event\n    task -> end event`},
+        bpmn: { label: "BPMN", code: `bpmn\n    title Simple BPMN Process\n    task: Task 1\n    task: Task 2\n    exclusiveGateway: Is it valid?\n    task: Task 2a\n    task: Task 2b\n    endEvent: End\n\n    startEvent -> task: Task 1\n    task: Task 1 -> exclusiveGateway\n    exclusiveGateway -> task: Task 2a\n    exclusiveGateway -> task: Task 2b\n    task: Task 2a -> endEvent\n    task: Task 2b -> endEvent`},
         state: { label: "State Diagram", code: `stateDiagram-v2\n    [*] --> Still\n    Still --> [*]\n\n    Still --> Moving\n    Moving --> Still\n    Moving --> Crash\n    Crash --> [*]`},
         decisionTree: { label: "Decision Tree", code: `flowchart TD\n    A{Should I deploy on Friday?}\n    A -- Yes --> B{Is there a critical bug fix?};\n    A -- No --> C[Enjoy the weekend!];\n    \n    B -- Yes --> D[Deploy with monitoring];\n    B -- No --> E{Can it wait until Monday?};\n    \n    E -- Yes --> F[Schedule for Monday morning];\n    E -- No --> G[Deploy... but be ready for a long night];`},
     },

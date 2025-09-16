@@ -1,6 +1,16 @@
+'use client';
 
 import { CanvasView } from '@/components/projects/CanvasView';
+import { Suspense } from 'react';
+
+function CanvasPageContent() {
+  return <CanvasView />;
+}
 
 export default function CanvasPage() {
-  return <CanvasView />;
+    return (
+        <Suspense>
+            <CanvasPageContent />
+        </Suspense>
+    )
 }

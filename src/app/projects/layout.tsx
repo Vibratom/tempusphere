@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { Suspense, useMemo } from 'react';
@@ -18,7 +17,7 @@ import GanttPage from './gantt/page';
 import SpreadsheetPage from './spreadsheet/page';
 import ChecklistPage from './checklist/page';
 import CanvasPage from './canvas/page';
-import FlowchartPage from './flowchart/page';
+import MindMapPage from './mindmap/page';
 
 const LoadingFallback = () => (
     <div className="flex-1 flex items-center justify-center">
@@ -34,7 +33,7 @@ const toolComponents: Record<string, React.ComponentType> = {
     spreadsheet: SpreadsheetPage,
     checklist: ChecklistPage,
     canvas: CanvasPage,
-    flowchart: FlowchartPage,
+    mindmap: MindMapPage,
 };
 
 export default function ProjectsLayout({

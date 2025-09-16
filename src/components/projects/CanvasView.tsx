@@ -508,8 +508,14 @@ export function CanvasView() {
     }
 
     return (
-        <div className="w-full h-full flex items-center justify-center" ref={containerRef} tabIndex={-1}>
-            <Card className="w-full flex flex-col" style={{ height: '800px' }}>
+        <div className="w-full h-full flex flex-col gap-4" ref={containerRef} tabIndex={-1}>
+             <Card>
+                <CardHeader>
+                    <CardTitle>Diagram Canvas</CardTitle>
+                    <CardDescription>A freeform canvas for your ideas. Draw, write, and import images.</CardDescription>
+                </CardHeader>
+            </Card>
+            <Card className="w-full flex flex-col flex-1">
                 <CardContent className="p-0 flex-1 relative overflow-hidden flex flex-col">
                     <div className="absolute top-2 left-2 z-10 bg-background/80 border rounded-lg p-1 flex gap-1 items-center shadow-md flex-wrap">
                         <Button variant={tool === 'SELECT' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('SELECT')}><MousePointer /></Button>

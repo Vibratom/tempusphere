@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -11,25 +10,24 @@ import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 
 const defaultMermaidCode = `mindmap
-  root((Tempusphere))
-    Features
-      Clocks
-        Primary
-        World
-      Alarms
-      Stopwatch
-      Timer
-      Tools
-        Converter
-        Planner
-        Calendar
-    Customization
-      Themes
-      Backgrounds
+  root((Mind Map))
+    Easy to Use
+      Just use indentation
+      - Deeper
+        - Even Deeper
+    Powerful
+      Supports Markdown
+      **Bold**
+      *Italic*
+      \`Code\`
+    Fun
+      Use Emojis!
+      :joy:
+      :tada:
 `;
 
 export function MindMapView() {
-  const [code, setCode] = useLocalStorage('mindmap:mermaid-code-v1', defaultMermaidCode);
+  const [code, setCode] = useLocalStorage('mindmap:mermaid-code-v2', defaultMermaidCode);
   const [svg, setSvg] = useState('');
   const [isClient, setIsClient] = useState(false);
   const mermaidRef = useRef<HTMLDivElement>(null);
@@ -81,9 +79,9 @@ export function MindMapView() {
     <div className="w-full h-full flex flex-col gap-4">
        <Card>
         <CardHeader>
-          <CardTitle>Mermaid.js Editor</CardTitle>
+          <CardTitle>Mind Map Creator</CardTitle>
           <CardDescription>
-            Create diagrams with text. Try flowcharts, sequence diagrams, Gantt charts, and more.
+            Organize your thoughts with a simple, text-based mind map. Just use indentation to create branches.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -94,7 +92,7 @@ export function MindMapView() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
-              placeholder="Write your Mermaid.js code here..."
+              placeholder="Write your mind map code here..."
             />
           </CardContent>
         </Card>
