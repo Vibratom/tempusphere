@@ -16,9 +16,11 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { OnChange, Editor } from '@/components/Editor';
+import { Editor } from '@/components/Editor';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 
 mermaid.initialize({
   startOnLoad: false,
@@ -33,7 +35,8 @@ const diagramTemplates = {
     templates: {
       flowchart: { label: "Flowchart", code: `flowchart TD\n    A(Start) --> B{Is it?};\n    B -- Yes --> C(OK);\n    C --> D(Rethink);\n    D --> A;\n    B -- No --> E(End);`},
       state: { label: "State Diagram", code: `stateDiagram-v2\n    [*] --> Still\n    Still --> [*]\n\n    Still --> Moving\n    Moving --> Still\n    Moving --> Crash\n    Crash --> [*]`},
-      userJourney: { label: "User Journey", code: `journey\n    title My Work Day\n    section Go to work\      Make tea: 5: Me\
+      userJourney: { label: "User Journey", code: `journey\n    title My Work Day\n    section Go to work\
+      Make tea: 5: Me\
       Go to work: 3: Me\
       Sit down: 5: Me\
     section Work\
@@ -652,7 +655,7 @@ export function FlowchartView() {
   );
   
   const previewPanel = (
-    <Card className="flex flex-col h-full rounded-none border-0">
+    <Card className="flex flex-col h-full rounded-none border-0 md:rounded-lg md:border">
         <CardHeader className="flex-row items-center justify-between">
             <CardTitle>Live Preview</CardTitle>
         </CardHeader>
@@ -717,12 +720,20 @@ export function FlowchartView() {
       </Card>
       
       {isMobile ? (
-        <div className="flex-1 flex flex-col gap-4">
-            <ResizablePanelGroup direction="vertical">
-                <ResizablePanel>{editorPanel}</ResizablePanel>
-                <ResizableHandle withHandle/>
-                <ResizablePanel>{previewPanel}</ResizablePanel>
-            </ResizablePanelGroup>
+        <div className="flex-1 flex flex-col gap-4 min-h-0">
+          <Accordion type="single" collapsible defaultValue="item-1">
+            <AccordionItem value="item-1">
+              <AccordionTrigger>Editor</AccordionTrigger>
+              <AccordionContent>
+                <div className="h-[50vh] overflow-y-auto">
+                    {editorPanel}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+          <div className="flex-1 min-h-0">
+            {previewPanel}
+          </div>
         </div>
       ) : (
          <ResizablePanelGroup direction="horizontal" className="flex-1 border rounded-lg">
@@ -738,6 +749,8 @@ export function FlowchartView() {
 function Description({ children }: { children: React.ReactNode }) {
     return <p className="text-xs text-muted-foreground">{children}</p>;
 }
+    
+
     
 
     
