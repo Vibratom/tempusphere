@@ -7,22 +7,15 @@ import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { ScrollArea } from '../ui/scroll-area';
 import { useTheme } from 'next-themes';
-import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2, Download } from 'lucide-react';
+import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2, Download, ArrowDown } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
-
 
 // --- Types and Constants ---
 
@@ -36,15 +29,23 @@ interface VisualNode {
 
 interface VisualLink {
   id: string;
+  from: string;
+  to: string;
   type: 'arrow' | 'line' | 'dotted';
   text: string;
 }
 
-// Each column is a chain of nodes and links
-interface VisualColumn {
-  id: string;
-  nodes: VisualNode[];
-  links: VisualLink[];
+// Each row is a chain of nodes and links
+interface VisualRow {
+    id: string;
+    from_node_id: string;
+    from_node_name: string;
+    from_node_shape: VisualNode['shape'];
+    link_type: VisualLink['type'];
+    link_text: string;
+    to_node_id: string;
+    to_node_name: string;
+    to_node_shape: VisualNode['shape'];
 }
 
 const defaultCode = `flowchart TD
@@ -67,6 +68,29 @@ const linkTypeOptions = [
   { value: 'line', label: '---' },
   { value: 'dotted', label: '-.->' },
 ];
+
+
+const createSafeId = (name: string) => {
+    if (!name) return `Node${Math.floor(Math.random() * 1000000)}`;
+    return name.replace(/[^a-zA-Z0-9_]/g, '_');
+};
+
+
+const createNewVisualRow = (): VisualRow => {
+    const fromNodeName = 'Node A';
+    const toNodeName = 'Node B';
+    return {
+        id: `row-${Math.random()}`,
+        from_node_id: createSafeId(fromNodeName),
+        from_node_name: fromNodeName,
+        from_node_shape: 'rect',
+        link_type: 'arrow',
+        link_text: 'Link Text',
+        to_node_id: createSafeId(toNodeName),
+        to_node_name: toNodeName,
+        to_node_shape: 'rect',
+    };
+};
 
 // --- Mermaid Initialization ---
 
@@ -91,139 +115,34 @@ const getShapeSyntax = (shape: VisualNode['shape']) => {
 
 const getLinkSyntax = (type: VisualLink['type'], text: string) => {
     const linkText = text.trim();
-    const linkSymbol = {
-        'line': `---`,
-        'dotted': `-.->`,
-        'arrow': `-->`,
-    }[type];
-    
-    if (linkText) {
-        return `-- ${linkText} --`;
-    }
-    return linkSymbol;
-};
-
-
-const createSafeId = (name: string) => {
-    if (!name) return `Node${Math.floor(Math.random() * 1000000)}`;
-    return name.replace(/[^a-zA-Z0-9_]/g, '_');
-};
-
-
-const createNewNode = (): VisualNode => {
-    const name = 'New Node';
-    return { id: createSafeId(name), name, shape: 'rect' };
-};
-const createNewLink = (): VisualLink => ({ id: `link-${Math.random()}`, type: 'arrow', text: '' });
-const createNewColumn = (): VisualColumn => {
-    return {
-        id: `col-${Math.random()}`,
-        nodes: [createNewNode()],
-        links: [],
-    };
-};
-
-const NodeEditorRow = ({ colId, nodeIndex, node, link, handleNodeChange, onLinkChange }: { colId: string, nodeIndex: number, node: VisualNode, link?: VisualLink, handleNodeChange: (colId: string, nodeIndex: number, field: keyof VisualNode, value: string) => void, onLinkChange: (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => void }) => {
-    const [currentNodeName, setCurrentNodeName] = useState(node.name);
-
-    useEffect(() => {
-        setCurrentNodeName(node.name);
-    }, [node.name]);
-    
-    const commitNameChange = (newName: string) => {
-        handleNodeChange(colId, nodeIndex, 'name', newName);
-    };
-
-    return (
-        <AccordionItem value={`node-${node.id}`}>
-            <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
-              Node: {currentNodeName || 'Untitled'}
-            </AccordionTrigger>
-            <AccordionContent className="p-2 pt-0">
-                <div className="bg-background p-2 rounded border space-y-2">
-                    <div>
-                        <Label className="text-xs">Node Text</Label>
-                        <Input
-                            placeholder="Text"
-                            value={currentNodeName}
-                            onChange={e => setCurrentNodeName(e.target.value)}
-                            onBlur={e => commitNameChange(e.target.value)}
-                        />
-                    </div>
-                    <div>
-                        <Label className="text-xs">Shape</Label>
-                        <Select
-                            value={node.shape}
-                            onValueChange={v => handleNodeChange(colId, nodeIndex, 'shape', v)}
-                        >
-                            <SelectTrigger><SelectValue/></SelectTrigger>
-                            <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
-                    {link && <LinkEditorRow colId={colId} linkIndex={nodeIndex} link={link} onLinkChange={onLinkChange} />}
-                </div>
-            </AccordionContent>
-        </AccordionItem>
-    );
-};
-
-const LinkEditorRow = ({ colId, linkIndex, link, onLinkChange }: { colId: string, linkIndex: number, link: VisualLink, onLinkChange: (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => void }) => {
-    const [currentLink, setCurrentLink] = useState(link);
-
-    useEffect(() => {
-        setCurrentLink(link);
-    }, [link]);
-
-    const handleLocalChange = (field: 'type' | 'text', value: string) => {
-        setCurrentLink(prev => ({ ...prev, [field]: value }));
-    };
-
-    const commitChanges = () => {
-        onLinkChange(colId, linkIndex, 'type', currentLink.type);
-        onLinkChange(colId, linkIndex, 'text', currentLink.text);
-    };
-    
-    const handleTypeChange = (v: string) => {
-        handleLocalChange('type', v);
-        onLinkChange(colId, linkIndex, 'type', v);
+    if (!linkText) {
+        return { 'arrow': '-->', 'line': '---', 'dotted': '-.->' }[type];
     }
 
-    return (
-        <div className="pt-2 mt-2 border-t">
-            <Label className="text-xs">Outgoing Link</Label>
-            <div className="flex gap-1">
-                <Select
-                    value={currentLink.type}
-                    onValueChange={handleTypeChange}
-                >
-                    <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
-                    <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                </Select>
-                <Input
-                    placeholder="Text on link"
-                    value={currentLink.text}
-                    onChange={e => handleLocalChange('text', e.target.value)}
-                    onBlur={commitChanges}
-                />
-            </div>
-        </div>
-    );
+    switch (type) {
+        case 'arrow':
+            return `-- ${linkText} -->`;
+        case 'line':
+            return `--- |${linkText}|`;
+        case 'dotted':
+            return`-. ${linkText} .->`;
+        default:
+            return '-->';
+    }
 };
 
 
 // --- Component ---
 
 export function DiagramEditor() {
-  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v23', defaultCode);
-  const [visualColumns, setVisualColumns] = useLocalStorage<VisualColumn[]>('flowchart:visual-cols-v2', [createNewColumn()]);
+  const [savedCode, setSavedCode] = useLocalStorage('diagram:mermaid-code-v1', defaultCode);
+  const [visualRows, setVisualRows] = useLocalStorage<VisualRow[]>('diagram:visual-rows-v1', [createNewVisualRow()]);
   
   const [code, setCode] = useState(savedCode);
   const [svg, setSvg] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
-  
-  const { resolvedTheme } = useTheme();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -231,40 +150,44 @@ export function DiagramEditor() {
   }, []);
 
   // --- Code Generation & Parsing ---
-
-  const generateMermaidCode = useCallback(() => {
+  
+  const generateCodeFromVisual = useCallback(() => {
     if (editorMode !== 'visual') return;
-
+  
     let newCode = `flowchart TD\n`;
     const definedNodes = new Set<string>();
-
-    visualColumns.forEach(col => {
-      col.nodes.forEach((node, nodeIndex) => {
-        if (node.name.trim() && !definedNodes.has(node.id)) {
-          const [start, end] = getShapeSyntax(node.shape);
-          newCode += `    ${node.id}${start}"${node.name}"${end}\n`;
-          definedNodes.add(node.id);
-        }
-        
-        if (nodeIndex < col.links.length) {
-          const link = col.links[nodeIndex];
-          const nextNode = col.nodes[nodeIndex + 1];
-          if (nextNode) {
-            const linkSyntax = getLinkSyntax(link.type, link.text);
-            newCode += `    ${node.id} ${linkSyntax} ${nextNode.id}\n`;
-          }
-        }
-      });
+  
+    visualRows.forEach(row => {
+      // Define 'from' node if not already defined
+      if (row.from_node_name.trim() && !definedNodes.has(row.from_node_id)) {
+        const [start, end] = getShapeSyntax(row.from_node_shape);
+        newCode += `    ${row.from_node_id}${start}"${row.from_node_name}"${end}\n`;
+        definedNodes.add(row.from_node_id);
+      }
+  
+      // Define 'to' node if not already defined
+      if (row.to_node_name.trim() && !definedNodes.has(row.to_node_id)) {
+        const [start, end] = getShapeSyntax(row.to_node_shape);
+        newCode += `    ${row.to_node_id}${start}"${row.to_node_name}"${end}\n`;
+        definedNodes.add(row.to_node_id);
+      }
+  
+      // Add the link
+      if (row.from_node_name.trim() && row.to_node_name.trim()) {
+        const linkSyntax = getLinkSyntax(row.link_type, row.link_text);
+        newCode += `    ${row.from_node_id} ${linkSyntax} ${row.to_node_id}\n`;
+      }
     });
     
-    // Add cross-column links here in the future
-
     setCode(newCode);
-  }, [editorMode, visualColumns]);
+  }, [editorMode, visualRows]);
+
 
   useEffect(() => {
-    generateMermaidCode();
-  }, [generateMermaidCode]);
+    generateCodeFromVisual();
+  }, [generateCodeFromVisual]);
+
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     if (!isClient) return;
@@ -301,42 +224,28 @@ export function DiagramEditor() {
 
   // --- Visual Editor Handlers ---
 
-  const addColumn = () => {
-    setVisualColumns(prev => [...prev, createNewColumn()]);
+  const addVisualRow = () => {
+    setVisualRows(prev => [...prev, createNewVisualRow()]);
   };
   
-  const removeColumn = (colId: string) => {
-    setVisualColumns(prev => prev.filter(c => c.id !== colId));
+  const removeVisualRow = (rowId: string) => {
+    setVisualRows(prev => prev.filter(r => r.id !== rowId));
   };
   
-  const addRow = (colId: string) => {
-    setVisualColumns(prev => prev.map(col => {
-      if (col.id === colId) {
-        return {
-          ...col,
-          nodes: [...col.nodes, createNewNode()],
-          links: [...col.links, createNewLink()]
-        };
+  const handleVisualRowChange = (index: number, field: keyof VisualRow, value: string) => {
+      const newRows = [...visualRows];
+      const newRow = {...newRows[index], [field]: value};
+      
+      if (field === 'from_node_name') {
+          newRow.from_node_id = createSafeId(value);
       }
-      return col;
-    }));
-  };
-
-  const handleNodeChange = (colId: string, nodeIndex: number, field: keyof VisualNode, value: string) => {
-    setVisualColumns(prev => prev.map(col => {
-      if (col.id === colId) {
-        const newNodes = [...col.nodes];
-        const updatedNode = { ...newNodes[nodeIndex], [field]: value };
-        if (field === 'name') {
-            updatedNode.id = createSafeId(value);
-        }
-        newNodes[nodeIndex] = updatedNode;
-        return { ...col, nodes: newNodes };
+      if (field === 'to_node_name') {
+          newRow.to_node_id = createSafeId(value);
       }
-      return col;
-    }));
+      newRows[index] = newRow;
+      setVisualRows(newRows);
   };
-
+  
   const handleExportSVG = () => {
     if (!svg) {
       toast({
@@ -361,23 +270,6 @@ export function DiagramEditor() {
       description: "Your diagram has been downloaded as an SVG file.",
     });
   };
-  
-  const handleLinkChange = (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => {
-    setVisualColumns(prev => {
-        return prev.map(col => {
-            if (col.id === colId) {
-                const newLinks = col.links.map((link, idx) => {
-                    if (idx === linkIndex) {
-                        return { ...link, [field]: value };
-                    }
-                    return link;
-                });
-                return { ...col, links: newLinks };
-            }
-            return col;
-        });
-    });
-  };
 
 
   if (!isClient) return <div className="w-full h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -385,102 +277,111 @@ export function DiagramEditor() {
   return (
     <div className="w-full h-full flex flex-col gap-4">
         <div className="grid md:grid-cols-2 gap-4">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Chart Editor</CardTitle>
-                    <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
-                </CardHeader>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Live Preview</CardTitle>
-                    <CardDescription>The rendered output of your diagram appears here.</CardDescription>
-                </CardHeader>
-            </Card>
+          <Card>
+              <CardHeader>
+                  <CardTitle>Diagram Editor</CardTitle>
+                  <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
+              </CardHeader>
+          </Card>
+          <Card>
+              <CardHeader>
+                  <CardTitle>Live Preview</CardTitle>
+                  <CardDescription>The rendered output of your diagram appears here.</CardDescription>
+              </CardHeader>
+          </Card>
         </div>
 
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
-            <Card className="flex flex-col">
-                <CardHeader>
-                    <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)}>
-                        <TabsList className="grid w-full max-w-sm grid-cols-2">
-                            <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
-                            <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                </CardHeader>
-                <CardContent className="p-0 flex-1 flex flex-col">
-                    {editorMode === 'code' ? (
-                        <Textarea
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
-                            placeholder="Write your Mermaid diagram code here..."
-                        />
-                    ) : (
-                        <div className="flex-1 flex flex-col">
-                            <div className="p-4 border-y">
-                                <Button onClick={addColumn}><Plus className="mr-2"/>Add Chain</Button>
-                            </div>
-                            <ScrollArea className="flex-1">
-                                <div className="flex gap-4 p-4 items-start">
-                                    {visualColumns.map((col) => (
-                                        <div key={col.id} className="w-64 bg-muted/50 p-3 rounded-lg space-y-2 flex-shrink-0">
-                                            <Button size="sm" variant="destructive" onClick={() => removeColumn(col.id)} className="w-full mb-2">
-                                                <Trash2 className="mr-2"/>Remove Chain
-                                            </Button>
-                                            <Accordion type="multiple" className="w-full space-y-2">
-                                                {col.nodes.map((node, nodeIndex) => (
-                                                    <NodeEditorRow
-                                                        key={`node-frag-${node.id}`}
-                                                        colId={col.id}
-                                                        nodeIndex={nodeIndex}
-                                                        node={node}
-                                                        link={nodeIndex < col.links.length ? col.links[nodeIndex] : undefined}
-                                                        handleNodeChange={handleNodeChange}
-                                                        onLinkChange={handleLinkChange}
-                                                    />
-                                                ))}
-                                            </Accordion>
-                                            <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full mt-2">
-                                                <Plus className="mr-2"/>Add Node
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
+          <Card className="flex flex-col">
+              <CardHeader>
+                  <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)}>
+                      <TabsList className="grid w-full max-w-sm grid-cols-2">
+                          <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
+                          <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
+                      </TabsList>
+                  </Tabs>
+              </CardHeader>
+              <CardContent className="p-0 flex-1 flex flex-col">
+                  {editorMode === 'code' ? (
+                      <Textarea
+                          value={code}
+                          onChange={(e) => setCode(e.target.value)}
+                          className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
+                          placeholder="Write your Mermaid diagram code here..."
+                      />
+                  ) : (
+                      <div className="flex-1 flex flex-col">
+                        <div className="p-4 border-y">
+                            <Button onClick={addVisualRow}><Plus className="mr-2"/>Add Row</Button>
                         </div>
-                    )}
-                </CardContent>
-            </Card>
+                        <ScrollArea className="flex-1">
+                            <div className="p-4 space-y-4">
+                                {visualRows.map((row, index) => (
+                                <Card key={row.id} className="p-3">
+                                    <div className="flex flex-col gap-2">
+                                      {/* From Node */}
+                                      <div className="flex flex-col gap-1">
+                                          <Label className="text-xs">From</Label>
+                                          <Input placeholder="Node Name" value={row.from_node_name} onChange={e => handleVisualRowChange(index, 'from_node_name', e.target.value)} />
+                                          <Select value={row.from_node_shape} onValueChange={v => handleVisualRowChange(index, 'from_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                      </div>
 
-            <Card className="flex flex-col">
-                 <CardHeader>
-                    <div className="flex items-center justify-end">
-                        <Button variant="outline" onClick={handleExportSVG}>
-                            <Download className="mr-2"/>
-                            Download SVG
-                        </Button>
+                                      {/* Link */}
+                                      <div className="flex flex-col items-center gap-1">
+                                          <ArrowDown className="text-muted-foreground"/>
+                                          <div className="w-full grid grid-cols-2 gap-2">
+                                            <Select value={row.link_type} onValueChange={v => handleVisualRowChange(index, 'link_type', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                            <Input placeholder="Link Text" value={row.link_text} onChange={e => handleVisualRowChange(index, 'link_text', e.target.value)} />
+                                          </div>
+                                          <ArrowDown className="text-muted-foreground"/>
+                                      </div>
+                                      
+                                      {/* To Node */}
+                                      <div className="flex flex-col gap-1">
+                                          <Label className="text-xs">To</Label>
+                                          <Input placeholder="Node Name" value={row.to_node_name} onChange={e => handleVisualRowChange(index, 'to_node_name', e.target.value)} />
+                                          <Select value={row.to_node_shape} onValueChange={v => handleVisualRowChange(index, 'to_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                      </div>
+                                    </div>
+                                    <div className="flex justify-end mt-2">
+                                        <Button size="icon" variant="ghost" onClick={() => removeVisualRow(row.id)}><Trash2 className="h-4 w-4"/></Button>
+                                    </div>
+                                </Card>
+                                ))}
+                            </div>
+                        </ScrollArea>
                     </div>
-                </CardHeader>
-                <CardContent className="p-0 flex-1">
-                     <ScrollArea className="h-full w-full p-4" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-                        {renderError ? (
-                            <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
-                                <AlertCircle className="w-10 h-10 mb-2"/>
-                                <p className="font-semibold text-center">Failed to render diagram.</p>
-                                <pre className="mt-2 text-xs bg-black/20 p-2 rounded-md whitespace-pre-wrap max-w-full text-left">{renderError}</pre>
-                            </div>
-                        ) : svg ? (
-                            <div dangerouslySetInnerHTML={{ __html: svg }} className="w-full h-full flex items-center justify-center [&>svg]:max-w-none [&>svg]:max-h-none"/>
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                {code.trim() ? <Loader2 className="h-8 w-8 animate-spin"/> : <p>Diagram will appear here.</p>}
-                            </div>
-                        )}
-                    </ScrollArea>
-                </CardContent>
-            </Card>
+                  )}
+              </CardContent>
+          </Card>
+          
+          <Card className="flex flex-col">
+                <CardHeader>
+                  <div className="flex items-center justify-end">
+                      <Button variant="outline" onClick={handleExportSVG}>
+                          <Download className="mr-2"/>
+                          Download SVG
+                      </Button>
+                  </div>
+              </CardHeader>
+              <CardContent className="p-0 flex-1">
+                    <ScrollArea className="h-full w-full p-4" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                      {renderError ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
+                              <AlertCircle className="w-10 h-10 mb-2"/>
+                              <p className="font-semibold text-center">Failed to render diagram.</p>
+                              <pre className="mt-2 text-xs bg-black/20 p-2 rounded-md whitespace-pre-wrap max-w-full text-left">{renderError}</pre>
+                          </div>
+                      ) : svg ? (
+                          <div dangerouslySetInnerHTML={{ __html: svg }} className="w-full h-full flex items-center justify-center [&>svg]:max-w-none [&>svg]:max-h-none"/>
+                      ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                              {code.trim() ? <Loader2 className="h-8 w-8 animate-spin"/> : <p>Diagram will appear here.</p>}
+                          </div>
+                      )}
+                  </ScrollArea>
+              </CardContent>
+          </Card>
         </div>
     </div>
   );

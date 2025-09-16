@@ -13,8 +13,7 @@ const tools = [
     { value: 'spreadsheet', icon: Table, label: 'Spreadsheet', href: '/projects/spreadsheet', description: 'Manage data in a flexible, powerful spreadsheet.' },
     { value: 'checklist', icon: ListChecks, label: 'Checklist', href: '/projects/checklist', description: 'Track nested to-do items and progress.' },
     { value: 'canvas', icon: DraftingCompass, label: 'Canvas', href: '/projects/canvas', description: 'A freeform canvas for drawing and brainstorming.' },
-    { value: 'flowchart', icon: GitCommit, label: 'Flowchart', href: '/projects/flowchart', description: 'Create diagrams using a visual or code editor.' },
-    { value: 'charts', icon: Spline, label: 'Charts', href: '/projects/charts', description: 'Build various charts and graphs from your data.' },
+    { value: 'diagrams', icon: GitCommit, label: 'Diagrams', href: '/projects/diagrams', description: 'Create diagrams using a visual or code editor.' },
     { value: 'mindmap', icon: Brain, label: 'Mind Map', href: '/projects/mindmap', description: 'Visually organize your thoughts with a mind map.' },
 ];
 

@@ -2,6 +2,6 @@
 
 import { DiagramEditor } from '@/components/projects/DiagramEditor';
 
-export default function ChartsPage() {
+export default function DiagramsPage() {
     return <DiagramEditor />;
 }
