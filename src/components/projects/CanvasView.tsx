@@ -87,7 +87,7 @@ export function CanvasView() {
     const [isPanning, setIsPanning] = useState(false);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
+    const canvasContainerRef = useRef<HTMLDivElement>(null);
     const textInputRef = useRef<HTMLInputElement>(null);
 
     // --- Initialization and Persistence ---
@@ -234,7 +234,7 @@ export function CanvasView() {
     // Handle canvas resize
     useEffect(() => {
         const canvas = canvasRef.current;
-        const container = containerRef.current;
+        const container = canvasContainerRef.current;
         if (!canvas || !container) return;
 
         const resizeObserver = new ResizeObserver(entries => {
@@ -508,7 +508,7 @@ export function CanvasView() {
     }
 
     return (
-        <div className="w-full h-full flex flex-col gap-4" ref={containerRef} tabIndex={-1}>
+        <div className="w-full h-full flex flex-col gap-4" tabIndex={-1}>
              <Card>
                 <CardHeader>
                     <CardTitle>Diagram Canvas</CardTitle>
@@ -516,7 +516,7 @@ export function CanvasView() {
                 </CardHeader>
             </Card>
             <Card className="w-full flex flex-col flex-1">
-                <CardContent className="p-0 flex-1 relative overflow-hidden flex flex-col">
+                <CardContent className="p-0 flex-1 relative overflow-hidden" ref={canvasContainerRef}>
                     <div className="absolute top-2 left-2 z-10 bg-background/80 border rounded-lg p-1 flex gap-1 items-center shadow-md flex-wrap">
                         <Button variant={tool === 'SELECT' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('SELECT')}><MousePointer /></Button>
                         <Button variant={tool === 'PENCIL' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('PENCIL')}><Pencil /></Button>
@@ -552,7 +552,7 @@ export function CanvasView() {
                     
                      <canvas
                         ref={canvasRef}
-                        className={cn('flex-1 w-full h-full', {
+                        className={cn('w-full h-full', {
                             'cursor-crosshair': tool === 'PENCIL' || tool === 'ERASER',
                             'cursor-text': tool === 'TEXT',
                             'cursor-grab': isPanning,
@@ -590,4 +590,3 @@ export function CanvasView() {
     );
 }
 
-    
