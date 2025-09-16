@@ -1,3 +1,4 @@
+
 'use client';
 
 import { CanvasView } from '@/components/projects/CanvasView';

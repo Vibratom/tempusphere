@@ -253,6 +253,7 @@ export function FlowchartView() {
     link.href = url;
     link.download = 'diagram.svg';
     document.body.appendChild(link);
+    link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     toast({ title: "SVG Exported", description: "Your diagram has been downloaded."});
