@@ -340,7 +340,7 @@ export function DiagramEditor() {
                         </TabsList>
                     </Tabs>
                 </CardHeader>
-                <CardContent className="p-0 flex-1 flex flex-col">
+                <div className="p-0 flex-1 flex flex-col">
                     {editorMode === 'code' ? (
                         <Textarea
                             value={code}
@@ -394,7 +394,7 @@ export function DiagramEditor() {
                             </ScrollArea>
                         </div>
                     )}
-                </CardContent>
+                </div>
             </Card>
 
             <Card className="flex flex-col">
