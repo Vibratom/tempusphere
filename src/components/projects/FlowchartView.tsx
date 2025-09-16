@@ -15,6 +15,13 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
 
 // --- Types and Constants ---
 
@@ -90,12 +97,12 @@ const getLinkSyntax = (type: VisualLink['type'], text: string) => {
     }[type];
     
     if (text.trim()) {
-        return `-- ${text.trim()} --${linkType}`;
+        return `-- ${text.trim()} --${type === 'dotted' ? '.' : ''}>`;
     }
     return linkType;
 };
 
-const createNewNode = (id: string): VisualNode => ({ id, name: id, shape: 'rect' });
+const createNewNode = (id: string): VisualNode => ({ id, name: 'Node', shape: 'rect' });
 const createNewLink = (): VisualLink => ({ id: `link-${Math.random()}`, type: 'arrow', text: '' });
 const createNewColumn = (): VisualColumn => {
     const nodeId = `N${Date.now()}`;
@@ -262,27 +269,34 @@ export function FlowchartView() {
     };
 
     return (
-        <div className="bg-background p-2 rounded border space-y-1">
-            <Label className="text-xs">Link</Label>
-            <div className="flex gap-1">
-                <Select
-                    value={currentLink.type}
-                    onValueChange={v => {
-                        handleLocalChange('type', v);
-                        commitChanges('type', v);
-                    }}
-                >
-                    <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
-                    <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                </Select>
-                <Input
-                    placeholder="Text"
-                    value={currentLink.text}
-                    onChange={e => handleLocalChange('text', e.target.value)}
-                    onBlur={e => commitChanges('text', e.target.value)}
-                />
+        <AccordionItem value={`link-${link.id}`}>
+          <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background/50 rounded-md">
+            Link: {currentLink.text || 'Untitled'}
+          </AccordionTrigger>
+          <AccordionContent className="p-2 pt-0">
+            <div className="bg-background p-2 rounded border space-y-1">
+                <Label className="text-xs">Link Style & Text</Label>
+                <div className="flex gap-1">
+                    <Select
+                        value={currentLink.type}
+                        onValueChange={v => {
+                            handleLocalChange('type', v);
+                            commitChanges('type', v);
+                        }}
+                    >
+                        <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
+                        <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Input
+                        placeholder="Text on link"
+                        value={currentLink.text}
+                        onChange={e => handleLocalChange('text', e.target.value)}
+                        onBlur={e => commitChanges('text', e.target.value)}
+                    />
+                </div>
             </div>
-        </div>
+          </AccordionContent>
+        </AccordionItem>
     );
 };
 
@@ -326,22 +340,32 @@ export function FlowchartView() {
                                         <Button size="sm" variant="destructive" onClick={() => removeColumn(col.id)} className="w-full mb-2">
                                             <Trash2 className="mr-2"/>Remove Chain
                                         </Button>
-                                        {col.nodes.map((node, nodeIndex) => (
-                                            <React.Fragment key={node.id}>
-                                                <div className="bg-background p-2 rounded border space-y-1">
-                                                     <Label className="text-xs">Node</Label>
-                                                     <Input placeholder="Text" value={node.name} onChange={e => handleNodeChange(col.id, nodeIndex, 'name', e.target.value)} />
-                                                     <Select value={node.shape} onValueChange={v => handleNodeChange(col.id, nodeIndex, 'shape', v)}>
-                                                        <SelectTrigger><SelectValue/></SelectTrigger>
-                                                        <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                                                     </Select>
-                                                </div>
-                                                {nodeIndex < col.links.length && (
-                                                    <LinkEditorRow colId={col.id} linkIndex={nodeIndex} link={col.links[nodeIndex]} />
-                                                )}
-                                            </React.Fragment>
-                                        ))}
-                                        <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full">
+                                        <Accordion type="multiple" className="w-full space-y-2">
+                                            {col.nodes.map((node, nodeIndex) => (
+                                                <React.Fragment key={node.id}>
+                                                    <AccordionItem value={`node-${node.id}`}>
+                                                        <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
+                                                          Node: {node.name || 'Untitled'}
+                                                        </AccordionTrigger>
+                                                        <AccordionContent className="p-2 pt-0">
+                                                            <div className="bg-background p-2 rounded border space-y-1">
+                                                                <Label className="text-xs">Node Text & Shape</Label>
+                                                                <Input placeholder="Text" value={node.name} onChange={e => handleNodeChange(col.id, nodeIndex, 'name', e.target.value)} />
+                                                                <Select value={node.shape} onValueChange={v => handleNodeChange(col.id, nodeIndex, 'shape', v)}>
+                                                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                                                    <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                                                                </Select>
+                                                            </div>
+                                                        </AccordionContent>
+                                                    </AccordionItem>
+                                                    
+                                                    {nodeIndex < col.links.length && (
+                                                        <LinkEditorRow colId={col.id} linkIndex={nodeIndex} link={col.links[nodeIndex]} />
+                                                    )}
+                                                </React.Fragment>
+                                            ))}
+                                        </Accordion>
+                                        <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full mt-2">
                                             <Plus className="mr-2"/>Add Node
                                         </Button>
                                     </div>
