@@ -12,7 +12,8 @@ const tools = [
     { value: 'gantt', icon: BarChartHorizontal, label: 'Gantt', href: '/projects/gantt' },
     { value: 'spreadsheet', icon: Table, label: 'Spreadsheet', href: '/projects/spreadsheet' },
     { value: 'checklist', icon: ListChecks, label: 'Checklist', href: '/projects/checklist' },
-    { value: 'canvas', icon: Spline, label: 'Canvas', href: '/projects/canvas' },
+    { value: 'canvas', icon: DraftingCompass, label: 'Canvas', href: '/projects/canvas' },
+    { value: 'flowchart', icon: Spline, label: 'Flowchart', href: '/projects/flowchart' },
     { value: 'mindmap', icon: Brain, label: 'Mind Map', href: '/projects/mindmap' },
 ];
 
