@@ -262,68 +262,23 @@ export function DiagramEditor() {
     });
   };
   
-  const LinkEditorRow = ({ colId, linkIndex, link }: { colId: string, linkIndex: number, link: VisualLink }) => {
-    const [currentLink, setCurrentLink] = useState(link);
-
-    useEffect(() => {
-        setCurrentLink(link);
-    }, [link]);
-
-    const handleLocalChange = (field: 'type' | 'text', value: string) => {
-        const updatedLink = { ...currentLink, [field]: value };
-        setCurrentLink(updatedLink);
-    };
-
-    const commitChanges = (field: 'type' | 'text', value: string) => {
-        setVisualColumns(prev => prev.map(col => {
-            if (col.id === colId) {
-                const newLinks = [...col.links];
-                newLinks[linkIndex] = { ...newLinks[linkIndex], [field]: value };
-                return { ...col, links: newLinks };
-            }
-            return col;
-        }));
-    };
-
-    return (
-        <AccordionItem value={`link-${link.id}`}>
-          <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background/50 rounded-md">
-            Link: {currentLink.text || 'Untitled'}
-          </AccordionTrigger>
-          <AccordionContent className="p-2 pt-0">
-            <div className="bg-background p-2 rounded border space-y-1">
-                <Label className="text-xs">Link Style & Text</Label>
-                <div className="flex gap-1">
-                    <Select
-                        value={currentLink.type}
-                        onValueChange={v => {
-                            handleLocalChange('type', v);
-                            commitChanges('type', v);
-                        }}
-                    >
-                        <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
-                        <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Input
-                        placeholder="Text on link"
-                        value={currentLink.text}
-                        onChange={e => handleLocalChange('text', e.target.value)}
-                        onBlur={e => commitChanges('text', e.target.value)}
-                    />
-                </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-    );
-};
-
+  const handleLinkChange = (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => {
+      setVisualColumns(prev => prev.map(col => {
+          if (col.id === colId) {
+              const newLinks = [...col.links];
+              newLinks[linkIndex] = { ...newLinks[linkIndex], [field]: value as any };
+              return { ...col, links: newLinks };
+          }
+          return col;
+      }));
+  };
 
   if (!isClient) return <div className="w-full h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
         <Card>
-            <CardHeader className="flex-col md:flex-row md:items-center md:justify-between">
+            <CardHeader>
               <div>
                 <CardTitle>Chart Editor</CardTitle>
                 <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
@@ -340,7 +295,7 @@ export function DiagramEditor() {
                         </TabsList>
                     </Tabs>
                 </CardHeader>
-                <div className="p-0 flex-1 flex flex-col">
+                <CardContent className="p-0 flex-1 flex flex-col">
                     {editorMode === 'code' ? (
                         <Textarea
                             value={code}
@@ -380,7 +335,30 @@ export function DiagramEditor() {
                                                         </AccordionItem>
                                                         
                                                         {nodeIndex < col.links.length && (
-                                                            <LinkEditorRow colId={col.id} linkIndex={nodeIndex} link={col.links[nodeIndex]} />
+                                                            <AccordionItem value={`link-${col.links[nodeIndex].id}`}>
+                                                              <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background/50 rounded-md">
+                                                                Link: {col.links[nodeIndex].text || 'Untitled'}
+                                                              </AccordionTrigger>
+                                                              <AccordionContent className="p-2 pt-0">
+                                                                <div className="bg-background p-2 rounded border space-y-1">
+                                                                    <Label className="text-xs">Link Style & Text</Label>
+                                                                    <div className="flex gap-1">
+                                                                        <Select
+                                                                            value={col.links[nodeIndex].type}
+                                                                            onValueChange={v => handleLinkChange(col.id, nodeIndex, 'type', v)}
+                                                                        >
+                                                                            <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
+                                                                            <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                                                                        </Select>
+                                                                        <Input
+                                                                            placeholder="Text on link"
+                                                                            value={col.links[nodeIndex].text}
+                                                                            onChange={e => handleLinkChange(col.id, nodeIndex, 'text', e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                              </AccordionContent>
+                                                            </AccordionItem>
                                                         )}
                                                     </React.Fragment>
                                                 ))}
@@ -394,7 +372,7 @@ export function DiagramEditor() {
                             </ScrollArea>
                         </div>
                     )}
-                </div>
+                </CardContent>
             </Card>
 
             <Card className="flex flex-col">
