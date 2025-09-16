@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
@@ -12,6 +12,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
 import { FileText, Waypoints, GanttChart, PieChart, Download, Shapes, Workflow, Database, AlertCircle, Users, Milestone, CalendarClock, GitBranch, Palette, MousePointerClick, Spline, Network, FileCheck2, Briefcase, Sparkles, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { generateDiagram } from '@/ai/flows/generate-diagram-flow';
 
 const diagramTemplates = {
   flowchart: `flowchart TD
@@ -189,22 +190,19 @@ interactive: `flowchart TD
 `,
   bpmn: `
 bpmn
-  title: Pizza Order Process (BPMN)
-
+  title: Order Process
+  
   participant Customer
-  participant "Pizza Shop" as Shop
-
-  Customer->>Shop: places order
-  activate Shop
-
-  Shop-->>Customer: confirms order
+  participant "Pizza Shop"
   
-  Shop->>Shop: prepares pizza
+  Customer->>"Pizza Shop": places order
+  activate "Pizza Shop"
+  "Pizza Shop"-->>Customer: confirms order
   
-  Shop-->>Customer: delivers pizza
-  deactivate Shop
+  "Pizza Shop"->>"Pizza Shop": prepares pizza
   
-  Customer->>Shop: pays
+  "Pizza Shop"-->>Customer: delivers pizza
+  deactivate "Pizza Shop"
 `,
 };
 
@@ -221,10 +219,28 @@ export function FlowchartView() {
   
   const [mermaidTheme, setMermaidTheme] = useState<MermaidTheme>('default');
   const [customCSS, setCustomCSS] = useLocalStorage('flowchart:custom-css-v1', '/* Target elements with CSS classes */\n.node-style {\n  font-weight: bold;\n}');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+  
+  const handleGenerateDiagram = async () => {
+    if (!aiPrompt) return;
+    setIsGenerating(true);
+    setRenderError(null);
+    try {
+      const result = await generateDiagram({ prompt: aiPrompt });
+      setCode(result);
+      toast({ title: "Diagram Generated!", description: "The Mermaid code has been created from your prompt." });
+    } catch (e) {
+      console.error("AI diagram generation error", e);
+      setRenderError("Sorry, I couldn't generate a diagram from that. Please try a different prompt.");
+      toast({ variant: "destructive", title: "Generation Failed", description: "Could not generate diagram. Please check the console for details." });
+    }
+    setIsGenerating(false);
+  }
 
   useEffect(() => {
     if (!isClient) return;
@@ -280,11 +296,36 @@ export function FlowchartView() {
   };
 
   if (!isClient) {
-    return <div className="w-full h-full bg-muted animate-pulse"></div>;
+    return (
+        <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+    );
   }
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
+        <Card>
+          <CardHeader>
+              <CardTitle>AI Diagram Generator</CardTitle>
+              <CardDescription>Describe your diagram in plain English, and let AI generate the Mermaid.js code for you.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder="e.g., 'A simple login flow with a database check'"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGenerateDiagram()}
+                disabled={isGenerating}
+              />
+              <Button onClick={handleGenerateDiagram} disabled={isGenerating || !aiPrompt}>
+                {isGenerating ? <Loader2 className="mr-2 animate-spin"/> : <Sparkles className="mr-2"/>}
+                Generate
+              </Button>
+            </div>
+          </CardContent>
+      </Card>
       <Card>
           <CardHeader>
               <CardTitle>Templates</CardTitle>
@@ -315,8 +356,8 @@ export function FlowchartView() {
             <Card className="flex flex-col flex-1">
                 <CardHeader className="flex flex-row justify-between items-center">
                     <div>
-                        <CardTitle>Create a Diagram</CardTitle>
-                        <CardDescription>Describe your structure using Mermaid.js syntax.</CardDescription>
+                        <CardTitle>Code Editor</CardTitle>
+                        <CardDescription>Edit your Mermaid.js syntax here.</CardDescription>
                     </div>
                     <Button variant="outline" size="sm" onClick={handleExportSvg}><Download className="mr-2"/>Export as SVG</Button>
                 </CardHeader>
@@ -364,26 +405,28 @@ export function FlowchartView() {
         </div>
         <Card className="flex flex-col">
             <CardHeader>
-                <CardTitle>Preview</CardTitle>
+                <CardTitle>Live Preview</CardTitle>
             </CardHeader>
             <CardContent className="p-4 flex-1">
             <ScrollArea className="h-full w-full">
-              {renderError ? (
-                 <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
-                    <AlertCircle className="w-10 h-10 mb-2"/>
-                    <p className="font-semibold">{renderError}</p>
-                 </div>
-              ) : svg ? (
-                  <div
-                    ref={mermaidRef}
-                    dangerouslySetInnerHTML={{ __html: svg }}
-                    className="w-full h-full flex items-center justify-center [&_svg]:max-w-full [&_svg]:h-auto"
-                  />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                    <p>Diagram will appear here.</p>
-                </div>
-              )}
+               <div className="w-full h-full p-4 rounded-lg" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                {renderError ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
+                        <AlertCircle className="w-10 h-10 mb-2"/>
+                        <p className="font-semibold">{renderError}</p>
+                    </div>
+                ) : svg ? (
+                    <div
+                        ref={mermaidRef}
+                        dangerouslySetInnerHTML={{ __html: svg }}
+                        className="w-full h-full flex items-center justify-center [&_svg]:max-w-full [&_svg]:h-auto"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                        <p>Diagram will appear here.</p>
+                    </div>
+                )}
+               </div>
             </ScrollArea>
           </CardContent>
         </Card>
