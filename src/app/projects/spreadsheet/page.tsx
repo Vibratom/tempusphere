@@ -1,6 +1,17 @@
 
-import { SpreadsheetView } from '@/components/projects/SpreadsheetView';
+'use client';
+
+import { DiagramEditor } from '@/components/projects/DiagramEditor';
+import { Suspense } from 'react';
+
+function SpreadsheetPageContent() {
+  return <DiagramEditor />;
+}
 
 export default function SpreadsheetPage() {
-  return <SpreadsheetView />;
+  return (
+    <Suspense>
+      <SpreadsheetPageContent />
+    </Suspense>
+  );
 }
