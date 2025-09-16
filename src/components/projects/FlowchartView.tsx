@@ -16,13 +16,6 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-
 
 // --- Types and Constants ---
 
@@ -37,15 +30,23 @@ interface VisualNode {
 
 interface VisualLink {
   id: string;
+  from: string;
+  to: string;
   type: 'arrow' | 'line' | 'dotted';
   text: string;
 }
 
-// Each column is a chain of nodes and links
-interface VisualColumn {
-  id: string;
-  nodes: VisualNode[];
-  links: VisualLink[];
+// Each row is a chain of nodes and links
+interface VisualRow {
+    id: string;
+    from_node_id: string;
+    from_node_name: string;
+    from_node_shape: VisualNode['shape'];
+    link_type: VisualLink['type'];
+    link_text: string;
+    to_node_id: string;
+    to_node_name: string;
+    to_node_shape: VisualNode['shape'];
 }
 
 const defaultCode = `flowchart TD
@@ -69,6 +70,26 @@ const linkTypeOptions = [
   { value: 'dotted', label: '-.->' },
 ];
 
+
+const createNewNode = (id: string): VisualNode => ({ id, name: 'Node', shape: 'rect' });
+const createNewLink = (): VisualLink => ({ id: `link-${Math.random()}`, from: '', to: '', type: 'arrow', text: '' });
+
+const createNewVisualRow = (): VisualRow => {
+    const fromNodeId = `N${Date.now()}${Math.random()}`;
+    const toNodeId = `N${Date.now()}${Math.random()}`;
+    return {
+        id: `row-${Math.random()}`,
+        from_node_id: fromNodeId,
+        from_node_name: 'Node',
+        from_node_shape: 'rect',
+        link_type: 'arrow',
+        link_text: '',
+        to_node_id: toNodeId,
+        to_node_name: 'Node',
+        to_node_shape: 'rect',
+    };
+};
+
 // --- Mermaid Initialization ---
 
 mermaid.initialize({
@@ -91,95 +112,83 @@ const getShapeSyntax = (shape: VisualNode['shape']) => {
 };
 
 const getLinkSyntax = (type: VisualLink['type'], text: string) => {
-    const linkText = text.trim();
-    const linkSymbol = {
+    const linkType = {
         'line': `---`,
         'dotted': `-.->`,
         'arrow': `-->`,
     }[type];
     
-    if (linkText) {
-        return `-- ${linkText} -->`;
+    if (text.trim()) {
+        return `-- ${text.trim()} -->`;
     }
-    return linkSymbol;
+    return linkType;
 };
 
-const createNewNode = (): VisualNode => ({ id: `N${Date.now()}${Math.random()}`, name: 'Node', shape: 'rect' });
-const createNewLink = (): VisualLink => ({ id: `link-${Math.random()}`, type: 'arrow', text: '' });
-const createNewColumn = (): VisualColumn => {
-    return {
-        id: `col-${Math.random()}`,
-        nodes: [createNewNode()],
-        links: [],
-    };
-};
 
 // --- Component ---
 
 export function FlowchartView() {
-  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v23', defaultCode);
-  const [visualColumns, setVisualColumns] = useLocalStorage<VisualColumn[]>('flowchart:visual-cols-v2', [createNewColumn()]);
+  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v25', defaultCode);
+  const [visualRows, setVisualRows] = useLocalStorage<VisualRow[]>('flowchart:visual-rows-v2', [createNewVisualRow()]);
   
   const [code, setCode] = useState(savedCode);
   const [svg, setSvg] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
-  const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
   
-  const [panelDirection, setPanelDirection] = useState<'horizontal' | 'vertical'>('horizontal');
-
-  const { resolvedTheme } = useTheme();
+  const diagramType = useMemo((): DiagramType => {
+      const trimmedCode = code.trim().toLowerCase();
+      if (trimmedCode.startsWith('flowchart') || trimmedCode.startsWith('graph')) return 'flowchart';
+      if (trimmedCode.startsWith('statediagram') || trimmedCode.startsWith('state-diagram')) return 'stateDiagram';
+      if (trimmedCode.startsWith('mindmap')) return 'mindmap';
+      return 'unknown';
+  }, [code]);
 
   useEffect(() => {
     setIsClient(true);
-    const checkScreenSize = () => {
-        if (window.innerWidth < 768) { // md breakpoint
-            setPanelDirection('vertical');
-        } else {
-            setPanelDirection('horizontal');
-        }
-    };
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
   // --- Code Generation & Parsing ---
-
-  const generateMermaidCode = useCallback(() => {
+  
+  const generateCodeFromVisual = useCallback(() => {
     if (editorMode !== 'visual') return;
-
-    let newCode = `${diagramType} TD\n`;
+  
+    const baseType = diagramType === 'stateDiagram' ? 'stateDiagram-v2' : 'flowchart';
+    let newCode = `${baseType} TD\n`;
     const definedNodes = new Set<string>();
-
-    visualColumns.forEach(col => {
-      col.nodes.forEach((node, nodeIndex) => {
-        if (node.name.trim() && !definedNodes.has(node.id)) {
-          const [start, end] = getShapeSyntax(node.shape);
-          newCode += `    ${node.id}${start}"${node.name}"${end}\n`;
-          definedNodes.add(node.id);
-        }
-        
-        if (nodeIndex < col.links.length) {
-          const link = col.links[nodeIndex];
-          const nextNode = col.nodes[nodeIndex + 1];
-          if (nextNode) {
-            const linkSyntax = getLinkSyntax(link.type, link.text);
-            newCode += `    ${node.id} ${linkSyntax} ${nextNode.id}\n`;
-          }
-        }
-      });
+  
+    visualRows.forEach(row => {
+      // Define 'from' node if not already defined
+      if (row.from_node_name.trim() && !definedNodes.has(row.from_node_id)) {
+        const [start, end] = getShapeSyntax(row.from_node_shape);
+        newCode += `    ${row.from_node_id}${start}"${row.from_node_name}"${end}\n`;
+        definedNodes.add(row.from_node_id);
+      }
+  
+      // Define 'to' node if not already defined
+      if (row.to_node_name.trim() && !definedNodes.has(row.to_node_id)) {
+        const [start, end] = getShapeSyntax(row.to_node_shape);
+        newCode += `    ${row.to_node_id}${start}"${row.to_node_name}"${end}\n`;
+        definedNodes.add(row.to_node_id);
+      }
+  
+      // Add the link
+      if (row.from_node_name.trim() && row.to_node_name.trim()) {
+        const linkSyntax = getLinkSyntax(row.link_type, row.link_text);
+        newCode += `    ${row.from_node_id} ${linkSyntax} ${row.to_node_id}\n`;
+      }
     });
     
-    // Add cross-column links here in the future
-
     setCode(newCode);
-  }, [editorMode, visualColumns, diagramType]);
+  }, [editorMode, visualRows, diagramType]);
+
 
   useEffect(() => {
-    generateMermaidCode();
-  }, [generateMermaidCode]);
+    generateCodeFromVisual();
+  }, [generateCodeFromVisual]);
+
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     if (!isClient) return;
@@ -190,15 +199,6 @@ export function FlowchartView() {
       securityLevel: 'loose',
       fontFamily: 'sans-serif',
     });
-
-    const detectType = (c: string): DiagramType => {
-      const trimmedCode = c.trim().toLowerCase();
-      if (trimmedCode.startsWith('flowchart') || trimmedCode.startsWith('graph')) return 'flowchart';
-      if (trimmedCode.startsWith('statediagram') || trimmedCode.startsWith('state-diagram')) return 'stateDiagram';
-      if (trimmedCode.startsWith('mindmap')) return 'mindmap';
-      return 'unknown';
-    };
-    setDiagramType(detectType(code));
 
     const renderMermaid = async () => {
       try {
@@ -225,92 +225,26 @@ export function FlowchartView() {
 
   // --- Visual Editor Handlers ---
 
-  const addColumn = () => {
-    setVisualColumns(prev => [...prev, createNewColumn()]);
+  const addVisualRow = () => {
+    setVisualRows(prev => [...prev, createNewVisualRow()]);
   };
   
-  const removeColumn = (colId: string) => {
-    setVisualColumns(prev => prev.filter(c => c.id !== colId));
+  const removeVisualRow = (rowId: string) => {
+    setVisualRows(prev => prev.filter(r => r.id !== rowId));
   };
   
-  const addRow = (colId: string) => {
-    setVisualColumns(prev => prev.map(col => {
-      if (col.id === colId) {
-        return {
-          ...col,
-          nodes: [...col.nodes, createNewNode()],
-          links: [...col.links, createNewLink()]
-        };
+  const handleVisualRowChange = (index: number, field: keyof VisualRow, value: string) => {
+      const newRows = [...visualRows];
+      const newRow = {...newRows[index], [field]: value};
+      if (field === 'from_node_name' && !value.trim()) {
+          newRow.from_node_id = `N${Date.now()}${Math.random()}`;
       }
-      return col;
-    }));
-  };
-
-  const handleNodeChange = (colId: string, nodeIndex: number, field: 'name' | 'shape', value: string) => {
-    setVisualColumns(prev => prev.map(col => {
-      if (col.id === colId) {
-        const newNodes = [...col.nodes];
-        newNodes[nodeIndex] = { ...newNodes[nodeIndex], [field]: value };
-        return { ...col, nodes: newNodes };
+      if (field === 'to_node_name' && !value.trim()) {
+          newRow.to_node_id = `N${Date.now()}${Math.random()}`;
       }
-      return col;
-    }));
+      newRows[index] = newRow;
+      setVisualRows(newRows);
   };
-  
-  const LinkEditorRow = ({ colId, linkIndex, link }: { colId: string, linkIndex: number, link: VisualLink }) => {
-    const [currentLink, setCurrentLink] = useState(link);
-
-    useEffect(() => {
-        setCurrentLink(link);
-    }, [link]);
-
-    const handleLocalChange = (field: 'type' | 'text', value: string) => {
-        const updatedLink = { ...currentLink, [field]: value };
-        setCurrentLink(updatedLink);
-    };
-
-    const commitChanges = (field: 'type' | 'text', value: string) => {
-        setVisualColumns(prev => prev.map(col => {
-            if (col.id === colId) {
-                const newLinks = [...col.links];
-                newLinks[linkIndex] = { ...newLinks[linkIndex], [field]: value };
-                return { ...col, links: newLinks };
-            }
-            return col;
-        }));
-    };
-
-    return (
-        <AccordionItem value={`link-${link.id}`}>
-          <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background/50 rounded-md">
-            Link: {currentLink.text || 'Untitled'}
-          </AccordionTrigger>
-          <AccordionContent className="p-2 pt-0">
-            <div className="bg-background p-2 rounded border space-y-1">
-                <Label className="text-xs">Link Style & Text</Label>
-                <div className="flex gap-1">
-                    <Select
-                        value={currentLink.type}
-                        onValueChange={v => {
-                            handleLocalChange('type', v);
-                            commitChanges('type', v);
-                        }}
-                    >
-                        <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
-                        <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Input
-                        placeholder="Text on link"
-                        value={currentLink.text}
-                        onChange={e => handleLocalChange('text', e.target.value)}
-                        onBlur={e => commitChanges('text', e.target.value)}
-                    />
-                </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-    );
-};
 
 
   if (!isClient) return <div className="w-full h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -323,25 +257,53 @@ export function FlowchartView() {
                 <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
             </CardHeader>
         </Card>
-        <ResizablePanelGroup direction={panelDirection} className="flex-1 rounded-lg border">
-            <ResizablePanel defaultSize={60} minSize={30}>
+        <ResizablePanelGroup direction="horizontal" className="flex-1 rounded-lg border">
+            <ResizablePanel defaultSize={60}>
                  <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
-                    <div className="p-4 pb-0 flex justify-between items-center border-b">
-                        <TabsList className="grid w-full max-w-sm grid-cols-2">
+                    <div className="p-4 pb-0">
+                        <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
                             <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
                         </TabsList>
-                        <div className="w-48">
-                            <Select value={diagramType} onValueChange={v => setCode(`${v} TD\n`)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="flowchart">Flowchart / Graph</SelectItem>
-                                    <SelectItem value="stateDiagram">State Diagram</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                     </div>
+                    <TabsContent value="visual" className="m-0 flex-1 flex flex-col">
+                        <div className="p-4 border-b">
+                            <Button onClick={addVisualRow}><Plus className="mr-2"/>Add Row</Button>
+                        </div>
+                        <ScrollArea className="flex-1">
+                            <div className="p-4 space-y-4">
+                                {visualRows.map((row, index) => (
+                                <Card key={row.id} className="p-3">
+                                    <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end">
+                                    {/* From Node */}
+                                    <div className="flex flex-col gap-1">
+                                        <Label className="text-xs">From</Label>
+                                        <Input placeholder="Node Name" value={row.from_node_name} onChange={e => handleVisualRowChange(index, 'from_node_name', e.target.value)} />
+                                        <Select value={row.from_node_shape} onValueChange={v => handleVisualRowChange(index, 'from_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                    </div>
 
+                                    {/* Link */}
+                                    <div className="flex flex-col gap-1">
+                                         <Label className="text-xs">Link</Label>
+                                        <Select value={row.link_type} onValueChange={v => handleVisualRowChange(index, 'link_type', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                        <Input placeholder="Link Text" value={row.link_text} onChange={e => handleVisualRowChange(index, 'link_text', e.target.value)} />
+                                    </div>
+                                    
+                                    {/* To Node */}
+                                     <div className="flex flex-col gap-1">
+                                        <Label className="text-xs">To</Label>
+                                        <Input placeholder="Node Name" value={row.to_node_name} onChange={e => handleVisualRowChange(index, 'to_node_name', e.target.value)} />
+                                        <Select value={row.to_node_shape} onValueChange={v => handleVisualRowChange(index, 'to_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                    </div>
+                                    </div>
+                                    <div className="flex justify-end mt-2">
+                                        <Button size="icon" variant="ghost" onClick={() => removeVisualRow(row.id)}><Trash2 className="h-4 w-4"/></Button>
+                                    </div>
+                                </Card>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </TabsContent>
                     <TabsContent value="code" className="m-0 flex-1">
                         <Textarea
                             value={code}
@@ -350,54 +312,10 @@ export function FlowchartView() {
                             placeholder="Write your Mermaid diagram code here..."
                         />
                     </TabsContent>
-                    <TabsContent value="visual" className="m-0 flex-1 flex flex-col">
-                        <div className="p-4 border-b">
-                            <Button onClick={addColumn}><Plus className="mr-2"/>Add Chain</Button>
-                        </div>
-                        <ScrollArea className="flex-1">
-                            <div className="flex gap-4 p-4 items-start">
-                                {visualColumns.map((col) => (
-                                    <div key={col.id} className="w-64 bg-muted/50 p-3 rounded-lg space-y-2 flex-shrink-0">
-                                        <Button size="sm" variant="destructive" onClick={() => removeColumn(col.id)} className="w-full mb-2">
-                                            <Trash2 className="mr-2"/>Remove Chain
-                                        </Button>
-                                        <Accordion type="multiple" className="w-full space-y-2">
-                                            {col.nodes.map((node, nodeIndex) => (
-                                                <React.Fragment key={node.id}>
-                                                    <AccordionItem value={`node-${node.id}`}>
-                                                        <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
-                                                          Node: {node.name || 'Untitled'}
-                                                        </AccordionTrigger>
-                                                        <AccordionContent className="p-2 pt-0">
-                                                            <div className="bg-background p-2 rounded border space-y-1">
-                                                                <Label className="text-xs">Node Text & Shape</Label>
-                                                                <Input placeholder="Text" value={node.name} onChange={e => handleNodeChange(col.id, nodeIndex, 'name', e.target.value)} />
-                                                                <Select value={node.shape} onValueChange={v => handleNodeChange(col.id, nodeIndex, 'shape', v)}>
-                                                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                                                    <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                        </AccordionContent>
-                                                    </AccordionItem>
-                                                    
-                                                    {nodeIndex < col.links.length && (
-                                                        <LinkEditorRow colId={col.id} linkIndex={nodeIndex} link={col.links[nodeIndex]} />
-                                                    )}
-                                                </React.Fragment>
-                                            ))}
-                                        </Accordion>
-                                        <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full mt-2">
-                                            <Plus className="mr-2"/>Add Node
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </TabsContent>
                 </Tabs>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={40} minSize={30}>
+            <ResizablePanel defaultSize={40}>
                 <ScrollArea className="h-full w-full p-4" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
                     {renderError ? (
                         <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">

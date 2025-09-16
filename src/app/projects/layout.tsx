@@ -19,6 +19,7 @@ import ChecklistPage from './checklist/page';
 import CanvasPage from './canvas/page';
 import MindMapPage from './mindmap/page';
 import ChartsPage from './charts/page';
+import FlowchartPage from './flowchart/page';
 
 const LoadingFallback = () => (
     <div className="flex-1 flex items-center justify-center">
@@ -36,6 +37,7 @@ const toolComponents: Record<string, React.ComponentType> = {
     canvas: CanvasPage,
     charts: ChartsPage,
     mindmap: MindMapPage,
+    flowchart: FlowchartPage
 };
 
 export default function ProjectsLayout({

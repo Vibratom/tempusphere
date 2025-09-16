@@ -1,11 +1,10 @@
-
 'use client';
 
-import { CanvasView } from '@/components/projects/CanvasView';
+import { FlowchartView } from '@/components/projects/FlowchartView';
 import { Suspense } from 'react';
 
 function CanvasPageContent() {
-  return <CanvasView />;
+  return <FlowchartView />;
 }
 
 export default function CanvasPage() {
