@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Plus, Trash2, Calendar as CalendarIcon, FileText, Share2, Upload, Download } from 'lucide-react';
+import { Plus, Trash2, Calendar as CalendarIcon, FileText, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,9 +27,8 @@ import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { useProjects, Priority, TaskCard, encodeBoardData, decodeBoardData, BoardData } from '@/contexts/ProjectsContext';
+import { useProjects, Priority, TaskCard, BoardData } from '@/contexts/ProjectsContext';
 
 
 const priorityColors: Record<Priority, string> = {
@@ -57,22 +56,10 @@ export function ProjectsApp() {
   const [editingTask, setEditingTask] = useState<TaskCard | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
-  const searchParams = useSearchParams();
   const importFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsClient(true);
-    const boardParam = searchParams.get('board');
-    if (boardParam) {
-        const decodedBoard = decodeBoardData(boardParam);
-        if (decodedBoard) {
-            setBoard(decodedBoard);
-            toast({ title: 'Board Loaded!', description: 'A shared board has been loaded from the URL.' });
-            window.history.replaceState({}, '', window.location.pathname);
-        } else {
-            toast({ variant: 'destructive', title: 'Load Failed', description: 'Could not load the shared board from the URL.' });
-        }
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
 
@@ -92,14 +79,6 @@ export function ProjectsApp() {
     contextAddTask(columnId, { title });
     setNewTaskTitles(prev => ({...prev, [columnId]: ''}));
   }
-
-  const handleShare = () => {
-    const encodedData = encodeBoardData(board);
-    const url = new URL(window.location.href);
-    url.searchParams.set('board', encodedData);
-    navigator.clipboard.writeText(url.toString());
-    toast({ title: "Link Copied!", description: "A shareable link to this board has been copied to your clipboard."});
-  };
 
   const handleExport = () => {
     const jsonString = JSON.stringify(board, null, 2);
@@ -271,9 +250,6 @@ export function ProjectsApp() {
                     </AlertDialogContent>
                 </AlertDialog>
                 <input type="file" ref={importFileRef} onChange={handleImport} accept=".json" className="hidden" />
-                <Button variant="outline" onClick={handleShare}>
-                    <Share2 className="mr-2 h-4 w-4"/> Share via Link
-                </Button>
             </div>
         </div>
 
@@ -400,5 +376,3 @@ export function ProjectsApp() {
     </div>
   );
 }
-
-    

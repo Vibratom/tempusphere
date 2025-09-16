@@ -3,8 +3,6 @@
 
 import React, { ReactNode, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import * as pako from 'pako';
-import { Base64 } from 'js-base64';
 import { OnDragEndResponder } from '@hello-pangea/dnd';
 import { create } from 'zustand';
 import { useCalendar } from './CalendarContext';
@@ -59,23 +57,6 @@ export const initialData: BoardData = {
   },
   columnOrder: ['column-1', 'column-2', 'column-3'],
 };
-
-export function encodeBoardData(board: BoardData): string {
-  const jsonString = JSON.stringify(board);
-  const compressed = pako.deflate(jsonString);
-  return Base64.fromUint8Array(compressed, true);
-}
-
-export function decodeBoardData(encoded: string): BoardData | null {
-  try {
-    const compressed = Base64.toUint8Array(encoded);
-    const jsonString = pako.inflate(compressed, { to: 'string' });
-    return JSON.parse(jsonString) as BoardData;
-  } catch (error) {
-    console.error("Failed to decode board data:", error);
-    return null;
-  }
-}
 
 interface ProjectsState {
   board: BoardData;
@@ -264,5 +245,3 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
 
   return <>{children}</>;
 }
-
-    
