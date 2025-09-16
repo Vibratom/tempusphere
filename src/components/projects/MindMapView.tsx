@@ -26,6 +26,13 @@ const defaultMermaidCode = `mindmap
       :tada:
 `;
 
+mermaid.initialize({
+  startOnLoad: false,
+  securityLevel: 'loose',
+  fontFamily: 'sans-serif',
+  logLevel: 5, 
+});
+
 export function MindMapView() {
   const [code, setCode] = useLocalStorage('mindmap:mermaid-code-v2', defaultMermaidCode);
   const [svg, setSvg] = useState('');
@@ -36,40 +43,35 @@ export function MindMapView() {
 
   useEffect(() => {
     setIsClient(true);
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: resolvedTheme === 'dark' ? 'dark' : 'default',
-      securityLevel: 'loose',
-      fontFamily: 'sans-serif',
-      logLevel: 5, 
-    });
-  }, [resolvedTheme]);
+  }, []);
 
   useEffect(() => {
     if (!isClient) return;
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: resolvedTheme === 'dark' ? 'dark' : 'default',
+    });
 
     const renderMermaid = async () => {
       try {
         const { svg: renderedSvg } = await mermaid.render('mermaid-graph', code);
         setSvg(renderedSvg);
       } catch (error) {
-        // Don't toast every time there's a syntax error, just log it.
         console.error("Mermaid render error:", error);
-        // Maybe show a small error indicator in the UI instead of a toast
       }
     };
 
-    // Debounce rendering
     const timeoutId = setTimeout(() => {
       if (code.trim()) {
         renderMermaid();
       } else {
-        setSvg(''); // Clear SVG if code is empty
+        setSvg('');
       }
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [code, isClient]);
+  }, [code, isClient, resolvedTheme]);
 
   if (!isClient) {
     return <div className="w-full h-full bg-muted animate-pulse"></div>;
