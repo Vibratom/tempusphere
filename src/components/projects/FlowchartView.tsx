@@ -9,7 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Link2 } from 'lucide-react';
+import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Link2, Info } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Textarea } from '../ui/textarea';
@@ -23,6 +23,9 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resi
 import { ImperativePanelHandle } from 'react-resizable-panels';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
+import { Combobox } from '../ui/combobox';
 
 const diagramTemplates = {
   flowAndProcess: {
@@ -116,6 +119,7 @@ export function FlowchartView() {
   const [mermaidTheme, setMermaidTheme] = useState<MermaidTheme>('default');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('code');
+  const [smartMode, setSmartMode] = useLocalStorage('flowchart:smartMode', true); // Poka-yoke mode
 
   const [nodes, setNodes] = useState<FlowNode[]>(() => [
     {id: 'A', text: 'Start', type: 'node'},
@@ -169,8 +173,8 @@ export function FlowchartView() {
         let newCode = 'flowchart TD\n';
         
         nodes.forEach(node => {
-            const text = node.text || ' ';
-            if(node.type === 'node') newCode += `    ${node.id}["${text}"]\n`;
+            const text = node.text || ' '; // Mermaid requires some text
+            if(node.type === 'node') newCode += `    ${node.id}("${text}")\n`;
             if(node.type === 'decision') newCode += `    ${node.id}{"${text}"}\n`;
         });
         
@@ -301,8 +305,8 @@ export function FlowchartView() {
   };
 
   const addNode = (type: NodeType) => {
-    const existingIds = nodes.map(n => n.id.charCodeAt(0));
-    const nextIdChar = String.fromCharCode(Math.max(65, ...existingIds) + 1);
+    const existingIds = nodes.map(n => n.id.charCodeAt(0)).filter(n => n >= 65 && n <= 90);
+    const nextIdChar = String.fromCharCode(existingIds.length > 0 ? Math.max(...existingIds) + 1 : 65);
     const newNode: FlowNode = { id: nextIdChar, text: 'New Node', type };
     setNodes(prev => [...prev, newNode]);
   }
@@ -317,11 +321,34 @@ export function FlowchartView() {
     setLinks(prev => [...prev, {id: `l${Date.now()}`, source: '', target: '', label: ''}]);
   }
   const updateLink = (id: string, part: Partial<FlowLink>) => {
-    setLinks(prev => prev.map(l => l.id === id ? {...l, ...part} : l));
+    setLinks(prev => prev.map(l => {
+      if (l.id === id) {
+        const newLink = {...l, ...part};
+        if (smartMode) {
+          if (newLink.source && newLink.source === newLink.target) {
+            toast({ title: "Invalid Link", description: "A node cannot link to itself in Smart Mode.", variant: "destructive"});
+            return l; // revert
+          }
+          const isDuplicate = links.some(existing => 
+            existing.id !== id && 
+            existing.source === newLink.source && 
+            existing.target === newLink.target
+          );
+          if (isDuplicate) {
+             toast({ title: "Duplicate Link", description: "This link already exists.", variant: "destructive"});
+             return l; // revert
+          }
+        }
+        return newLink;
+      }
+      return l;
+    }));
   }
   const removeLink = (id: string) => {
     setLinks(prev => prev.filter(l => l.id !== id));
   }
+
+  const nodeOptions = nodes.map(n => ({ value: n.id, label: `${n.id}: ${n.text}` }));
 
   if (!isClient) {
     return (
@@ -389,6 +416,13 @@ export function FlowchartView() {
                   </div>
 
                   <TabsContent value="visual" className="flex-1 flex flex-col gap-4 p-4 min-h-0">
+                    <div className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <Label>Smart Mode (Poka-Yoke)</Label>
+                        <Description>Prevents mistakes like self-linking and duplicate links.</Description>
+                      </div>
+                      <Switch checked={smartMode} onCheckedChange={setSmartMode} />
+                    </div>
                     <Card>
                       <CardHeader>
                         <div className="flex items-center justify-between">
@@ -401,7 +435,7 @@ export function FlowchartView() {
                       </CardHeader>
                       <CardContent>
                         <ScrollArea className="h-48">
-                          <div className="space-y-2">
+                          <div className="space-y-2 pr-4">
                             {nodes.map(node => (
                               <div key={node.id} className="flex items-center gap-2">
                                 <span className="font-mono text-sm text-muted-foreground p-2 bg-muted rounded-md">{node.id}</span>
@@ -422,19 +456,28 @@ export function FlowchartView() {
                       </CardHeader>
                       <CardContent>
                         <ScrollArea className="h-48">
-                          <div className="space-y-2">
+                          <div className="space-y-2 pr-4">
                             {links.map(link => (
-                              <div key={link.id} className="grid grid-cols-4 gap-2 items-center">
-                                <Select value={link.source} onValueChange={(v) => updateLink(link.id, {source: v})}>
-                                    <SelectTrigger><SelectValue placeholder="From"/></SelectTrigger>
-                                    <SelectContent>{nodes.map(n => <SelectItem key={n.id} value={n.id}>{n.id}: {n.text}</SelectItem>)}</SelectContent>
-                                </Select>
-                                <Select value={link.target} onValueChange={(v) => updateLink(link.id, {target: v})}>
-                                    <SelectTrigger><SelectValue placeholder="To"/></SelectTrigger>
-                                    <SelectContent>{nodes.map(n => <SelectItem key={n.id} value={n.id}>{n.id}: {n.text}</SelectItem>)}</SelectContent>
-                                </Select>
-                                <Input value={link.label} onChange={(e) => updateLink(link.id, {label: e.target.value})} placeholder="Label (optional)" className="col-span-2"/>
-                                <Button size="icon" variant="ghost" onClick={() => removeLink(link.id)} className="col-start-4"><Trash2/></Button>
+                              <div key={link.id} className="grid grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center">
+                                {smartMode ? (
+                                  <>
+                                    <Select value={link.source} onValueChange={(v) => updateLink(link.id, {source: v})}>
+                                        <SelectTrigger><SelectValue placeholder="From"/></SelectTrigger>
+                                        <SelectContent>{nodeOptions.map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                    <Select value={link.target} onValueChange={(v) => updateLink(link.id, {target: v})}>
+                                        <SelectTrigger><SelectValue placeholder="To"/></SelectTrigger>
+                                        <SelectContent>{nodeOptions.filter(n => n.value !== link.source).map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                  </>
+                                ) : (
+                                  <>
+                                     <Input value={link.source} onValueChange={(v) => updateLink(link.id, {source: v})} placeholder="From ID" className="font-mono"/>
+                                     <Input value={link.target} onValueChange={(v) => updateLink(link.id, {target: v})} placeholder="To ID" className="font-mono"/>
+                                  </>
+                                )}
+                                <Input value={link.label} onChange={(e) => updateLink(link.id, {label: e.target.value})} placeholder="Label (optional)" className="col-span-2 md:col-span-1"/>
+                                <Button size="icon" variant="ghost" onClick={() => removeLink(link.id)}><Trash2/></Button>
                               </div>
                             ))}
                           </div>
@@ -504,7 +547,7 @@ export function FlowchartView() {
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            <p>Diagram will appear here.</p>
+                            {code.trim() ? <Loader2 className="h-8 w-8 animate-spin"/> : <p>Diagram will appear here.</p>}
                         </div>
                     )}
                    </div>
@@ -515,5 +558,10 @@ export function FlowchartView() {
     </div>
   );
 }
+
+function Description({ children }: { children: React.ReactNode }) {
+    return <p className="text-xs text-muted-foreground">{children}</p>;
+}
+    
 
     
