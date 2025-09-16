@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -188,21 +189,21 @@ interactive: `flowchart TD
     B -- Generates Token --> A;
 `,
   bpmn: `
-  bpmn
-    title Pizza Order Process
-    
-    participant C as Customer
-    participant S as Shop Clerk
-    participant Ch as Chef
-    participant D as Driver
-    
-    C->>S: Order Pizza
-    S->>Ch: Prepare Order
-    Ch-->>S: Pizza Ready
-    S->>D: Deliver Pizza
-    D->>C: Give Pizza
-    C->>D: Pay
-    D-->>S: Give Money
+bpmn
+  title Pizza Order Process
+  
+  participant C as Customer
+  participant S as Shop Clerk
+  participant Ch as Chef
+  participant D as Driver
+  
+  C->>S: Order Pizza
+  S->>Ch: Prepare Order
+  Ch-->>S: Pizza Ready
+  S->>D: Deliver Pizza
+  D->>C: Give Pizza
+  C->>D: Pay
+  D-->>S: Give Money
 `,
 };
 
