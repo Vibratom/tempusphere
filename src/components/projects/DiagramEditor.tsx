@@ -9,7 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useTheme } from 'next-themes';
 import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2, Download } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -139,7 +139,7 @@ export function DiagramEditor() {
   const generateMermaidCode = useCallback(() => {
     if (editorMode !== 'visual') return;
 
-    let newCode = `${diagramType} TD\n`;
+    let newCode = `flowchart TD\n`;
     const definedNodes = new Set<string>();
 
     visualColumns.forEach(col => {
@@ -341,58 +341,59 @@ export function DiagramEditor() {
                     </Tabs>
                 </CardHeader>
                 <CardContent className="p-0 flex-1 flex flex-col">
-                    <TabsContent value="code" className="m-0 flex-1">
+                    {editorMode === 'code' ? (
                         <Textarea
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
                             placeholder="Write your Mermaid diagram code here..."
                         />
-                    </TabsContent>
-                    <TabsContent value="visual" className="m-0 flex-1 flex flex-col">
-                        <div className="p-4 border-y">
-                            <Button onClick={addColumn}><Plus className="mr-2"/>Add Chain</Button>
-                        </div>
-                        <ScrollArea className="flex-1">
-                            <div className="flex gap-4 p-4 items-start">
-                                {visualColumns.map((col) => (
-                                    <div key={col.id} className="w-64 bg-muted/50 p-3 rounded-lg space-y-2 flex-shrink-0">
-                                        <Button size="sm" variant="destructive" onClick={() => removeColumn(col.id)} className="w-full mb-2">
-                                            <Trash2 className="mr-2"/>Remove Chain
-                                        </Button>
-                                        <Accordion type="multiple" className="w-full space-y-2">
-                                            {col.nodes.map((node, nodeIndex) => (
-                                                <React.Fragment key={node.id}>
-                                                    <AccordionItem value={`node-${node.id}`}>
-                                                        <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
-                                                          Node: {node.name || 'Untitled'}
-                                                        </AccordionTrigger>
-                                                        <AccordionContent className="p-2 pt-0">
-                                                            <div className="bg-background p-2 rounded border space-y-1">
-                                                                <Label className="text-xs">Node Text & Shape</Label>
-                                                                <Input placeholder="Text" value={node.name} onChange={e => handleNodeChange(col.id, nodeIndex, 'name', e.target.value)} />
-                                                                <Select value={node.shape} onValueChange={v => handleNodeChange(col.id, nodeIndex, 'shape', v)}>
-                                                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                                                    <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                        </AccordionContent>
-                                                    </AccordionItem>
-                                                    
-                                                    {nodeIndex < col.links.length && (
-                                                        <LinkEditorRow colId={col.id} linkIndex={nodeIndex} link={col.links[nodeIndex]} />
-                                                    )}
-                                                </React.Fragment>
-                                            ))}
-                                        </Accordion>
-                                        <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full mt-2">
-                                            <Plus className="mr-2"/>Add Node
-                                        </Button>
-                                    </div>
-                                ))}
+                    ) : (
+                        <div className="flex-1 flex flex-col">
+                            <div className="p-4 border-y">
+                                <Button onClick={addColumn}><Plus className="mr-2"/>Add Chain</Button>
                             </div>
-                        </ScrollArea>
-                    </TabsContent>
+                            <ScrollArea className="flex-1">
+                                <div className="flex gap-4 p-4 items-start">
+                                    {visualColumns.map((col) => (
+                                        <div key={col.id} className="w-64 bg-muted/50 p-3 rounded-lg space-y-2 flex-shrink-0">
+                                            <Button size="sm" variant="destructive" onClick={() => removeColumn(col.id)} className="w-full mb-2">
+                                                <Trash2 className="mr-2"/>Remove Chain
+                                            </Button>
+                                            <Accordion type="multiple" className="w-full space-y-2">
+                                                {col.nodes.map((node, nodeIndex) => (
+                                                    <React.Fragment key={node.id}>
+                                                        <AccordionItem value={`node-${node.id}`}>
+                                                            <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
+                                                              Node: {node.name || 'Untitled'}
+                                                            </AccordionTrigger>
+                                                            <AccordionContent className="p-2 pt-0">
+                                                                <div className="bg-background p-2 rounded border space-y-1">
+                                                                    <Label className="text-xs">Node Text & Shape</Label>
+                                                                    <Input placeholder="Text" value={node.name} onChange={e => handleNodeChange(col.id, nodeIndex, 'name', e.target.value)} />
+                                                                    <Select value={node.shape} onValueChange={v => handleNodeChange(col.id, nodeIndex, 'shape', v)}>
+                                                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                                                        <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                                                                    </Select>
+                                                                </div>
+                                                            </AccordionContent>
+                                                        </AccordionItem>
+                                                        
+                                                        {nodeIndex < col.links.length && (
+                                                            <LinkEditorRow colId={col.id} linkIndex={nodeIndex} link={col.links[nodeIndex]} />
+                                                        )}
+                                                    </React.Fragment>
+                                                ))}
+                                            </Accordion>
+                                            <Button size="sm" variant="outline" onClick={() => addRow(col.id)} className="w-full mt-2">
+                                                <Plus className="mr-2"/>Add Node
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
