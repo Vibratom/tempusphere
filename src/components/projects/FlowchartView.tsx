@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -19,6 +20,7 @@ import 'prismjs/themes/prism-tomorrow.css';
 import { zoom, ZoomBehavior, zoomIdentity } from 'd3-zoom';
 import { select } from 'd3-selection';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
+import { ImperativePanelHandle } from 'react-resizable-panels';
 
 const diagramTemplates = {
   flowAndProcess: {
@@ -124,6 +126,7 @@ export function FlowchartView() {
 
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const zoomBehaviorRef = useRef<ZoomBehavior<HTMLDivElement, unknown>>();
+  const panelRef = useRef<ImperativePanelHandle>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -223,6 +226,12 @@ export function FlowchartView() {
         selection.transition().call(zoomBehaviorRef.current.transform, zoomIdentity);
     }
   };
+  
+  const toggleSidebar = () => {
+    if (panelRef.current) {
+        panelRef.current.isCollapsed() ? panelRef.current.expand() : panelRef.current.collapse();
+    }
+  };
 
   if (!isClient) {
     return (
@@ -269,7 +278,8 @@ export function FlowchartView() {
           </CardHeader>
       </Card>
       <ResizablePanelGroup direction="horizontal" className="flex-1 rounded-lg border">
-        <ResizablePanel 
+        <ResizablePanel
+          ref={panelRef}
           defaultSize={35}
           minSize={20}
           maxSize={50}
@@ -339,7 +349,12 @@ export function FlowchartView() {
         <ResizablePanel defaultSize={65}>
             <Card className="flex flex-col h-full rounded-l-none border-l-0">
                 <CardHeader className="flex-row items-center justify-between">
-                    <CardTitle>Live Preview</CardTitle>
+                     <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+                           {isSidebarCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+                        </Button>
+                        <CardTitle>Live Preview</CardTitle>
+                    </div>
                      <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" onClick={() => handleZoomAction('in')}><ZoomIn /></Button>
                         <Button variant="ghost" size="icon" onClick={() => handleZoomAction('out')}><ZoomOut /></Button>
