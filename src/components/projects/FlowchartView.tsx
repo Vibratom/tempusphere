@@ -188,73 +188,21 @@ interactive: `flowchart TD
     B -- Generates Token --> A;
 `,
   bpmn: `
-bpmn
-  participant Customer
-  participant Pizza shop clerk
-  participant Pizza chef
-  participant Pizza delivery guy
-
-  Customer->>Pizza shop clerk: Pizza order
-  Pizza shop clerk->>Pizza chef: Pizza
-  Pizza delivery guy->>Customer: Pizza received
-  Pizza delivery guy->>Pizza shop clerk: Money
-  Pizza shop clerk->>Pizza delivery guy: Receipt
-
-  box Customer
-    startEvent: Hungry
-    task: Select pizza
-    task: Order pizza
-    eventBasedGateway
-    intermediateCatchEvent: 60 mins
-    task: Ask for pizza
-    intermediateCatchEvent: Pizza received
-    task: Pay for pizza
-    task: Eat pizza
-    endEvent: Hunger satisfied
-  end
-
-  box Pizza shop clerk
-    intermediateCatchEvent: Order received
-    parallelGateway
-    intermediateCatchEvent: Where is my pizza?
-    task: Calm customer
-  end
-
-  box Pizza chef
-    task: Bake pizza
-  end
-
-  box Pizza delivery guy
-    task: Deliver pizza
-    task: Receive payment
-    endEvent: Order completed
-  end
-
-  startEvent -> Select pizza
-  Select pizza -> Order pizza
-  Order pizza -> eventBasedGateway
-  eventBasedGateway -> intermediateCatchEvent
-  intermediateCatchEvent -> Ask for pizza
-  eventBasedGateway -> intermediateCatchEvent2
-  intermediateCatchEvent2 -> Pay for pizza
-  Pay for pizza -> Eat pizza
-  Eat pizza -> endEvent
-
-  Order pizza -- Pizza order --> intermediateCatchEvent3
-  intermediateCatchEvent3 -> parallelGateway
-  parallelGateway -> Bake pizza
-  parallelGateway -> intermediateCatchEvent4
-
-  Ask for pizza -- Where is my pizza? --> intermediateCatchEvent4
-  intermediateCatchEvent4 -> Calm customer
-
-  Bake pizza -- Pizza --> Deliver pizza
-  Deliver pizza -> Receive payment
-  Receive payment -> endEvent2
-
-  Deliver pizza -- Pizza received --> intermediateCatchEvent2
-  Receive payment -- Money --> Pay for pizza
-  Pay for pizza -- Receipt --> Receive payment
+  bpmn
+    title Pizza Order Process
+    
+    participant C as Customer
+    participant S as Shop Clerk
+    participant Ch as Chef
+    participant D as Driver
+    
+    C->>S: Order Pizza
+    S->>Ch: Prepare Order
+    Ch-->>S: Pizza Ready
+    S->>D: Deliver Pizza
+    D->>C: Give Pizza
+    C->>D: Pay
+    D-->>S: Give Money
 `,
 };
 
