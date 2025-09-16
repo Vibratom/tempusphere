@@ -7,20 +7,20 @@ import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { ScrollArea } from '../ui/scroll-area';
 import { useTheme } from 'next-themes';
-import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2, Download } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 
 // --- Types and Constants ---
 
 type EditorMode = 'visual' | 'code';
-type DiagramType = 'flowchart' | 'stateDiagram' | 'mindmap' | 'unknown';
+type DiagramType = 'flowchart' | 'unknown';
 
 interface VisualNode {
   id: string;
@@ -71,21 +71,24 @@ const linkTypeOptions = [
 ];
 
 
-const createNewNode = (id: string): VisualNode => ({ id, name: 'Node', shape: 'rect' });
-const createNewLink = (): VisualLink => ({ id: `link-${Math.random()}`, from: '', to: '', type: 'arrow', text: '' });
+const createSafeId = (name: string) => {
+    if (!name) return `Node${Math.floor(Math.random() * 1000000)}`;
+    return name.replace(/[^a-zA-Z0-9_]/g, '_');
+};
+
 
 const createNewVisualRow = (): VisualRow => {
-    const fromNodeId = `N${Date.now()}${Math.random()}`;
-    const toNodeId = `N${Date.now()}${Math.random()}`;
+    const fromNodeName = 'Node A';
+    const toNodeName = 'Node B';
     return {
         id: `row-${Math.random()}`,
-        from_node_id: fromNodeId,
-        from_node_name: 'Node',
+        from_node_id: createSafeId(fromNodeName),
+        from_node_name: fromNodeName,
         from_node_shape: 'rect',
         link_type: 'arrow',
-        link_text: '',
-        to_node_id: toNodeId,
-        to_node_name: 'Node',
+        link_text: 'Link Text',
+        to_node_id: createSafeId(toNodeName),
+        to_node_name: toNodeName,
         to_node_shape: 'rect',
     };
 };
@@ -112,36 +115,36 @@ const getShapeSyntax = (shape: VisualNode['shape']) => {
 };
 
 const getLinkSyntax = (type: VisualLink['type'], text: string) => {
-    const linkType = {
+    const linkText = text.trim();
+    const linkSymbol = {
         'line': `---`,
         'dotted': `-.->`,
         'arrow': `-->`,
     }[type];
     
-    if (text.trim()) {
-        return `-- ${text.trim()} -->`;
+    if (linkText) {
+        return `-- ${linkText} --`;
     }
-    return linkType;
+    return linkSymbol;
 };
 
 
 // --- Component ---
 
 export function FlowchartView() {
-  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v25', defaultCode);
-  const [visualRows, setVisualRows] = useLocalStorage<VisualRow[]>('flowchart:visual-rows-v2', [createNewVisualRow()]);
+  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v26', defaultCode);
+  const [visualRows, setVisualRows] = useLocalStorage<VisualRow[]>('flowchart:visual-rows-v3', [createNewVisualRow()]);
   
   const [code, setCode] = useState(savedCode);
   const [svg, setSvg] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
+  const { toast } = useToast();
   
   const diagramType = useMemo((): DiagramType => {
       const trimmedCode = code.trim().toLowerCase();
       if (trimmedCode.startsWith('flowchart') || trimmedCode.startsWith('graph')) return 'flowchart';
-      if (trimmedCode.startsWith('statediagram') || trimmedCode.startsWith('state-diagram')) return 'stateDiagram';
-      if (trimmedCode.startsWith('mindmap')) return 'mindmap';
       return 'unknown';
   }, [code]);
 
@@ -154,8 +157,7 @@ export function FlowchartView() {
   const generateCodeFromVisual = useCallback(() => {
     if (editorMode !== 'visual') return;
   
-    const baseType = diagramType === 'stateDiagram' ? 'stateDiagram-v2' : 'flowchart';
-    let newCode = `${baseType} TD\n`;
+    let newCode = `flowchart TD\n`;
     const definedNodes = new Set<string>();
   
     visualRows.forEach(row => {
@@ -181,7 +183,7 @@ export function FlowchartView() {
     });
     
     setCode(newCode);
-  }, [editorMode, visualRows, diagramType]);
+  }, [editorMode, visualRows]);
 
 
   useEffect(() => {
@@ -236,14 +238,40 @@ export function FlowchartView() {
   const handleVisualRowChange = (index: number, field: keyof VisualRow, value: string) => {
       const newRows = [...visualRows];
       const newRow = {...newRows[index], [field]: value};
-      if (field === 'from_node_name' && !value.trim()) {
-          newRow.from_node_id = `N${Date.now()}${Math.random()}`;
+      
+      if (field === 'from_node_name') {
+          newRow.from_node_id = createSafeId(value);
       }
-      if (field === 'to_node_name' && !value.trim()) {
-          newRow.to_node_id = `N${Date.now()}${Math.random()}`;
+      if (field === 'to_node_name') {
+          newRow.to_node_id = createSafeId(value);
       }
       newRows[index] = newRow;
       setVisualRows(newRows);
+  };
+  
+  const handleExportSVG = () => {
+    if (!svg) {
+      toast({
+        title: "Nothing to Export",
+        description: "The diagram preview is empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'flowchart.svg';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({
+      title: "Export Successful",
+      description: "Your flowchart has been downloaded as an SVG file.",
+    });
   };
 
 
@@ -251,23 +279,42 @@ export function FlowchartView() {
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
-        <Card>
-            <CardHeader>
-                <CardTitle>Diagram Editor</CardTitle>
-                <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
-            </CardHeader>
-        </Card>
-        <ResizablePanelGroup direction="horizontal" className="flex-1 rounded-lg border">
-            <ResizablePanel defaultSize={60}>
-                 <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
-                    <div className="p-4 pb-0">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
-                            <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
-                        </TabsList>
-                    </div>
-                    <TabsContent value="visual" className="m-0 flex-1 flex flex-col">
-                        <div className="p-4 border-b">
+        <div className="grid md:grid-cols-2 gap-4">
+          <Card>
+              <CardHeader>
+                  <CardTitle>Flowchart Editor</CardTitle>
+                  <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
+              </CardHeader>
+          </Card>
+          <Card>
+              <CardHeader>
+                  <CardTitle>Live Preview</CardTitle>
+                  <CardDescription>The rendered output of your diagram appears here.</CardDescription>
+              </CardHeader>
+          </Card>
+        </div>
+
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
+          <Card className="flex flex-col">
+              <CardHeader>
+                  <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)}>
+                      <TabsList className="grid w-full max-w-sm grid-cols-2">
+                          <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
+                          <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
+                      </TabsList>
+                  </Tabs>
+              </CardHeader>
+              <CardContent className="p-0 flex-1 flex flex-col">
+                  {editorMode === 'code' ? (
+                      <Textarea
+                          value={code}
+                          onChange={(e) => setCode(e.target.value)}
+                          className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
+                          placeholder="Write your Mermaid diagram code here..."
+                      />
+                  ) : (
+                      <div className="flex-1 flex flex-col">
+                        <div className="p-4 border-y">
                             <Button onClick={addVisualRow}><Plus className="mr-2"/>Add Row</Button>
                         </div>
                         <ScrollArea className="flex-1">
@@ -275,26 +322,26 @@ export function FlowchartView() {
                                 {visualRows.map((row, index) => (
                                 <Card key={row.id} className="p-3">
                                     <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end">
-                                    {/* From Node */}
-                                    <div className="flex flex-col gap-1">
-                                        <Label className="text-xs">From</Label>
-                                        <Input placeholder="Node Name" value={row.from_node_name} onChange={e => handleVisualRowChange(index, 'from_node_name', e.target.value)} />
-                                        <Select value={row.from_node_shape} onValueChange={v => handleVisualRowChange(index, 'from_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                    </div>
+                                      {/* From Node */}
+                                      <div className="flex flex-col gap-1">
+                                          <Label className="text-xs">From</Label>
+                                          <Input placeholder="Node Name" value={row.from_node_name} onChange={e => handleVisualRowChange(index, 'from_node_name', e.target.value)} />
+                                          <Select value={row.from_node_shape} onValueChange={v => handleVisualRowChange(index, 'from_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                      </div>
 
-                                    {/* Link */}
-                                    <div className="flex flex-col gap-1">
-                                         <Label className="text-xs">Link</Label>
-                                        <Select value={row.link_type} onValueChange={v => handleVisualRowChange(index, 'link_type', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                        <Input placeholder="Link Text" value={row.link_text} onChange={e => handleVisualRowChange(index, 'link_text', e.target.value)} />
-                                    </div>
-                                    
-                                    {/* To Node */}
-                                     <div className="flex flex-col gap-1">
-                                        <Label className="text-xs">To</Label>
-                                        <Input placeholder="Node Name" value={row.to_node_name} onChange={e => handleVisualRowChange(index, 'to_node_name', e.target.value)} />
-                                        <Select value={row.to_node_shape} onValueChange={v => handleVisualRowChange(index, 'to_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                    </div>
+                                      {/* Link */}
+                                      <div className="flex flex-col gap-1">
+                                          <Label className="text-xs">Link</Label>
+                                          <Select value={row.link_type} onValueChange={v => handleVisualRowChange(index, 'link_type', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                          <Input placeholder="Link Text" value={row.link_text} onChange={e => handleVisualRowChange(index, 'link_text', e.target.value)} />
+                                      </div>
+                                      
+                                      {/* To Node */}
+                                      <div className="flex flex-col gap-1">
+                                          <Label className="text-xs">To</Label>
+                                          <Input placeholder="Node Name" value={row.to_node_name} onChange={e => handleVisualRowChange(index, 'to_node_name', e.target.value)} />
+                                          <Select value={row.to_node_shape} onValueChange={v => handleVisualRowChange(index, 'to_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                      </div>
                                     </div>
                                     <div className="flex justify-end mt-2">
                                         <Button size="icon" variant="ghost" onClick={() => removeVisualRow(row.id)}><Trash2 className="h-4 w-4"/></Button>
@@ -303,37 +350,39 @@ export function FlowchartView() {
                                 ))}
                             </div>
                         </ScrollArea>
-                    </TabsContent>
-                    <TabsContent value="code" className="m-0 flex-1">
-                        <Textarea
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
-                            placeholder="Write your Mermaid diagram code here..."
-                        />
-                    </TabsContent>
-                </Tabs>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={40}>
-                <ScrollArea className="h-full w-full p-4" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-                    {renderError ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
-                            <AlertCircle className="w-10 h-10 mb-2"/>
-                            <p className="font-semibold text-center">Failed to render diagram.</p>
-                            <pre className="mt-2 text-xs bg-black/20 p-2 rounded-md whitespace-pre-wrap max-w-full text-left">{renderError}</pre>
-                        </div>
-                    ) : svg ? (
-                        <div dangerouslySetInnerHTML={{ __html: svg }} className="w-full h-full flex items-center justify-center [&>svg]:max-w-none [&>svg]:max-h-none"/>
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            {code.trim() ? <Loader2 className="h-8 w-8 animate-spin"/> : <p>Diagram will appear here.</p>}
-                        </div>
-                    )}
-                </ScrollArea>
-            </ResizablePanel>
-        </ResizablePanelGroup>
+                    </div>
+                  )}
+              </CardContent>
+          </Card>
+          
+          <Card className="flex flex-col">
+                <CardHeader>
+                  <div className="flex items-center justify-end">
+                      <Button variant="outline" onClick={handleExportSVG}>
+                          <Download className="mr-2"/>
+                          Download SVG
+                      </Button>
+                  </div>
+              </CardHeader>
+              <CardContent className="p-0 flex-1">
+                    <ScrollArea className="h-full w-full p-4" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                      {renderError ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
+                              <AlertCircle className="w-10 h-10 mb-2"/>
+                              <p className="font-semibold text-center">Failed to render diagram.</p>
+                              <pre className="mt-2 text-xs bg-black/20 p-2 rounded-md whitespace-pre-wrap max-w-full text-left">{renderError}</pre>
+                          </div>
+                      ) : svg ? (
+                          <div dangerouslySetInnerHTML={{ __html: svg }} className="w-full h-full flex items-center justify-center [&>svg]:max-w-none [&>svg]:max-h-none"/>
+                      ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                              {code.trim() ? <Loader2 className="h-8 w-8 animate-spin"/> : <p>Diagram will appear here.</p>}
+                          </div>
+                      )}
+                  </ScrollArea>
+              </CardContent>
+          </Card>
+        </div>
     </div>
   );
 }
-

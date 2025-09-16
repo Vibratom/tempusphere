@@ -98,7 +98,7 @@ const getLinkSyntax = (type: VisualLink['type'], text: string) => {
     }[type];
     
     if (linkText) {
-        return `-- ${linkText} -->`;
+        return `-- ${linkText} --`;
     }
     return linkSymbol;
 };
