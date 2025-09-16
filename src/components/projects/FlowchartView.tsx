@@ -9,7 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { Download, AlertCircle, Loader2, ChevronDown, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Diamond, RectangleHorizontal, Circle, Cylinder, Link as LinkIcon, ArrowRight, CaseSensitive, Indent, Outdent } from 'lucide-react';
+import { Download, AlertCircle, Loader2, ChevronDown, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Diamond, RectangleHorizontal, Circle, Cylinder, Link as LinkIcon, ArrowRight, CaseSensitive, Indent, Outdent, Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Input } from '../ui/input';
@@ -263,7 +263,7 @@ title: Quality attributes of a good report\
 
 type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral';
 
-type DiagramType = 'flowchart' | 'mindmap' | 'unknown';
+type DiagramType = 'flowchart' | 'mindmap' | 'stateDiagram' | 'unknown';
 
 type EditorMode = 'visual' | 'code';
 // --- Flowchart Specific Types ---
@@ -320,7 +320,7 @@ export function FlowchartView() {
       // Basic parser, not fully robust
       const nodes: FlowNode[] = [];
       const links: FlowLink[] = [];
-      const nodeRegex = /^\s*([a-zA-Z0-9]+)(?:\["([^"]+)"\]|\{"([^"]+)"\}|\("([^"]+)"\)|\(\("([^"]+)"\)\))?/gm;
+      const nodeRegex = /^\s*([a-zA-Z0-9_]+)(?:\["([^"]+)"\]|\{"([^"]+)"\}|\("([^"]+)"\)|\(\("([^"]+)"\)\))?/gm;
       let match;
       while ((match = nodeRegex.exec(currentCode)) !== null) {
           const id = match[1];
@@ -331,7 +331,6 @@ export function FlowchartView() {
           else if(match[0].includes('(')) type = 'stadium';
           if(!nodes.find(n=>n.id === id)) nodes.push({ id, text, type });
       }
-      // This part is incomplete and needs a better parser. Sticking to current for now.
       setFlowNodes(nodes);
     } else if (firstLine.startsWith('mindmap')) {
       setDiagramType('mindmap');
@@ -344,6 +343,8 @@ export function FlowchartView() {
         };
       }).filter(node => node.text);
       setMindMapNodes(nodes);
+    } else if (firstLine.startsWith('stateDiagram')) {
+        setDiagramType('stateDiagram');
     } else {
       setDiagramType('unknown');
     }
@@ -448,8 +449,8 @@ export function FlowchartView() {
 
   const generateCodeFromVisual = () => {
     let newCode = '';
-    if (diagramType === 'flowchart') {
-        newCode = 'flowchart TD\n';
+    if (diagramType === 'flowchart' || diagramType === 'stateDiagram') {
+        newCode = `${diagramType} TD\n`;
         flowNodes.forEach(node => {
             const text = node.text || ' ';
             if(node.type === 'node') newCode += `    ${node.id}["${text}"]\n`;
@@ -517,6 +518,9 @@ export function FlowchartView() {
     }, [flowNodes, flowLinks]);
     
     const nodeOptions = flowNodes.map(n => ({ value: n.id, label: `${n.id}: ${n.text}` }));
+    if(diagramType === 'stateDiagram') {
+        nodeOptions.unshift({ value: '[*]', label: 'Start/End State' });
+    }
 
     return (
         <div className="flex-1 flex flex-col gap-4 p-4 pt-0 min-h-0">
@@ -667,6 +671,7 @@ export function FlowchartView() {
   const VisualEditor = () => {
     switch(diagramType) {
         case 'flowchart':
+        case 'stateDiagram':
             return <FlowchartEditor />;
         case 'mindmap':
             return <MindMapEditor />;
@@ -809,5 +814,3 @@ export function FlowchartView() {
     </div>
   );
 }
-
-    
