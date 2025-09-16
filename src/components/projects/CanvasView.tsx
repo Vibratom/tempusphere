@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Slider } from '../ui/slider';
@@ -589,3 +589,5 @@ export function CanvasView() {
         </div>
     );
 }
+
+    
