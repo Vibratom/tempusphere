@@ -27,15 +27,15 @@ export default function ProjectsPage() {
                 A suite of integrated tools to help you plan, track, and manage your projects from start to finish.
             </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {tools.map((tool) => (
-                <Link key={tool.value} href={tool.href}>
-                    <Card className="h-full flex flex-col hover:shadow-lg hover:border-primary/50 transition-all">
-                        <CardHeader className="flex-row items-center gap-4">
-                           <div className="p-3 bg-primary/10 text-primary rounded-lg">
-                             <tool.icon className="w-6 h-6" />
+                <Link key={tool.value} href={tool.href} className="group">
+                    <Card className="h-full flex flex-col bg-background/50 hover:bg-background transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2">
+                        <CardHeader>
+                           <div className="p-4 bg-primary/10 text-primary rounded-xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                             <tool.icon className="w-8 h-8" />
                            </div>
-                           <CardTitle>{tool.label}</CardTitle>
+                           <CardTitle className="text-xl">{tool.label}</CardTitle>
                         </CardHeader>
                         <CardContent>
                            <CardDescription>{tool.description}</CardDescription>
