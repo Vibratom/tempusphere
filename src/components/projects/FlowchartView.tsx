@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
@@ -9,7 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Textarea } from '../ui/textarea';
@@ -35,7 +35,6 @@ const diagramTemplates = {
     label: "Sequence & Interaction",
     templates: {
       sequence: { label: "Sequence Diagram", code: `sequenceDiagram\n    participant Alice\n    participant Bob\n    Alice->>John: Hello John, how are you?\n    loop Healthcheck\n        John->>John: Fight against hypochondria\n    end\n    Note right of John: Rational thoughts <br/>prevail...\n    John-->>Alice: Great!\n    John->>Bob: How about you?\n    Bob-->>John: Jolly good!`},
-      zenuml: { label: "ZenUML", code: `zenuml\n    Alice->Bob: Hello Bob\n    Bob->>Alice: Hi Alice`},
       packet: { label: "Packet Diagram", code: `packet-diagram\n    "Source Port"\n    "Destination Port"\n    "Sequence Number"\n    "Ack Number"\n    "Data Offset"\n    "Reserved"\n    "Flags"\n    "Window Size"\n    "Checksum"\n    "Urgent Pointer"` },
     }
   },
@@ -112,10 +111,14 @@ const customThemes = {
 type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral' | 'base' | 'sunset' | 'ocean';
 
 export function FlowchartView() {
-  const [code, setCode] = useLocalStorage('flowchart:mermaid-code-v5', diagramTemplates.flowAndProcess.templates.flowchart.code);
+  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v5', diagramTemplates.flowAndProcess.templates.flowchart.code);
+  const [code, setCode] = useState(savedCode);
   const [svg, setSvg] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
+  
+  const [history, setHistory] = useState([savedCode]);
+  const [historyIndex, setHistoryIndex] = useState(0);
   
   const { toast } = useToast();
   const { resolvedTheme } = useTheme();
@@ -131,6 +134,46 @@ export function FlowchartView() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleCodeChange = (newCode: string) => {
+    setCode(newCode);
+    const newHistory = history.slice(0, historyIndex + 1);
+    setHistory([...newHistory, newCode]);
+    setHistoryIndex(newHistory.length);
+  }
+
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setCode(history[newIndex]);
+    }
+  }, [history, historyIndex]);
+
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setCode(history[newIndex]);
+    }
+  }, [history, historyIndex]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z') {
+          e.preventDefault();
+          handleUndo();
+        } else if (e.key === 'y') {
+          e.preventDefault();
+          handleRedo();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
+
 
   useEffect(() => {
     if (!svgContainerRef.current) return;
@@ -175,6 +218,7 @@ export function FlowchartView() {
         const { svg: renderedSvg } = await mermaid.render(uniqueId, finalCode);
         setSvg(renderedSvg);
         setRenderError(null);
+        setSavedCode(code);
       } catch (error: any) {
         setSvg('');
         if (error.str) {
@@ -196,7 +240,7 @@ export function FlowchartView() {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [code, isClient, resolvedTheme, mermaidTheme, customCSS]);
+  }, [code, isClient, resolvedTheme, mermaidTheme, customCSS, setSavedCode]);
   
   const handleExportSvg = () => {
     if (!svg || renderError) {
@@ -209,7 +253,6 @@ export function FlowchartView() {
     link.href = url;
     link.download = 'diagram.svg';
     document.body.appendChild(link);
-    link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     toast({ title: "SVG Exported", description: "Your diagram has been downloaded."});
@@ -263,7 +306,7 @@ export function FlowchartView() {
                                 <DropdownMenuPortal>
                                     <DropdownMenuSubContent>
                                         {Object.values(category.templates).map(template => (
-                                            <DropdownMenuItem key={template.label} onClick={() => setCode(template.code)}>
+                                            <DropdownMenuItem key={template.label} onClick={() => handleCodeChange(template.code)}>
                                                 {template.label}
                                             </DropdownMenuItem>
                                         ))}
@@ -292,13 +335,20 @@ export function FlowchartView() {
             <div className="flex flex-col gap-4 h-full p-4">
                 <Card className="flex flex-col flex-1">
                     <CardHeader>
-                        <CardTitle>Code Editor</CardTitle>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Code Editor</CardTitle>
+                            <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIndex <= 0}><Undo2/></Button>
+                                <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIndex >= history.length - 1}><Redo2/></Button>
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent className="p-0 flex-1 relative">
                        <ScrollArea className="absolute inset-0">
                             <Editor
                                 value={code}
                                 onValueChange={setCode}
+                                onBlur={() => handleCodeChange(code)}
                                 highlight={(code) => Prism.highlight(code, Prism.languages.markup, 'markup')}
                                 padding={16}
                                 className="font-mono text-sm"
@@ -388,3 +438,5 @@ export function FlowchartView() {
     </div>
   );
 }
+
+    
