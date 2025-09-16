@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { v4 as uuidv4 } from 'uuid';
+import { Label } from '../ui/label';
 
 const defaultCode = `flowchart TD
     A[Start] --> B{Is it?};
@@ -36,6 +37,18 @@ interface VisualRow {
   link_name: string;
   to_node_name: string;
   to_node_shape: NodeShape;
+  link_type2: LinkType;
+  link_name2: string;
+  to_node_name2: string;
+  to_node_shape2: NodeShape;
+  link_type3: LinkType;
+  link_name3: string;
+  to_node_name3: string;
+  to_node_shape3: NodeShape;
+  link_type4: LinkType;
+  link_name4: string;
+  to_node_name4: string;
+  to_node_shape4: NodeShape;
 }
 
 const nodeShapeOptions: { value: NodeShape, label: string }[] = [
@@ -57,6 +70,12 @@ const createEmptyRow = (): VisualRow => ({
   from_node_name: '', from_node_shape: 'rect',
   link_name: '', link_type: 'arrow',
   to_node_name: '', to_node_shape: 'rect',
+  link_name2: '', link_type2: 'arrow',
+  to_node_name2: '', to_node_shape2: 'rect',
+  link_name3: '', link_type3: 'arrow',
+  to_node_name3: '', to_node_shape3: 'rect',
+  link_name4: '', link_type4: 'arrow',
+  to_node_name4: '', to_node_shape4: 'rect',
 });
 
 function generateMermaidCode(rows: VisualRow[]): string {
@@ -78,25 +97,44 @@ function generateMermaidCode(rows: VisualRow[]): string {
         }
     };
     
-    rows.forEach(row => {
-        defineNode(row.from_node_name, row.from_node_shape);
-        defineNode(row.to_node_name, row.to_node_shape);
+    const getLinkSyntax = (linkType: LinkType, linkName: string) => {
+      let syntax;
+      switch (linkType) {
+          case 'line':
+              syntax = linkName ? `--- ${linkName} ---` : '---';
+              break;
+          case 'dotted':
+              syntax = linkName ? `-. ${linkName} .->` : '-.->';
+              break;
+          default: // arrow
+              syntax = linkName ? `-- ${linkName} -->` : '-->';
+              break;
+      }
+      return syntax;
+    }
 
-        if (row.from_node_name && row.to_node_name) {
-            let linkSyntax;
-            switch (row.link_type) {
-                case 'line':
-                    linkSyntax = row.link_name ? `--- ${row.link_name} ---` : '---';
-                    break;
-                case 'dotted':
-                    linkSyntax = row.link_name ? `-. ${row.link_name} .->` : '-.->';
-                    break;
-                default: // arrow
-                    linkSyntax = row.link_name ? `-- ${row.link_name} -->` : '-->';
-                    break;
+    rows.forEach(row => {
+        const nodes = [
+          { name: row.from_node_name, shape: row.from_node_shape },
+          { name: row.to_node_name, shape: row.to_node_shape },
+          { name: row.to_node_name2, shape: row.to_node_shape2 },
+          { name: row.to_node_name3, shape: row.to_node_shape3 },
+          { name: row.to_node_name4, shape: row.to_node_shape4 },
+        ];
+        const links = [
+            { from: row.from_node_name, to: row.to_node_name, type: row.link_type, name: row.link_name },
+            { from: row.to_node_name, to: row.to_node_name2, type: row.link_type2, name: row.link_name2 },
+            { from: row.to_node_name2, to: row.to_node_name3, type: row.link_type3, name: row.link_name3 },
+            { from: row.to_node_name3, to: row.to_node_name4, type: row.link_type4, name: row.link_name4 },
+        ];
+
+        nodes.forEach(node => defineNode(node.name, node.shape));
+
+        links.forEach(link => {
+            if (link.from && link.to) {
+                code += `    ${link.from} ${getLinkSyntax(link.type, link.name)} ${link.to}\n`;
             }
-            code += `    ${row.from_node_name} ${linkSyntax} ${row.to_node_name}\n`;
-        }
+        });
     });
 
     return code;
@@ -195,53 +233,83 @@ export function FlowchartView() {
                 <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
             </CardHeader>
         </Card>
-         <ResizablePanelGroup direction="horizontal" className="flex-1 rounded-lg border">
+        <ResizablePanelGroup direction="horizontal" className="flex-1 rounded-lg border">
             <ResizablePanel defaultSize={60}>
                 <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
                     <div className="p-4 pb-0">
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
-                        <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
-                      </TabsList>
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
+                            <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
+                        </TabsList>
                     </div>
 
                     <TabsContent value="code" className="m-0 flex-1">
-                       <Textarea
-                          value={code}
-                          onChange={(e) => setCode(e.target.value)}
-                          className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
-                          placeholder="Write your Mermaid diagram code here..."
-                      />
+                        <Textarea
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            className="w-full h-full resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
+                            placeholder="Write your Mermaid diagram code here..."
+                        />
                     </TabsContent>
                     <TabsContent value="visual" className="m-0 flex-1">
-                      <ScrollArea className="h-full w-full">
-                          <div className="p-4 space-y-2">
-                            {visualRows.map((row, index) => (
-                                <div key={row.id} className="grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-2 border p-2 rounded-lg relative">
-                                    {/* From Node */}
-                                    <div className="flex flex-col gap-1">
-                                        <Label className="text-xs">From</Label>
-                                        <Input placeholder="Node Name" value={row.from_node_name} onChange={e => handleVisualRowChange(index, 'from_node_name', e.target.value)} />
-                                        <Select value={row.from_node_shape} onValueChange={v => handleVisualRowChange(index, 'from_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                        <ScrollArea className="h-full w-full">
+                            <div className="p-4 space-y-2">
+                                {visualRows.map((row, index) => (
+                                    <div key={row.id} className="grid grid-cols-[repeat(8,_1fr)_auto] items-end gap-2 border p-2 rounded-lg relative">
+                                        {/* From Node */}
+                                        <div className="flex flex-col gap-1">
+                                            <Label className="text-xs">From</Label>
+                                            <Input placeholder="Node Name" value={row.from_node_name} onChange={e => handleVisualRowChange(index, 'from_node_name', e.target.value)} />
+                                            <Select value={row.from_node_shape} onValueChange={v => handleVisualRowChange(index, 'from_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                        </div>
+                                        {/* Link */}
+                                        <div className="flex flex-col gap-1">
+                                            <Label className="text-xs">Link</Label>
+                                            <Input placeholder="Link Text" value={row.link_name} onChange={e => handleVisualRowChange(index, 'link_name', e.target.value)} />
+                                            <Select value={row.link_type} onValueChange={v => handleVisualRowChange(index, 'link_type', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                        </div>
+                                        {/* To Node */}
+                                        <div className="flex flex-col gap-1">
+                                            <Label className="text-xs">To</Label>
+                                            <Input placeholder="Node Name" value={row.to_node_name} onChange={e => handleVisualRowChange(index, 'to_node_name', e.target.value)} />
+                                            <Select value={row.to_node_shape} onValueChange={v => handleVisualRowChange(index, 'to_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                        </div>
+                                         {/* Link 2 */}
+                                        <div className="flex flex-col gap-1">
+                                            <Label className="text-xs">Link</Label>
+                                            <Input placeholder="Link Text" value={row.link_name2} onChange={e => handleVisualRowChange(index, 'link_name2', e.target.value)} />
+                                            <Select value={row.link_type2} onValueChange={v => handleVisualRowChange(index, 'link_type2', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                        </div>
+                                        {/* To Node 2 */}
+                                        <div className="flex flex-col gap-1">
+                                            <Label className="text-xs">To</Label>
+                                            <Input placeholder="Node Name" value={row.to_node_name2} onChange={e => handleVisualRowChange(index, 'to_node_name2', e.target.value)} />
+                                            <Select value={row.to_node_shape2} onValueChange={v => handleVisualRowChange(index, 'to_node_shape2', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                        </div>
+                                         {/* Link 3 */}
+                                        <div className="flex flex-col gap-1">
+                                            <Label className="text-xs">Link</Label>
+                                            <Input placeholder="Link Text" value={row.link_name3} onChange={e => handleVisualRowChange(index, 'link_name3', e.target.value)} />
+                                            <Select value={row.link_type3} onValueChange={v => handleVisualRowChange(index, 'link_type3', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                        </div>
+                                        {/* To Node 3 */}
+                                        <div className="flex flex-col gap-1">
+                                            <Label className="text-xs">To</Label>
+                                            <Input placeholder="Node Name" value={row.to_node_name3} onChange={e => handleVisualRowChange(index, 'to_node_name3', e.target.value)} />
+                                            <Select value={row.to_node_shape3} onValueChange={v => handleVisualRowChange(index, 'to_node_shape3', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                        </div>
+                                         {/* Link 4 */}
+                                        <div className="flex flex-col gap-1">
+                                            <Label className="text-xs">Link</Label>
+                                            <Input placeholder="Link Text" value={row.link_name4} onChange={e => handleVisualRowChange(index, 'link_name4', e.target.value)} />
+                                            <Select value={row.link_type4} onValueChange={v => handleVisualRowChange(index, 'link_type4', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                        </div>
+                                        <Button variant="ghost" size="icon" className="self-center" onClick={() => removeVisualRow(index)}><Trash2 className="h-4 w-4"/></Button>
                                     </div>
-                                    {/* Link */}
-                                    <div className="flex flex-col gap-1">
-                                        <Label className="text-xs">Link</Label>
-                                        <Input placeholder="Link Text" value={row.link_name} onChange={e => handleVisualRowChange(index, 'link_name', e.target.value)} />
-                                        <Select value={row.link_type} onValueChange={v => handleVisualRowChange(index, 'link_type', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                    </div>
-                                    {/* To Node */}
-                                     <div className="flex flex-col gap-1">
-                                        <Label className="text-xs">To</Label>
-                                        <Input placeholder="Node Name" value={row.to_node_name} onChange={e => handleVisualRowChange(index, 'to_node_name', e.target.value)} />
-                                        <Select value={row.to_node_shape} onValueChange={v => handleVisualRowChange(index, 'to_node_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
-                                    </div>
-                                    <Button variant="ghost" size="icon" className="self-center" onClick={() => removeVisualRow(index)}><Trash2 className="h-4 w-4"/></Button>
-                                </div>
-                            ))}
-                            <Button onClick={addVisualRow} variant="outline"><Plus className="mr-2 h-4 w-4"/>Add Row</Button>
-                          </div>
-                      </ScrollArea>
+                                ))}
+                                <Button onClick={addVisualRow} variant="outline"><Plus className="mr-2 h-4 w-4"/>Add Row</Button>
+                            </div>
+                        </ScrollArea>
                     </TabsContent>
                 </Tabs>
             </ResizablePanel>
@@ -267,3 +335,5 @@ export function FlowchartView() {
     </div>
   );
 }
+
+    
