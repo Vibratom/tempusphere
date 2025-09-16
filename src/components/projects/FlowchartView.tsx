@@ -287,32 +287,44 @@ interface MindMapNode {
   indent: number;
 }
 
-const LinkEditorRow = React.memo(({ link, nodeOptions, onUpdate, onRemove, smartMode }: { link: FlowLink, nodeOptions: {value: string, label: string}[], onUpdate: (id: string, part: Partial<FlowLink>) => void, onRemove: (id: string) => void, smartMode: boolean}) => {
+const LinkEditorRow = ({ initialLink, nodeOptions, onUpdate, onRemove, smartMode }: { initialLink: FlowLink, nodeOptions: {value: string, label: string}[], onUpdate: (id: string, part: Partial<FlowLink>) => void, onRemove: (id: string) => void, smartMode: boolean}) => {
+    const [link, setLink] = useState(initialLink);
+
+    const handleUpdate = (part: Partial<FlowLink>) => {
+        const newLink = {...link, ...part};
+        if (smartMode && newLink.source && newLink.source === newLink.target) {
+            toast({ title: "Invalid Link", description: "A node cannot link to itself in Smart Mode.", variant: "destructive"});
+            return;
+        }
+        setLink(newLink);
+        onUpdate(newLink.id, part);
+    };
+
     return (
         <div className="grid grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center">
             {smartMode ? (
             <>
-                <Select value={link.source} onValueChange={(v) => onUpdate(link.id, {source: v})}>
+                <Select value={link.source} onValueChange={(v) => handleUpdate({source: v})}>
                     <SelectTrigger><SelectValue placeholder="From"/></SelectTrigger>
                     <SelectContent>{nodeOptions.map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
                 </Select>
-                <Select value={link.target} onValueChange={(v) => onUpdate(link.id, {target: v})}>
+                <Select value={link.target} onValueChange={(v) => handleUpdate({target: v})}>
                     <SelectTrigger><SelectValue placeholder="To"/></SelectTrigger>
                     <SelectContent>{nodeOptions.filter(n => n.value !== link.source).map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
                 </Select>
             </>
             ) : (
             <>
-                <Input value={link.source} onChange={(e) => onUpdate(link.id, {source: e.target.value})} placeholder="From ID" className="font-mono"/>
-                <Input value={link.target} onChange={(e) => onUpdate(link.id, {target: e.target.value})} placeholder="To ID" className="font-mono"/>
+                <Input value={link.source} onChange={(e) => handleUpdate({source: e.target.value})} placeholder="From ID" className="font-mono"/>
+                <Input value={link.target} onChange={(e) => handleUpdate({target: e.target.value})} placeholder="To ID" className="font-mono"/>
             </>
             )}
-            <Input value={link.label} onChange={(e) => onUpdate(link.id, {label: e.target.value})} placeholder="Label (optional)"/>
+            <Input value={link.label} onChange={(e) => handleUpdate({label: e.target.value})} placeholder="Label (optional)"/>
             <Button size="icon" variant="ghost" onClick={() => onRemove(link.id)}><Trash2/></Button>
         </div>
     );
-});
-LinkEditorRow.displayName = 'LinkEditorRow';
+};
+
 
 export function FlowchartView() {
   const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v6', diagramTemplates.flowAndProcess.templates.flowchart.code);
@@ -523,18 +535,8 @@ export function FlowchartView() {
     }
 
     const updateLink = useCallback((id: string, part: Partial<FlowLink>) => {
-        setFlowLinks(prev => prev.map(l => {
-            if (l.id === id) {
-                const newLink = {...l, ...part};
-                if (smartMode && newLink.source && newLink.source === newLink.target) {
-                    toast({ title: "Invalid Link", description: "A node cannot link to itself in Smart Mode.", variant: "destructive"});
-                    return l; // revert
-                }
-                return newLink;
-            }
-            return l;
-        }));
-    }, [smartMode, toast]);
+      setFlowLinks(prev => prev.map(l => l.id === id ? {...l, ...part} : l));
+    }, []);
 
     const removeLink = useCallback((id: string) => {
         setFlowLinks(prev => prev.filter(l => l.id !== id));
@@ -613,7 +615,7 @@ export function FlowchartView() {
                   {flowLinks.map(link => (
                     <LinkEditorRow 
                         key={link.id}
-                        link={link}
+                        initialLink={link}
                         nodeOptions={nodeOptions}
                         onUpdate={updateLink}
                         onRemove={removeLink}
