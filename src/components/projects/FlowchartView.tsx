@@ -43,6 +43,8 @@ interface VisualRow {
   link3_name: string;
   node4_name: string;
   node4_shape: NodeShape;
+  link4_type: LinkType;
+  link4_name: string;
 }
 
 const nodeShapeOptions: { value: NodeShape, label: string }[] = [
@@ -68,61 +70,63 @@ const createEmptyRow = (): VisualRow => ({
   node3_name: '', node3_shape: 'rect',
   link3_name: '', link3_type: 'arrow',
   node4_name: '', node4_shape: 'rect',
+  link4_name: '', link4_type: 'arrow',
 });
 
 function generateMermaidCode(rows: VisualRow[]): string {
     let code = 'flowchart TD\n';
     const definedNodes = new Set<string>();
 
+    const defineNode = (node: { name: string, shape: NodeShape }) => {
+        if (node.name && !definedNodes.has(node.name)) {
+            let shapeSyntax;
+            switch (node.shape) {
+                case 'stadium': shapeSyntax = `(${node.name})`; break;
+                case 'circle': shapeSyntax = `((${node.name}))`; break;
+                case 'rhombus': shapeSyntax = `{${node.name}}`; break;
+                case 'cylinder': shapeSyntax = `([${node.name}])`; break;
+                default: shapeSyntax = `[${node.name}]`; break;
+            }
+            code += `    ${node.name}${shapeSyntax}\n`;
+            definedNodes.add(node.name);
+        }
+    };
+    
+    const addLink = (fromNode: { name: string }, toNode: { name: string }, link: { name: string, type: LinkType }) => {
+        if (fromNode.name && toNode.name) {
+            let linkSyntax;
+            switch (link.type) {
+                case 'line': linkSyntax = '---'; break;
+                case 'dotted': linkSyntax = '-.->'; break;
+                default: linkSyntax = '-->'; break;
+            }
+
+            if (link.name) {
+                code += `    ${fromNode.name} -- ${link.name} --${linkSyntax} ${toNode.name}\n`;
+            } else {
+                code += `    ${fromNode.name} ${linkSyntax} ${toNode.name}\n`;
+            }
+        }
+    };
+
+
     rows.forEach(row => {
-        const nodesInRow = [
+        const nodes = [
             { name: row.node1_name, shape: row.node1_shape },
             { name: row.node2_name, shape: row.node2_shape },
             { name: row.node3_name, shape: row.node3_shape },
             { name: row.node4_name, shape: row.node4_shape },
         ];
-        const linksInRow = [
+        const links = [
             { name: row.link1_name, type: row.link1_type },
             { name: row.link2_name, type: row.link2_type },
             { name: row.link3_name, type: row.link3_type },
         ];
-
-        // Define nodes first to handle dangling nodes
-        nodesInRow.forEach(node => {
-            if (node.name && !definedNodes.has(node.name)) {
-                let shapeSyntax;
-                switch (node.shape) {
-                    case 'stadium': shapeSyntax = `(${node.name})`; break;
-                    case 'circle': shapeSyntax = `((${node.name}))`; break;
-                    case 'rhombus': shapeSyntax = `{${node.name}}`; break;
-                    case 'cylinder': shapeSyntax = `([${node.name}])`; break;
-                    default: shapeSyntax = `[${node.name}]`; break;
-                }
-                code += `    ${node.name}${shapeSyntax}\n`;
-                definedNodes.add(node.name);
-            }
-        });
-
-        // Create links
+        
+        nodes.forEach(defineNode);
+        
         for (let i = 0; i < 3; i++) {
-            const fromNode = nodesInRow[i];
-            const toNode = nodesInRow[i+1];
-            const link = linksInRow[i];
-
-            if (fromNode.name && toNode.name) {
-                let linkSyntax;
-                switch (link.type) {
-                    case 'line': linkSyntax = '---'; break;
-                    case 'dotted': linkSyntax = '-.->'; break;
-                    default: linkSyntax = '-->'; break;
-                }
-
-                if (link.name) {
-                    code += `    ${fromNode.name} -- ${link.name} --${linkSyntax} ${toNode.name}\n`;
-                } else {
-                    code += `    ${fromNode.name} ${linkSyntax} ${toNode.name}\n`;
-                }
-            }
+           addLink(nodes[i], nodes[i+1], links[i]);
         }
     });
 
@@ -161,7 +165,7 @@ export function FlowchartView() {
         setCode(newCode);
       }
     }
-  }, [visualRows, editorMode]);
+  }, [visualRows, editorMode, code]);
 
 
   useEffect(() => {
@@ -224,14 +228,12 @@ export function FlowchartView() {
         </Card>
         <ResizablePanelGroup direction="horizontal" className="flex-1 rounded-lg border">
             <ResizablePanel defaultSize={60}>
-                <div className="flex flex-col gap-4 h-full p-0">
+                <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
                     <div className="p-4 pb-0">
-                      <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full">
-                          <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
-                            <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
-                          </TabsList>
-                      </Tabs>
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
+                        <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
+                      </TabsList>
                     </div>
 
                     <TabsContent value="code" className="m-0 flex-1">
@@ -246,7 +248,7 @@ export function FlowchartView() {
                       <ScrollArea className="h-full w-full">
                           <div className="p-4 space-y-2">
                             {visualRows.map((row, index) => (
-                                <div key={row.id} className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto] items-center gap-2 border p-2 rounded-lg relative">
+                                <div key={row.id} className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_1fr_auto] items-start gap-2 border p-2 rounded-lg relative">
                                     {/* Node 1 */}
                                     <div className="flex flex-col gap-1">
                                         <Input placeholder="Node Name" value={row.node1_name} onChange={e => handleVisualRowChange(index, 'node1_name', e.target.value)} />
@@ -282,14 +284,14 @@ export function FlowchartView() {
                                         <Input placeholder="Node Name" value={row.node4_name} onChange={e => handleVisualRowChange(index, 'node4_name', e.target.value)} />
                                         <Select value={row.node4_shape} onValueChange={v => handleVisualRowChange(index, 'node4_shape', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
                                     </div>
-                                    <Button variant="ghost" size="icon" className="absolute -right-2 -top-2 h-7 w-7" onClick={() => removeVisualRow(index)}><Trash2 className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" className="self-center" onClick={() => removeVisualRow(index)}><Trash2 className="h-4 w-4"/></Button>
                                 </div>
                             ))}
                             <Button onClick={addVisualRow} variant="outline"><Plus className="mr-2 h-4 w-4"/>Add Row</Button>
                           </div>
                       </ScrollArea>
                     </TabsContent>
-                </div>
+                </Tabs>
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={40}>
