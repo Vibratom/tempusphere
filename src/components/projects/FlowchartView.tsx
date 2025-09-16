@@ -9,7 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Diamond, RectangleHorizontal, Circle, Cylinder } from 'lucide-react';
+import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Diamond, RectangleHorizontal, Circle, Cylinder, Link as LinkIcon, ArrowRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Textarea } from '../ui/textarea';
@@ -453,14 +453,43 @@ export function FlowchartView() {
                       </CardHeader>
                       <CardContent>
                         <ScrollArea className="h-48">
-                          <div className="space-y-2 pr-4">
-                            {nodes.map(node => (
-                              <div key={node.id} className="flex items-center gap-2">
-                                <span className="font-mono text-sm text-muted-foreground p-2 bg-muted rounded-md">{node.id}</span>
-                                <Input value={node.text} onChange={(e) => updateNode(node.id, e.target.value)} className="flex-1"/>
-                                <Button size="icon" variant="ghost" onClick={() => removeNode(node.id)}><Trash2/></Button>
-                              </div>
-                            ))}
+                          <div className="space-y-4 pr-4">
+                            {nodes.map(node => {
+                              const nodeLinks = links.filter(l => l.source === node.id || l.target === node.id);
+                              return (
+                                <div key={node.id} className="space-y-2 rounded-md border p-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono text-sm text-muted-foreground p-2 bg-muted rounded-md">{node.id}</span>
+                                    <Input value={node.text} onChange={(e) => updateNode(node.id, e.target.value)} className="flex-1"/>
+                                    <Button size="icon" variant="ghost" onClick={() => removeNode(node.id)}><Trash2/></Button>
+                                  </div>
+                                  {nodeLinks.length > 0 && (
+                                    <div className="pl-8 space-y-1">
+                                      {nodeLinks.map(link => (
+                                        <div key={link.id} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <LinkIcon className="h-3 w-3" />
+                                            {link.source === node.id ? (
+                                                <>
+                                                    <span className="font-mono">{node.id}</span>
+                                                    <ArrowRight className="h-3 w-3" />
+                                                    <span className="font-mono">{link.target || '?'}</span>
+                                                    {link.label && <span className="text-xs p-1 bg-muted rounded">({link.label})</span>}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="font-mono">{link.source || '?'}</span>
+                                                    <ArrowRight className="h-3 w-3" />
+                                                    <span className="font-mono">{node.id}</span>
+                                                     {link.label && <span className="text-xs p-1 bg-muted rounded">({link.label})</span>}
+                                                </>
+                                            )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </ScrollArea>
                       </CardContent>
