@@ -9,7 +9,6 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useTheme } from 'next-themes';
 import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2, Download } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -104,7 +103,7 @@ const getLinkSyntax = (type: VisualLink['type'], text: string) => {
     return linkSymbol;
 };
 
-const createNewNode = (): VisualNode => ({ id: `N${Date.now()}${Math.random()}`, name: 'Node', shape: 'rect' });
+const createNewNode = (): VisualNode => ({ id: `Node${Math.floor(Math.random() * 1000)}`, name: 'New Node', shape: 'rect' });
 const createNewLink = (): VisualLink => ({ id: `link-${Math.random()}`, type: 'arrow', text: '' });
 const createNewColumn = (): VisualColumn => {
     return {
@@ -114,18 +113,18 @@ const createNewColumn = (): VisualColumn => {
     };
 };
 
-const NodeEditorRow = ({ colId, nodeIndex, node, handleNodeChange }: { colId: string, nodeIndex: number, node: VisualNode, handleNodeChange: (colId: string, nodeIndex: number, field: 'name' | 'shape', value: string) => void }) => {
+const NodeEditorRow = ({ colId, nodeIndex, node, handleNodeChange }: { colId: string, nodeIndex: number, node: VisualNode, handleNodeChange: (colId: string, nodeIndex: number, field: keyof VisualNode, value: string) => void }) => {
     const [currentNode, setCurrentNode] = useState(node);
 
     useEffect(() => {
         setCurrentNode(node);
     }, [node]);
 
-    const handleLocalChange = (field: 'name' | 'shape', value: string) => {
+    const handleLocalChange = (field: keyof VisualNode, value: string) => {
         setCurrentNode(prev => ({ ...prev, [field]: value }));
     };
 
-    const commitChanges = (field: 'name' | 'shape', value: string) => {
+    const commitChanges = (field: keyof VisualNode, value: string) => {
         handleNodeChange(colId, nodeIndex, field, value);
     };
 
@@ -135,24 +134,38 @@ const NodeEditorRow = ({ colId, nodeIndex, node, handleNodeChange }: { colId: st
               Node: {currentNode.name || 'Untitled'}
             </AccordionTrigger>
             <AccordionContent className="p-2 pt-0">
-                <div className="bg-background p-2 rounded border space-y-1">
-                    <Label className="text-xs">Node Text & Shape</Label>
-                    <Input
-                        placeholder="Text"
-                        value={currentNode.name}
-                        onChange={e => handleLocalChange('name', e.target.value)}
-                        onBlur={e => commitChanges('name', e.target.value)}
-                    />
-                    <Select
-                        value={currentNode.shape}
-                        onValueChange={v => {
-                            handleLocalChange('shape', v);
-                            commitChanges('shape', v);
-                        }}
-                    >
-                        <SelectTrigger><SelectValue/></SelectTrigger>
-                        <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                    </Select>
+                <div className="bg-background p-2 rounded border space-y-2">
+                    <div>
+                        <Label className="text-xs">Node ID</Label>
+                        <Input
+                            placeholder="Unique ID"
+                            value={currentNode.id}
+                            onChange={e => handleLocalChange('id', e.target.value.replace(/\s+/g, '_'))}
+                            onBlur={e => commitChanges('id', e.target.value.replace(/\s+/g, '_'))}
+                        />
+                    </div>
+                    <div>
+                        <Label className="text-xs">Node Text</Label>
+                        <Input
+                            placeholder="Text"
+                            value={currentNode.name}
+                            onChange={e => handleLocalChange('name', e.target.value)}
+                            onBlur={e => commitChanges('name', e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <Label className="text-xs">Shape</Label>
+                        <Select
+                            value={currentNode.shape}
+                            onValueChange={v => {
+                                handleLocalChange('shape', v);
+                                commitChanges('shape', v);
+                            }}
+                        >
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </AccordionContent>
         </AccordionItem>
@@ -160,34 +173,45 @@ const NodeEditorRow = ({ colId, nodeIndex, node, handleNodeChange }: { colId: st
 };
 
 const LinkEditorRow = ({ colId, linkIndex, link, onLinkChange }: { colId: string, linkIndex: number, link: VisualLink, onLinkChange: (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => void }) => {
-    const handleSelectChange = (value: string) => {
-        onLinkChange(colId, linkIndex, 'type', value);
+    const [currentLink, setCurrentLink] = useState(link);
+
+    useEffect(() => {
+        setCurrentLink(link);
+    }, [link]);
+
+    const handleLocalChange = (field: 'type' | 'text', value: string) => {
+        setCurrentLink(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        onLinkChange(colId, linkIndex, 'text', e.target.value);
+    const commitChanges = () => {
+        onLinkChange(colId, linkIndex, 'type', currentLink.type);
+        onLinkChange(colId, linkIndex, 'text', currentLink.text);
     };
 
     return (
         <AccordionItem value={`link-${link.id}`}>
           <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background/50 rounded-md">
-            Link: {link.text || 'Untitled'}
+            Link: {currentLink.text || 'Untitled'}
           </AccordionTrigger>
           <AccordionContent className="p-2 pt-0">
             <div className="bg-background p-2 rounded border space-y-1">
                 <Label className="text-xs">Link Style & Text</Label>
                 <div className="flex gap-1">
                     <Select
-                        value={link.type}
-                        onValueChange={handleSelectChange}
+                        value={currentLink.type}
+                        onValueChange={v => {
+                            handleLocalChange('type', v);
+                            onLinkChange(colId, linkIndex, 'type', v);
+                        }}
                     >
                         <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
                         <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                     </Select>
                     <Input
                         placeholder="Text on link"
-                        value={link.text}
-                        onChange={handleInputChange}
+                        value={currentLink.text}
+                        onChange={e => handleLocalChange('text', e.target.value)}
+                        onBlur={commitChanges}
                     />
                 </div>
             </div>
@@ -308,7 +332,7 @@ export function DiagramEditor() {
     }));
   };
 
-  const handleNodeChange = (colId: string, nodeIndex: number, field: 'name' | 'shape', value: string) => {
+  const handleNodeChange = (colId: string, nodeIndex: number, field: keyof VisualNode, value: string) => {
     setVisualColumns(prev => prev.map(col => {
       if (col.id === colId) {
         const newNodes = [...col.nodes];
@@ -344,21 +368,21 @@ export function DiagramEditor() {
     });
   };
   
-    const handleLinkChange = (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => {
-      setVisualColumns(prev => {
-          return prev.map(col => {
-              if (col.id === colId) {
-                  const newLinks = col.links.map((link, idx) => {
-                      if (idx === linkIndex) {
-                          return { ...link, [field]: value };
-                      }
-                      return link;
-                  });
-                  return { ...col, links: newLinks };
-              }
-              return col;
-          });
-      });
+  const handleLinkChange = (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => {
+    setVisualColumns(prev => {
+        return prev.map(col => {
+            if (col.id === colId) {
+                const newLinks = col.links.map((link, idx) => {
+                    if (idx === linkIndex) {
+                        return { ...link, [field]: value };
+                    }
+                    return link;
+                });
+                return { ...col, links: newLinks };
+            }
+            return col;
+        });
+    });
   };
 
 
@@ -366,14 +390,21 @@ export function DiagramEditor() {
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
-        <Card>
-            <CardHeader>
-              <div>
-                <CardTitle>Chart Editor</CardTitle>
-                <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
-              </div>
-            </CardHeader>
-        </Card>
+        <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Chart Editor</CardTitle>
+                    <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
+                </CardHeader>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Live Preview</CardTitle>
+                    <CardDescription>The rendered output of your diagram appears here.</CardDescription>
+                </CardHeader>
+            </Card>
+        </div>
+
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
             <Card className="flex flex-col">
                 <CardHeader>
@@ -406,7 +437,7 @@ export function DiagramEditor() {
                                             </Button>
                                             <Accordion type="multiple" className="w-full space-y-2">
                                                 {col.nodes.map((node, nodeIndex) => (
-                                                    <React.Fragment key={node.id}>
+                                                    <React.Fragment key={`node-frag-${node.id}`}>
                                                       <NodeEditorRow
                                                           colId={col.id}
                                                           nodeIndex={nodeIndex}
@@ -438,8 +469,7 @@ export function DiagramEditor() {
 
             <Card className="flex flex-col">
                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>Live Preview</CardTitle>
+                    <div className="flex items-center justify-end">
                         <Button variant="outline" onClick={handleExportSVG}>
                             <Download className="mr-2"/>
                             Download SVG
