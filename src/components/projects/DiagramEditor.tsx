@@ -333,7 +333,7 @@ export function DiagramEditor() {
             </CardHeader>
         </Card>
         <ResizablePanelGroup direction={panelDirection} className="flex-1 rounded-lg border">
-            <ResizablePanel defaultSize={60} minSize={30}>
+            <ResizablePanel defaultSize={panelDirection === 'vertical' ? 50 : 60} minSize={30}>
                  <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
                     <div className="p-4 pb-0 border-b">
                         <TabsList className="grid w-full max-w-sm grid-cols-2">
@@ -397,7 +397,7 @@ export function DiagramEditor() {
                 </Tabs>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={40} minSize={30}>
+            <ResizablePanel defaultSize={panelDirection === 'vertical' ? 50 : 40} minSize={30}>
                 <ScrollArea className="h-full w-full p-4" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
                     {renderError ? (
                         <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 rounded-lg p-4">
