@@ -27,18 +27,18 @@ export default function ProjectsPage() {
                 A suite of integrated tools to help you plan, track, and manage your projects from start to finish.
             </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {tools.map((tool) => (
                 <Link key={tool.value} href={tool.href} className="group">
-                    <Card className="h-full flex flex-col bg-background/50 hover:bg-background transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2">
-                        <CardHeader>
-                           <div className="p-4 bg-primary/10 text-primary rounded-xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                             <tool.icon className="w-8 h-8" />
+                    <Card className="h-full flex flex-col bg-background/50 hover:bg-background transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1">
+                        <CardHeader className="p-4">
+                           <div className="p-3 bg-primary/10 text-primary rounded-lg mb-3 inline-block group-hover:scale-110 transition-transform duration-300">
+                             <tool.icon className="w-6 h-6" />
                            </div>
-                           <CardTitle className="text-xl">{tool.label}</CardTitle>
+                           <CardTitle className="text-lg">{tool.label}</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                           <CardDescription>{tool.description}</CardDescription>
+                        <CardContent className="p-4 pt-0">
+                           <CardDescription className="text-sm">{tool.description}</CardDescription>
                         </CardContent>
                     </Card>
                 </Link>
