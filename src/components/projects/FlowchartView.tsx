@@ -189,12 +189,12 @@ interactive: `flowchart TD
 `,
   bpmn: `
 bpmn
-  title: Sample BPMN Diagram
-  
-  startEvent -> task: User Task
-  task -> exclusiveGateway: Is it valid?
-  exclusiveGateway -- Yes --> endEvent: End
-  exclusiveGateway -- No --> task
+    title Simple BPMN Process
+    participant Alice
+    participant Bob
+
+    Alice->>Bob: Hello Bob, how are you?
+    Bob-->>Alice: I am good thanks!
 `,
 };
 
@@ -388,4 +388,3 @@ export function FlowchartView() {
     </div>
   );
 }
-
