@@ -35,7 +35,7 @@ const toolComponents: Record<string, React.ComponentType> = {
     spreadsheet: SpreadsheetPage,
     checklist: ChecklistPage,
     canvas: CanvasPage,
-    charts: ChartsPage,
+    charts: CanvasPage, // Use CanvasView for Charts
     mindmap: MindMapPage,
 };
 
