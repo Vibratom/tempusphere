@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
@@ -9,8 +8,12 @@ import { Input } from '../ui/input';
 import { Slider } from '../ui/slider';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
-import { Pencil, Eraser, MousePointer, Image as ImageIcon, Trash2, ArrowUp, ArrowDown, Text, Hand } from 'lucide-react';
+import { Pencil, Eraser, MousePointer, Image as ImageIcon, Trash2, ArrowUp, ArrowDown, Text, Hand, Download } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
+import { useToast } from '@/hooks/use-toast';
 
 // Types
 type Tool = 'PENCIL' | 'ERASER' | 'TEXT' | 'SELECT';
@@ -86,6 +89,11 @@ export function CanvasView() {
     const [viewOffset, setViewOffset] = useState({ x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState(false);
 
+    const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+    const [exportTransparentBg, setExportTransparentBg] = useState(true);
+    const [exportBgColor, setExportBgColor] = useState('#ffffff');
+    const { toast } = useToast();
+
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const canvasContainerRef = useRef<HTMLDivElement>(null);
     const textInputRef = useRef<HTMLInputElement>(null);
@@ -142,10 +150,10 @@ export function CanvasView() {
 
     // --- Canvas Drawing and Rendering ---
 
-    const drawObject = (ctx: CanvasRenderingContext2D, obj: CanvasObject) => {
+    const drawObject = (ctx: CanvasRenderingContext2D, obj: CanvasObject, renderOffset: Point = {x: 0, y: 0}, renderScale: number = 1) => {
         ctx.save();
-        ctx.translate(viewOffset.x, viewOffset.y);
-        ctx.scale(scale, scale);
+        ctx.translate(renderOffset.x, renderOffset.y);
+        ctx.scale(renderScale, renderScale);
 
         if (obj.type === 'PATH') {
             ctx.beginPath();
@@ -162,6 +170,12 @@ export function CanvasView() {
             img.src = obj.data;
             if (img.complete) {
                 ctx.drawImage(img, obj.x, obj.y, obj.width, obj.height);
+            } else {
+                 img.onload = () => {
+                    // This is tricky because it's async. For export, we pre-load images.
+                    // For live drawing, it might flicker, but it's often fast enough.
+                    ctx.drawImage(img, obj.x, obj.y, obj.width, obj.height);
+                }
             }
         } else if (obj.type === 'TEXT') {
             ctx.font = obj.font;
@@ -219,7 +233,7 @@ export function CanvasView() {
         ctx.restore();
 
 
-        objects.forEach(obj => drawObject(ctx, obj));
+        objects.forEach(obj => drawObject(ctx, obj, viewOffset, scale));
         
         const selectedObject = objects.find(o => o.id === selectedObjectId);
         if (selectedObject) {
@@ -500,6 +514,69 @@ export function CanvasView() {
         updateHistory(objects);
         setEditingTextId(null);
     }
+
+    const handleExportPNG = async () => {
+        if (objects.length === 0) {
+            toast({ title: "Canvas is empty", description: "There is nothing to export.", variant: "destructive" });
+            return;
+        }
+
+        // 1. Calculate bounding box of all objects
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        objects.forEach(obj => {
+            const bounds = getObjectBounds(obj);
+            if (bounds) {
+                minX = Math.min(minX, bounds.x);
+                minY = Math.min(minY, bounds.y);
+                maxX = Math.max(maxX, bounds.x + bounds.width);
+                maxY = Math.max(maxY, bounds.y + bounds.height);
+            }
+        });
+
+        const padding = 20;
+        const exportWidth = maxX - minX + padding * 2;
+        const exportHeight = maxY - minY + padding * 2;
+
+        // 2. Create a temporary canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = exportWidth;
+        tempCanvas.height = exportHeight;
+        const ctx = tempCanvas.getContext('2d');
+        if (!ctx) return;
+
+        // 3. Draw background
+        if (!exportTransparentBg) {
+            ctx.fillStyle = exportBgColor;
+            ctx.fillRect(0, 0, exportWidth, exportHeight);
+        }
+
+        // 4. Preload all images
+        const imageObjects = objects.filter(o => o.type === 'IMAGE') as ImageObject[];
+        const imagePromises = imageObjects.map(obj => new Promise<HTMLImageElement>((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = obj.data;
+        }));
+
+        await Promise.all(imagePromises);
+        
+        // 5. Draw all objects, offsetting them to fit in the new canvas
+        const drawOffset = { x: -minX + padding, y: -minY + padding };
+        objects.forEach(obj => drawObject(ctx, obj, drawOffset, 1));
+        
+        // 6. Trigger download
+        const dataUrl = tempCanvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'canvas-export.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({ title: "Export Successful", description: "Your canvas has been downloaded as a PNG."});
+        setIsExportDialogOpen(false);
+    }
     
     const editingTextObject = editingTextId ? objects.find(o => o.id === editingTextId) as TextObject : null;
     
@@ -540,6 +617,29 @@ export function CanvasView() {
                         <Slider value={[strokeWidth]} onValueChange={([v]) => setStrokeWidth(v)} min={1} max={50} step={1} className="w-24" />
                         <div className="w-[1px] h-6 bg-border mx-1"></div>
                         <Button variant="ghost" onClick={() => updateHistory([])}><Trash2 className="mr-2"/>Clear All</Button>
+                        <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+                            <DialogTrigger asChild>
+                                 <Button variant="outline"><Download className="mr-2"/>Download</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Download Canvas</DialogTitle>
+                                </DialogHeader>
+                                <div className="grid gap-4 py-4">
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="transparent-bg">Transparent Background</Label>
+                                        <Switch id="transparent-bg" checked={exportTransparentBg} onCheckedChange={setExportTransparentBg} />
+                                    </div>
+                                     <div className="flex items-center justify-between">
+                                        <Label htmlFor="bg-color" className={cn(exportTransparentBg && "text-muted-foreground")}>Background Color</Label>
+                                        <Input type="color" id="bg-color" value={exportBgColor} onChange={e => setExportBgColor(e.target.value)} disabled={exportTransparentBg} className="w-16 p-1"/>
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button onClick={handleExportPNG}>Export as PNG</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </div>
 
                     {selectedObjectId && (
