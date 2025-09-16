@@ -689,4 +689,3 @@ export function CanvasView() {
         </div>
     );
 }
-
