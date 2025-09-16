@@ -9,7 +9,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
-import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Link2, Info } from 'lucide-react';
+import { Download, AlertCircle, Loader2, ChevronDown, ZoomIn, ZoomOut, Move, PanelLeftClose, PanelLeftOpen, Undo2, Redo2, Code, Pencil, Trash2, Diamond, RectangleHorizontal } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Textarea } from '../ui/textarea';
@@ -25,7 +25,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
-import { Combobox } from '../ui/combobox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+
 
 const diagramTemplates = {
   flowAndProcess: {
@@ -174,7 +175,7 @@ export function FlowchartView() {
         
         nodes.forEach(node => {
             const text = node.text || ' '; // Mermaid requires some text
-            if(node.type === 'node') newCode += `    ${node.id}("${text}")\n`;
+            if(node.type === 'node') newCode += `    ${node.id}["${text}"]\n`;
             if(node.type === 'decision') newCode += `    ${node.id}{"${text}"}\n`;
         });
         
@@ -329,15 +330,6 @@ export function FlowchartView() {
             toast({ title: "Invalid Link", description: "A node cannot link to itself in Smart Mode.", variant: "destructive"});
             return l; // revert
           }
-          const isDuplicate = links.some(existing => 
-            existing.id !== id && 
-            existing.source === newLink.source && 
-            existing.target === newLink.target
-          );
-          if (isDuplicate) {
-             toast({ title: "Duplicate Link", description: "This link already exists.", variant: "destructive"});
-             return l; // revert
-          }
         }
         return newLink;
       }
@@ -419,7 +411,7 @@ export function FlowchartView() {
                     <div className="flex items-center justify-between rounded-lg border p-3">
                       <div className="space-y-0.5">
                         <Label>Smart Mode (Poka-Yoke)</Label>
-                        <Description>Prevents mistakes like self-linking and duplicate links.</Description>
+                        <Description>Prevents mistakes like self-linking.</Description>
                       </div>
                       <Switch checked={smartMode} onCheckedChange={setSmartMode} />
                     </div>
@@ -428,8 +420,20 @@ export function FlowchartView() {
                         <div className="flex items-center justify-between">
                           <CardTitle>Nodes</CardTitle>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => addNode('node')}>Add Node</Button>
-                            <Button size="sm" variant="outline" onClick={() => addNode('decision')}>Add Decision</Button>
+                             <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button size="icon" variant="outline" onClick={() => addNode('node')}><RectangleHorizontal/></Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Add Node</p></TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                         <Button size="icon" variant="outline" onClick={() => addNode('decision')}><Diamond/></Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Add Decision</p></TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </div>
                       </CardHeader>
@@ -472,11 +476,11 @@ export function FlowchartView() {
                                   </>
                                 ) : (
                                   <>
-                                     <Input value={link.source} onValueChange={(v) => updateLink(link.id, {source: v})} placeholder="From ID" className="font-mono"/>
-                                     <Input value={link.target} onValueChange={(v) => updateLink(link.id, {target: v})} placeholder="To ID" className="font-mono"/>
+                                     <Input value={link.source} onChange={(e) => updateLink(link.id, {source: e.target.value})} placeholder="From ID" className="font-mono"/>
+                                     <Input value={link.target} onChange={(e) => updateLink(link.id, {target: e.target.value})} placeholder="To ID" className="font-mono"/>
                                   </>
                                 )}
-                                <Input value={link.label} onChange={(e) => updateLink(link.id, {label: e.target.value})} placeholder="Label (optional)" className="col-span-2 md:col-span-1"/>
+                                <Input value={link.label} onChange={(e) => updateLink(link.id, {label: e.target.value})} placeholder="Label (optional)"/>
                                 <Button size="icon" variant="ghost" onClick={() => removeLink(link.id)}><Trash2/></Button>
                               </div>
                             ))}
@@ -562,6 +566,8 @@ export function FlowchartView() {
 function Description({ children }: { children: React.ReactNode }) {
     return <p className="text-xs text-muted-foreground">{children}</p>;
 }
+    
+
     
 
     
