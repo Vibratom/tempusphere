@@ -316,28 +316,30 @@ export function DiagramEditor() {
   return (
     <div className="w-full h-full flex flex-col gap-4">
         <Card>
-            <CardHeader>
+            <CardHeader className="flex-row items-center justify-between">
+              <div>
                 <CardTitle>Diagram Editor</CardTitle>
                 <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
+              </div>
+              <div className="w-48">
+                  <Select value={diagramType} onValueChange={v => setCode(`${v} TD\n`)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="flowchart">Flowchart / Graph</SelectItem>
+                          <SelectItem value="stateDiagram">State Diagram</SelectItem>
+                      </SelectContent>
+                  </Select>
+              </div>
             </CardHeader>
         </Card>
         <ResizablePanelGroup direction={panelDirection} className="flex-1 rounded-lg border">
             <ResizablePanel defaultSize={60} minSize={30}>
                  <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as EditorMode)} className="w-full h-full flex flex-col">
-                    <div className="p-4 pb-0 flex justify-between items-center border-b">
+                    <div className="p-4 pb-0 border-b">
                         <TabsList className="grid w-full max-w-sm grid-cols-2">
                             <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual</TabsTrigger>
                             <TabsTrigger value="code"><Code className="mr-2"/>Code</TabsTrigger>
                         </TabsList>
-                        <div className="w-48">
-                            <Select value={diagramType} onValueChange={v => setCode(`${v} TD\n`)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="flowchart">Flowchart / Graph</SelectItem>
-                                    <SelectItem value="stateDiagram">State Diagram</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                     </div>
 
                     <TabsContent value="code" className="m-0 flex-1">
