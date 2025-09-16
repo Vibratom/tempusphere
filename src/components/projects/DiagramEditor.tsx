@@ -116,7 +116,7 @@ const createNewColumn = (): VisualColumn => {
 
 // --- Component ---
 
-export function FlowchartView() {
+export function DiagramEditor() {
   const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v23', defaultCode);
   const [visualColumns, setVisualColumns] = useLocalStorage<VisualColumn[]>('flowchart:visual-cols-v2', [createNewColumn()]);
   
@@ -125,11 +125,18 @@ export function FlowchartView() {
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
-  const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
   
   const [panelDirection, setPanelDirection] = useState<'horizontal' | 'vertical'>('horizontal');
 
   const { resolvedTheme } = useTheme();
+
+    const diagramType = useMemo((): DiagramType => {
+      const trimmedCode = code.trim().toLowerCase();
+      if (trimmedCode.startsWith('flowchart') || trimmedCode.startsWith('graph')) return 'flowchart';
+      if (trimmedCode.startsWith('statediagram') || trimmedCode.startsWith('state-diagram')) return 'stateDiagram';
+      if (trimmedCode.startsWith('mindmap')) return 'mindmap';
+      return 'unknown';
+  }, [code]);
 
   useEffect(() => {
     setIsClient(true);
@@ -190,15 +197,6 @@ export function FlowchartView() {
       securityLevel: 'loose',
       fontFamily: 'sans-serif',
     });
-
-    const detectType = (c: string): DiagramType => {
-      const trimmedCode = c.trim().toLowerCase();
-      if (trimmedCode.startsWith('flowchart') || trimmedCode.startsWith('graph')) return 'flowchart';
-      if (trimmedCode.startsWith('statediagram') || trimmedCode.startsWith('state-diagram')) return 'stateDiagram';
-      if (trimmedCode.startsWith('mindmap')) return 'mindmap';
-      return 'unknown';
-    };
-    setDiagramType(detectType(code));
 
     const renderMermaid = async () => {
       try {

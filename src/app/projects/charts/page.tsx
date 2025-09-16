@@ -1,11 +1,11 @@
 'use client';
 
 import { Suspense } from 'react';
-import { FlowchartView } from '@/components/projects/FlowchartView';
+import { DiagramEditor } from '@/components/projects/DiagramEditor';
 
 
 function ChartsPageContent() {
-  return <FlowchartView />;
+  return <DiagramEditor />;
 }
 
 export default function ChartsPage() {
