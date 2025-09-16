@@ -114,6 +114,89 @@ const createNewColumn = (): VisualColumn => {
     };
 };
 
+const NodeEditorRow = ({ colId, nodeIndex, node, handleNodeChange }: { colId: string, nodeIndex: number, node: VisualNode, handleNodeChange: (colId: string, nodeIndex: number, field: 'name' | 'shape', value: string) => void }) => {
+    const [currentNode, setCurrentNode] = useState(node);
+
+    useEffect(() => {
+        setCurrentNode(node);
+    }, [node]);
+
+    const handleLocalChange = (field: 'name' | 'shape', value: string) => {
+        setCurrentNode(prev => ({ ...prev, [field]: value }));
+    };
+
+    const commitChanges = (field: 'name' | 'shape', value: string) => {
+        handleNodeChange(colId, nodeIndex, field, value);
+    };
+
+    return (
+        <AccordionItem value={`node-${node.id}`}>
+            <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
+              Node: {currentNode.name || 'Untitled'}
+            </AccordionTrigger>
+            <AccordionContent className="p-2 pt-0">
+                <div className="bg-background p-2 rounded border space-y-1">
+                    <Label className="text-xs">Node Text & Shape</Label>
+                    <Input
+                        placeholder="Text"
+                        value={currentNode.name}
+                        onChange={e => handleLocalChange('name', e.target.value)}
+                        onBlur={e => commitChanges('name', e.target.value)}
+                    />
+                    <Select
+                        value={currentNode.shape}
+                        onValueChange={v => {
+                            handleLocalChange('shape', v);
+                            commitChanges('shape', v);
+                        }}
+                    >
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+            </AccordionContent>
+        </AccordionItem>
+    );
+};
+
+const LinkEditorRow = ({ colId, linkIndex, link, onLinkChange }: { colId: string, linkIndex: number, link: VisualLink, onLinkChange: (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => void }) => {
+    const handleSelectChange = (value: string) => {
+        onLinkChange(colId, linkIndex, 'type', value);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        onLinkChange(colId, linkIndex, 'text', e.target.value);
+    };
+
+    return (
+        <AccordionItem value={`link-${link.id}`}>
+          <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background/50 rounded-md">
+            Link: {link.text || 'Untitled'}
+          </AccordionTrigger>
+          <AccordionContent className="p-2 pt-0">
+            <div className="bg-background p-2 rounded border space-y-1">
+                <Label className="text-xs">Link Style & Text</Label>
+                <div className="flex gap-1">
+                    <Select
+                        value={link.type}
+                        onValueChange={handleSelectChange}
+                    >
+                        <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
+                        <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Input
+                        placeholder="Text on link"
+                        value={link.text}
+                        onChange={handleInputChange}
+                    />
+                </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+    );
+};
+
+
 // --- Component ---
 
 export function DiagramEditor() {
@@ -125,7 +208,6 @@ export function DiagramEditor() {
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
-  const [diagramType] = useState<DiagramType>('flowchart');
   
   const { resolvedTheme } = useTheme();
   const { toast } = useToast();
@@ -164,7 +246,7 @@ export function DiagramEditor() {
     // Add cross-column links here in the future
 
     setCode(newCode);
-  }, [editorMode, visualColumns, diagramType]);
+  }, [editorMode, visualColumns]);
 
   useEffect(() => {
     generateMermaidCode();
@@ -262,16 +344,23 @@ export function DiagramEditor() {
     });
   };
   
-  const handleLinkChange = (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => {
-      setVisualColumns(prev => prev.map(col => {
-          if (col.id === colId) {
-              const newLinks = [...col.links];
-              newLinks[linkIndex] = { ...newLinks[linkIndex], [field]: value as any };
-              return { ...col, links: newLinks };
-          }
-          return col;
-      }));
+    const handleLinkChange = (colId: string, linkIndex: number, field: keyof VisualLink, value: string) => {
+      setVisualColumns(prev => {
+          return prev.map(col => {
+              if (col.id === colId) {
+                  const newLinks = col.links.map((link, idx) => {
+                      if (idx === linkIndex) {
+                          return { ...link, [field]: value };
+                      }
+                      return link;
+                  });
+                  return { ...col, links: newLinks };
+              }
+              return col;
+          });
+      });
   };
+
 
   if (!isClient) return <div className="w-full h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
@@ -318,48 +407,20 @@ export function DiagramEditor() {
                                             <Accordion type="multiple" className="w-full space-y-2">
                                                 {col.nodes.map((node, nodeIndex) => (
                                                     <React.Fragment key={node.id}>
-                                                        <AccordionItem value={`node-${node.id}`}>
-                                                            <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background rounded-md">
-                                                              Node: {node.name || 'Untitled'}
-                                                            </AccordionTrigger>
-                                                            <AccordionContent className="p-2 pt-0">
-                                                                <div className="bg-background p-2 rounded border space-y-1">
-                                                                    <Label className="text-xs">Node Text & Shape</Label>
-                                                                    <Input placeholder="Text" value={node.name} onChange={e => handleNodeChange(col.id, nodeIndex, 'name', e.target.value)} />
-                                                                    <Select value={node.shape} onValueChange={v => handleNodeChange(col.id, nodeIndex, 'shape', v)}>
-                                                                        <SelectTrigger><SelectValue/></SelectTrigger>
-                                                                        <SelectContent>{nodeShapeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                                                                    </Select>
-                                                                </div>
-                                                            </AccordionContent>
-                                                        </AccordionItem>
-                                                        
-                                                        {nodeIndex < col.links.length && (
-                                                            <AccordionItem value={`link-${col.links[nodeIndex].id}`}>
-                                                              <AccordionTrigger className="text-sm px-2 py-2 hover:no-underline bg-background/50 rounded-md">
-                                                                Link: {col.links[nodeIndex].text || 'Untitled'}
-                                                              </AccordionTrigger>
-                                                              <AccordionContent className="p-2 pt-0">
-                                                                <div className="bg-background p-2 rounded border space-y-1">
-                                                                    <Label className="text-xs">Link Style & Text</Label>
-                                                                    <div className="flex gap-1">
-                                                                        <Select
-                                                                            value={col.links[nodeIndex].type}
-                                                                            onValueChange={v => handleLinkChange(col.id, nodeIndex, 'type', v)}
-                                                                        >
-                                                                            <SelectTrigger className="w-[80px]"><SelectValue/></SelectTrigger>
-                                                                            <SelectContent>{linkTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                                                                        </Select>
-                                                                        <Input
-                                                                            placeholder="Text on link"
-                                                                            value={col.links[nodeIndex].text}
-                                                                            onChange={e => handleLinkChange(col.id, nodeIndex, 'text', e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                              </AccordionContent>
-                                                            </AccordionItem>
-                                                        )}
+                                                      <NodeEditorRow
+                                                          colId={col.id}
+                                                          nodeIndex={nodeIndex}
+                                                          node={node}
+                                                          handleNodeChange={handleNodeChange}
+                                                      />
+                                                      {nodeIndex < col.links.length && (
+                                                          <LinkEditorRow 
+                                                              colId={col.id} 
+                                                              linkIndex={nodeIndex} 
+                                                              link={col.links[nodeIndex]}
+                                                              onLinkChange={handleLinkChange}
+                                                          />
+                                                      )}
                                                     </React.Fragment>
                                                 ))}
                                             </Accordion>
