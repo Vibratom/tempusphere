@@ -11,8 +11,8 @@ import { ProjectsProvider } from '@/contexts/ProjectsContext';
 import { CalendarProvider } from '@/contexts/CalendarContext';
 import { ChecklistProvider } from '@/contexts/ChecklistContext';
 import { usePathname } from 'next/navigation';
-import { ProjectNav } from '@/components/projects/ProjectNav';
 import { FinanceNav } from '@/components/finance/FinanceNav';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 function FinanceContent() {
   const pathname = usePathname();
@@ -29,6 +29,12 @@ function FinanceContent() {
                 <main className="flex-1 flex flex-col items-center p-4 md:p-8">
                   <div className="w-full max-w-7xl flex flex-col flex-1 gap-4">
                     <FinanceNav activeTool={activeTool} />
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Finance Dashboard</CardTitle>
+                            <CardDescription>An overview of your financial transactions and health.</CardDescription>
+                        </CardHeader>
+                    </Card>
                     <FinanceApp />
                   </div>
                 </main>
@@ -49,5 +55,3 @@ export default function FinancePage() {
     </Suspense>
   );
 }
-
-    
