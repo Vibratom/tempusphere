@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Mail } from "lucide-react";
@@ -6,14 +7,14 @@ import { PlatformCard } from "./PlatformCard";
 import Image from "next/image";
 
 const vibratomPlatforms = [
-    { name: 'Tempusphere', href: 'https://tempusphere.vibratomstudios.com/', logo: '/logos/tempusphere-logo.webp', description: 'An advanced clock utility designed for precision and flexibility.' },
-    { name: 'Uniform', href: 'https://uniform.vibratomstudios.com/', logo: '/logos/uniform-logo.webp', description: 'A universal file format tool that simplifies conversion and compatibility.' },
-    { name: 'Axiom', href: 'https://axiom.vibratomstudios.com/', logo: '/logos/axiom-logo.webp', description: 'A versatile suite of calculators for every complex problem.' },
-    { name: 'Cadence', href: 'https://cadence.vibratomstudios.com/', logo: '/logos/cadence-logo.webp', description: 'An intuitive music learning platform to master your favorite instrument.' },
-    { name: 'Stillpoint', href: 'https://stillpoint.vibratomstudios.com/', logo: '/logos/stillpoint-logo.webp', description: 'Powerful meditation tools to find your center and improve focus.' },
-    { name: 'Lumina', href: 'https://lumina.vibratomstudios.com/', logo: '/logos/lumina-logo.webp', description: 'A curated space for insightful blogs and articles on tech and creativity.' },
-    { name: 'SimplySub', href: 'https://simplysub.vibratomstudios.com/', logo: '/logos/simplysub-logo.webp', description: 'The fastest way to create, edit, and sync subtitles for any video.' },
-    { name: 'NexusPlay', href: 'https://nexusplay.vibratomstudios.com/', logo: '/logos/nexusplay-logo.webp', description: 'Engaging brain games designed to challenge and entertain your mind.' },
+    { name: 'Tempusphere', href: 'https://tempusphere.vibratomstudios.com/', logo: '/logos/tempusphere.webp', description: 'An advanced clock utility designed for precision and flexibility.' },
+    { name: 'Uniform', href: 'https://uniform.vibratomstudios.com/', logo: '/logos/uniform.webp', description: 'A universal file format tool that simplifies conversion and compatibility.' },
+    { name: 'Axiom', href: 'https://axiom.vibratomstudios.com/', logo: '/logos/axiom.webp', description: 'A versatile suite of calculators for every complex problem.' },
+    { name: 'Cadence', href: 'https://cadence.vibratomstudios.com/', logo: '/logos/cadence.webp', description: 'An intuitive music learning platform to master your favorite instrument.' },
+    { name: 'Stillpoint', href: 'https://stillpoint.vibratomstudios.com/', logo: '/logos/stillpoint.webp', description: 'Powerful meditation tools to find your center and improve focus.' },
+    { name: 'Lumina', href: 'https://lumina.vibratomstudios.com/', logo: '/logos/lumina.webp', description: 'A curated space for insightful blogs and articles on tech and creativity.' },
+    { name: 'SimplySub', href: 'https://simplysub.vibratomstudios.com/', logo: '/logos/simplysub.webp', description: 'The fastest way to create, edit, and sync subtitles for any video.' },
+    { name: 'NexusPlay', href: 'https://nexusplay.vibratomstudios.com/', logo: '/logos/nexusplay.webp', description: 'Engaging brain games designed to challenge and entertain your mind.' },
 ];
 
 export function Footer() {
