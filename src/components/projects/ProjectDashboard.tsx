@@ -116,7 +116,7 @@ export function ProjectDashboard() {
   const statusChartColors = ['#3b82f6', '#f97316', '#16a34a', '#9333ea', '#f43f5e'];
 
   return (
-    <div className="p-4 md:p-6 grid gap-4 grid-cols-2 md:grid-cols-4">
+    <div className="p-4 md:p-6 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
 
       {/* KPIs */}
       <Card className="col-span-1">
@@ -161,7 +161,7 @@ export function ProjectDashboard() {
 
 
       {/* Charts */}
-      <Card className="col-span-2">
+      <Card className="col-span-1 md:col-span-2 lg:col-span-2">
         <CardHeader>
           <CardTitle>Tasks by Status</CardTitle>
           <CardDescription>Distribution of tasks across your Kanban board columns.</CardDescription>
@@ -185,7 +185,7 @@ export function ProjectDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="col-span-2">
+      <Card className="col-span-1 md:col-span-2 lg:col-span-2">
         <CardHeader>
           <CardTitle>Tasks by Priority</CardTitle>
            <CardDescription>How tasks are prioritized across the project.</CardDescription>
@@ -203,7 +203,7 @@ export function ProjectDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="col-span-2 md:col-span-4">
+      <Card className="col-span-1 md:col-span-2 lg:col-span-4">
         <CardHeader>
             <CardTitle className="flex items-center gap-2"><CalendarClock/>Project Timeline</CardTitle>
             <CardDescription>Overall project duration based on task start and end dates.</CardDescription>
@@ -229,7 +229,7 @@ export function ProjectDashboard() {
         </CardContent>
       </Card>
       
-      <Card className="col-span-2">
+      <Card className="col-span-1 md:col-span-2">
         <CardHeader>
             <CardTitle>Upcoming Deadlines</CardTitle>
             <CardDescription>Tasks with the soonest due dates.</CardDescription>
@@ -249,7 +249,7 @@ export function ProjectDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="col-span-2">
+      <Card className="col-span-1 md:col-span-2">
         <CardHeader>
             <CardTitle>Checklist Progress</CardTitle>
             <CardDescription>Overview of your project-related checklists.</CardDescription>
