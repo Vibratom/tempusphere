@@ -171,7 +171,7 @@ function EditTaskDialog({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
         setLinkedResources(linkedResources.filter(r => r.type !== type));
     }
 
-    if (!isOpen || !task) {
+    if (!task) {
         return null;
     }
 
@@ -724,3 +724,5 @@ export function ProjectListView() {
         </div>
     );
 }
+
+    
