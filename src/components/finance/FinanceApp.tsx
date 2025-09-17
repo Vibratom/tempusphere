@@ -258,15 +258,15 @@ export function FinanceApp() {
                         <CardTitle>Cash Flow</CardTitle>
                         <CardDescription>Movement of paid transactions.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                     <CardContent>
                          <ChartContainer config={{}} className="h-64 w-full">
                             <ResponsiveContainer>
-                                <BarChart data={cashFlowStatement.chartData} >
-                                    <CartesianGrid vertical={false} />
-                                    <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                                    <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
+                                <BarChart data={cashFlowStatement.chartData} layout="vertical">
+                                    <CartesianGrid horizontal={false} />
+                                    <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={80} />
+                                    <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
                                     <Tooltip content={<ChartTooltipContent />} />
-                                    <Bar dataKey="value" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="value" radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </ChartContainer>
@@ -280,12 +280,12 @@ export function FinanceApp() {
                     <CardContent>
                         <ChartContainer config={{}} className="h-64 w-full">
                             <ResponsiveContainer>
-                                <BarChart data={balanceSheet.chartData} >
-                                    <CartesianGrid vertical={false} />
-                                    <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                                    <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
+                                <BarChart data={balanceSheet.chartData} layout="vertical">
+                                    <CartesianGrid horizontal={false} />
+                                    <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={120}/>
+                                    <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
                                     <Tooltip content={<ChartTooltipContent />} />
-                                    <Bar dataKey="value" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="value" radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </ChartContainer>
@@ -295,9 +295,3 @@ export function FinanceApp() {
         </div>
     );
 }
-
-    
-
-    
-
-    
