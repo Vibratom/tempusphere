@@ -21,22 +21,20 @@ export function IncomeStatementWaterfall() {
 
     const chartData = useMemo(() => {
         let cumulative = 0;
-        const data: { name: string, start: number, value: number, fill: string, label: string }[] = [];
+        const data: { name: string; start: number, value: number, fill: string, label: string }[] = [];
 
         const totalIncome = transactions
             .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + t.amount, 0);
-
-        if (totalIncome > 0) {
-            data.push({
-                name: 'Revenue',
-                start: 0,
-                value: totalIncome,
-                fill: 'hsl(var(--chart-2))',
-                label: `$${totalIncome.toLocaleString()}`,
-            });
-            cumulative = totalIncome;
-        }
+        
+        data.push({
+            name: 'Revenue',
+            start: 0,
+            value: totalIncome,
+            fill: 'hsl(var(--chart-2))',
+            label: `$${totalIncome.toLocaleString()}`,
+        });
+        cumulative = totalIncome;
 
         const totalExpenses = transactions
             .filter(t => t.type === 'expense')
@@ -57,7 +55,7 @@ export function IncomeStatementWaterfall() {
             name: 'Net Income',
             start: 0,
             value: cumulative,
-            fill: 'hsl(var(--muted-foreground))',
+            fill: cumulative >= 0 ? 'hsl(var(--foreground))' : 'hsl(var(--destructive))',
             label: `$${cumulative.toLocaleString()}`
         });
 
@@ -72,7 +70,11 @@ export function IncomeStatementWaterfall() {
                 <BarChart data={chartData} margin={{ top: 20 }}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
-                    <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
+                    <YAxis 
+                        tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} 
+                        domain={['auto', 'auto']}
+                        allowDataOverflow
+                    />
                      <Tooltip 
                         cursor={{ fill: 'hsl(var(--muted))' }} 
                         content={<ChartTooltipContent 
@@ -94,23 +96,14 @@ export function IncomeStatementWaterfall() {
                     />
                     <Bar dataKey="start" stackId="a" fill="transparent" />
                     <Bar dataKey="value" stackId="a">
-                       {chartData.map((entry, index) => (
-                         <LabelList 
-                            key={`label-${index}`}
+                       <LabelList 
                             dataKey="label"
                             position="top" 
                             offset={10}
                             className="fill-foreground text-sm font-medium"
-                            content={(props) => {
-                                const { x, y, width, value, index } = props;
-                                const dataPoint = chartData[index as number];
-                                return (
-                                    <text x={x! + width! / 2} y={y} dy={-10} textAnchor="middle" fill={dataPoint.fill}>
-                                        {dataPoint.label}
-                                    </text>
-                                )
-                            }}
                         />
+                       {chartData.map((entry, index) => (
+                         <div key={`cell-${index}`} style={{backgroundColor: entry.fill}} />
                        ))}
                     </Bar>
                 </BarChart>
@@ -118,3 +111,4 @@ export function IncomeStatementWaterfall() {
         </ChartContainer>
     );
 }
+
