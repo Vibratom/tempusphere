@@ -67,11 +67,6 @@ const features = [
         description: 'Visualize your workflow with Kanban-style boards, with sharing and live collaboration.',
     },
     {
-        icon: <DraftingCompass className="w-5 h-5 text-primary" />,
-        title: 'Mind Mapping',
-        description: 'Visually organize your thoughts and ideas with an infinite canvas.',
-    },
-    {
         icon: <UtensilsCrossed className="w-5 h-5 text-primary" />,
         title: 'Recipe Remix',
         description: 'A personal cookbook where you can save, edit, and "remix" recipes to track variations.',
@@ -110,19 +105,12 @@ export function LandingPage() {
                         <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
                             Your all-in-one solution for time management. From world clocks to a detailed personal calendar, Tempusphere provides the tools you need to stay organized and productive.
                         </p>
-                        <Button asChild size="lg">
-                            <Link href="/app">Launch App</Link>
-                        </Button>
-                    </div>
-                </section>
-                
-                <section className="py-12 md:py-16">
-                    <div className="container mx-auto px-4 text-center">
-                         <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Other Tools</h2>
-                        <p className="max-w-3xl mx-auto text-lg text-muted-foreground mb-8">
-                            Tempusphere is part of a growing ecosystem of powerful utilities to help with daily tasks.
-                        </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+                        <div className="flex flex-wrap justify-center items-center gap-4">
+                            <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600 text-white">
+                                <Link href="/app">
+                                    <Clock className="mr-2" /> Clock
+                                </Link>
+                            </Button>
                             {otherPlatforms.map(p => <PlatformLink key={p.name} {...p} />)}
                         </div>
                     </div>
