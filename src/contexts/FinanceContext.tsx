@@ -12,6 +12,7 @@ export interface Transaction {
   description: string;
   category: string;
   type: TransactionType;
+  projectId?: string;
 }
 
 export interface Budget {
@@ -34,7 +35,7 @@ interface FinanceContextType {
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
-  const [transactions, setTransactions] = useLocalStorage<Transaction[]>('finance:transactionsV1', []);
+  const [transactions, setTransactions] = useLocalStorage<Transaction[]>('finance:transactionsV2', []);
   const [budgets, setBudgets] = useLocalStorage<Budget[]>('finance:budgetsV1', []);
 
   const addTransaction = (transaction: Omit<Transaction, 'id'>) => {

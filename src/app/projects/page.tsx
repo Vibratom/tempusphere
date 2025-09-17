@@ -1,7 +1,6 @@
-
 'use client';
 
-import { KanbanSquare, List, BarChartHorizontal, DraftingCompass, Table, ListChecks, Calendar, Spline, Brain, GitCommit } from 'lucide-react';
+import { KanbanSquare, List, BarChartHorizontal, DraftingCompass, Table, ListChecks, Calendar, Spline, Brain, GitCommit, Landmark } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -10,6 +9,7 @@ const tools = [
     { value: 'list', icon: List, label: 'List', href: '/projects/list', description: 'A detailed, filterable list of all your project tasks.' },
     { value: 'calendar', icon: Calendar, label: 'Calendar', href: '/projects/calendar', description: 'View tasks with due dates in a calendar format.' },
     { value: 'gantt', icon: BarChartHorizontal, label: 'Gantt', href: '/projects/gantt', description: 'Visualize project timelines with a Gantt chart.' },
+    { value: 'budget', icon: Landmark, label: 'Budget', href: '/projects/budget', description: 'Track spending and budget for your projects.' },
     { value: 'spreadsheet', icon: Table, label: 'Spreadsheet', href: '/projects/spreadsheet', description: 'Manage data in a flexible, powerful spreadsheet.' },
     { value: 'checklist', icon: ListChecks, label: 'Checklist', href: '/projects/checklist', description: 'Track nested to-do items and progress.' },
     { value: 'canvas', icon: DraftingCompass, label: 'Canvas', href: '/projects/canvas', description: 'A freeform canvas for drawing and brainstorming.' },
