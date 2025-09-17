@@ -5,6 +5,7 @@ import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction }
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useCalendar } from './CalendarContext';
 import { addDays, startOfDay } from 'date-fns';
+import { useProjects } from './ProjectsContext';
 
 export type Priority = 'none' | 'low' | 'medium' | 'high';
 export type SortBy = 'manual' | 'priority' | 'dueDate' | 'createdAt';
@@ -64,9 +65,11 @@ interface ChecklistContextType {
 const ChecklistContext = createContext<ChecklistContextType | undefined>(undefined);
 
 export function ChecklistProvider({ children }: { children: ReactNode }) {
-  const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV7', []);
-  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV6', {});
+  const [lists, setLists] = useLocalStorage<Checklist[]>('checklist:listsV8', []);
+  const [listStates, setListStates] = useLocalStorage<Record<string, ListState>>('checklist:listStatesV7', {});
   const { addEvent, removeEvent } = useCalendar();
+  const { addTask: addProjectTask, board } = useProjects();
+
 
   const findTask = (tasks: Task[], taskId: string): Task | null => {
     for (const task of tasks) {

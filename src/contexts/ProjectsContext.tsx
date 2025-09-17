@@ -128,7 +128,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
             ...prev.columns,
             [columnId]: {
               ...column,
-              taskIds: [...column.taskIds, newTaskId],
+              taskIds: [ ...column.taskIds, newTaskId],
             }
           }
         };
@@ -197,7 +197,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
 }));
 
 export function ProjectsProvider({ children }: { children: ReactNode }) {
-  const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV2', initialData);
+  const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV3', initialData);
   const setProjectsState = useProjects(state => state.setBoard);
 
   useEffect(() => {

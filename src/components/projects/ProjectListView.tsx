@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Flag, Search, ArrowUp, ArrowDown, Plus, Calendar as CalendarIcon, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { Flag, Search, ArrowUp, ArrowDown, Plus, Calendar as CalendarIcon, MoreHorizontal, Edit, Trash2, Send } from 'lucide-react';
 import { Button } from '../ui/button';
 import {
   AlertDialog,
@@ -27,6 +27,10 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
@@ -37,6 +41,8 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { useCalendar } from '@/contexts/CalendarContext';
+import { useChecklist } from '@/contexts/ChecklistContext';
+import { useToast } from '@/hooks/use-toast';
 
 type SortKey = 'title' | 'status' | 'priority' | 'dueDate';
 type SortDirection = 'asc' | 'desc';
@@ -330,6 +336,8 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
 export function ProjectListView() {
     const { board, updateTask, removeTask, setBoard } = useProjects();
     const { events, removeEvent } = useCalendar();
+    const { lists, addTask: addChecklistTask } = useChecklist();
+    const { toast } = useToast();
     
     const [filter, setFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -436,6 +444,15 @@ export function ProjectListView() {
             removeEvent(calendarEvent.id);
         }
     }
+
+    const handleSendToChecklist = (task: TaskCard, listId: string) => {
+        addChecklistTask(listId, {
+            text: task.title,
+            dueDate: task.dueDate,
+            isRecurring: false,
+        });
+        toast({ title: "Task Sent", description: `"${task.title}" was added to your checklist.`});
+    };
     
     return (
         <div className="w-full h-full flex flex-col gap-4">
@@ -514,6 +531,22 @@ export function ProjectListView() {
                                                     <Edit className="mr-2 h-4 w-4" />
                                                     Edit
                                                 </DropdownMenuItem>
+                                                <DropdownMenuSub>
+                                                    <DropdownMenuSubTrigger>
+                                                        <Send className="mr-2 h-4 w-4" />
+                                                        Send to Checklist
+                                                    </DropdownMenuSubTrigger>
+                                                    <DropdownMenuPortal>
+                                                        <DropdownMenuSubContent>
+                                                             {lists.length > 0 ? lists.map(list => (
+                                                                <DropdownMenuItem key={list.id} onSelect={() => handleSendToChecklist(task, list.id)}>
+                                                                    <span>{list.title}</span>
+                                                                </DropdownMenuItem>
+                                                            )) : <DropdownMenuItem disabled>No checklists found</DropdownMenuItem>}
+                                                        </DropdownMenuSubContent>
+                                                    </DropdownMenuPortal>
+                                                </DropdownMenuSub>
+                                                <DropdownMenuSeparator />
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
                                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">

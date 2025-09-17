@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell, Repeat, Palette, MoreVertical, Upload, Download, Star, Sparkles, CheckCircle2, FileText, Share2, AlertCircle, Landmark, BrainCircuit, DraftingCompass, KanbanSquare, Table, UtensilsCrossed } from 'lucide-react';
+import { Plus, Trash2, ListChecks, Calendar as CalendarIcon, Flag, GripVertical, Search, ArrowDownUp, Bell, Repeat, Palette, MoreVertical, Upload, Download, Star, Sparkles, CheckCircle2, FileText, Share2, AlertCircle, Landmark, BrainCircuit, DraftingCompass, KanbanSquare, Table, UtensilsCrossed, Send } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -36,6 +36,7 @@ import { useSearchParams } from 'next/navigation';
 import * as pako from 'pako';
 import { Base64 } from 'js-base64';
 import { useChecklist, type Checklist, type Task, type ListState, type NewTaskState, type Priority, type SortBy, type SharedChecklistData } from '@/contexts/ChecklistContext';
+import { useProjects } from '@/contexts/ProjectsContext';
 
 
 const listColors = [
@@ -114,6 +115,8 @@ export function ChecklistApp({ variant = 'standalone' }: { variant?: 'standalone
       findAndModifyTask,
       findAndAddTask
   } = useChecklist();
+  const { addTask: addProjectTask, board } = useProjects();
+
 
   const [newListName, setNewListName] = useState('');
   const [newTaskState, setNewTaskState] = useState<Record<string, NewTaskState>>({});
@@ -600,6 +603,20 @@ export function ChecklistApp({ variant = 'standalone' }: { variant?: 'standalone
     navigator.clipboard.writeText(url.toString());
     toast({ title: "Link Copied!", description: "A shareable link to your checklists has been copied."});
   };
+
+  const convertToProjectTask = (task: Task) => {
+    const todoColumnId = board.columnOrder[0];
+    if (todoColumnId) {
+        addProjectTask(todoColumnId, {
+            title: task.text,
+            priority: task.priority,
+            dueDate: task.dueDate,
+        });
+        toast({ title: 'Task Sent to Projects', description: `"${task.text}" has been added to your project board.` });
+    } else {
+        toast({ variant: 'destructive', title: 'No Project Column Found', description: 'Please create a "To Do" column in your project board first.' });
+    }
+  };
   
   const renderTasks = (tasks: Task[], listId: string, parentId: string) => {
     const listState = listStates[listId] || { filter: '', sortBy: 'manual', showCompleted: false };
@@ -649,27 +666,43 @@ export function ChecklistApp({ variant = 'standalone' }: { variant?: 'standalone
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <Flag className={cn("h-4 w-4", priorityColors[task.priority])} />
+                                    <MoreVertical className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Options</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => convertToProjectTask(task)}>
+                                    <Send className="mr-2 h-4 w-4"/>
+                                    Send to Projects
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuCheckboxItem checked={task.isRecurring} onCheckedChange={(checked) => setTaskRecurring(listId, task.id, checked)}>
                                     Daily Recurring
                                 </DropdownMenuCheckboxItem>
+                                 <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <Flag className={cn("mr-2 h-4 w-4", priorityColors[task.priority])} />
+                                        <span>Priority</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                    <DropdownMenuSubContent>
+                                        <DropdownMenuRadioGroup value={task.priority} onValueChange={(p) => setTaskPriority(listId, task.id, p as Priority)}>
+                                            <DropdownMenuRadioItem value='none'>None</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value='low'><Flag className={cn("h-4 w-4 mr-2", priorityColors.low)}/>Low</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value='medium'><Flag className={cn("h-4 w-4 mr-2", priorityColors.medium)}/>Medium</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value='high'><Flag className={cn("h-4 w-4 mr-2", priorityColors.high)}/>High</DropdownMenuRadioItem>
+                                        </DropdownMenuRadioGroup>
+                                    </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                </DropdownMenuSub>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuRadioGroup value={task.priority} onValueChange={(p) => setTaskPriority(listId, task.id, p as Priority)}>
-                                    <DropdownMenuRadioItem value='none'>None</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value='low'><Flag className={cn("h-4 w-4 mr-2", priorityColors.low)}/>Low</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value='medium'><Flag className={cn("h-4 w-4 mr-2", priorityColors.medium)}/>Medium</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value='high'><Flag className={cn("h-4 w-4 mr-2", priorityColors.high)}/>High</DropdownMenuRadioItem>
-                                </DropdownMenuRadioGroup>
+                                <DropdownMenuItem onSelect={() => removeTask(listId, task.id)} className="text-destructive focus:text-destructive">
+                                  <Trash2 className="mr-2 h-4 w-4"/>
+                                  Delete Task
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeTask(listId, task.id)}>
-                            <Trash2 className="h-4 w-4 text-muted-foreground" />
-                        </Button>
                       </div>
                     </div>
                   </div>
