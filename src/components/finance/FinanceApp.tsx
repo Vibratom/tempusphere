@@ -29,125 +29,182 @@ const CHART_COLORS = [
     'hsl(var(--chart-5))',
 ];
 
+const TransactionDialog = ({
+  isOpen,
+  onOpenChange,
+  onSave,
+  transaction,
+  children,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (t: Omit<Transaction, 'id'>, id?: string) => void;
+  transaction?: Transaction | null;
+  children: React.ReactNode;
+}) => {
+  const { board } = useProjects();
+  const { categories, addCategory } = useFinance();
+  const { toast } = useToast();
 
-const TransactionDialog = ({ transaction, onSave, onOpenChange, open, children }: { transaction?: Transaction | null, onSave: (t: Omit<Transaction, 'id'>, id?: string) => void, open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode }) => {
-    const { board } = useProjects();
-    const { categories, addCategory } = useFinance();
-    const { toast } = useToast();
+  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [category, setCategory] = useState('Other');
+  const [projectId, setProjectId] = useState<string | undefined>();
 
-    const [description, setDescription] = useState('');
-    const [amount, setAmount] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [type, setType] = useState<'income' | 'expense'>('expense');
-    const [category, setCategory] = useState('Other');
-    const [projectId, setProjectId] = useState<string | undefined>();
-    
-    useEffect(() => {
-        if (transaction) {
-            setDescription(transaction.description);
-            setAmount(String(transaction.amount));
-            setDate(transaction.date);
-            setType(transaction.type);
-            setCategory(transaction.category);
-            setProjectId(transaction.projectId);
-        } else {
-            setDescription('');
-            setAmount('');
-            setDate(new Date().toISOString().split('T')[0]);
-            setType('expense');
-            setCategory('Other');
-            setProjectId(undefined);
-        }
-    }, [transaction]);
+  useEffect(() => {
+    if (transaction) {
+      setDescription(transaction.description);
+      setAmount(String(transaction.amount));
+      setDate(transaction.date);
+      setType(transaction.type);
+      setCategory(transaction.category);
+      setProjectId(transaction.projectId);
+    } else {
+      setDescription('');
+      setAmount('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setType('expense');
+      setCategory('Other');
+      setProjectId(undefined);
+    }
+  }, [transaction]);
 
-    const projectOptions = useMemo(() => {
-        return Object.values(board.tasks).map(task => ({
-            value: task.id,
-            label: task.title,
-        }));
-    }, [board.tasks]);
+  const projectOptions = useMemo(() => {
+    return Object.values(board.tasks).map((task) => ({
+      value: task.id,
+      label: task.title,
+    }));
+  }, [board.tasks]);
 
-    const handleSubmit = () => {
-        if (!description || !amount || !date) {
-            toast({ title: "Missing Fields", description: "Please fill out all required fields.", variant: "destructive" });
-            return;
-        }
+  const handleSubmit = () => {
+    if (!description || !amount || !date) {
+      toast({
+        title: 'Missing Fields',
+        description: 'Please fill out all required fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-        addCategory(category); // Add category if it's new
+    addCategory(category); // Add category if it's new
 
-        onSave({
-            description,
-            amount: parseFloat(amount),
-            date,
-            type,
-            category,
-            projectId
-        }, transaction?.id);
-        
-        onOpenChange(false);
-    };
+    onSave(
+      {
+        description,
+        amount: parseFloat(amount),
+        date,
+        type,
+        category,
+        projectId,
+      },
+      transaction?.id
+    );
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogTrigger asChild>
-                {children}
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{transaction ? 'Edit' : 'Add'} Transaction</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="desc" className="text-right">Description</Label>
-                        <Input id="desc" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3"/>
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="amount" className="text-right">Amount</Label>
-                        <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="col-span-3"/>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="date" className="text-right">Date</Label>
-                        <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="col-span-3"/>
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="type" className="text-right">Type</Label>
-                         <Select value={type} onValueChange={(v: any) => setType(v)}>
-                            <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="expense">Expense</SelectItem>
-                                <SelectItem value="income">Income</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="category" className="text-right">Category</Label>
-                         <Select value={category} onValueChange={setCategory}>
-                            <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="project" className="text-right">Project (Optional)</Label>
-                         <Select value={projectId} onValueChange={setProjectId}>
-                            <SelectTrigger className="col-span-3"><SelectValue placeholder="Link to a project task..." /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                {projectOptions.map(p => (
-                                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button onClick={handleSubmit}>Save Transaction</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{transaction ? 'Edit' : 'Add'} Transaction</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="desc" className="text-right">
+              Description
+            </Label>
+            <Input
+              id="desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="amount" className="text-right">
+              Amount
+            </Label>
+            <Input
+              id="amount"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="date" className="text-right">
+              Date
+            </Label>
+            <Input
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="type" className="text-right">
+              Type
+            </Label>
+            <Select value={type} onValueChange={(v: any) => setType(v)}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="expense">Expense</SelectItem>
+                <SelectItem value="income">Income</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="category" className="text-right">
+              Category
+            </Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="project" className="text-right">
+              Project (Optional)
+            </Label>
+            <Select value={projectId} onValueChange={setProjectId}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Link to a project task..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {projectOptions.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={handleSubmit}>Save Transaction</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const BudgetForm = ({ onSave, budget }: { onSave: (b: Omit<Budget, 'id'>, id?: string) => void; budget?: Budget | null }) => {
     const { categories } = useFinance();
@@ -402,11 +459,11 @@ export function FinanceApp() {
               <CardHeader>
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <CardTitle>Recent Transactions</CardTitle>
-                    <TransactionDialog 
-                        open={isDialogOpen} 
-                        onOpenChange={setIsDialogOpen}
-                        transaction={selectedTransaction}
-                        onSave={handleSaveTransaction}
+                    <TransactionDialog
+                      isOpen={isDialogOpen}
+                      onOpenChange={setIsDialogOpen}
+                      transaction={selectedTransaction}
+                      onSave={handleSaveTransaction}
                     >
                         <Button onClick={() => handleOpenDialog()}>
                             <Plus className="mr-2"/>
@@ -520,5 +577,3 @@ export function FinanceApp() {
     </div>
   );
 }
-
-    
