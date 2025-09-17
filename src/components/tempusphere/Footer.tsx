@@ -42,6 +42,7 @@ export function Footer() {
                          <div className="flex justify-center md:justify-start space-x-4 text-gray-400">
                              <Link href="/about" className="hover:text-white">About Us</Link>
                              <Link href="/contact" className="hover:text-white">Contact</Link>
+                             <Link href="https://lumina.vibratomstudios.com/?team=Tempusphere" target="_blank" rel="noopener noreferrer" className="hover:text-white">Blogs</Link>
                              <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
                          </div>
                     </div>
