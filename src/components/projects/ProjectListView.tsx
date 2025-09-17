@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Flag, Search, ArrowUp, ArrowDown, Plus, Calendar as CalendarIcon, MoreHorizontal, Edit, Trash2, Send, Link as LinkIcon, GitCommit, Brain, DraftingCompass } from 'lucide-react';
+import { Flag, Search, ArrowUp, ArrowDown, Plus, Calendar as CalendarIcon, MoreHorizontal, Edit, Trash2, Send, Link as LinkIcon, GitCommit, Brain, DraftingCompass, Clock, Separator } from 'lucide-react';
 import { Button } from '../ui/button';
 import {
   AlertDialog,
@@ -200,6 +200,17 @@ const NewTaskDialog = () => {
     )
 }
 
+const formatSeconds = (totalSeconds: number) => {
+    if (!totalSeconds) return '0m';
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    let result = '';
+    if (hours > 0) result += `${hours}h `;
+    if (minutes > 0) result += `${minutes}m`;
+    return result.trim() || '0m';
+};
+
+
 const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard | null, isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (updatedTask: TaskCard, newStatusTitle?: string) => void }) => {
     const { board } = useProjects();
     const { events, updateEvent, addEvent, removeEvent } = useCalendar();
@@ -211,6 +222,8 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
     const [startDate, setStartDate] = useState<Date | undefined>();
     const [dueDate, setDueDate] = useState<Date | undefined>();
     const [linkedResources, setLinkedResources] = useState<LinkedResource[]>([]);
+    const [timeLogged, setTimeLogged] = useState(0);
+    const [timeLogInput, setTimeLogInput] = useState('');
 
     React.useEffect(() => {
         if (task) {
@@ -222,8 +235,33 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
             setStartDate(task.startDate ? new Date(task.startDate) : undefined);
             setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
             setLinkedResources(task.linkedResources || []);
+            setTimeLogged(task.timeLogged || 0);
         }
     }, [task, board.columns]);
+
+    const parseTimeInput = (input: string): number => {
+        let totalSeconds = 0;
+        const hoursMatch = input.match(/(\d+)\s*h/);
+        const minutesMatch = input.match(/(\d+)\s*m/);
+
+        if (hoursMatch) totalSeconds += parseInt(hoursMatch[1]) * 3600;
+        if (minutesMatch) totalSeconds += parseInt(minutesMatch[1]) * 60;
+        
+        // If no units, assume minutes
+        if (!hoursMatch && !minutesMatch && /^\d+$/.test(input)) {
+            totalSeconds += parseInt(input) * 60;
+        }
+
+        return totalSeconds;
+    };
+
+    const handleLogTime = () => {
+        const secondsToAdd = parseTimeInput(timeLogInput);
+        if (secondsToAdd > 0) {
+            setTimeLogged(prev => prev + secondsToAdd);
+            setTimeLogInput('');
+        }
+    };
 
     const handleSubmit = () => {
         if (!task || !title.trim() || !status) return;
@@ -235,7 +273,8 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
             priority,
             startDate: startDate?.toISOString(),
             dueDate: dueDate?.toISOString(),
-            linkedResources
+            linkedResources,
+            timeLogged
         };
         onSave(updatedTask, status);
 
@@ -272,11 +311,11 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>Edit Task</DialogTitle>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
+                <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="task-title" className="text-right">Title</Label>
                         <Input id="task-title" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" />
@@ -345,6 +384,21 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
                                 <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
                             </PopoverContent>
                         </Popover>
+                    </div>
+                    <Separator />
+                     <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">Time Log</Label>
+                        <div className="col-span-3 space-y-2">
+                             <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-muted-foreground"/>
+                                <span className="font-semibold">{formatSeconds(timeLogged)}</span>
+                                <span className="text-muted-foreground">total time logged</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Input placeholder="e.g., 1h 30m" value={timeLogInput} onChange={(e) => setTimeLogInput(e.target.value)} />
+                                <Button onClick={handleLogTime}>Log Time</Button>
+                            </div>
+                        </div>
                     </div>
                     <Separator />
                      <div className="grid grid-cols-4 items-start gap-4">
@@ -572,9 +626,15 @@ export function ProjectListView() {
                                 <div className="flex justify-between items-start gap-4">
                                     <div className="flex-1">
                                         <p className="font-medium">{task.title}</p>
-                                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
                                             <Badge variant="secondary">{task.status}</Badge>
-                                            {isClient && task.dueDate && <span>- Due {format(parseISO(task.dueDate), 'MMM d')}</span>}
+                                            {isClient && task.dueDate && <span>Due {format(parseISO(task.dueDate), 'MMM d')}</span>}
+                                            {task.timeLogged && task.timeLogged > 0 && (
+                                                <span className="flex items-center gap-1">
+                                                    <Clock className="h-3 w-3" />
+                                                    {formatSeconds(task.timeLogged)} logged
+                                                </span>
+                                            )}
                                         </div>
                                          {task.linkedResources && task.linkedResources.length > 0 && (
                                             <div className="flex items-center gap-3 mt-2">
@@ -663,6 +723,3 @@ export function ProjectListView() {
     );
 }
 
-    
-
-    

@@ -23,6 +23,7 @@ export interface TaskCard {
   dueDate?: string; // ISO string for end date
   priority: Priority;
   linkedResources?: LinkedResource[];
+  timeLogged?: number; // Time in seconds
 }
 
 export interface Column {
@@ -39,11 +40,11 @@ export interface BoardData {
 
 export const initialData: BoardData = {
   tasks: {
-    'task-1': { id: 'task-1', title: 'Brainstorm feature ideas', priority: 'medium', linkedResources: [{type: 'mindmap', label: 'Initial Ideas'}] },
-    'task-2': { id: 'task-2', title: 'Design the UI mockups', priority: 'high', description: 'Create mockups in Figma for all screen sizes.', startDate: new Date().toISOString(), dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() },
-    'task-3': { id: 'task-3', title: 'Develop the Kanban components', priority: 'high' },
-    'task-4': { id: 'task-4', title: 'Implement drag and drop', priority: 'medium', dueDate: new Date().toISOString() },
-    'task-5': { id: 'task-5', title: 'Review and test the board', priority: 'low' },
+    'task-1': { id: 'task-1', title: 'Brainstorm feature ideas', priority: 'medium', linkedResources: [{type: 'mindmap', label: 'Initial Ideas'}], timeLogged: 3600 },
+    'task-2': { id: 'task-2', title: 'Design the UI mockups', priority: 'high', description: 'Create mockups in Figma for all screen sizes.', startDate: new Date().toISOString(), dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), timeLogged: 7200 },
+    'task-3': { id: 'task-3', title: 'Develop the Kanban components', priority: 'high', timeLogged: 0 },
+    'task-4': { id: 'task-4', title: 'Implement drag and drop', priority: 'medium', dueDate: new Date().toISOString(), timeLogged: 1800 },
+    'task-5': { id: 'task-5', title: 'Review and test the board', priority: 'low', timeLogged: 0 },
   },
   columns: {
     'column-1': {
@@ -120,6 +121,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
     const newTaskId = taskDetails.id || `task-${Date.now()}-${Math.random()}`;
     const newTask: TaskCard = {
       priority: 'none',
+      timeLogged: 0,
       ...taskDetails,
       id: newTaskId,
     };
@@ -204,7 +206,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
 }));
 
 export function ProjectsProvider({ children }: { children: ReactNode }) {
-  const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV4', initialData);
+  const [board, setBoard] = useLocalStorage<BoardData>('projects:boardV5', initialData);
   const setProjectsState = useProjects(state => state.setBoard);
 
   useEffect(() => {
