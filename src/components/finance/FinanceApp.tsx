@@ -57,52 +57,52 @@ export function FinanceApp() {
     }
 
     return (
-        <div className="w-full flex flex-col gap-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="w-full flex flex-col gap-4 md:gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground"><ArrowUp className="text-green-500"/> Total Income</CardTitle>
+                    <CardHeader className="p-3">
+                        <CardTitle className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground"><ArrowUp className="text-green-500"/> Total Income</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold text-green-500">${financialSummary.totalIncome.toFixed(2)}</p>
+                    <CardContent className="p-3 pt-0">
+                        <p className="text-xl sm:text-2xl font-bold text-green-500">${financialSummary.totalIncome.toFixed(2)}</p>
                     </CardContent>
                 </Card>
                  <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground"><ArrowDown className="text-red-500"/> Total Expenses</CardTitle>
+                    <CardHeader className="p-3">
+                        <CardTitle className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground"><ArrowDown className="text-red-500"/> Total Expenses</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold text-red-500">${financialSummary.totalExpense.toFixed(2)}</p>
+                    <CardContent className="p-3 pt-0">
+                        <p className="text-xl sm:text-2xl font-bold text-red-500">${financialSummary.totalExpense.toFixed(2)}</p>
                     </CardContent>
                 </Card>
                  <Card>
-                    <CardHeader>
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Net Balance</CardTitle>
+                    <CardHeader className="p-3">
+                        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Net Balance</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold">${(financialSummary.totalIncome - financialSummary.totalExpense).toFixed(2)}</p>
+                    <CardContent className="p-3 pt-0">
+                        <p className="text-xl sm:text-2xl font-bold">${(financialSummary.totalIncome - financialSummary.totalExpense).toFixed(2)}</p>
                     </CardContent>
                 </Card>
                  <Card>
-                    <CardHeader>
-                         <CardTitle className="text-sm font-medium text-muted-foreground">A/P vs A/R</CardTitle>
+                    <CardHeader className="p-3">
+                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">A/P vs A/R</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-3 pt-0">
                         <div className="flex justify-between items-center">
                             <div className="text-center">
                                 <p className="text-xs text-muted-foreground">Receivable</p>
-                                <p className="text-base font-bold text-green-500">${accountsReceivable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
+                                <p className="text-sm sm:text-base font-bold text-green-500">${accountsReceivable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
                             </div>
                              <div className="text-center">
                                 <p className="text-xs text-muted-foreground">Payable</p>
-                                <p className="text-base font-bold text-red-500">${accountsPayable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
+                                <p className="text-sm sm:text-base font-bold text-red-500">${accountsPayable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-8">
                 <Card className="xl:col-span-1">
                     <CardHeader>
                         <CardTitle>Income Statement</CardTitle>
