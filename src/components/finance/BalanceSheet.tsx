@@ -40,13 +40,30 @@ export function BalanceSheet({ transactions, dateRange }: ReportProps) {
             .filter(t => t.status === 'paid') // Only paid transactions affect retained earnings
             .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
 
-        return { cash, receivables, payables, retainedEarnings };
+        // Placeholder values are now 0
+        const inventory = 0;
+        const land = 0;
+        const buildings = 0;
+        const longTermDebt = 0;
+        const commonStock = 0;
+
+        const totalCurrentAssets = cash + receivables + inventory;
+        const totalFixedAssets = land + buildings;
+        const totalAssets = totalCurrentAssets + totalFixedAssets;
+
+        const totalLiabilities = payables + longTermDebt;
+        const totalEquity = retainedEarnings + commonStock;
+
+
+        return { 
+            cash, receivables, payables, retainedEarnings, 
+            inventory, land, buildings, longTermDebt, commonStock,
+            totalCurrentAssets, totalFixedAssets, totalAssets,
+            totalLiabilities, totalEquity
+        };
     }, [transactions, dateRange, range]);
     
-    const totalAssets = dynamicData.cash + dynamicData.receivables;
-    const totalLiabilities = dynamicData.payables;
-    const totalEquity = dynamicData.retainedEarnings;
-    const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
+    const totalLiabilitiesAndEquity = dynamicData.totalLiabilities + dynamicData.totalEquity;
 
     return (
         <Card>
@@ -63,10 +80,16 @@ export function BalanceSheet({ transactions, dateRange }: ReportProps) {
                         <TableBody>
                             <TableRow><TableCell className="font-semibold">Current assets</TableCell><TableCell></TableCell></TableRow>
                             <TableRow><TableCell className="pl-6">Cash and cash equivalents</TableCell><TableCell className="text-right font-mono">{formatCurrency(dynamicData.cash)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Accounts receivable</TableCell><TableCell className="text-right font-mono border-b">{formatCurrency(dynamicData.receivables)}</TableCell></TableRow>
-                            <TableRow><TableCell className="font-semibold pl-4">Total current assets</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(totalAssets)}</TableCell></TableRow>
+                            <TableRow><TableCell className="pl-6">Accounts receivable</TableCell><TableCell className="text-right font-mono">{formatCurrency(dynamicData.receivables)}</TableCell></TableRow>
+                            <TableRow><TableCell className="pl-6">Inventory</TableCell><TableCell className="text-right font-mono border-b">{formatCurrency(dynamicData.inventory)}</TableCell></TableRow>
+                            <TableRow><TableCell className="font-semibold pl-4">Total current assets</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(dynamicData.totalCurrentAssets)}</TableCell></TableRow>
                             
-                            <TableRow className="bg-muted"><TableCell className="font-bold text-lg">Total assets</TableCell><TableCell className="text-right font-mono font-bold text-lg border-t-4 border-double border-foreground">{formatCurrency(totalAssets)}</TableCell></TableRow>
+                            <TableRow><TableCell className="font-semibold pt-4">Property and equipment</TableCell><TableCell></TableCell></TableRow>
+                            <TableRow><TableCell className="pl-6">Land</TableCell><TableCell className="text-right font-mono">{formatCurrency(dynamicData.land)}</TableCell></TableRow>
+                            <TableRow><TableCell className="pl-6">Buildings</TableCell><TableCell className="text-right font-mono border-b">{formatCurrency(dynamicData.buildings)}</TableCell></TableRow>
+                            <TableRow><TableCell className="font-semibold pl-4">Total property and equipment</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(dynamicData.totalFixedAssets)}</TableCell></TableRow>
+
+                            <TableRow className="bg-muted"><TableCell className="font-bold text-lg">Total assets</TableCell><TableCell className="text-right font-mono font-bold text-lg border-t-4 border-double border-foreground">{formatCurrency(dynamicData.totalAssets)}</TableCell></TableRow>
                         </TableBody>
                     </Table>
                  </div>
@@ -76,11 +99,18 @@ export function BalanceSheet({ transactions, dateRange }: ReportProps) {
                         <TableBody>
                             <TableRow><TableCell className="font-semibold">Current liabilities</TableCell><TableCell></TableCell></TableRow>
                             <TableRow><TableCell className="pl-6">Accounts payable</TableCell><TableCell className="text-right font-mono border-b">{formatCurrency(dynamicData.payables)}</TableCell></TableRow>
-                            <TableRow><TableCell className="font-bold">Total liabilities</TableCell><TableCell className="text-right font-mono font-bold">{formatCurrency(totalLiabilities)}</TableCell></TableRow>
+                            <TableRow><TableCell className="font-semibold pl-4">Total current liabilities</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(dynamicData.payables)}</TableCell></TableRow>
+
+                            <TableRow><TableCell className="font-semibold pt-4">Long-term liabilities</TableCell><TableCell></TableCell></TableRow>
+                            <TableRow><TableCell className="pl-6">Long-term debt</TableCell><TableCell className="text-right font-mono border-b">{formatCurrency(dynamicData.longTermDebt)}</TableCell></TableRow>
+                            <TableRow><TableCell className="font-semibold pl-4">Total long-term liabilities</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(dynamicData.longTermDebt)}</TableCell></TableRow>
+                            
+                            <TableRow className="border-y border-foreground"><TableCell className="font-bold">Total liabilities</TableCell><TableCell className="text-right font-mono font-bold">{formatCurrency(dynamicData.totalLiabilities)}</TableCell></TableRow>
 
                             <TableRow><TableCell className="font-semibold pt-4">Shareholders' Equity</TableCell><TableCell></TableCell></TableRow>
+                            <TableRow><TableCell className="pl-6">Common stock</TableCell><TableCell className="text-right font-mono">{formatCurrency(dynamicData.commonStock)}</TableCell></TableRow>
                             <TableRow><TableCell className="pl-6">Retained earnings</TableCell><TableCell className="text-right font-mono border-b">{formatCurrency(dynamicData.retainedEarnings)}</TableCell></TableRow>
-                            <TableRow><TableCell className="font-semibold pl-4">Total shareholders' equity</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(totalEquity)}</TableCell></TableRow>
+                            <TableRow><TableCell className="font-semibold pl-4">Total shareholders' equity</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(dynamicData.totalEquity)}</TableCell></TableRow>
 
                             <TableRow className="bg-muted"><TableCell className="font-bold text-lg">Total liabilities and equity</TableCell><TableCell className="text-right font-mono font-bold text-lg border-t-4 border-double border-foreground">{formatCurrency(totalLiabilitiesAndEquity)}</TableCell></TableRow>
                         </TableBody>
