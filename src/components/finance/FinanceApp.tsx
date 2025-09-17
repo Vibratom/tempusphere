@@ -281,3 +281,5 @@ export function FinanceApp() {
         </div>
     );
 }
+
+    
