@@ -141,6 +141,3 @@ export function CashFlowStatement({ transactions, dateRange }: ReportProps) {
         </Card>
     );
 }
-
-
-    

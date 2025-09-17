@@ -120,6 +120,3 @@ export function BalanceSheet({ transactions, dateRange }: ReportProps) {
         </Card>
     );
 }
-    
-
-    
