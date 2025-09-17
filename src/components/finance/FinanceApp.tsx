@@ -6,11 +6,7 @@ import { useFinance, Transaction } from '@/contexts/FinanceContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectsContext';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Pie, PieChart, ResponsiveContainer, Legend, Cell, Tooltip, BarChart, XAxis, YAxis, Bar, CartesianGrid } from 'recharts';
 import { Skeleton } from '../ui/skeleton';
-import { format, startOfMonth, subMonths, parseISO } from 'date-fns';
-import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from '../ui/table';
 import { IncomeStatementWaterfall } from './IncomeStatementWaterfall';
 
 export function FinanceApp() {
@@ -35,32 +31,7 @@ export function FinanceApp() {
         const ap = transactions.filter(t => t.type === 'expense' && t.status !== 'paid');
         return { accountsReceivable: ar, accountsPayable: ap };
     }, [transactions]);
-    
 
-    const monthlyTrends = useMemo(() => {
-        const now = new Date();
-        const data: Record<string, { name: string, income: number, expense: number }> = {};
-
-        for (let i = 5; i >= 0; i--) {
-            const month = subMonths(now, i);
-            const monthKey = format(month, 'MMM yy');
-            data[monthKey] = { name: monthKey, income: 0, expense: 0 };
-        }
-
-        transactions.forEach(t => {
-            const monthKey = format(new Date(t.date), 'MMM yy');
-            if (data[monthKey]) {
-                if (t.type === 'income') {
-                    data[monthKey].income += t.amount;
-                } else {
-                    data[monthKey].expense += t.amount;
-                }
-            }
-        });
-        
-        return Object.values(data);
-    }, [transactions]);
-    
     return (
         <div className="w-full flex flex-col gap-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -116,28 +87,6 @@ export function FinanceApp() {
                 </CardHeader>
                 <CardContent>
                     <IncomeStatementWaterfall />
-                </CardContent>
-            </Card>
-            
-             <Card>
-                <CardHeader>
-                    <CardTitle>Monthly Income vs. Expense</CardTitle>
-                    <CardDescription>Trends over the last 6 months.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ChartContainer config={{}} className="h-64 w-full">
-                         <ResponsiveContainer>
-                            <BarChart data={monthlyTrends}>
-                                <CartesianGrid vertical={false} />
-                                <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                                <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
-                                <Tooltip content={<ChartTooltipContent />} />
-                                <Legend iconType="circle" />
-                                <Bar dataKey="income" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="expense" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </ChartContainer>
                 </CardContent>
             </Card>
         </div>

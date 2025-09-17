@@ -19,9 +19,9 @@ interface WaterfallDataPoint {
 export function IncomeStatementWaterfall() {
     const { transactions } = useFinance();
 
-    const waterfallData = useMemo(() => {
+    const chartData = useMemo(() => {
         let cumulative = 0;
-        const data: WaterfallDataPoint[] = [];
+        const data: { name: string, start: number, value: number, fill: string, label: string }[] = [];
 
         const totalIncome = transactions
             .filter(t => t.type === 'income')
@@ -30,11 +30,10 @@ export function IncomeStatementWaterfall() {
         if (totalIncome > 0) {
             data.push({
                 name: 'Revenue',
-                value: totalIncome,
                 start: 0,
-                end: totalIncome,
+                value: totalIncome,
                 fill: 'hsl(var(--chart-2))',
-                label: `$${totalIncome.toLocaleString()}`
+                label: `$${totalIncome.toLocaleString()}`,
             });
             cumulative = totalIncome;
         }
@@ -46,20 +45,18 @@ export function IncomeStatementWaterfall() {
         if (totalExpenses > 0) {
              data.push({
                 name: 'Expenses',
-                value: -totalExpenses,
                 start: cumulative - totalExpenses,
-                end: cumulative,
+                value: totalExpenses,
                 fill: 'hsl(var(--chart-5))',
-                label: `-$${totalExpenses.toLocaleString()}`
+                label: `-$${totalExpenses.toLocaleString()}`,
             });
             cumulative -= totalExpenses;
         }
 
         data.push({
             name: 'Net Income',
-            value: cumulative,
             start: 0,
-            end: cumulative,
+            value: cumulative,
             fill: 'hsl(var(--muted-foreground))',
             label: `$${cumulative.toLocaleString()}`
         });
@@ -67,26 +64,12 @@ export function IncomeStatementWaterfall() {
         return data;
     }, [transactions]);
     
-    if (!waterfallData) return <Skeleton className="h-80 w-full" />;
-    
-    const renderCustomizedLabel = (props: any) => {
-        const { x, y, width, value } = props;
-        const radius = 10;
-        const isNegative = value < 0;
-
-        return (
-            <g>
-            <text x={x + width / 2} y={isNegative ? y - radius : y + radius} fill="#666" textAnchor="middle" dominantBaseline={isNegative ? "bottom" : "hanging"}>
-                {value.toLocaleString()}
-            </text>
-            </g>
-        );
-    };
+    if (!chartData) return <Skeleton className="h-80 w-full" />;
 
     return (
         <ChartContainer config={{}} className="h-80 w-full">
             <ResponsiveContainer>
-                <BarChart data={waterfallData}>
+                <BarChart data={chartData} margin={{ top: 20 }}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
@@ -95,7 +78,10 @@ export function IncomeStatementWaterfall() {
                         content={<ChartTooltipContent 
                             formatter={(value, name, props) => {
                                 const payload = props.payload as any;
-                                const actualValue = payload.value;
+                                let actualValue = payload.value;
+                                if (payload.name === 'Expenses') {
+                                    actualValue = -actualValue;
+                                }
                                 return (
                                     <div className="flex flex-col">
                                         <span className="font-bold">{payload.name}</span>
@@ -108,12 +94,24 @@ export function IncomeStatementWaterfall() {
                     />
                     <Bar dataKey="start" stackId="a" fill="transparent" />
                     <Bar dataKey="value" stackId="a">
-                       <LabelList 
+                       {chartData.map((entry, index) => (
+                         <LabelList 
+                            key={`label-${index}`}
                             dataKey="label"
                             position="top" 
                             offset={10}
                             className="fill-foreground text-sm font-medium"
+                            content={(props) => {
+                                const { x, y, width, value, index } = props;
+                                const dataPoint = chartData[index as number];
+                                return (
+                                    <text x={x! + width! / 2} y={y} dy={-10} textAnchor="middle" fill={dataPoint.fill}>
+                                        {dataPoint.label}
+                                    </text>
+                                )
+                            }}
                         />
+                       ))}
                     </Bar>
                 </BarChart>
             </ResponsiveContainer>
