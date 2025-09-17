@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useMemo, useState } from 'react';
@@ -126,19 +127,21 @@ export function DynamicReportChart() {
             <div className="md:col-span-3 h-96">
                 <ChartContainer config={{}} className="h-full w-full">
                     <ResponsiveContainer>
-                        <BarChart data={chartData} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
+                        <BarChart data={chartData} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
                             <CartesianGrid vertical={false} />
-                            <XAxis dataKey="name" tick={false} />
+                            <XAxis 
+                                dataKey="name" 
+                                tickLine={false} 
+                                axisLine={false}
+                                angle={-45}
+                                textAnchor="end"
+                                height={1} // Recharts requires a height > 0 to render ticks
+                                interval={0}
+                            />
                             <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
                             <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
                             <ReferenceLine y={0} stroke="hsl(var(--border))" />
                             <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                               <LabelList 
-                                    dataKey="name"
-                                    position="top" 
-                                    offset={8}
-                                    className="fill-foreground text-sm font-medium"
-                                />
                                {chartData.map((entry, index) => (
                                  <Cell key={`cell-${index}`} fill={stringToColor(entry.name)} />
                                ))}
