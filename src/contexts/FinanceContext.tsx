@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction } from 'react';
@@ -104,3 +105,5 @@ export function useFinance() {
   }
   return context;
 }
+
+    

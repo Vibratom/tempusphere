@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -235,7 +236,7 @@ export function ProjectBudgetView() {
                                 <TableRow key={t.id}>
                                     <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
                                     <TableCell className="font-medium">{t.description}</TableCell>
-                                    <TableCell className="text-muted-foreground">{board.tasks[t.projectId!]?.title || 'Unknown'}</TableCell>
+                                    <TableCell className="text-muted-foreground">{t.projectId! in board.tasks ? board.tasks[t.projectId!].title : 'Unknown'}</TableCell>
                                     <TableCell className={`text-right font-mono ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
                                     {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
                                     </TableCell>
