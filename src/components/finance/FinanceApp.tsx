@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance, Transaction, TransactionType, TransactionStatus } from '@/contexts/FinanceContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
-import { Plus, Edit, Trash2, MoreVertical, Banknote, ArrowDown, ArrowUp, FileText, FilePlus, HandCoins } from 'lucide-react';
+import { Plus, Edit, Trash2, MoreVertical, Banknote, ArrowDown, ArrowUp, FileText, FilePlus, HandCoins, Building } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isPast } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '../ui/dialog';
@@ -28,16 +28,38 @@ import { Skeleton } from '../ui/skeleton';
 const COLORS = ['#16a34a', '#3b82f6', '#ef4444', '#f97316', '#8b5cf6', '#d946ef', '#14b8a6', '#eab308'];
 
 
-function TransactionForm({ onSave, transaction, projects }: { onSave: (t: Omit<Transaction, 'id'>, id?: string) => void, transaction?: Transaction | null, projects: { id: string, title: string }[] }) {
+function TransactionForm({ onSave, transaction, projects, onDone }: { onSave: (t: Omit<Transaction, 'id'>, id?: string) => void, transaction?: Transaction | null, projects: { id: string, title: string }[], onDone?: () => void }) {
     const { categories, addCategory } = useFinance();
-    const [date, setDate] = useState<Date>(transaction ? parseISO(transaction.date) : new Date());
+    const [date, setDate] = useState<Date | undefined>(transaction ? parseISO(transaction.date) : new Date());
     const [description, setDescription] = useState(transaction?.description || '');
-    const [amount, setAmount] = useState(transaction?.amount || 0);
+    const [amount, setAmount] = useState<number | ''>(transaction?.amount || '');
     const [type, setType] = useState<TransactionType>(transaction?.type || 'expense');
     const [status, setStatus] = useState<TransactionStatus>(transaction?.status || 'unpaid');
     const [category, setCategory] = useState(transaction?.category || '');
     const [newCategory, setNewCategory] = useState('');
     const [projectId, setProjectId] = useState<string | undefined>(transaction?.projectId);
+
+    useEffect(() => {
+        if (transaction) {
+            setDate(parseISO(transaction.date));
+            setDescription(transaction.description);
+            setAmount(transaction.amount);
+            setType(transaction.type);
+            setStatus(transaction.status);
+            setCategory(transaction.category);
+            setProjectId(transaction.projectId);
+        } else {
+             // Reset form for new transaction
+            setDate(new Date());
+            setDescription('');
+            setAmount('');
+            setType('expense');
+            setStatus('unpaid');
+            setCategory('');
+            setProjectId(undefined);
+            setNewCategory('');
+        }
+    }, [transaction]);
 
     const handleSave = () => {
         let finalCategory = category;
@@ -46,7 +68,7 @@ function TransactionForm({ onSave, transaction, projects }: { onSave: (t: Omit<T
             finalCategory = newCategory.trim();
         }
         
-        if (!description || amount <= 0 || !finalCategory) {
+        if (!description || !amount || !finalCategory || !date) {
             // Add better validation feedback in a real app
             return;
         }
@@ -54,19 +76,23 @@ function TransactionForm({ onSave, transaction, projects }: { onSave: (t: Omit<T
         onSave({
             date: date.toISOString(),
             description,
-            amount,
+            amount: +amount,
             type,
             status,
             category: finalCategory,
-            projectId,
+            projectId: projectId === 'none' ? undefined : projectId,
         }, transaction?.id);
+
+        if (onDone) onDone();
     };
+    
+    const FormWrapper = transaction ? DialogContent : CardContent;
+    const FormActions = transaction ? DialogFooter : 'div';
+    const SaveButton = transaction ? DialogClose : Button;
 
     return (
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>{transaction ? 'Edit' : 'Add'} Transaction</DialogTitle>
-            </DialogHeader>
+        <FormWrapper className={cn(!transaction && "pt-6")}>
+            {transaction && <DialogHeader><DialogTitle>{transaction ? 'Edit' : 'Add'} Transaction</DialogTitle></DialogHeader>}
             <div className="space-y-4 py-4">
                  <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
@@ -81,7 +107,7 @@ function TransactionForm({ onSave, transaction, projects }: { onSave: (t: Omit<T
                     </div>
                      <div className="grid gap-2">
                         <Label htmlFor="amount">Amount</Label>
-                        <Input id="amount" type="number" value={amount} onChange={e => setAmount(parseFloat(e.target.value) || 0)} placeholder="0.00"/>
+                        <Input id="amount" type="number" value={amount} onChange={e => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00"/>
                     </div>
                 </div>
                 <div className="grid gap-2">
@@ -122,7 +148,7 @@ function TransactionForm({ onSave, transaction, projects }: { onSave: (t: Omit<T
                                     {date ? format(date, 'PPP') : <span>Pick a date</span>}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus /></PopoverContent>
+                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} initialFocus /></PopoverContent>
                         </Popover>
                     </div>
                     <div className="grid gap-2">
@@ -138,12 +164,10 @@ function TransactionForm({ onSave, transaction, projects }: { onSave: (t: Omit<T
                     </div>
                 </div>
             </div>
-            <DialogFooter>
-                <DialogClose asChild>
-                    <Button onClick={handleSave}>Save Transaction</Button>
-                </DialogClose>
-            </DialogFooter>
-        </DialogContent>
+            <FormActions>
+                <SaveButton onClick={handleSave}>Save Transaction</SaveButton>
+            </FormActions>
+        </FormWrapper>
     );
 }
 
@@ -157,6 +181,7 @@ export function FinanceApp() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [isClient, setIsClient] = useState(false);
+    const [activeTab, setActiveTab] = useState('ledger');
 
     useEffect(() => {
         setIsClient(true);
@@ -169,6 +194,7 @@ export function FinanceApp() {
         } else {
             addTransaction(transaction);
             toast({ title: "Transaction Added" });
+            setActiveTab('ledger');
         }
         setIsFormOpen(false);
         setEditingTransaction(null);
@@ -260,15 +286,14 @@ export function FinanceApp() {
 
             <div className="grid md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                    <Tabs defaultValue="ledger">
-                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-                            <TabsList>
-                                <TabsTrigger value="ledger"><FileText className="mr-2"/>Ledger</TabsTrigger>
-                                <TabsTrigger value="receivable"><FilePlus className="mr-2"/>Receivable</TabsTrigger>
-                                <TabsTrigger value="payable"><HandCoins className="mr-2"/>Payable</TabsTrigger>
-                            </TabsList>
-                            <Button onClick={() => { setEditingTransaction(null); setIsFormOpen(true); }} className="w-full sm:w-auto"><Plus className="mr-2"/>Add Transaction</Button>
-                        </div>
+                    <Tabs value={activeTab} onValueChange={setActiveTab}>
+                        <TabsList className="mb-4">
+                            <TabsTrigger value="ledger"><FileText className="mr-2"/>Ledger</TabsTrigger>
+                            <TabsTrigger value="receivable"><FilePlus className="mr-2"/>Receivable</TabsTrigger>
+                            <TabsTrigger value="payable"><HandCoins className="mr-2"/>Payable</TabsTrigger>
+                            <TabsTrigger value="add"><Plus className="mr-2"/>New Transaction</TabsTrigger>
+                        </TabsList>
+                        
                         <TabsContent value="ledger">
                             <Card>
                                 <CardContent className="p-0">
@@ -371,6 +396,15 @@ export function FinanceApp() {
                                 </CardContent>
                             </Card>
                         </TabsContent>
+                        <TabsContent value="add">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Add a New Transaction</CardTitle>
+                                    <CardDescription>Record a new income or expense item.</CardDescription>
+                                </CardHeader>
+                                <TransactionForm onSave={handleSaveTransaction} projects={projectList} onDone={() => setActiveTab('ledger')} />
+                            </Card>
+                        </TabsContent>
                     </Tabs>
                 </div>
                 <div className="md:col-span-1">
@@ -399,9 +433,11 @@ export function FinanceApp() {
             </div>
 
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                 <TransactionForm onSave={handleSaveTransaction} transaction={editingTransaction} projects={projectList} />
+                 <TransactionForm onSave={handleSaveTransaction} transaction={editingTransaction} projects={projectList} onDone={() => setIsFormOpen(false)} />
             </Dialog>
 
         </div>
     );
 }
+
+    
