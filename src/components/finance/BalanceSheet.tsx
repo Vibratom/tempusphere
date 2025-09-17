@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Transaction } from '@/contexts/FinanceContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
@@ -16,8 +16,6 @@ interface ReportProps {
 const placeholderData = {
     assets: {
         current: {
-            cash: 100000,
-            receivables: 20000,
             inventory: 15000,
             prepaidExpense: 4000,
             investments: 10000,
@@ -35,7 +33,6 @@ const placeholderData = {
     },
     liabilities: {
         current: {
-            payable: 30000,
             notes: 10000,
             accruedExpenses: 5000,
             deferredRevenue: 2000,
@@ -45,7 +42,6 @@ const placeholderData = {
     equity: {
         commonStock: 10000,
         additionalCapital: 20000,
-        retainedEarnings: 197100,
         treasuryStock: -2000
     }
 };
@@ -54,7 +50,47 @@ const placeholderData = {
 export function BalanceSheet({ transactions, dateRange }: ReportProps) {
     const range = getDateRange(dateRange);
 
-    const data = placeholderData;
+    const dynamicData = useMemo(() => {
+        const cash = transactions
+            .filter(t => t.status === 'paid')
+            .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+
+        const receivables = transactions
+            .filter(t => t.type === 'income' && t.status !== 'paid')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const payables = transactions
+            .filter(t => t.type === 'expense' && t.status !== 'paid')
+            .reduce((sum, t) => sum + t.amount, 0);
+            
+        const retainedEarnings = transactions
+            .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+
+        return { cash, receivables, payables, retainedEarnings };
+    }, [transactions]);
+    
+    const data = {
+        assets: {
+            current: {
+                cash: dynamicData.cash,
+                receivables: dynamicData.receivables,
+                ...placeholderData.assets.current
+            },
+            ...placeholderData.assets
+        },
+        liabilities: {
+            current: {
+                payable: dynamicData.payables,
+                ...placeholderData.liabilities.current
+            },
+            ...placeholderData.liabilities
+        },
+        equity: {
+            retainedEarnings: dynamicData.retainedEarnings,
+            ...placeholderData.equity,
+        }
+    };
+
     const totalCurrentAssets = Object.values(data.assets.current).reduce((a, b) => a + b, 0);
     const totalProperty = Object.values(data.assets.property).reduce((a, b) => a + b, 0);
     const totalOtherAssets = Object.values(data.assets.other).reduce((a, b) => a + b, 0);
@@ -131,4 +167,6 @@ export function BalanceSheet({ transactions, dateRange }: ReportProps) {
         </Card>
     );
 }
+    
+
     

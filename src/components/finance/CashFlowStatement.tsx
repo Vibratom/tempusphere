@@ -33,8 +33,8 @@ export function CashFlowStatement({ transactions, dateRange }: ReportProps) {
         
         // Simplified for this example. In a real scenario, these would be tracked separately.
         const nonCashCharges = {
-            depreciation: netIncome * 0.05,
-            amortization: netIncome * 0.01,
+            depreciation: netIncome * 0.05, // Placeholder
+            amortization: netIncome * 0.01, // Placeholder
         }
         
         const accountsPayableChange = transactions
@@ -45,16 +45,23 @@ export function CashFlowStatement({ transactions, dateRange }: ReportProps) {
             .filter(t => t.type === 'income' && t.status !== 'paid')
             .reduce((sum, t) => sum + t.amount, 0);
 
-        const operatingActivities = netIncome + nonCashCharges.depreciation + nonCashCharges.amortization - accountsReceivableChange + accountsPayableChange;
-
-        const investingActivities = transactions.filter(t => INVESTING_CATEGORIES.includes(t.category))
+        const cashFromOperating = transactions
+            .filter(t => t.status === 'paid')
+            .filter(t => OPERATING_INCOME_CATEGORIES.includes(t.category) || OPERATING_EXPENSE_CATEGORIES.includes(t.category))
             .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
             
-        const financingActivities = transactions.filter(t => FINANCING_INCOME_CATEGORIES.includes(t.category) || FINANCING_EXPENSE_CATEGORIES.includes(t.category))
+        const operatingActivities = cashFromOperating;
+
+        const investingActivities = transactions
+            .filter(t => t.status === 'paid' && INVESTING_CATEGORIES.includes(t.category))
+            .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+            
+        const financingActivities = transactions
+            .filter(t => t.status === 'paid' && (FINANCING_INCOME_CATEGORIES.includes(t.category) || FINANCING_EXPENSE_CATEGORIES.includes(t.category)))
             .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
 
         const netCashFlow = operatingActivities + investingActivities + financingActivities;
-        const beginningCash = 1326.5; // Placeholder, would need to be calculated from previous period
+        const beginningCash = 1326.5; // This remains a placeholder as we don't track historical cash balance
         const endingCash = beginningCash + netCashFlow;
 
         return { 
@@ -119,3 +126,6 @@ export function CashFlowStatement({ transactions, dateRange }: ReportProps) {
         </Card>
     );
 }
+
+
+    
