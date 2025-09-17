@@ -19,7 +19,7 @@ import { Badge } from '../ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { Progress } from '../ui/progress';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Pie, PieChart as RechartsPieChart, Bar, BarChart as RechartsBarChart, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Pie, PieChart as RechartsPieChart, Bar, BarChart as RechartsBarChart, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
 const CHART_COLORS = [
     'hsl(var(--chart-1))',
@@ -336,7 +336,7 @@ export function FinanceApp() {
                 ) : (
                    <>
                     <div className="text-2xl font-bold">Not Set</div>
-                    <p className="text-xs text-muted-foreground">Create a budget to get started</p>
+                    {isClient && <p className="text-xs text-muted-foreground">Create a budget to get started</p>}
                    </>
                 )}
             </CardContent>
@@ -363,7 +363,7 @@ export function FinanceApp() {
                                     <Legend />
                                     <Pie data={monthlySpendingPerCategory} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
                                         {monthlySpendingPerCategory.map((entry, index) => (
-                                            <div key={`cell-${index}`} style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}/>
+                                            <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                                         ))}
                                     </Pie>
                                 </RechartsPieChart>
