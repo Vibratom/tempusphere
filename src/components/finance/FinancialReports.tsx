@@ -81,6 +81,25 @@ export function FinancialReports() {
 
         return { cashIn, cashOut, netCashFlow: cashIn - cashOut };
     }, [filteredTransactions]);
+    
+    const balanceSheet = useMemo(() => {
+        const accountsReceivable = filteredTransactions
+            .filter(t => t.type === 'income' && t.status !== 'paid')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const accountsPayable = filteredTransactions
+            .filter(t => t.type === 'expense' && t.status !== 'paid')
+            .reduce((sum, t) => sum + t.amount, 0);
+            
+        const equity = incomeStatement.netIncome;
+
+        return {
+            totalAssets: accountsReceivable,
+            totalLiabilities: accountsPayable,
+            equity,
+            totalLiabilitiesAndEquity: accountsPayable + equity,
+        }
+    }, [filteredTransactions, incomeStatement]);
 
     return (
         <div className="flex flex-col gap-4">
@@ -89,7 +108,7 @@ export function FinancialReports() {
                     <div className="flex justify-between items-center">
                          <div>
                             <CardTitle>Financial Reports</CardTitle>
-                            <CardDescription>Income and cash flow statements.</CardDescription>
+                            <CardDescription>Income Statement, Cash Flow, and Balance Sheet.</CardDescription>
                          </div>
                          <div className="w-48">
                             <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
@@ -156,29 +175,50 @@ export function FinancialReports() {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Cash Flow Statement</CardTitle>
-                    </CardHeader>
-                     <CardContent>
-                         <Table>
-                            <TableBody>
-                                <TableRow>
-                                    <TableCell className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Cash Inflows</TableCell>
-                                    <TableCell className="text-right font-mono text-green-500">+${cashFlowStatement.cashIn.toFixed(2)}</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="flex items-center gap-2"><ArrowDown className="text-red-500"/> Cash Outflows</TableCell>
-                                    <TableCell className="text-right font-mono text-red-500">-${cashFlowStatement.cashOut.toFixed(2)}</TableCell>
-                                </TableRow>
-                                <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
-                                    <TableCell>Net Cash Flow</TableCell>
-                                    <TableCell className="text-right font-mono">${cashFlowStatement.netCashFlow.toFixed(2)}</TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
+                <div className="flex flex-col gap-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Cash Flow Statement</CardTitle>
+                        </CardHeader>
+                         <CardContent>
+                             <Table>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Cash Inflows</TableCell>
+                                        <TableCell className="text-right font-mono text-green-500">+${cashFlowStatement.cashIn.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="flex items-center gap-2"><ArrowDown className="text-red-500"/> Cash Outflows</TableCell>
+                                        <TableCell className="text-right font-mono text-red-500">-${cashFlowStatement.cashOut.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                    <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
+                                        <TableCell>Net Cash Flow</TableCell>
+                                        <TableCell className="text-right font-mono">${cashFlowStatement.netCashFlow.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Balance Sheet (Simplified)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableBody>
+                                    <TableRow className="font-bold bg-muted/50"><TableCell>Assets</TableCell><TableCell></TableCell></TableRow>
+                                    <TableRow><TableCell className="pl-6">Accounts Receivable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
+                                    <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Assets</TableCell><TableCell className="text-right font-mono text-green-500">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
+                                    
+                                    <TableRow className="font-bold bg-muted/50"><TableCell>Liabilities & Equity</TableCell><TableCell></TableCell></TableRow>
+                                    <TableRow><TableCell className="pl-6">Accounts Payable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalLiabilities.toFixed(2)}</TableCell></TableRow>
+                                    <TableRow><TableCell className="pl-6">Retained Earnings (Net Income)</TableCell><TableCell className="text-right font-mono">${balanceSheet.equity.toFixed(2)}</TableCell></TableRow>
+                                    <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Liabilities & Equity</TableCell><TableCell className="text-right font-mono text-red-500">${balanceSheet.totalLiabilitiesAndEquity.toFixed(2)}</TableCell></TableRow>
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     );
