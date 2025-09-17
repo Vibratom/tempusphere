@@ -10,6 +10,7 @@ import { Skeleton } from '../ui/skeleton';
 import { IncomeStatementWaterfall } from './IncomeStatementWaterfall';
 import { BalanceSheetChart } from './BalanceSheetChart';
 import { CashFlowChart } from './CashFlowChart';
+import { DynamicReportChart } from './DynamicReportChart';
 
 export function FinanceApp() {
     const { transactions } = useFinance();
@@ -60,34 +61,34 @@ export function FinanceApp() {
         <div className="w-full flex flex-col gap-4 md:gap-8">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
-                    <CardHeader className="p-3">
+                    <CardHeader className="p-3 sm:p-6">
                         <CardTitle className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground"><ArrowUp className="text-green-500"/> Total Income</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-3 pt-0">
+                    <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
                         <p className="text-xl sm:text-2xl font-bold text-green-500">${financialSummary.totalIncome.toFixed(2)}</p>
                     </CardContent>
                 </Card>
                  <Card>
-                    <CardHeader className="p-3">
+                    <CardHeader className="p-3 sm:p-6">
                         <CardTitle className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground"><ArrowDown className="text-red-500"/> Total Expenses</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-3 pt-0">
+                    <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
                         <p className="text-xl sm:text-2xl font-bold text-red-500">${financialSummary.totalExpense.toFixed(2)}</p>
                     </CardContent>
                 </Card>
                  <Card>
-                    <CardHeader className="p-3">
+                    <CardHeader className="p-3 sm:p-6">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Net Balance</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-3 pt-0">
+                    <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
                         <p className="text-xl sm:text-2xl font-bold">${(financialSummary.totalIncome - financialSummary.totalExpense).toFixed(2)}</p>
                     </CardContent>
                 </Card>
                  <Card>
-                    <CardHeader className="p-3">
+                    <CardHeader className="p-3 sm:p-6">
                          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">A/P vs A/R</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-3 pt-0">
+                    <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
                         <div className="flex justify-between items-center">
                             <div className="text-center">
                                 <p className="text-xs text-muted-foreground">Receivable</p>
@@ -131,6 +132,16 @@ export function FinanceApp() {
                     </CardContent>
                 </Card>
             </div>
+
+             <Card className="col-span-1 xl:col-span-3">
+                <CardHeader>
+                    <CardTitle>Dynamic Report</CardTitle>
+                    <CardDescription>Select metrics from any financial statement to build a custom comparison chart.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <DynamicReportChart />
+                </CardContent>
+            </Card>
         </div>
     );
 }
