@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, parseISO } from 'date-fns';
 import { Banknote, Landmark, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -102,7 +102,7 @@ function TransactionForm({ onSave, projects }: { onSave: (t: Omit<Transaction, '
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline" className={cn(!date && 'text-muted-foreground', "justify-start text-left font-normal")}>
-                                {format(date, 'PPP')}
+                                {date ? format(date, 'PPP') : <span>Pick a date</span>}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus /></PopoverContent>
@@ -247,3 +247,5 @@ export function ProjectBudgetView() {
         </div>
     );
 }
+
+    
