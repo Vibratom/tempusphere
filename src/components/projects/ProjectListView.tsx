@@ -722,4 +722,3 @@ export function ProjectListView() {
         </div>
     );
 }
-
