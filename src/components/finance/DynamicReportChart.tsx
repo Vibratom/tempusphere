@@ -143,7 +143,12 @@ export function DynamicReportChart() {
                                 interval={0}
                             />
                             <YAxis 
-                                tickFormatter={(value: number) => `$${(value / 1000).toFixed(0)}k`}
+                                tickFormatter={(value: number | string) => {
+                                  if (typeof value === 'number') {
+                                    return `$${(value / 1000).toFixed(0)}k`
+                                  }
+                                  return value;
+                                }}
                                 domain={[yMin === 'auto' ? 'auto' : Number(yMin), yMax === 'auto' ? 'auto' : Number(yMax)]}
                             />
                             <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
