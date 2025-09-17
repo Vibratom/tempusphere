@@ -284,7 +284,7 @@ export function FinanceApp() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {transactions.map(t => (
+                                            {isClient && transactions.map(t => (
                                             <TableRow key={t.id}>
                                                 <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
                                                 <TableCell className="font-medium">{t.description}</TableCell>
@@ -325,7 +325,7 @@ export function FinanceApp() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {accountsReceivable.map(t => (
+                                            {isClient && accountsReceivable.map(t => (
                                                 <TableRow key={t.id}>
                                                     <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
                                                     <TableCell className="font-medium">{t.description}</TableCell>
@@ -355,7 +355,7 @@ export function FinanceApp() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {accountsPayable.map(t => (
+                                            {isClient && accountsPayable.map(t => (
                                                 <TableRow key={t.id}>
                                                     <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
                                                     <TableCell className="font-medium">{t.description}</TableCell>
@@ -405,5 +405,3 @@ export function FinanceApp() {
         </div>
     );
 }
-
-    
