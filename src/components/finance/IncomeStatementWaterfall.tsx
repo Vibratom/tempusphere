@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
-import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from 'recharts';
+import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, ReferenceLine } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Skeleton } from '../ui/skeleton';
 
@@ -22,8 +22,8 @@ export function IncomeStatementWaterfall() {
 
         return [
             { name: 'Revenue', value: totalIncome, fill: 'hsl(var(--chart-2))', label: `$${totalIncome.toLocaleString()}` },
-            { name: 'Expenses', value: totalExpenses, fill: 'hsl(var(--chart-5))', label: `-$${totalExpenses.toLocaleString()}` },
-            { name: 'Net Income', value: netIncome, fill: 'hsl(var(--foreground))', label: `$${netIncome.toLocaleString()}` },
+            { name: 'Expenses', value: -totalExpenses, fill: 'hsl(var(--chart-5))', label: `-$${totalExpenses.toLocaleString()}` },
+            { name: 'Net Income', value: netIncome, fill: netIncome >= 0 ? 'hsl(var(--foreground))' : 'hsl(var(--destructive))', label: `$${netIncome.toLocaleString()}` },
         ];
     }, [transactions]);
     
@@ -49,6 +49,7 @@ export function IncomeStatementWaterfall() {
                         cursor={{ fill: 'hsl(var(--muted))' }} 
                         content={<ChartTooltipContent hideLabel />}
                     />
+                    <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1} />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                        <LabelList 
                             dataKey="label"
