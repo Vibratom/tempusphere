@@ -73,7 +73,6 @@ const formatSeconds = (totalSeconds: number) => {
     return result.trim() || '0m';
 };
 
-
 function EditTaskDialog({ task, isOpen, onOpenChange, onSave }: { task: TaskCard | null, isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (updatedTask: TaskCard, newStatusTitle?: string) => void }) {
     const { board } = useProjects();
     const { events, updateEvent, addEvent, removeEvent } = useCalendar();
@@ -724,5 +723,3 @@ export function ProjectListView() {
         </div>
     );
 }
-
-    
