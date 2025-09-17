@@ -86,9 +86,9 @@ function TransactionForm({ onSave, transaction, projects, onDone }: { onSave: (t
         if (onDone) onDone();
     };
     
-    const FormWrapper = transaction ? DialogContent : CardContent;
+    const FormWrapper = transaction ? DialogContent : 'div';
     const FormActions = transaction ? DialogFooter : 'div';
-    const SaveButton = transaction ? DialogClose : Button;
+    const SaveButton = transaction ? Button : Button;
 
     return (
         <FormWrapper className={cn(!transaction && "pt-6")}>
@@ -402,7 +402,9 @@ export function FinanceApp() {
                                     <CardTitle>Add a New Transaction</CardTitle>
                                     <CardDescription>Record a new income or expense item.</CardDescription>
                                 </CardHeader>
-                                <TransactionForm onSave={handleSaveTransaction} projects={projectList} onDone={() => setActiveTab('ledger')} />
+                                <CardContent>
+                                    <TransactionForm onSave={handleSaveTransaction} projects={projectList} onDone={() => setActiveTab('ledger')} />
+                                </CardContent>
                             </Card>
                         </TabsContent>
                     </Tabs>
@@ -440,4 +442,5 @@ export function FinanceApp() {
     );
 }
 
+    
     
