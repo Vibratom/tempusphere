@@ -7,10 +7,10 @@ import Image from 'next/image';
 import { Expand, Settings, Home, Atom, Sun, Moon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose, SheetTrigger } from '../ui/sheet';
-import { SettingsPanel } from './SettingsPanel';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { useHotkeys } from '@/hooks/use-hotkeys';
 import { useTheme } from 'next-themes';
+import { ClockSettingsPanel } from './ClockSettingsPanel';
 
 export function Header() {
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -46,9 +46,9 @@ export function Header() {
             </SheetTrigger>
             <SheetContent className="p-0 flex flex-col">
                 <SheetHeader className="p-4 border-b">
-                    <SheetTitle>Settings</SheetTitle>
+                    <SheetTitle>Clock Settings</SheetTitle>
                 </SheetHeader>
-                <SettingsPanel />
+                <ClockSettingsPanel />
                 <SheetFooter className="p-4 border-t mt-auto">
                     <SheetClose asChild>
                         <Button>Done</Button>
@@ -105,7 +105,7 @@ export function Header() {
                             <SettingsSheet />
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Settings</p>
+                            <p>Clock Settings</p>
                         </TooltipContent>
                     </Tooltip>
                     <Tooltip>

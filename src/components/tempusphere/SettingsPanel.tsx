@@ -5,17 +5,16 @@ import { useSettings, FullscreenSettings } from '@/contexts/SettingsContext';
 import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Input } from '../ui/input';
-import { Slider } from '../ui/slider';
 import Image from 'next/image';
 import { ScrollArea } from '../ui/scroll-area';
 import { useState, useEffect } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { FastAverageColor } from 'fast-average-color';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
 const backgroundPresets = Array.from({ length: 100 }, (_, i) => ({
     name: `Image ${i + 1}`,
@@ -97,14 +96,6 @@ const ImageColorExtractor = ({ onPaletteChange }: { onPaletteChange: (palette: s
 
 export function SettingsPanel() {
   const {
-    hourFormat,
-    setHourFormat,
-    showSeconds,
-    setShowSeconds,
-    primaryClockMode,
-    setPrimaryClockMode,
-    primaryClockTimezone,
-    setPrimaryClockTimezone,
     primaryColor,
     setPrimaryColor,
     accentColor,
@@ -115,8 +106,6 @@ export function SettingsPanel() {
     setDarkBackgroundColor,
     backgroundImage,
     setBackgroundImage,
-    clockSize,
-    setClockSize,
     fullscreenSettings,
     setFullscreenSettings,
   } = useSettings();
@@ -143,185 +132,120 @@ export function SettingsPanel() {
   return (
       <ScrollArea className="h-full flex-1">
         {backgroundImage && <ImageColorExtractor onPaletteChange={setExtractedPalette} />}
-        <div className="p-4 space-y-6">
-          <div className="space-y-2">
-              <h3 className="font-semibold">Appearance</h3>
-              <Separator />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 items-start">
-            <Label>Background Image</Label>
-            <div className="flex flex-col gap-2">
-                <ScrollArea className="h-48">
-                  <div className="grid grid-cols-4 gap-2 pr-4">
-                      {backgroundPresets.map(preset => (
-                          <button key={preset.name} onClick={() => setBackgroundImage(preset.url)} className="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary data-[selected=true]:border-primary" data-selected={backgroundImage === preset.url}>
-                              <Image src={preset.url} alt={preset.name} fill objectFit="cover" data-ai-hint={preset.hint} unoptimized/>
-                          </button>
-                      ))}
-                  </div>
-                </ScrollArea>
-                <div className="flex gap-2 items-center">
-                    <Input id="bg-upload" type="file" onChange={handleImageUpload} accept="image/*" className="hidden"/>
-                    <Button asChild variant="outline">
-                        <label htmlFor="bg-upload"><ImageIcon className="mr-2"/> Upload</label>
-                    </Button>
-                    {backgroundImage && (
-                        <Button variant="ghost" size="icon" onClick={() => setBackgroundImage(null)}>
-                        <Trash2 />
-                        </Button>
-                    )}
-                </div>
-            </div>
-          </div>
+        <div className="p-4 space-y-4">
           
-           {backgroundImage && extractedPalette.length > 0 && (
-                <div className="grid grid-cols-2 gap-4 items-start">
-                    <Label>Image Palette</Label>
-                    <div className="flex flex-col gap-2">
-                        <div className="flex flex-wrap gap-2">
-                            {extractedPalette.map((color, index) => (
-                                <Popover key={index}>
-                                    <PopoverTrigger asChild>
-                                        <button
-                                            className="w-8 h-8 rounded-full border-2"
-                                            style={{ backgroundColor: color }}
-                                            aria-label={`Color swatch ${color}`}
-                                        />
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-2">
-                                        <div className="flex flex-col gap-1">
-                                            <Button size="sm" variant="ghost" onClick={() => setPrimaryColor(hexToHsl(color))}>Set as Primary</Button>
-                                            <Button size="sm" variant="ghost" onClick={() => setAccentColor(hexToHsl(color))}>Set as Accent</Button>
-                                            <Button size="sm" variant="ghost" onClick={() => isDark ? setDarkBackgroundColor(hexToHsl(color)) : setLightBackgroundColor(hexToHsl(color))}>Set as Background</Button>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-                            ))}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Extracted from the background image. Click a color to apply it.</p>
+          <Card>
+            <CardHeader><CardTitle>Appearance</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 items-start">
+                <Label>Background Image</Label>
+                <div className="flex flex-col gap-2">
+                    <ScrollArea className="h-48">
+                      <div className="grid grid-cols-4 gap-2 pr-4">
+                          {backgroundPresets.map(preset => (
+                              <button key={preset.name} onClick={() => setBackgroundImage(preset.url)} className="relative aspect-video rounded-md overflow-hidden border-2 border-transparent hover:border-primary data-[selected=true]:border-primary" data-selected={backgroundImage === preset.url}>
+                                  <Image src={preset.url} alt={preset.name} fill objectFit="cover" data-ai-hint={preset.hint} unoptimized/>
+                              </button>
+                          ))}
+                      </div>
+                    </ScrollArea>
+                    <div className="flex gap-2 items-center">
+                        <Input id="bg-upload" type="file" onChange={handleImageUpload} accept="image/*" className="hidden"/>
+                        <Button asChild variant="outline">
+                            <label htmlFor="bg-upload"><ImageIcon className="mr-2"/> Upload</label>
+                        </Button>
+                        {backgroundImage && (
+                            <Button variant="ghost" size="icon" onClick={() => setBackgroundImage(null)}>
+                            <Trash2 />
+                            </Button>
+                        )}
                     </div>
                 </div>
-            )}
-
-          <div className="grid grid-cols-2 gap-4 items-center">
-              <Label>Manual Colors</Label>
-              <div className="flex gap-2">
-                <Input type="color" value={hslToHex(primaryColor)} onChange={(e) => setPrimaryColor(hexToHsl(e.target.value))} className="p-1 h-10 w-full" aria-label="Primary color picker"/>
-                <Input type="color" value={hslToHex(accentColor)} onChange={(e) => setAccentColor(hexToHsl(e.target.value))} className="p-1 h-10 w-full" aria-label="Accent color picker"/>
-                <Input 
-                  type="color" 
-                  value={hslToHex(isDark ? darkBackgroundColor : lightBackgroundColor)} 
-                  onChange={(e) => isDark ? setDarkBackgroundColor(hexToHsl(e.target.value)) : setLightBackgroundColor(hexToHsl(e.target.value))} 
-                  className="p-1 h-10 w-full"
-                  aria-label="Background color picker"
-                />
               </div>
-          </div>
-          
+              
+              {backgroundImage && extractedPalette.length > 0 && (
+                    <div className="grid grid-cols-2 gap-4 items-start">
+                        <Label>Image Palette</Label>
+                        <div className="flex flex-col gap-2">
+                            <div className="flex flex-wrap gap-2">
+                                {extractedPalette.map((color, index) => (
+                                    <Popover key={index}>
+                                        <PopoverTrigger asChild>
+                                            <button
+                                                className="w-8 h-8 rounded-full border-2"
+                                                style={{ backgroundColor: color }}
+                                                aria-label={`Color swatch ${color}`}
+                                            />
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-2">
+                                            <div className="flex flex-col gap-1">
+                                                <Button size="sm" variant="ghost" onClick={() => setPrimaryColor(hexToHsl(color))}>Set as Primary</Button>
+                                                <Button size="sm" variant="ghost" onClick={() => setAccentColor(hexToHsl(color))}>Set as Accent</Button>
+                                                <Button size="sm" variant="ghost" onClick={() => isDark ? setDarkBackgroundColor(hexToHsl(color)) : setLightBackgroundColor(hexToHsl(color))}>Set as Background</Button>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground">Extracted from the background image. Click a color to apply it.</p>
+                        </div>
+                    </div>
+                )}
 
-          <div className="space-y-2">
-            <h3 className="font-semibold">General Clock Settings</h3>
-            <Separator />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <Label>Time Format</Label>
-            <RadioGroup value={hourFormat} onValueChange={(value) => setHourFormat(value as '12h' | '24h')} className="flex items-center">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="12h" id="h12" />
-                <Label htmlFor="h12">12-Hour</Label>
+              <div className="grid grid-cols-2 gap-4 items-center">
+                  <Label>Manual Colors</Label>
+                  <div className="flex gap-2">
+                    <Input type="color" value={hslToHex(primaryColor)} onChange={(e) => setPrimaryColor(hexToHsl(e.target.value))} className="p-1 h-10 w-full" aria-label="Primary color picker"/>
+                    <Input type="color" value={hslToHex(accentColor)} onChange={(e) => setAccentColor(hexToHsl(e.target.value))} className="p-1 h-10 w-full" aria-label="Accent color picker"/>
+                    <Input 
+                      type="color" 
+                      value={hslToHex(isDark ? darkBackgroundColor : lightBackgroundColor)} 
+                      onChange={(e) => isDark ? setDarkBackgroundColor(hexToHsl(e.target.value)) : setLightBackgroundColor(hexToHsl(e.target.value))} 
+                      className="p-1 h-10 w-full"
+                      aria-label="Background color picker"
+                    />
+                  </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="24h" id="h24" />
-                <Label htmlFor="h24">24-Hour</Label>
-              </div>
-            </RadioGroup>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <Label htmlFor="show-seconds">Show Seconds</Label>
-            <Switch id="show-seconds" checked={showSeconds} onCheckedChange={setShowSeconds} />
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="space-y-2">
-            <h3 className="font-semibold">Primary Clock</h3>
-            <Separator />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Label>Clock Mode</Label>
-            <RadioGroup value={primaryClockMode} onValueChange={(value) => setPrimaryClockMode(value as 'digital' | 'analog')} className="flex items-center">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="digital" id="digital" />
-                <Label htmlFor="digital">Digital</Label>
+          <Card>
+            <CardHeader><CardTitle>Fullscreen Mode Layout</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              <div className="grid grid-cols-2 gap-4 items-center">
+                <Label htmlFor="fs-primary-clock">Show Primary Clock</Label>
+                <Switch id="fs-primary-clock" checked={fullscreenSettings.primaryClock} onCheckedChange={(c) => handleFullscreenSettingChange('primaryClock', c)} />
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="analog" id="analog" />
-                <Label htmlFor="analog">Analog</Label>
+              <div className="grid grid-cols-2 gap-4 items-center">
+                <Label htmlFor="fs-world-clocks">Show World Clocks</Label>
+                <Switch id="fs-world-clocks" checked={fullscreenSettings.worldClocks} onCheckedChange={(c) => handleFullscreenSettingChange('worldClocks', c)} />
               </div>
-            </RadioGroup>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Label>Timezone</Label>
-            <RadioGroup value={primaryClockTimezone} onValueChange={(value) => setPrimaryClockTimezone(value as 'local' | 'utc')} className="flex items-center">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="local" id="local" />
-                <Label htmlFor="local">Local</Label>
+              <div className="grid grid-cols-2 gap-4 items-center">
+                <Label htmlFor="fs-alarms">Show Alarms</Label>
+                <Switch id="fs-alarms" checked={fullscreenSettings.alarms} onCheckedChange={(c) => handleFullscreenSettingChange('alarms', c)} />
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="utc" id="utc" />
-                <Label htmlFor="utc">UTC</Label>
+              <div className="grid grid-cols-2 gap-4 items-center">
+                <Label htmlFor="fs-stopwatch">Show Stopwatch</Label>
+                <Switch id="fs-stopwatch" checked={fullscreenSettings.stopwatch} onCheckedChange={(c) => handleFullscreenSettingChange('stopwatch', c)} />
               </div>
-            </RadioGroup>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <Label>Clock Size</Label>
-            <div className="flex items-center gap-2">
-              <Slider value={[clockSize]} onValueChange={(value) => setClockSize(value[0])} min={50} max={150} step={10} />
-              <span>{clockSize}%</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="font-semibold">Full Screen Mode</h3>
-            <Separator />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <Label htmlFor="fs-primary-clock">Show Primary Clock</Label>
-            <Switch id="fs-primary-clock" checked={fullscreenSettings.primaryClock} onCheckedChange={(c) => handleFullscreenSettingChange('primaryClock', c)} />
-          </div>
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <Label htmlFor="fs-world-clocks">Show World Clocks</Label>
-            <Switch id="fs-world-clocks" checked={fullscreenSettings.worldClocks} onCheckedChange={(c) => handleFullscreenSettingChange('worldClocks', c)} />
-          </div>
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <Label htmlFor="fs-alarms">Show Alarms</Label>
-            <Switch id="fs-alarms" checked={fullscreenSettings.alarms} onCheckedChange={(c) => handleFullscreenSettingChange('alarms', c)} />
-          </div>
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <Label htmlFor="fs-stopwatch">Show Stopwatch</Label>
-            <Switch id="fs-stopwatch" checked={fullscreenSettings.stopwatch} onCheckedChange={(c) => handleFullscreenSettingChange('stopwatch', c)} />
-          </div>
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <Label htmlFor="fs-timer">Show Timer</Label>
-            <Switch id="fs-timer" checked={fullscreenSettings.timer} onCheckedChange={(c) => handleFullscreenSettingChange('timer', c)} />
-          </div>
-           <div className="grid grid-cols-2 gap-4 items-center">
-            <Label htmlFor="fs-converter">Show Converter</Label>
-            <Switch id="fs-converter" checked={fullscreenSettings.converter} onCheckedChange={(c) => handleFullscreenSettingChange('converter', c)} />
-          </div>
-           <div className="grid grid-cols-2 gap-4 items-center">
-            <Label htmlFor="fs-planner">Show Planner</Label>
-            <Switch id="fs-planner" checked={fullscreenSettings.planner} onCheckedChange={(c) => handleFullscreenSettingChange('planner', c)} />
-          </div>
-           <div className="grid grid-cols-2 gap-4 items-center">
-            <Label htmlFor="fs-calendar">Show Calendar</Label>
-            <Switch id="fs-calendar" checked={fullscreenSettings.calendar} onCheckedChange={(c) => handleFullscreenSettingChange('calendar', c)} />
-          </div>
+              <div className="grid grid-cols-2 gap-4 items-center">
+                <Label htmlFor="fs-timer">Show Timer</Label>
+                <Switch id="fs-timer" checked={fullscreenSettings.timer} onCheckedChange={(c) => handleFullscreenSettingChange('timer', c)} />
+              </div>
+              <div className="grid grid-cols-2 gap-4 items-center">
+                <Label htmlFor="fs-converter">Show Converter</Label>
+                <Switch id="fs-converter" checked={fullscreenSettings.converter} onCheckedChange={(c) => handleFullscreenSettingChange('converter', c)} />
+              </div>
+              <div className="grid grid-cols-2 gap-4 items-center">
+                <Label htmlFor="fs-planner">Show Planner</Label>
+                <Switch id="fs-planner" checked={fullscreenSettings.planner} onCheckedChange={(c) => handleFullscreenSettingChange('planner', c)} />
+              </div>
+              <div className="grid grid-cols-2 gap-4 items-center">
+                <Label htmlFor="fs-calendar">Show Calendar</Label>
+                <Switch id="fs-calendar" checked={fullscreenSettings.calendar} onCheckedChange={(c) => handleFullscreenSettingChange('calendar', c)} />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </ScrollArea>
   );
