@@ -1,18 +1,19 @@
-
 'use client';
 
-import { Calculator, Music, PenSquare, Gamepad2, Leaf, Combine, Clock, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import Link from "next/link";
-import { PlatformLink } from "./PlatformLink";
+import { PlatformCard } from "./PlatformCard";
+import Image from "next/image";
 
 const vibratomPlatforms = [
-    { name: 'Axiom', category: 'Calculators', icon: Calculator, href: 'https://axiom.vibratomstudios.com', color: 'bg-blue-500 hover:bg-blue-600', description: 'A versatile suite of calculators.' },
-    { name: 'Cadence', category: 'Music', icon: Music, href: 'https://cadence.vibratomstudios.com', color: 'bg-purple-500 hover:bg-purple-600', description: 'An intuitive platform for music learning.' },
-    { name: 'Lumina', category: 'Blog', icon: PenSquare, href: 'https://lumina.vibratomstudios.com', color: 'bg-green-500 hover:bg-green-600', description: 'Insights on productivity & creativity.' },
-    { name: 'NexusPlay', category: 'Games', icon: Gamepad2, href: 'https://nexusplay.vibratomstudios.com', color: 'bg-red-500 hover:bg-red-600', description: 'Engaging brain games to challenge your mind.' },
-    { name: 'Stillpoint', category: 'Meditation', icon: Leaf, href: 'https://stillpoint.vibratomstudios.com', color: 'bg-teal-500 hover:bg-teal-600', description: 'Powerful meditation tools for focus.' },
-    { name: 'Uniform', category: 'Converters', icon: Combine, href: 'https://uniform.vibratomstudios.com', color: 'bg-cyan-500 hover:bg-cyan-600', description: 'A universal file format tool.' },
-    { name: 'Tempusphere', category: 'Clock', icon: Clock, href: '/', color: 'bg-orange-500 hover:bg-orange-600', description: 'An advanced clock utility.' },
+    { name: 'Tempusphere', href: 'https://tempusphere.vibratomstudios.com/', logo: '/logos/tempusphere-logo.webp', description: 'An advanced clock utility designed for precision and flexibility.' },
+    { name: 'Uniform', href: 'https://uniform.vibratomstudios.com/', logo: '/logos/uniform-logo.webp', description: 'A universal file format tool that simplifies conversion and compatibility.' },
+    { name: 'Axiom', href: 'https://axiom.vibratomstudios.com/', logo: '/logos/axiom-logo.webp', description: 'A versatile suite of calculators for every complex problem.' },
+    { name: 'Cadence', href: 'https://cadence.vibratomstudios.com/', logo: '/logos/cadence-logo.webp', description: 'An intuitive music learning platform to master your favorite instrument.' },
+    { name: 'Stillpoint', href: 'https://stillpoint.vibratomstudios.com/', logo: '/logos/stillpoint-logo.webp', description: 'Powerful meditation tools to find your center and improve focus.' },
+    { name: 'Lumina', href: 'https://lumina.vibratomstudios.com/', logo: '/logos/lumina-logo.webp', description: 'A curated space for insightful blogs and articles on tech and creativity.' },
+    { name: 'SimplySub', href: 'https://simplysub.vibratomstudios.com/', logo: '/logos/simplysub-logo.webp', description: 'The fastest way to create, edit, and sync subtitles for any video.' },
+    { name: 'NexusPlay', href: 'https://nexusplay.vibratomstudios.com/', logo: '/logos/nexusplay-logo.webp', description: 'Engaging brain games designed to challenge and entertain your mind.' },
 ];
 
 export function Footer() {
@@ -22,13 +23,13 @@ export function Footer() {
 
                 <section className="mb-12 text-center">
                     <h2 className="text-3xl font-bold text-white mb-3">Explore the Vibratom Studios Ecosystem</h2>
-                    <p className="max-w-3xl mx-auto text-lg text-gray-400 mb-6">
+                    <p className="max-w-3xl mx-auto text-lg text-gray-400 mb-8">
                         Vibratom Studios is a comprehensive digital ecosystem designed to enhance every aspect of your creative and productive life.
                     </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 max-w-5xl mx-auto">
-                        {vibratomPlatforms.map(p => <PlatformLink key={p.name} {...p} />)}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                        {vibratomPlatforms.map(p => <PlatformCard key={p.name} {...p} />)}
                     </div>
-                     <Link href="https://www.vibratomstudios.com" target="_blank" rel="noopener noreferrer" className="text-lg text-pink-400 hover:text-pink-300 hover:underline mt-6 inline-block">
+                     <Link href="https://www.vibratomstudios.com" target="_blank" rel="noopener noreferrer" className="text-lg text-pink-400 hover:text-pink-300 hover:underline mt-8 inline-block">
                         Visit our main site at VibratomStudios.com
                     </Link>
                 </section>
