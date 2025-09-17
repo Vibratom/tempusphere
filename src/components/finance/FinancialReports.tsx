@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance, Transaction } from '@/contexts/FinanceContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
@@ -33,6 +33,11 @@ const getDateRange = (range: DateRange): { start: Date, end: Date } | null => {
 export function FinancialReports() {
     const { transactions } = useFinance();
     const [dateRange, setDateRange] = useState<DateRange>('this_month');
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const filteredTransactions = useMemo(() => {
         const range = getDateRange(dateRange);
@@ -100,6 +105,10 @@ export function FinancialReports() {
             totalLiabilitiesAndEquity: accountsPayable + equity,
         }
     }, [filteredTransactions, incomeStatement]);
+
+    if (!isClient) {
+        return null;
+    }
 
     return (
         <div className="flex flex-col gap-4">
@@ -223,4 +232,3 @@ export function FinancialReports() {
         </div>
     );
 }
-
