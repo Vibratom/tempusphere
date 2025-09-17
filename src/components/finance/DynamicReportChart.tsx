@@ -11,6 +11,7 @@ import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
 import { Card, CardContent } from '../ui/card';
+import { Input } from '../ui/input';
 
 const INVESTING_CATEGORIES = ['Investment Gain'];
 const FINANCING_EXPENSE_CATEGORIES = ['Interest Expense'];
@@ -59,6 +60,9 @@ const allMetrics = {
 export function DynamicReportChart() {
     const { transactions } = useFinance();
     const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['sales', 'netIncome', 'totalAssets']);
+    const [yMin, setYMin] = useState<string | number>('auto');
+    const [yMax, setYMax] = useState<string | number>('auto');
+
 
     const financialData = useMemo(() => {
         // --- Income Statement Calcs ---
@@ -138,7 +142,10 @@ export function DynamicReportChart() {
                                 height={1} // Recharts requires a height > 0 to render ticks
                                 interval={0}
                             />
-                            <YAxis tickFormatter={(value: number) => `$${(value / 1000).toFixed(0)}k`} />
+                            <YAxis 
+                                tickFormatter={(value: number) => `$${(value / 1000).toFixed(0)}k`}
+                                domain={[yMin === 'auto' ? 'auto' : Number(yMin), yMax === 'auto' ? 'auto' : Number(yMax)]}
+                            />
                             <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
                             <ReferenceLine y={0} stroke="hsl(var(--border))" />
                             <Bar dataKey="value" radius={[4, 4, 0, 0]}>
@@ -155,6 +162,20 @@ export function DynamicReportChart() {
                     <CardContent className="p-4">
                         <ScrollArea className="h-96">
                            <div className="space-y-4 pr-4">
+                                <div className="space-y-2">
+                                     <h4 className="font-bold">Axis Range</h4>
+                                     <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <Label htmlFor="yMin" className="text-xs">Min</Label>
+                                            <Input id="yMin" type="number" placeholder="auto" value={yMin} onChange={e => setYMin(e.target.value || 'auto')} />
+                                        </div>
+                                         <div>
+                                            <Label htmlFor="yMax" className="text-xs">Max</Label>
+                                            <Input id="yMax" type="number" placeholder="auto" value={yMax} onChange={e => setYMax(e.target.value || 'auto')} />
+                                        </div>
+                                     </div>
+                                </div>
+
                                 <div>
                                     <h4 className="font-bold mb-2">Income Statement</h4>
                                     {allMetrics.income.map(metric => (
@@ -190,3 +211,4 @@ export function DynamicReportChart() {
         </div>
     );
 }
+
