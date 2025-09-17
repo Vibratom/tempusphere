@@ -6,7 +6,7 @@ import { useFinance, Transaction, Budget } from '@/contexts/FinanceContext';
 import { useProjects } from '@/contexts/ProjectsContext';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Landmark, TrendingUp, PieChart, Plus, Trash2, Edit, MoreVertical, Target, BarChart, LineChart } from 'lucide-react';
+import { Landmark, TrendingUp, PieChart, Plus, Trash2, Edit, MoreVertical, Target } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { Progress } from '../ui/progress';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer } from '@/components/ui/chart';
 import { Pie, PieChart as RechartsPieChart, Bar, BarChart as RechartsBarChart, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
 const CHART_COLORS = [
@@ -289,19 +289,15 @@ export function FinanceApp() {
   const { monthlySpendingPerCategory, historicalData } = useMemo(() => {
     const spending: Record<string, number> = {};
     const history: Record<string, { income: number, expense: number }> = {};
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
     const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5));
 
     transactions.forEach(t => {
         const tDate = parseISO(t.date);
         
-        // For pie chart (current month spending)
-        if (t.type === 'expense' && tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
+        if (t.type === 'expense') {
             spending[t.category] = (spending[t.category] || 0) + t.amount;
         }
 
-        // For bar chart (last 6 months)
         if(tDate >= sixMonthsAgo) {
             const monthKey = format(tDate, 'MMM yyyy');
             if(!history[monthKey]) history[monthKey] = { income: 0, expense: 0 };
@@ -344,11 +340,12 @@ export function FinanceApp() {
     }
   };
 
-
   const handleOpenDialog = (transaction: Transaction | null = null) => {
       setSelectedTransaction(transaction);
       setIsDialogOpen(true);
   }
+
+  if (!isClient) return null;
 
   return (
     <div className="w-full max-w-7xl mx-auto">
@@ -365,8 +362,8 @@ export function FinanceApp() {
                 <Landmark className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">${isClient ? totalBalance.toFixed(2) : '0.00'}</div>
-                {isClient && <p className="text-xs text-muted-foreground">Across {transactions.length} transactions</p>}
+                <div className="text-2xl font-bold">${totalBalance.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">Across {transactions.length} transactions</p>
             </CardContent>
         </Card>
         <Card>
@@ -375,8 +372,8 @@ export function FinanceApp() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">${isClient ? monthlySpending.toFixed(2) : '0.00'}</div>
-                {isClient && <p className="text-xs text-muted-foreground">In {format(new Date(), 'MMMM')}</p>}
+                <div className="text-2xl font-bold">${monthlySpending.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">In {format(new Date(), 'MMMM')}</p>
             </CardContent>
         </Card>
         <Card>
@@ -385,7 +382,7 @@ export function FinanceApp() {
                 <PieChart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                {isClient && monthlyBudgetTotal > 0 ? (
+                {monthlyBudgetTotal > 0 ? (
                     <>
                       <div className="text-2xl font-bold">${monthlySpending.toFixed(2)} / ${monthlyBudgetTotal.toFixed(2)}</div>
                       <Progress value={monthlyBudgetProgress} className="mt-2" />
@@ -393,7 +390,7 @@ export function FinanceApp() {
                 ) : (
                    <>
                     <div className="text-2xl font-bold">Not Set</div>
-                    {isClient && <p className="text-xs text-muted-foreground">Create a budget to get started</p>}
+                    <p className="text-xs text-muted-foreground">Create a budget to get started</p>
                    </>
                 )}
             </CardContent>
@@ -473,7 +470,7 @@ export function FinanceApp() {
                   </div>
               </CardHeader>
               <CardContent>
-                  {isClient && transactions.length > 0 ? (
+                  {transactions.length > 0 ? (
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -507,15 +504,15 @@ export function FinanceApp() {
                         ))}
                       </TableBody>
                     </Table>
-                  ) : isClient ? (
+                  ) : (
                      <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
                         <Landmark className="w-16 h-16 mb-4" />
                         <h3 className="text-xl font-semibold">No Transactions Yet</h3>
                         <p className="text-sm">Add your first transaction to see it here.</p>
                     </div>
-                  ) : null}
+                  )}
               </CardContent>
-              {isClient && transactions.length > 0 && (
+              {transactions.length > 0 && (
                 <CardFooter>
                     <p className="text-xs text-muted-foreground">Showing all {transactions.length} transactions.</p>
                 </CardFooter>
