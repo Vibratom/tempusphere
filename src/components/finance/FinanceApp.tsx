@@ -194,7 +194,7 @@ export function FinanceApp() {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">${isClient ? totalBalance.toFixed(2) : '0.00'}</div>
-                <p className="text-xs text-muted-foreground">Across {transactions.length} transactions</p>
+                {isClient && <p className="text-xs text-muted-foreground">Across {transactions.length} transactions</p>}
             </CardContent>
         </Card>
         <Card>
@@ -277,7 +277,7 @@ export function FinanceApp() {
                 </div>
               )}
           </CardContent>
-          {transactions.length > 0 && (
+          {transactions.length > 0 && isClient && (
             <CardFooter>
                 <p className="text-xs text-muted-foreground">Showing all {transactions.length} transactions.</p>
             </CardFooter>
