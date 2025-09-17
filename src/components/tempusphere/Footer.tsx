@@ -49,9 +49,9 @@ export function Footer() {
                      <div className="space-y-4">
                         <h3 className="text-xl font-semibold text-white">Have a feature request?</h3>
                         <p className="text-gray-400">We'd love to hear from you! Email us with your ideas to help make Tempusphere even better.</p>
-                        <a href="mailto:simplysub@vibratomstudios.com" className="inline-flex items-center justify-center md:justify-start gap-2 text-white hover:text-gray-300 transition-colors">
+                        <a href="mailto:tempusphere@vibratomstudios.com" className="inline-flex items-center justify-center md:justify-start gap-2 text-white hover:text-gray-300 transition-colors">
                             <Mail className="h-5 w-5" />
-                            simplysub@vibratomstudios.com
+                            tempusphere@vibratomstudios.com
                         </a>
                     </div>
                 </div>
