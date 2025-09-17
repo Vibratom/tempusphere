@@ -19,35 +19,8 @@ export default function ProjectsLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
-  const activeTool = useMemo(() => pathname.split('/').pop() || 'board', [pathname]);
+  const activeTool = useMemo(() => pathname.split('/')[2] || '', [pathname]);
 
-  // If we are at the root /projects page, don't show the tabbed layout.
-  // The page.tsx for /projects will show the cards.
-  if (pathname === '/projects') {
-    return (
-       <Suspense fallback={<div className="w-full h-screen flex items-center justify-center">Loading Page...</div>}>
-          <SettingsProvider>
-            <CalendarProvider>
-              <ChecklistProvider>
-                <ProjectsProvider>
-                  <FinanceProvider>
-                    <div className="min-h-screen w-full bg-background flex flex-col">
-                        <Header />
-                        <main className="flex-1 flex flex-col">
-                            {children}
-                        </main>
-                        <Footer />
-                    </div>
-                  </FinanceProvider>
-                </ProjectsProvider>
-              </ChecklistProvider>
-            </CalendarProvider>
-          </SettingsProvider>
-       </Suspense>
-    );
-  }
-
-  // This is for /projects/[tool] pages
   return (
     <Suspense fallback={<div className="w-full h-screen flex items-center justify-center">Loading Page...</div>}>
       <SettingsProvider>
@@ -62,7 +35,7 @@ export default function ProjectsLayout({
                           <div className="w-full max-w-7xl flex flex-col flex-1 gap-4">
                             <ProjectNav activeTool={activeTool} />
                              <Card className="flex-1">
-                                <CardContent className="p-4 md:p-6 h-full">
+                                <CardContent className="p-0 md:p-0 h-full">
                                   {children}
                                 </CardContent>
                             </Card>

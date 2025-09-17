@@ -63,7 +63,7 @@ const familiesHistoryData = [
     { year: '13/14', value: 1100 },
     { year: '14/15', value: 1500 },
     { year: '15/16', value: 1600 },
-    { year: '16/17', value: 2100 },
+    { year: '17/18', value: 2100 },
     { year: '17/18', value: 1200 },
     { year: '18/19', value: 900 },
 ];
@@ -80,7 +80,7 @@ const babiesHistoryData = [
 const COLORS = ['#16a34a', '#3b82f6', '#ef4444', '#f97316', '#8b5cf6'];
 
 
-export function ProjectListView() {
+export function ProjectDashboard() {
   return (
     <div className="p-4 md:p-6 lg:p-8 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
       

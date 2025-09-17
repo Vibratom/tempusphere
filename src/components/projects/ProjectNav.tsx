@@ -3,13 +3,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { KanbanSquare, List, BarChartHorizontal, DraftingCompass, Table, ListChecks, Calendar, Spline, Brain, GitCommit, Landmark } from 'lucide-react';
+import { KanbanSquare, LayoutDashboard, BarChartHorizontal, DraftingCompass, Table, ListChecks, Calendar, GitCommit, Brain, Landmark, Wrench } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
-    { value: 'calendar', icon: Calendar, label: 'Calendar', href: '/projects/calendar' },
+    { value: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', href: '/projects' },
     { value: 'board', icon: KanbanSquare, label: 'Board', href: '/projects/board' },
-    { value: 'list', icon: List, label: 'List', href: '/projects/list' },
+    { value: 'calendar', icon: Calendar, label: 'Calendar', href: '/projects/calendar' },
     { value: 'gantt', icon: BarChartHorizontal, label: 'Gantt', href: '/projects/gantt' },
     { value: 'budget', icon: Landmark, label: 'Budget', href: '/projects/budget' },
     { value: 'spreadsheet', icon: Table, label: 'Spreadsheet', href: '/projects/spreadsheet' },
@@ -17,6 +17,7 @@ const tools = [
     { value: 'canvas', icon: DraftingCompass, label: 'Canvas', href: '/projects/canvas' },
     { value: 'chart', icon: GitCommit, label: 'Chart', href: '/projects/chart' },
     { value: 'mindmap', icon: Brain, label: 'Mind Map', href: '/projects/mindmap' },
+    { value: 'tools', icon: Wrench, label: 'All Tools', href: '/projects/tools' },
 ];
 
 const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: string, href: string, icon: React.ElementType, children: React.ReactNode }) => (
@@ -29,7 +30,7 @@ const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: s
 );
 
 export function ProjectNav({ activeTool }: { activeTool: string }) {
-    const adjustedActiveTool = activeTool;
+    const adjustedActiveTool = activeTool === '' ? 'dashboard' : activeTool;
     return (
         <Tabs defaultValue={adjustedActiveTool} value={adjustedActiveTool} className="flex justify-center">
             <TabsList className="h-auto">
