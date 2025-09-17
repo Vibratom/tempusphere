@@ -28,15 +28,15 @@ export default function ProjectsPage() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {tools.map((tool) => (
-                <Link key={tool.value} href={tool.href} className="group">
-                    <Card className="h-full flex flex-col bg-background/50 hover:bg-background transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1">
+                <Link key={tool.value} href={tool.href} className="group flex">
+                    <Card className="w-full flex flex-col bg-background/50 hover:bg-background transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1">
                         <CardHeader className="p-4">
                            <div className="p-3 bg-primary/10 text-primary rounded-lg mb-3 inline-block group-hover:scale-110 transition-transform duration-300">
                              <tool.icon className="w-6 h-6" />
                            </div>
                            <CardTitle className="text-lg">{tool.label}</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
+                        <CardContent className="p-4 pt-0 flex-1">
                            <CardDescription className="text-sm">{tool.description}</CardDescription>
                         </CardContent>
                     </Card>
