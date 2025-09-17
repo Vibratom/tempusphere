@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -124,7 +122,7 @@ const getLinkSyntax = (type: VisualLink['type'], text: string) => {
         case 'arrow':
             return `-- ${linkText} -->`;
         case 'line':
-            return `--- |${linkText}|`;
+            return `---|${linkText}|---`;
         case 'dotted':
             return`-. ${linkText} .->`;
         default:
@@ -135,7 +133,7 @@ const getLinkSyntax = (type: VisualLink['type'], text: string) => {
 
 // --- Component ---
 
-export function FlowchartView() {
+export function ChartEditor() {
   const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v26', defaultCode);
   const [visualRows, setVisualRows] = useLocalStorage<VisualRow[]>('flowchart:visual-rows-v3', [createNewVisualRow()]);
   
@@ -286,7 +284,7 @@ export function FlowchartView() {
         <div className="grid md:grid-cols-2 gap-4">
           <Card>
               <CardHeader>
-                  <CardTitle>Flowchart Editor</CardTitle>
+                  <CardTitle>Chart Editor</CardTitle>
                   <CardDescription>Use the visual editor or Mermaid syntax to create diagrams. Your work is saved automatically.</CardDescription>
               </CardHeader>
           </Card>

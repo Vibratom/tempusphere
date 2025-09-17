@@ -2,14 +2,14 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { ScrollArea } from '../ui/scroll-area';
 import { useTheme } from 'next-themes';
 import { AlertCircle, Code, Loader2, Pencil, Plus, Trash2, Download, ArrowDown } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 // --- Types and Constants ---
 
 type EditorMode = 'visual' | 'code';
+type DiagramType = 'flowchart' | 'unknown';
 
 interface VisualNode {
   id: string;
@@ -123,7 +124,7 @@ const getLinkSyntax = (type: VisualLink['type'], text: string) => {
         case 'arrow':
             return `-- ${linkText} -->`;
         case 'line':
-            return `--- |${linkText}|`;
+            return `---|${linkText}|---`;
         case 'dotted':
             return`-. ${linkText} .->`;
         default:
@@ -135,8 +136,8 @@ const getLinkSyntax = (type: VisualLink['type'], text: string) => {
 // --- Component ---
 
 export function ChartEditor() {
-  const [savedCode, setSavedCode] = useLocalStorage('diagram:mermaid-code-v1', defaultCode);
-  const [visualRows, setVisualRows] = useLocalStorage<VisualRow[]>('diagram:visual-rows-v1', [createNewVisualRow()]);
+  const [savedCode, setSavedCode] = useLocalStorage('flowchart:mermaid-code-v26', defaultCode);
+  const [visualRows, setVisualRows] = useLocalStorage<VisualRow[]>('flowchart:visual-rows-v3', [createNewVisualRow()]);
   
   const [code, setCode] = useState(savedCode);
   const [svg, setSvg] = useState('');
@@ -144,6 +145,12 @@ export function ChartEditor() {
   const [isClient, setIsClient] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('visual');
   const { toast } = useToast();
+  
+  const diagramType = useMemo((): DiagramType => {
+      const trimmedCode = code.trim().toLowerCase();
+      if (trimmedCode.startsWith('flowchart') || trimmedCode.startsWith('graph')) return 'flowchart';
+      return 'unknown';
+  }, [code]);
 
   useEffect(() => {
     setIsClient(true);
@@ -260,14 +267,14 @@ export function ChartEditor() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'diagram.svg';
+    link.download = 'flowchart.svg';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     toast({
       title: "Export Successful",
-      description: "Your diagram has been downloaded as an SVG file.",
+      description: "Your flowchart has been downloaded as an SVG file.",
     });
   };
 
