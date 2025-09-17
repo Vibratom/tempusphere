@@ -176,6 +176,51 @@ export function FinanceApp() {
                     </CardContent>
                 </Card>
             </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Income by Category</CardTitle>
+                        <CardDescription>Breakdown of your income sources.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-center">
+                        <ChartContainer config={{}} className="h-64 w-full">
+                            <ResponsiveContainer>
+                                <PieChart>
+                                    <Tooltip content={<ChartTooltipContent hideLabel />} />
+                                    <Pie data={incomeStatement.incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
+                                         {incomeStatement.incomeChartData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Legend iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Expenses by Category</CardTitle>
+                        <CardDescription>Breakdown of your spending.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-center">
+                        <ChartContainer config={{}} className="h-64 w-full">
+                            <ResponsiveContainer>
+                                <PieChart>
+                                    <Tooltip content={<ChartTooltipContent hideLabel />} />
+                                    <Pie data={incomeStatement.expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
+                                        {incomeStatement.expenseChartData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Legend iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
+                    </CardContent>
+                </Card>
+            </div>
             
              <Card>
                 <CardHeader>
@@ -199,102 +244,51 @@ export function FinanceApp() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Income Statement</CardTitle>
-                    <CardDescription>A summary of revenues and expenses for all time.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Category</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            <TableRow className="font-bold bg-muted/50">
-                                <TableCell>Income</TableCell>
-                                <TableCell></TableCell>
-                            </TableRow>
-                            {Object.entries(incomeStatement.incomeByCategory).map(([cat, amt]) => (
-                                <TableRow key={`inc-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell></TableRow>
-                            ))}
-                            <TableRow className="font-semibold border-t">
-                                <TableCell className="pl-4">Total Income</TableCell>
-                                <TableCell className="text-right font-mono text-green-500">${incomeStatement.totalIncome.toFixed(2)}</TableCell>
-                            </TableRow>
-                            
-                            <TableRow className="font-bold bg-muted/50">
-                                <TableCell>Expenses</TableCell>
-                                <TableCell></TableCell>
-                            </TableRow>
-                             {Object.entries(incomeStatement.expensesByCategory).map(([cat, amt]) => (
-                                <TableRow key={`exp-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell></TableRow>
-                            ))}
-                            <TableRow className="font-semibold border-t">
-                                <TableCell className="pl-4">Total Expenses</TableCell>
-                                <TableCell className="text-right font-mono text-red-500">${incomeStatement.totalExpenses.toFixed(2)}</TableCell>
-                            </TableRow>
-
-                            <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
-                                <TableCell>Net Income</TableCell>
-                                <TableCell className="text-right font-mono">${incomeStatement.netIncome.toFixed(2)}</TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-
             <div className="grid md:grid-cols-2 gap-4">
-               <Card>
-                    <CardHeader>
-                        <CardTitle>Cash Flow Statement</CardTitle>
-                        <CardDescription>Movement of cash from paid transactions.</CardDescription>
-                    </CardHeader>
-                     <CardContent>
-                        <Table>
-                           <TableBody>
-                                <TableRow>
-                                    <TableCell className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Cash Inflows</TableCell>
-                                    <TableCell className="text-right font-mono text-green-500">+${cashFlowStatement.cashIn.toFixed(2)}</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="flex items-center gap-2"><ArrowDown className="text-red-500"/> Cash Outflows</TableCell>
-                                    <TableCell className="text-right font-mono text-red-500">-${cashFlowStatement.cashOut.toFixed(2)}</TableCell>
-                                </TableRow>
-                                <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
-                                    <TableCell>Net Cash Flow</TableCell>
-                                    <TableCell className="text-right font-mono">${cashFlowStatement.netCashFlow.toFixed(2)}</TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Balance Sheet (Simplified)</CardTitle>
-                        <CardDescription>A snapshot of assets and liabilities.</CardDescription>
+                        <CardTitle>Cash Flow</CardTitle>
+                        <CardDescription>Movement of paid transactions.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                           <TableBody>
-                                <TableRow className="font-bold bg-muted/50"><TableCell>Assets</TableCell><TableCell></TableCell></TableRow>
-                                <TableRow><TableCell className="pl-6">Accounts Receivable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
-                                <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Assets</TableCell><TableCell className="text-right font-mono text-green-500">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
-                                
-                                <TableRow className="font-bold bg-muted/50"><TableCell>Liabilities & Equity</TableCell><TableCell></TableCell></TableRow>
-                                <TableRow><TableCell className="pl-6">Accounts Payable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalLiabilities.toFixed(2)}</TableCell></TableRow>
-                                <TableRow><TableCell className="pl-6">Retained Earnings (Net Income)</TableCell><TableCell className="text-right font-mono">${balanceSheet.equity.toFixed(2)}</TableCell></TableRow>
-                                <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Liabilities & Equity</TableCell><TableCell className="text-right font-mono text-red-500">${balanceSheet.totalLiabilitiesAndEquity.toFixed(2)}</TableCell></TableRow>
-                            </TableBody>
-                        </Table>
+                         <ChartContainer config={{}} className="h-64 w-full">
+                            <ResponsiveContainer>
+                                <BarChart data={cashFlowStatement.chartData} >
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                                    <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
+                                    <Tooltip content={<ChartTooltipContent />} />
+                                    <Bar dataKey="value" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Balance Sheet</CardTitle>
+                        <CardDescription>Assets vs. Liabilities & Equity</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ChartContainer config={{}} className="h-64 w-full">
+                            <ResponsiveContainer>
+                                <BarChart data={balanceSheet.chartData} >
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                                    <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
+                                    <Tooltip content={<ChartTooltipContent />} />
+                                    <Bar dataKey="value" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
             </div>
         </div>
     );
 }
+
+    
 
     
 
