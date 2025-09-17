@@ -13,92 +13,39 @@ interface ReportProps {
     dateRange: 'this_month' | 'last_month' | 'last_90_days' | 'this_year' | 'all_time';
 }
 
-const placeholderData = {
-    assets: {
-        current: {
-            inventory: 15000,
-            prepaidExpense: 4000,
-            investments: 10000,
-        },
-        property: {
-            land: 24300,
-            buildings: 250000,
-            equipment: 50000,
-            depreciation: -5000,
-        },
-        other: {
-            intangible: 4000,
-            amortization: -200,
-        }
-    },
-    liabilities: {
-        current: {
-            notes: 10000,
-            accruedExpenses: 5000,
-            deferredRevenue: 2000,
-        },
-        longTermDebt: 200000,
-    },
-    equity: {
-        commonStock: 10000,
-        additionalCapital: 20000,
-        treasuryStock: -2000
-    }
-};
-
-
 export function BalanceSheet({ transactions, dateRange }: ReportProps) {
     const range = getDateRange(dateRange);
 
     const dynamicData = useMemo(() => {
-        const cash = transactions
+        const relevantTransactions = (range === null) 
+            ? transactions 
+            : transactions.filter(t => {
+                const tDate = new Date(t.date);
+                return tDate >= range.start && tDate <= range.end;
+              });
+
+        const cash = relevantTransactions
             .filter(t => t.status === 'paid')
             .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
 
-        const receivables = transactions
+        const receivables = relevantTransactions
             .filter(t => t.type === 'income' && t.status !== 'paid')
             .reduce((sum, t) => sum + t.amount, 0);
 
-        const payables = transactions
+        const payables = relevantTransactions
             .filter(t => t.type === 'expense' && t.status !== 'paid')
             .reduce((sum, t) => sum + t.amount, 0);
             
-        const retainedEarnings = transactions
+        const retainedEarnings = relevantTransactions
+            .filter(t => t.status === 'paid') // Only paid transactions affect retained earnings
             .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
 
         return { cash, receivables, payables, retainedEarnings };
-    }, [transactions]);
+    }, [transactions, dateRange, range]);
     
-    const data = {
-        assets: {
-            current: {
-                cash: dynamicData.cash,
-                receivables: dynamicData.receivables,
-                ...placeholderData.assets.current
-            },
-            ...placeholderData.assets
-        },
-        liabilities: {
-            current: {
-                payable: dynamicData.payables,
-                ...placeholderData.liabilities.current
-            },
-            ...placeholderData.liabilities
-        },
-        equity: {
-            retainedEarnings: dynamicData.retainedEarnings,
-            ...placeholderData.equity,
-        }
-    };
-
-    const totalCurrentAssets = Object.values(data.assets.current).reduce((a, b) => a + b, 0);
-    const totalProperty = Object.values(data.assets.property).reduce((a, b) => a + b, 0);
-    const totalOtherAssets = Object.values(data.assets.other).reduce((a, b) => a + b, 0);
-    const totalAssets = totalCurrentAssets + totalProperty + totalOtherAssets;
-    
-    const totalCurrentLiabilities = Object.values(data.liabilities.current).reduce((a, b) => a + b, 0);
-    const totalLiabilities = totalCurrentLiabilities + data.liabilities.longTermDebt;
-    const totalEquity = Object.values(data.equity).reduce((a, b) => a + b, 0);
+    const totalAssets = dynamicData.cash + dynamicData.receivables;
+    const totalLiabilities = dynamicData.payables;
+    const totalEquity = dynamicData.retainedEarnings;
     const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
 
     return (
@@ -115,25 +62,10 @@ export function BalanceSheet({ transactions, dateRange }: ReportProps) {
                     <Table>
                         <TableBody>
                             <TableRow><TableCell className="font-semibold">Current assets</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Cash and cash equivalents</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.assets.current.cash)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Accounts receivable</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.assets.current.receivables)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Inventory</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.assets.current.inventory)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Prepaid expense</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.assets.current.prepaidExpense)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Investments</TableCell><TableCell className="text-right font-mono border-b">{formatCurrency(data.assets.current.investments)}</TableCell></TableRow>
-                            <TableRow><TableCell className="font-semibold pl-4">Total current assets</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(totalCurrentAssets)}</TableCell></TableRow>
+                            <TableRow><TableCell className="pl-6">Cash and cash equivalents</TableCell><TableCell className="text-right font-mono">{formatCurrency(dynamicData.cash)}</TableCell></TableRow>
+                            <TableRow><TableCell className="pl-6">Accounts receivable</TableCell><TableCell className="text-right font-mono border-b">{formatCurrency(dynamicData.receivables)}</TableCell></TableRow>
+                            <TableRow><TableCell className="font-semibold pl-4">Total current assets</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(totalAssets)}</TableCell></TableRow>
                             
-                            <TableRow><TableCell className="font-semibold pt-4">Property and equipment</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Land</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.assets.property.land)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Buildings and improvements</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.assets.property.buildings)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Equipment</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.assets.property.equipment)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Less accumulated depreciation</TableCell><TableCell className="text-right font-mono border-b">({formatCurrency(Math.abs(data.assets.property.depreciation))})</TableCell></TableRow>
-                            <TableRow><TableCell className="font-semibold pl-4">Total property and equipment</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(totalProperty)}</TableCell></TableRow>
-
-                            <TableRow><TableCell className="font-semibold pt-4">Other assets</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Intangible assets</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.assets.other.intangible)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Less accumulated amortization</TableCell><TableCell className="text-right font-mono border-b">({formatCurrency(Math.abs(data.assets.other.amortization))})</TableCell></TableRow>
-                            <TableRow><TableCell className="font-semibold pl-4">Total other assets</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(totalOtherAssets)}</TableCell></TableRow>
-
                             <TableRow className="bg-muted"><TableCell className="font-bold text-lg">Total assets</TableCell><TableCell className="text-right font-mono font-bold text-lg border-t-4 border-double border-foreground">{formatCurrency(totalAssets)}</TableCell></TableRow>
                         </TableBody>
                     </Table>
@@ -143,23 +75,14 @@ export function BalanceSheet({ transactions, dateRange }: ReportProps) {
                     <Table>
                         <TableBody>
                             <TableRow><TableCell className="font-semibold">Current liabilities</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Accounts payable</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.liabilities.current.payable)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Notes payable</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.liabilities.current.notes)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Accrued expenses</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.liabilities.current.accruedExpenses)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Deferred revenue</TableCell><TableCell className="text-right font-mono border-b">{formatCurrency(data.liabilities.current.deferredRevenue)}</TableCell></TableRow>
-                            <TableRow><TableCell className="font-semibold pl-4">Total current liabilities</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(totalCurrentLiabilities)}</TableCell></TableRow>
-
-                            <TableRow><TableCell className="font-semibold pt-4">Long-term debt</TableCell><TableCell className="text-right font-mono font-semibold border-b">{formatCurrency(data.liabilities.longTermDebt)}</TableCell></TableRow>
+                            <TableRow><TableCell className="pl-6">Accounts payable</TableCell><TableCell className="text-right font-mono border-b">{formatCurrency(dynamicData.payables)}</TableCell></TableRow>
                             <TableRow><TableCell className="font-bold">Total liabilities</TableCell><TableCell className="text-right font-mono font-bold">{formatCurrency(totalLiabilities)}</TableCell></TableRow>
 
                             <TableRow><TableCell className="font-semibold pt-4">Shareholders' Equity</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Common stock</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.equity.commonStock)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Additional paid-in capital</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.equity.additionalCapital)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Retained earnings</TableCell><TableCell className="text-right font-mono">{formatCurrency(data.equity.retainedEarnings)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Treasury stock</TableCell><TableCell className="text-right font-mono border-b">({formatCurrency(Math.abs(data.equity.treasuryStock))})</TableCell></TableRow>
+                            <TableRow><TableCell className="pl-6">Retained earnings</TableCell><TableCell className="text-right font-mono border-b">{formatCurrency(dynamicData.retainedEarnings)}</TableCell></TableRow>
                             <TableRow><TableCell className="font-semibold pl-4">Total shareholders' equity</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(totalEquity)}</TableCell></TableRow>
 
-                            <TableRow className="bg-muted"><TableCell className="font-bold text-lg">Total liabilities and shareholders' equity</TableCell><TableCell className="text-right font-mono font-bold text-lg border-t-4 border-double border-foreground">{formatCurrency(totalLiabilitiesAndEquity)}</TableCell></TableRow>
+                            <TableRow className="bg-muted"><TableCell className="font-bold text-lg">Total liabilities and equity</TableCell><TableCell className="text-right font-mono font-bold text-lg border-t-4 border-double border-foreground">{formatCurrency(totalLiabilitiesAndEquity)}</TableCell></TableRow>
                         </TableBody>
                     </Table>
                  </div>
