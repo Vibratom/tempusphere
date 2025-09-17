@@ -74,17 +74,34 @@ export function FinancialReports() {
     }, [filteredTransactions]);
 
     const cashFlowStatement = useMemo(() => {
-        let cashIn = 0;
-        let cashOut = 0;
+        const paidTransactions = filteredTransactions.filter(t => t.status === 'paid');
         
-        filteredTransactions.forEach(t => {
-            if (t.status === 'paid') {
-                if (t.type === 'income') cashIn += t.amount;
-                else cashOut += t.amount;
-            }
-        });
+        const netEarnings = paidTransactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
 
-        return { cashIn, cashOut, netCashFlow: cashIn - cashOut };
+        const operatingExpenses = paidTransactions
+            .filter(t => t.type === 'expense' && !['Investment', 'Equipment', 'Loan', 'Financing'].includes(t.category))
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const netCashFromOps = netEarnings - operatingExpenses;
+
+        const investingCashFlow = paidTransactions
+            .filter(t => t.type === 'expense' && ['Investment', 'Equipment'].includes(t.category))
+            .reduce((sum, t) => sum + t.amount, 0);
+        
+        const financingCashFlow = paidTransactions
+            .filter(t => t.type === 'expense' && ['Loan', 'Financing'].includes(t.category))
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        return { 
+            netEarnings, 
+            operatingExpenses, 
+            netCashFromOps, 
+            investingCashFlow, 
+            financingCashFlow,
+            netCashFlow: netCashFromOps - investingCashFlow - financingCashFlow
+        };
     }, [filteredTransactions]);
     
     const balanceSheet = useMemo(() => {
@@ -137,55 +154,54 @@ export function FinancialReports() {
                 </CardHeader>
             </Card>
             
-            <Card>
-                <CardHeader>
-                    <CardTitle>Income Statement</CardTitle>
-                    <CardDescription>A summary of revenues and expenses over the selected period.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Category</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            <TableRow className="font-bold bg-muted/50">
-                                <TableCell>Income</TableCell>
-                                <TableCell></TableCell>
-                            </TableRow>
-                            {Object.entries(incomeStatement.incomeByCategory).map(([cat, amt]) => (
-                                <TableRow key={`inc-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell></TableRow>
-                            ))}
-                            <TableRow className="font-semibold border-t">
-                                <TableCell className="pl-4">Total Income</TableCell>
-                                <TableCell className="text-right font-mono text-green-500">${incomeStatement.totalIncome.toFixed(2)}</TableCell>
-                            </TableRow>
-                            
-                            <TableRow className="font-bold bg-muted/50">
-                                <TableCell>Expenses</TableCell>
-                                <TableCell></TableCell>
-                            </TableRow>
-                             {Object.entries(incomeStatement.expensesByCategory).map(([cat, amt]) => (
-                                <TableRow key={`exp-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell></TableRow>
-                            ))}
-                            <TableRow className="font-semibold border-t">
-                                <TableCell className="pl-4">Total Expenses</TableCell>
-                                <TableCell className="text-right font-mono text-red-500">${incomeStatement.totalExpenses.toFixed(2)}</TableCell>
-                            </TableRow>
-
-                            <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
-                                <TableCell>Net Income</TableCell>
-                                <TableCell className="text-right font-mono">${incomeStatement.netIncome.toFixed(2)}</TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-
-
             <div className="grid md:grid-cols-2 gap-4">
+                <Card className="md:col-span-2">
+                    <CardHeader>
+                        <CardTitle>Income Statement</CardTitle>
+                        <CardDescription>A summary of revenues and expenses over the selected period.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Category</TableHead>
+                                    <TableHead className="text-right">Amount</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                <TableRow className="font-bold bg-muted/50">
+                                    <TableCell>Income</TableCell>
+                                    <TableCell></TableCell>
+                                </TableRow>
+                                {Object.entries(incomeStatement.incomeByCategory).map(([cat, amt]) => (
+                                    <TableRow key={`inc-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell></TableRow>
+                                ))}
+                                <TableRow className="font-semibold border-t">
+                                    <TableCell className="pl-4">Total Income</TableCell>
+                                    <TableCell className="text-right font-mono text-green-500">${incomeStatement.totalIncome.toFixed(2)}</TableCell>
+                                </TableRow>
+                                
+                                <TableRow className="font-bold bg-muted/50">
+                                    <TableCell>Expenses</TableCell>
+                                    <TableCell></TableCell>
+                                </TableRow>
+                                 {Object.entries(incomeStatement.expensesByCategory).map(([cat, amt]) => (
+                                    <TableRow key={`exp-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell></TableRow>
+                                ))}
+                                <TableRow className="font-semibold border-t">
+                                    <TableCell className="pl-4">Total Expenses</TableCell>
+                                    <TableCell className="text-right font-mono text-red-500">${incomeStatement.totalExpenses.toFixed(2)}</TableCell>
+                                </TableRow>
+
+                                <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
+                                    <TableCell>Net Income</TableCell>
+                                    <TableCell className="text-right font-mono">${incomeStatement.netIncome.toFixed(2)}</TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+
                 <Card>
                     <CardHeader>
                         <CardTitle>Cash Flow Statement</CardTitle>
@@ -194,14 +210,17 @@ export function FinancialReports() {
                      <CardContent>
                         <Table>
                            <TableBody>
-                                <TableRow>
-                                    <TableCell className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Cash Inflows</TableCell>
-                                    <TableCell className="text-right font-mono text-green-500">+${cashFlowStatement.cashIn.toFixed(2)}</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="flex items-center gap-2"><ArrowDown className="text-red-500"/> Cash Outflows</TableCell>
-                                    <TableCell className="text-right font-mono text-red-500">-${cashFlowStatement.cashOut.toFixed(2)}</TableCell>
-                                </TableRow>
+                                <TableRow className="font-bold bg-muted/50"><TableCell colSpan={2}>Cash Flow From Operations</TableCell></TableRow>
+                                <TableRow><TableCell className="pl-6">Net Earnings</TableCell><TableCell className="text-right font-mono">${cashFlowStatement.netEarnings.toFixed(2)}</TableCell></TableRow>
+                                <TableRow><TableCell className="pl-6">Operating Expenses</TableCell><TableCell className="text-right font-mono">(${cashFlowStatement.operatingExpenses.toFixed(2)})</TableCell></TableRow>
+                                <TableRow className="font-semibold border-t"><TableCell className="pl-4">Net Cash From Operations</TableCell><TableCell className="text-right font-mono">${cashFlowStatement.netCashFromOps.toFixed(2)}</TableCell></TableRow>
+                                
+                                <TableRow className="font-bold bg-muted/50"><TableCell colSpan={2}>Cash Flow From Investing</TableCell></TableRow>
+                                <TableRow><TableCell className="pl-6">Equipment & Investments</TableCell><TableCell className="text-right font-mono">(${cashFlowStatement.investingCashFlow.toFixed(2)})</TableCell></TableRow>
+                                
+                                <TableRow className="font-bold bg-muted/50"><TableCell colSpan={2}>Cash Flow From Financing</TableCell></TableRow>
+                                <TableRow><TableCell className="pl-6">Loans & Financing</TableCell><TableCell className="text-right font-mono">(${cashFlowStatement.financingCashFlow.toFixed(2)})</TableCell></TableRow>
+                                
                                 <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
                                     <TableCell>Net Cash Flow</TableCell>
                                     <TableCell className="text-right font-mono">${cashFlowStatement.netCashFlow.toFixed(2)}</TableCell>
