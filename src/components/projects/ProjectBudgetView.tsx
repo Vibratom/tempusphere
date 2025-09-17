@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, parseISO } from 'date-fns';
 import { Banknote, Landmark, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -26,6 +26,7 @@ function TransactionForm({ onSave, projects }: { onSave: (t: Omit<Transaction, '
     const [category, setCategory] = useState('');
     const [newCategory, setNewCategory] = useState('');
     const [projectId, setProjectId] = useState<string | undefined>(undefined);
+    const { toast } = useToast();
 
     const handleSave = () => {
         let finalCategory = category;
@@ -35,7 +36,11 @@ function TransactionForm({ onSave, projects }: { onSave: (t: Omit<Transaction, '
         }
         
         if (!description || amount <= 0 || !finalCategory || !projectId) {
-            // Add validation feedback
+            toast({
+                title: "Missing Fields",
+                description: "Please fill out all required fields.",
+                variant: "destructive"
+            })
             return;
         }
 
@@ -110,7 +115,9 @@ function TransactionForm({ onSave, projects }: { onSave: (t: Omit<Transaction, '
                 </div>
             </div>
             <DialogFooter>
-                <Button onClick={handleSave}>Save Transaction</Button>
+                <DialogClose asChild>
+                    <Button onClick={handleSave}>Save Transaction</Button>
+                </DialogClose>
             </DialogFooter>
         </DialogContent>
     );
