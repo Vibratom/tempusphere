@@ -4,7 +4,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
-import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, ReferenceLine } from 'recharts';
+import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, Tooltip, Cell, ReferenceLine } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Skeleton } from '../ui/skeleton';
 import { Checkbox } from '../ui/checkbox';
@@ -12,6 +12,7 @@ import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
+import { Switch } from '../ui/switch';
 
 const INVESTING_CATEGORIES = ['Investment Gain'];
 const FINANCING_EXPENSE_CATEGORIES = ['Interest Expense'];
@@ -61,7 +62,7 @@ const allMetrics = {
 export function DynamicReportChart() {
     const { transactions } = useFinance();
     const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['sales', 'netIncome', 'totalAssets']);
-    const [yAxisRange, setYAxisRange] = useState<{min: number | 'auto', max: number | 'auto'}>({min: 'auto', max: 'auto'});
+    const [showValues, setShowValues] = useState(true);
 
     const financialData = useMemo(() => {
         // --- Income Statement Calcs ---
@@ -123,14 +124,14 @@ export function DynamicReportChart() {
         );
     };
 
-    if (!financialData) return <Skeleton className="h-96 w-full" />;
+    if (!financialData) return <Skeleton className="min-h-[24rem] w-full" />;
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="md:col-span-3 min-h-[24rem]">
                 <ChartContainer config={{}} className="h-full w-full">
                     <ResponsiveContainer>
-                        <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
+                        <BarChart data={chartData} margin={{ top: 30, right: 20, left: 0, bottom: 60 }}>
                             <CartesianGrid vertical={false} />
                             <XAxis 
                                 dataKey="name" 
@@ -141,14 +142,15 @@ export function DynamicReportChart() {
                                 height={80}
                                 interval={0}
                             />
-                            <YAxis 
-                                type="number"
-                                domain={[yAxisRange.min, yAxisRange.max]}
-                                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                            />
                             <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
                             <ReferenceLine y={0} stroke="hsl(var(--border))" />
                             <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                               {showValues && <LabelList
+                                    dataKey="value"
+                                    position="top"
+                                    formatter={(value: number) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                                    className="fill-foreground text-xs"
+                                />}
                                {chartData.map((entry, index) => (
                                  <Cell key={`cell-${index}`} fill={stringToColor(entry.name)} />
                                ))}
@@ -164,22 +166,9 @@ export function DynamicReportChart() {
                            <div className="space-y-4 pr-4">
                                 <div>
                                     <h4 className="font-bold mb-2">Metrics</h4>
-                                    <div className="space-y-2">
-                                        <Label className="text-xs text-muted-foreground">Y-Axis Range</Label>
-                                        <div className="flex items-center gap-2">
-                                            <Input 
-                                              type="number"
-                                              placeholder="Min"
-                                              className="h-8"
-                                              onChange={(e) => setYAxisRange(prev => ({...prev, min: e.target.value === '' ? 'auto' : Number(e.target.value)}))}
-                                            />
-                                            <Input
-                                              type="number"
-                                              placeholder="Max"
-                                              className="h-8"
-                                              onChange={(e) => setYAxisRange(prev => ({...prev, max: e.target.value === '' ? 'auto' : Number(e.target.value)}))}
-                                            />
-                                        </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Switch id="show-values" checked={showValues} onCheckedChange={setShowValues} />
+                                        <Label htmlFor="show-values" className="text-sm font-normal">Show Values</Label>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
