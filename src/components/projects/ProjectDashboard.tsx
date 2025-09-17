@@ -3,12 +3,12 @@
 import React, { useMemo } from 'react';
 import { useProjects, Priority } from '@/contexts/ProjectsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, ListChecks, ListTodo, Loader, Wallet } from 'lucide-react';
+import { CheckCircle2, ListChecks, ListTodo, Loader, Wallet, CalendarClock } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell, Legend } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { useFinance } from '@/contexts/FinanceContext';
 import { Badge } from '../ui/badge';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { useChecklist } from '@/contexts/ChecklistContext';
 import { Progress } from '../ui/progress';
 
@@ -58,6 +58,16 @@ export function ProjectDashboard() {
 
     const upcomingDeadlines = tasks.filter(t => t.dueDate && new Date(t.dueDate) >= new Date()).sort((a,b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime()).slice(0, 5);
 
+    const dateFilteredTasks = tasks.filter(t => t.startDate || t.dueDate);
+    const overallStartDate = dateFilteredTasks.length ? new Date(Math.min(...dateFilteredTasks.map(t => new Date(t.startDate || t.dueDate!).getTime()))) : null;
+    const overallEndDate = dateFilteredTasks.length ? new Date(Math.max(...dateFilteredTasks.map(t => new Date(t.dueDate!).getTime()))) : null;
+    let timelineProgress = 0;
+    if (overallStartDate && overallEndDate) {
+        const totalDuration = differenceInDays(overallEndDate, overallStartDate);
+        const elapsed = differenceInDays(new Date(), overallStartDate);
+        timelineProgress = totalDuration > 0 ? Math.max(0, Math.min(100, (elapsed / totalDuration) * 100)) : 0;
+    }
+
     return {
       totalTasks,
       completedTasks,
@@ -65,7 +75,10 @@ export function ProjectDashboard() {
       tasksByPriority,
       tasksByStatus,
       totalBudget,
-      upcomingDeadlines
+      upcomingDeadlines,
+      overallStartDate,
+      overallEndDate,
+      timelineProgress
     };
   }, [board, transactions]);
 
@@ -176,6 +189,32 @@ export function ProjectDashboard() {
                     </PieChart>
                 </ResponsiveContainer>
             </ChartContainer>
+        </CardContent>
+      </Card>
+
+      <Card className="lg:col-span-4">
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><CalendarClock/>Project Timeline</CardTitle>
+            <CardDescription>Overall project duration based on task start and end dates.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            {dashboardStats.overallStartDate && dashboardStats.overallEndDate ? (
+                <div className="space-y-3">
+                    <div className="flex justify-between items-end">
+                        <div>
+                            <p className="text-sm text-muted-foreground">Start Date</p>
+                            <p className="font-semibold">{format(dashboardStats.overallStartDate, 'PPP')}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground text-right">End Date</p>
+                            <p className="font-semibold">{format(dashboardStats.overallEndDate, 'PPP')}</p>
+                        </div>
+                    </div>
+                    <Progress value={dashboardStats.timelineProgress} />
+                </div>
+            ) : (
+                <p className="text-muted-foreground text-center py-4">No start or end dates set on tasks.</p>
+            )}
         </CardContent>
       </Card>
       
