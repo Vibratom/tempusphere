@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useFinance, Transaction, Budget } from '@/contexts/FinanceContext';
+import { useFinance, Transaction, Budget, TransactionType } from '@/contexts/FinanceContext';
 import { useProjects } from '@/contexts/ProjectsContext';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -49,7 +49,7 @@ const TransactionDialog = ({
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [type, setType] = useState<TransactionType>('expense');
   const [category, setCategory] = useState('Other');
   const [projectId, setProjectId] = useState<string | undefined>();
 
@@ -574,3 +574,5 @@ export function FinanceApp() {
     </div>
   );
 }
+
+    
