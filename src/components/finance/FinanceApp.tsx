@@ -8,6 +8,8 @@ import { ArrowDown, ArrowUp } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectsContext';
 import { Skeleton } from '../ui/skeleton';
 import { IncomeStatementWaterfall } from './IncomeStatementWaterfall';
+import { BalanceSheetChart } from './BalanceSheetChart';
+import { CashFlowChart } from './CashFlowChart';
 
 export function FinanceApp() {
     const { transactions } = useFinance();
@@ -100,15 +102,35 @@ export function FinanceApp() {
                 </Card>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Income Statement</CardTitle>
-                    <CardDescription>A visual breakdown of revenue, expenses, and net income.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <IncomeStatementWaterfall />
-                </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <Card className="xl:col-span-1">
+                    <CardHeader>
+                        <CardTitle>Income Statement</CardTitle>
+                        <CardDescription>Revenue, expenses, and net income.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <IncomeStatementWaterfall />
+                    </CardContent>
+                </Card>
+                <Card className="xl:col-span-1">
+                    <CardHeader>
+                        <CardTitle>Balance Sheet</CardTitle>
+                        <CardDescription>Assets vs. Liabilities & Equity.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <BalanceSheetChart />
+                    </CardContent>
+                </Card>
+                <Card className="xl:col-span-1">
+                    <CardHeader>
+                        <CardTitle>Cash Flow</CardTitle>
+                        <CardDescription>Change in cash from activities.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <CashFlowChart />
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
