@@ -139,37 +139,45 @@ export function FinanceApp() {
     
     return (
         <div className="w-full flex flex-col gap-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Total Income</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground"><ArrowUp className="text-green-500"/> Total Income</CardTitle>
+                    </CardHeader>
                     <CardContent>
-                        {isClient ? <p className="text-3xl font-bold text-green-500">${financialSummary.totalIncome.toFixed(2)}</p> : <Skeleton className="h-9 w-32" />}
+                        {isClient ? <p className="text-2xl font-bold text-green-500">${financialSummary.totalIncome.toFixed(2)}</p> : <Skeleton className="h-8 w-24" />}
                     </CardContent>
                 </Card>
                  <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><ArrowDown className="text-red-500"/> Total Expenses</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground"><ArrowDown className="text-red-500"/> Total Expenses</CardTitle>
+                    </CardHeader>
                     <CardContent>
-                        {isClient ? <p className="text-3xl font-bold text-red-500">${financialSummary.totalExpense.toFixed(2)}</p> : <Skeleton className="h-9 w-32" />}
+                        {isClient ? <p className="text-2xl font-bold text-red-500">${financialSummary.totalExpense.toFixed(2)}</p> : <Skeleton className="h-8 w-24" />}
                     </CardContent>
                 </Card>
                  <Card>
-                    <CardHeader><CardTitle>Net Balance</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Net Balance</CardTitle>
+                    </CardHeader>
                     <CardContent>
-                        {isClient ? <p className="text-3xl font-bold">${(financialSummary.totalIncome - financialSummary.totalExpense).toFixed(2)}</p> : <Skeleton className="h-9 w-32" />}
+                        {isClient ? <p className="text-2xl font-bold">${(financialSummary.totalIncome - financialSummary.totalExpense).toFixed(2)}</p> : <Skeleton className="h-8 w-24" />}
                     </CardContent>
                 </Card>
                  <Card>
-                    <CardHeader><CardTitle>A/P vs A/R</CardTitle></CardHeader>
+                    <CardHeader>
+                         <CardTitle className="text-sm font-medium text-muted-foreground">A/P vs A/R</CardTitle>
+                    </CardHeader>
                     <CardContent>
                         {isClient ? (
                         <div className="flex justify-between items-center">
                             <div className="text-center">
-                                <p className="text-sm text-muted-foreground">Receivable</p>
-                                <p className="text-lg font-bold text-green-500">${accountsReceivable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
+                                <p className="text-xs text-muted-foreground">Receivable</p>
+                                <p className="text-base font-bold text-green-500">${accountsReceivable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
                             </div>
                              <div className="text-center">
-                                <p className="text-sm text-muted-foreground">Payable</p>
-                                <p className="text-lg font-bold text-red-500">${accountsPayable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
+                                <p className="text-xs text-muted-foreground">Payable</p>
+                                <p className="text-base font-bold text-red-500">${accountsPayable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
                             </div>
                         </div>
                         ) : <Skeleton className="h-9 w-full" />}
