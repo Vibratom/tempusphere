@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -173,29 +172,24 @@ export function FinancialReports() {
                                 <TableRow className="font-bold">
                                     <TableCell>Revenue</TableCell>
                                     <TableCell></TableCell>
+                                    <TableCell className="text-right font-mono">${incomeStatement.totalIncome.toFixed(2)}</TableCell>
                                 </TableRow>
                                 {Object.entries(incomeStatement.incomeByCategory).map(([cat, amt]) => (
-                                    <TableRow key={`inc-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell></TableRow>
+                                    <TableRow key={`inc-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
                                 ))}
-                                <TableRow className="font-semibold border-t">
-                                    <TableCell>Total Revenue</TableCell>
-                                    <TableCell className="text-right font-mono text-green-500">${incomeStatement.totalIncome.toFixed(2)}</TableCell>
-                                </TableRow>
                                 
                                 <TableRow className="font-bold pt-4">
                                     <TableCell>Expenses</TableCell>
                                     <TableCell></TableCell>
+                                    <TableCell className="text-right font-mono">${incomeStatement.totalExpenses.toFixed(2)}</TableCell>
                                 </TableRow>
                                  {Object.entries(incomeStatement.expensesByCategory).map(([cat, amt]) => (
-                                    <TableRow key={`exp-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell></TableRow>
+                                    <TableRow key={`exp-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
                                 ))}
-                                <TableRow className="font-semibold border-t">
-                                    <TableCell>Total Expenses</TableCell>
-                                    <TableCell className="text-right font-mono text-red-500">${incomeStatement.totalExpenses.toFixed(2)}</TableCell>
-                                </TableRow>
 
                                 <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
                                     <TableCell>Net Income</TableCell>
+                                    <TableCell></TableCell>
                                     <TableCell className="text-right font-mono">${incomeStatement.netIncome.toFixed(2)}</TableCell>
                                 </TableRow>
                             </TableBody>
