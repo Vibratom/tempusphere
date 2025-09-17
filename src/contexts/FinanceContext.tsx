@@ -28,7 +28,7 @@ export interface Budget {
 interface FinanceContextType {
   transactions: Transaction[];
   setTransactions: Dispatch<SetStateAction<Transaction[]>>;
-  addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'status'>) => void;
   removeTransaction: (transactionId: string) => void;
   updateTransaction: (transaction: Transaction) => void;
   budgets: Budget[];
@@ -42,15 +42,35 @@ interface FinanceContextType {
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
-const defaultCategories = ['Groceries', 'Utilities', 'Rent/Mortgage', 'Transportation', 'Entertainment', 'Salary', 'Freelance', 'Other'];
+const defaultCategories = [
+    // Income
+    'Salary', 
+    'Freelance', 
+    'Investment Gain', 
+    'Interest Income',
+    'Loan',
+    // Expenses
+    'Cost of Goods Sold',
+    'Advertising',
+    'Commission',
+    'Office Supplies',
+    'Office Equipment',
+    'Groceries', 
+    'Utilities', 
+    'Rent/Mortgage', 
+    'Transportation', 
+    'Entertainment', 
+    'Interest Expense',
+    'Other'
+];
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useLocalStorage<Transaction[]>('finance:transactionsV4', []);
   const [budgets, setBudgets] = useLocalStorage<Budget[]>('finance:budgetsV2', []);
-  const [categories, setCategories] = useLocalStorage<string[]>('finance:categoriesV1', defaultCategories);
+  const [categories, setCategories] = useLocalStorage<string[]>('finance:categoriesV2', defaultCategories);
 
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
-    const newTransaction = { ...transaction, id: `txn-${Date.now()}-${Math.random()}` };
+  const addTransaction = (transaction: Omit<Transaction, 'id' | 'status'>) => {
+    const newTransaction = { ...transaction, id: `txn-${Date.now()}-${Math.random()}`, status: 'paid' as TransactionStatus };
     setTransactions(prev => [newTransaction, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   };
 

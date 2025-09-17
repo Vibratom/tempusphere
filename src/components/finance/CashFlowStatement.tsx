@@ -18,24 +18,57 @@ const formatNegative = (value: number) => {
     return value < 0 ? `(${formatted.replace('$', '')})` : formatted;
 }
 
+const OPERATING_INCOME_CATEGORIES = ['Salary', 'Freelance'];
+const OPERATING_EXPENSE_CATEGORIES = ['Groceries', 'Utilities', 'Rent/Mortgage', 'Transportation', 'Entertainment', 'Office Supplies', 'Office Equipment', 'Advertising', 'Commission', 'Cost of Goods Sold'];
+const INVESTING_CATEGORIES = ['Investment Gain'];
+const FINANCING_EXPENSE_CATEGORIES = ['Interest Expense'];
+const FINANCING_INCOME_CATEGORIES = ['Loan'];
+
+
 export function CashFlowStatement({ transactions, dateRange }: ReportProps) {
     const range = getDateRange(dateRange);
 
     const cashFlow = useMemo(() => {
-        const operating = transactions.filter(t => ['Salary', 'Freelance', 'Utilities', 'Rent/Mortgage'].includes(t.category))
-            .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+        const netIncome = transactions.reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
         
-        const investing = transactions.filter(t => ['Investment Gain'].includes(t.category))
-            .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), -51.6);
-            
-        const financing = transactions.filter(t => t.type === 'income' && t.category === 'Loan')
-            .reduce((sum, t) => sum + t.amount, -495);
+        // Simplified for this example. In a real scenario, these would be tracked separately.
+        const nonCashCharges = {
+            depreciation: netIncome * 0.05,
+            amortization: netIncome * 0.01,
+        }
+        
+        const accountsPayableChange = transactions
+            .filter(t => t.type === 'expense' && t.status !== 'paid')
+            .reduce((sum, t) => sum + t.amount, 0);
 
-        const netCashFlow = operating + investing + financing;
-        const beginningCash = 1326.5;
+        const accountsReceivableChange = transactions
+            .filter(t => t.type === 'income' && t.status !== 'paid')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const operatingActivities = netIncome + nonCashCharges.depreciation + nonCashCharges.amortization - accountsReceivableChange + accountsPayableChange;
+
+        const investingActivities = transactions.filter(t => INVESTING_CATEGORIES.includes(t.category))
+            .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+            
+        const financingActivities = transactions.filter(t => FINANCING_INCOME_CATEGORIES.includes(t.category) || FINANCING_EXPENSE_CATEGORIES.includes(t.category))
+            .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+
+        const netCashFlow = operatingActivities + investingActivities + financingActivities;
+        const beginningCash = 1326.5; // Placeholder, would need to be calculated from previous period
         const endingCash = beginningCash + netCashFlow;
 
-        return { operating, investing, financing, netCashFlow, beginningCash, endingCash };
+        return { 
+            netIncome,
+            nonCashCharges,
+            accountsPayableChange,
+            accountsReceivableChange,
+            operatingActivities, 
+            investingActivities, 
+            financingActivities, 
+            netCashFlow, 
+            beginningCash, 
+            endingCash 
+        };
     }, [transactions]);
 
 
@@ -58,25 +91,23 @@ export function CashFlowStatement({ transactions, dateRange }: ReportProps) {
                     <TableBody>
                         {/* Operating Activities */}
                         <TableRow className="font-bold bg-muted/50"><TableCell>CASH FLOWS FROM OPERATING ACTIVITIES</TableCell><TableCell></TableCell></TableRow>
-                        <TableRow><TableCell>Net Income</TableCell><TableCell className="text-right font-mono">{formatNegative(1671.9)}</TableCell></TableRow>
+                        <TableRow><TableCell>Net Income</TableCell><TableCell className="text-right font-mono">{formatNegative(cashFlow.netIncome)}</TableCell></TableRow>
                         <TableRow><TableCell className="font-semibold pt-4">Adjustments for Non-Cash Charges:</TableCell><TableCell></TableCell></TableRow>
-                        <TableRow><TableCell className="pl-6">(+) Depreciation</TableCell><TableCell className="text-right font-mono">{formatNegative(45.2)}</TableCell></TableRow>
-                        <TableRow><TableCell className="pl-6">(+) Amortization</TableCell><TableCell className="text-right font-mono">{formatNegative(11.3)}</TableCell></TableRow>
-                        <TableRow><TableCell className="pl-6">(+/-) Accounts Receivable</TableCell><TableCell className="text-right font-mono">{formatNegative(-201.7)}</TableCell></TableRow>
-                         <TableRow className="border-b"><TableCell className="pl-6">(+/-) Accounts Payable</TableCell><TableCell className="text-right font-mono">{formatNegative(62.5)}</TableCell></TableRow>
-                        <TableRow className="font-bold"><TableCell>Net Cash Provided by Operating Activities</TableCell><TableCell className="text-right font-mono border-t-2 border-foreground">{formatNegative(cashFlow.operating)}</TableCell></TableRow>
+                        <TableRow><TableCell className="pl-6">(+) Depreciation</TableCell><TableCell className="text-right font-mono">{formatNegative(cashFlow.nonCashCharges.depreciation)}</TableCell></TableRow>
+                        <TableRow><TableCell className="pl-6">(+) Amortization</TableCell><TableCell className="text-right font-mono">{formatNegative(cashFlow.nonCashCharges.amortization)}</TableCell></TableRow>
+                        <TableRow><TableCell className="pl-6">(+/-) Accounts Receivable</TableCell><TableCell className="text-right font-mono">{formatNegative(-cashFlow.accountsReceivableChange)}</TableCell></TableRow>
+                         <TableRow className="border-b"><TableCell className="pl-6">(+/-) Accounts Payable</TableCell><TableCell className="text-right font-mono">{formatNegative(cashFlow.accountsPayableChange)}</TableCell></TableRow>
+                        <TableRow className="font-bold"><TableCell>Net Cash Provided by Operating Activities</TableCell><TableCell className="text-right font-mono border-t-2 border-foreground">{formatNegative(cashFlow.operatingActivities)}</TableCell></TableRow>
 
                         {/* Investing Activities */}
                         <TableRow className="font-bold bg-muted/50 mt-4"><TableCell>CASH FLOWS FROM INVESTING ACTIVITIES</TableCell><TableCell></TableCell></TableRow>
-                        <TableRow><TableCell className="pl-6">(-) Net Capital Expenditures</TableCell><TableCell className="text-right font-mono">{formatNegative(-51.6)}</TableCell></TableRow>
-                        <TableRow className="border-b"><TableCell className="pl-6">(-) Net Purchases of Short-Term Investments</TableCell><TableCell className="text-right font-mono">{formatNegative(transactions.filter(t=>t.category === 'Investment Gain').reduce((sum,t)=>sum+t.amount,0))}</TableCell></TableRow>
-                        <TableRow className="font-bold"><TableCell>Net Cash Used in Investing Activities</TableCell><TableCell className="text-right font-mono border-t-2 border-foreground">{formatNegative(cashFlow.investing)}</TableCell></TableRow>
+                        <TableRow className="border-b"><TableCell className="pl-6">Gain/Loss from Investments</TableCell><TableCell className="text-right font-mono">{formatNegative(cashFlow.investingActivities)}</TableCell></TableRow>
+                        <TableRow className="font-bold"><TableCell>Net Cash Used in Investing Activities</TableCell><TableCell className="text-right font-mono border-t-2 border-foreground">{formatNegative(cashFlow.investingActivities)}</TableCell></TableRow>
                         
                         {/* Financing Activities */}
                         <TableRow className="font-bold bg-muted/50 mt-4"><TableCell>CASH FLOWS FROM FINANCING ACTIVITIES</TableCell><TableCell></TableCell></TableRow>
-                        <TableRow><TableCell className="pl-6">(-) Dividends Paid</TableCell><TableCell className="text-right font-mono">{formatNegative(-500)}</TableCell></TableRow>
-                        <TableRow className="border-b"><TableCell className="pl-6">(+) Debt Issuances / (-) Repayments</TableCell><TableCell className="text-right font-mono">{formatNegative(transactions.filter(t=>t.category === 'Loan').reduce((sum,t)=>sum+t.amount,5))}</TableCell></TableRow>
-                        <TableRow className="font-bold"><TableCell>Net Cash Provided by Financing Activities</TableCell><TableCell className="text-right font-mono border-t-2 border-foreground">{formatNegative(cashFlow.financing)}</TableCell></TableRow>
+                         <TableRow className="border-b"><TableCell className="pl-6">(+) Debt Issuances / (-) Repayments</TableCell><TableCell className="text-right font-mono">{formatNegative(cashFlow.financingActivities)}</TableCell></TableRow>
+                        <TableRow className="font-bold"><TableCell>Net Cash Provided by Financing Activities</TableCell><TableCell className="text-right font-mono border-t-2 border-foreground">{formatNegative(cashFlow.financingActivities)}</TableCell></TableRow>
 
                         {/* Totals */}
                         <TableRow><TableCell className="font-semibold pt-4">Beginning Cash</TableCell><TableCell className="text-right font-mono">{formatNegative(cashFlow.beginningCash)}</TableCell></TableRow>

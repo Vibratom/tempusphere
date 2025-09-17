@@ -16,7 +16,7 @@ interface ReportProps {
 export function IncomeStatement({ transactions, dateRange }: ReportProps) {
     const incomeStatement = useMemo(() => {
         const sales = transactions
-            .filter(t => t.type === 'income' && t.category !== 'Interest Income' && t.category !== 'Investment Gain')
+            .filter(t => t.type === 'income' && !['Interest Income', 'Investment Gain'].includes(t.category))
             .reduce((sum, t) => sum + t.amount, 0);
 
         const cogs = transactions
@@ -28,7 +28,7 @@ export function IncomeStatement({ transactions, dateRange }: ReportProps) {
         const sellingExpensesList = transactions.filter(t => t.type === 'expense' && ['Advertising', 'Commission'].includes(t.category));
         const totalSellingExpenses = sellingExpensesList.reduce((sum, t) => sum + t.amount, 0);
 
-        const adminExpensesList = transactions.filter(t => t.type === 'expense' && ['Office Supplies', 'Office Equipment'].includes(t.category));
+        const adminExpensesList = transactions.filter(t => t.type === 'expense' && ['Office Supplies', 'Office Equipment', 'Utilities', 'Rent/Mortgage'].includes(t.category));
         const totalAdminExpenses = adminExpensesList.reduce((sum, t) => sum + t.amount, 0);
 
         const totalOperatingExpenses = totalSellingExpenses + totalAdminExpenses;
@@ -81,18 +81,18 @@ export function IncomeStatement({ transactions, dateRange }: ReportProps) {
                     <TableBody>
                         {/* Revenue Section */}
                         <TableRow><TableCell>Sales</TableCell><TableCell className="text-right font-mono">{formatCurrency(incomeStatement.sales)}</TableCell><TableCell></TableCell></TableRow>
-                        <TableRow><TableCell>Cost of Goods Sold</TableCell><TableCell className="text-right font-mono">{formatCurrency(incomeStatement.cogs)}</TableCell><TableCell></TableCell></TableRow>
+                        <TableRow><TableCell>Cost of Goods Sold</TableCell><TableCell className="text-right font-mono text-destructive">-{formatCurrency(incomeStatement.cogs)}</TableCell><TableCell></TableCell></TableRow>
                         <TableRow className="font-bold border-y-2 border-foreground"><TableCell>Gross Profit</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">{formatCurrency(incomeStatement.grossProfit)}</TableCell></TableRow>
                         
                         {/* Operating Expenses Section */}
                         <TableRow><TableCell className="font-semibold pt-4">Operating Expenses</TableCell><TableCell></TableCell><TableCell></TableCell></TableRow>
-                        <TableRow><TableCell className="pl-6">Selling Expense</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">{formatCurrency(incomeStatement.totalSellingExpenses)}</TableCell></TableRow>
-                        {incomeStatement.sellingExpensesList.map(item => <TableRow key={item.id}><TableCell className="pl-12">{item.description}</TableCell><TableCell className="text-right font-mono">{formatCurrency(item.amount)}</TableCell><TableCell></TableCell></TableRow>)}
+                        <TableRow><TableCell className="pl-6">Selling Expense</TableCell><TableCell></TableCell><TableCell className="text-right font-mono text-destructive">-{formatCurrency(incomeStatement.totalSellingExpenses)}</TableCell></TableRow>
+                        {incomeStatement.sellingExpensesList.map(item => <TableRow key={item.id}><TableCell className="pl-12">{item.description}</TableCell><TableCell className="text-right font-mono text-destructive">-{formatCurrency(item.amount)}</TableCell><TableCell></TableCell></TableRow>)}
                         
-                        <TableRow><TableCell className="pl-6">Administrative Expense</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">{formatCurrency(incomeStatement.totalAdminExpenses)}</TableCell></TableRow>
-                        {incomeStatement.adminExpensesList.map(item => <TableRow key={item.id}><TableCell className="pl-12">{item.description}</TableCell><TableCell className="text-right font-mono">{formatCurrency(item.amount)}</TableCell><TableCell></TableCell></TableRow>)}
+                        <TableRow><TableCell className="pl-6">Administrative Expense</TableCell><TableCell></TableCell><TableCell className="text-right font-mono text-destructive">-{formatCurrency(incomeStatement.totalAdminExpenses)}</TableCell></TableRow>
+                        {incomeStatement.adminExpensesList.map(item => <TableRow key={item.id}><TableCell className="pl-12">{item.description}</TableCell><TableCell className="text-right font-mono text-destructive">-{formatCurrency(item.amount)}</TableCell><TableCell></TableCell></TableRow>)}
                         
-                        <TableRow className="border-t"><TableCell className="font-semibold pl-4">Total Operating Expenses</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">{formatCurrency(incomeStatement.totalOperatingExpenses)}</TableCell></TableRow>
+                        <TableRow className="border-t"><TableCell className="font-semibold pl-4">Total Operating Expenses</TableCell><TableCell></TableCell><TableCell className="text-right font-mono text-destructive">-{formatCurrency(incomeStatement.totalOperatingExpenses)}</TableCell></TableRow>
                         <TableRow className="font-bold border-y-2 border-foreground"><TableCell>Operating Income</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">{formatCurrency(incomeStatement.operatingIncome)}</TableCell></TableRow>
 
                         {/* Non-Operating Section */}
