@@ -5,6 +5,7 @@ import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction }
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 export type TransactionType = 'income' | 'expense';
+export type TransactionStatus = 'paid' | 'unpaid' | 'overdue';
 
 export interface Transaction {
   id: string;
@@ -13,6 +14,7 @@ export interface Transaction {
   description: string;
   category: string;
   type: TransactionType;
+  status: TransactionStatus;
   projectId?: string;
 }
 
@@ -43,7 +45,7 @@ const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 const defaultCategories = ['Groceries', 'Utilities', 'Rent/Mortgage', 'Transportation', 'Entertainment', 'Salary', 'Freelance', 'Other'];
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
-  const [transactions, setTransactions] = useLocalStorage<Transaction[]>('finance:transactionsV3', []);
+  const [transactions, setTransactions] = useLocalStorage<Transaction[]>('finance:transactionsV4', []);
   const [budgets, setBudgets] = useLocalStorage<Budget[]>('finance:budgetsV2', []);
   const [categories, setCategories] = useLocalStorage<string[]>('finance:categoriesV1', defaultCategories);
 
@@ -105,5 +107,3 @@ export function useFinance() {
   }
   return context;
 }
-
-    

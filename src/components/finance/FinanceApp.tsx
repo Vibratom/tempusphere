@@ -2,12 +2,12 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useFinance, Transaction, TransactionType, Budget } from '@/contexts/FinanceContext';
+import { useFinance, Transaction, TransactionType, TransactionStatus } from '@/contexts/FinanceContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
-import { Plus, Edit, Trash2, MoreVertical, Banknote, ArrowDown, ArrowUp } from 'lucide-react';
+import { Plus, Edit, Trash2, MoreVertical, Banknote, ArrowDown, ArrowUp, FileText, FilePlus, HandCoins } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isPast } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -21,6 +21,9 @@ import { Progress } from '../ui/progress';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Pie, PieChart, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Badge } from '../ui/badge';
+
 
 const COLORS = ['#16a34a', '#3b82f6', '#ef4444', '#f97316', '#8b5cf6', '#d946ef', '#14b8a6', '#eab308'];
 
@@ -31,6 +34,7 @@ function TransactionForm({ onSave, transaction, projects }: { onSave: (t: Omit<T
     const [description, setDescription] = useState(transaction?.description || '');
     const [amount, setAmount] = useState(transaction?.amount || 0);
     const [type, setType] = useState<TransactionType>(transaction?.type || 'expense');
+    const [status, setStatus] = useState<TransactionStatus>(transaction?.status || 'unpaid');
     const [category, setCategory] = useState(transaction?.category || '');
     const [newCategory, setNewCategory] = useState('');
     const [projectId, setProjectId] = useState<string | undefined>(transaction?.projectId);
@@ -52,6 +56,7 @@ function TransactionForm({ onSave, transaction, projects }: { onSave: (t: Omit<T
             description,
             amount,
             type,
+            status,
             category: finalCategory,
             projectId,
         }, transaction?.id);
@@ -108,16 +113,29 @@ function TransactionForm({ onSave, transaction, projects }: { onSave: (t: Omit<T
                         </Select>
                     </div>
                 </div>
-                <div className="grid gap-2">
-                    <Label>Date</Label>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn(!date && 'text-muted-foreground', "justify-start text-left font-normal")}>
-                                {date ? format(date, 'PPP') : <span>Pick a date</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus /></PopoverContent>
-                    </Popover>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label>Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className={cn(!date && 'text-muted-foreground', "justify-start text-left font-normal")}>
+                                    {date ? format(date, 'PPP') : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus /></PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label>Status</Label>
+                        <Select value={status} onValueChange={(v) => setStatus(v as TransactionStatus)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="unpaid">Unpaid</SelectItem>
+                                <SelectItem value="paid">Paid</SelectItem>
+                                <SelectItem value="overdue">Overdue</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </div>
             <DialogFooter>
@@ -129,68 +147,15 @@ function TransactionForm({ onSave, transaction, projects }: { onSave: (t: Omit<T
     );
 }
 
-function BudgetForm({ onSave, budget }: { onSave: (b: Omit<Budget, 'id'>, id?: string) => void, budget?: Budget | null }) {
-    const { categories } = useFinance();
-    const [amount, setAmount] = useState(budget?.amount || 0);
-    const [category, setCategory] = useState(budget?.category || '');
-    const [period, setPeriod] = useState<'monthly' | 'yearly'>(budget?.period || 'monthly');
-
-    const handleSave = () => {
-        if (amount > 0 && category) {
-            onSave({ amount, category, period }, budget?.id);
-        }
-    }
-
-    return (
-        <DialogContent>
-            <DialogHeader><DialogTitle>{budget ? 'Edit' : 'Create'} Budget</DialogTitle></DialogHeader>
-            <div className="space-y-4 py-4">
-                 <div className="grid gap-2">
-                    <Label>Category</Label>
-                    <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
-                        <SelectContent>
-                            {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-                 <div className="grid gap-2">
-                    <Label>Amount</Label>
-                    <Input type="number" value={amount} onChange={e => setAmount(parseFloat(e.target.value) || 0)} placeholder="0.00" />
-                </div>
-                 <div className="grid gap-2">
-                    <Label>Period</Label>
-                    <Select value={period} onValueChange={v => setPeriod(v as 'monthly' | 'yearly')}>
-                        <SelectTrigger><SelectValue/></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                            <SelectItem value="yearly">Yearly</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-            <DialogFooter>
-                 <DialogClose asChild>
-                    <Button onClick={handleSave}>Save Budget</Button>
-                 </DialogClose>
-            </DialogFooter>
-        </DialogContent>
-    )
-}
-
 export function FinanceApp() {
     const { 
         transactions, addTransaction, removeTransaction, updateTransaction,
-        budgets, addBudget, removeBudget, updateBudget
     } = useFinance();
     const { board } = useProjects();
     const { toast } = useToast();
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-
-    const [isBudgetFormOpen, setIsBudgetFormOpen] = useState(false);
-    const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
 
     const handleSaveTransaction = (transaction: Omit<Transaction, 'id'>, id?: string) => {
         if(id) {
@@ -203,18 +168,6 @@ export function FinanceApp() {
         setIsFormOpen(false);
         setEditingTransaction(null);
     };
-
-     const handleSaveBudget = (budget: Omit<Budget, 'id'>, id?: string) => {
-        if(id) {
-            updateBudget({ ...budget, id });
-            toast({ title: "Budget Updated" });
-        } else {
-            addBudget(budget);
-            toast({ title: "Budget Created" });
-        }
-        setIsBudgetFormOpen(false);
-        setEditingBudget(null);
-    };
     
     const projectList = useMemo(() => Object.values(board.tasks).map(t => ({id: t.id, title: t.title})), [board.tasks]);
 
@@ -226,25 +179,26 @@ export function FinanceApp() {
         }, { totalIncome: 0, totalExpense: 0 });
     }, [transactions]);
     
-    const expenseByCategory = useMemo(() => {
-        const data = transactions
-            .filter(t => t.type === 'expense')
-            .reduce((acc, t) => {
-                acc[t.category] = (acc[t.category] || 0) + t.amount;
-                return acc;
-            }, {} as Record<string, number>);
-        
-        return Object.entries(data).map(([name, value]) => ({ name, value }));
+    const { accountsReceivable, accountsPayable } = useMemo(() => {
+        const ar = transactions.filter(t => t.type === 'income' && t.status !== 'paid');
+        const ap = transactions.filter(t => t.type === 'expense' && t.status !== 'paid');
+        return { accountsReceivable: ar, accountsPayable: ap };
     }, [transactions]);
+    
+    const markAsPaid = (transaction: Transaction) => {
+        updateTransaction({ ...transaction, status: 'paid' });
+        toast({ title: 'Transaction marked as paid.'});
+    }
 
-    const getBudgetSpending = (budget: Budget) => {
-        const now = new Date();
-        const start = startOfMonth(now);
-        const end = endOfMonth(now);
+    const statusBadge = (status: TransactionStatus, date: string) => {
+        const isOverdue = status === 'unpaid' && isPast(parseISO(date));
+        const finalStatus = isOverdue ? 'overdue' : status;
 
-        return transactions
-            .filter(t => t.type === 'expense' && t.category === budget.category && isWithinInterval(parseISO(t.date), { start, end }))
-            .reduce((sum, t) => sum + t.amount, 0);
+        return <Badge variant={finalStatus === 'paid' ? 'secondary' : 'default'} className={cn(
+            finalStatus === 'paid' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+            finalStatus === 'unpaid' && 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+            finalStatus === 'overdue' && 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+        )}>{finalStatus}</Badge>
     }
     
     return (
@@ -271,125 +225,136 @@ export function FinanceApp() {
                 </Card>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
-                 {/* Budget Section */}
-                 <Card>
-                    <CardHeader className="flex-row items-center justify-between">
-                        <div>
-                            <CardTitle>Budgets</CardTitle>
-                            <CardDescription>Track your monthly spending goals.</CardDescription>
-                        </div>
-                        <Button size="sm" onClick={() => { setEditingBudget(null); setIsBudgetFormOpen(true); }}><Plus className="mr-2"/>New Budget</Button>
-                    </CardHeader>
-                    <CardContent>
-                        {budgets.length > 0 ? (
-                             <div className="space-y-4">
-                                {budgets.map(budget => {
-                                    const spent = getBudgetSpending(budget);
-                                    const progress = (spent / budget.amount) * 100;
-                                    return (
-                                        <div key={budget.id} className="space-y-1">
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="font-medium">{budget.category}</span>
-                                                <span className="text-muted-foreground">${spent.toFixed(2)} / ${budget.amount.toFixed(2)}</span>
-                                            </div>
-                                            <Progress value={progress} className={progress > 100 ? '[&>div]:bg-destructive' : ''}/>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        ) : (
-                            <p className="text-center text-muted-foreground py-4">No budgets set.</p>
-                        )}
-                    </CardContent>
-                </Card>
-                
-                {/* Expense Chart */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Expenses by Category</CardTitle>
-                        <CardDescription>A visual breakdown of your spending.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ChartContainer config={{}} className="h-64 w-full">
-                           {expenseByCategory.length > 0 ? (
-                             <ResponsiveContainer>
-                                <PieChart>
-                                    <Tooltip content={<ChartTooltipContent hideLabel />} />
-                                    <Pie data={expenseByCategory} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80}>
-                                        {expenseByCategory.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Legend iconType="circle" />
-                                </PieChart>
-                            </ResponsiveContainer>
-                           ) : (
-                            <div className="h-full flex items-center justify-center text-muted-foreground">No expense data available.</div>
-                           )}
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Transactions Table */}
-            <Card>
-                <CardHeader className="flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Recent Transactions</CardTitle>
-                        <CardDescription>A log of all your income and expenses.</CardDescription>
-                    </div>
-                    <Button onClick={() => { setEditingTransaction(null); setIsFormOpen(true); }}><Plus className="mr-2"/>Add Transaction</Button>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Project</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                                <TableHead className="w-[50px]"></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {transactions.map(t => (
-                            <TableRow key={t.id}>
-                                <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
-                                <TableCell className="font-medium">{t.description}</TableCell>
-                                <TableCell>{t.category}</TableCell>
-                                <TableCell className="text-muted-foreground">{t.projectId ? board.tasks[t.projectId]?.title : 'N/A'}</TableCell>
-                                <TableCell className={`text-right font-mono ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
-                                {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
-                                </TableCell>
-                                <TableCell>
-                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon"><MoreVertical/></Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuItem onSelect={() => {setEditingTransaction(t); setIsFormOpen(true);}}><Edit className="mr-2"/>Edit</DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => removeTransaction(t.id)} className="text-destructive"><Trash2 className="mr-2"/>Delete</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+            <Tabs defaultValue="ledger">
+                <div className="flex justify-between items-center">
+                    <TabsList>
+                        <TabsTrigger value="ledger"><FileText className="mr-2"/>General Ledger</TabsTrigger>
+                        <TabsTrigger value="receivable"><FilePlus className="mr-2"/>Accounts Receivable</TabsTrigger>
+                        <TabsTrigger value="payable"><HandCoins className="mr-2"/>Accounts Payable</TabsTrigger>
+                    </TabsList>
+                     <Button onClick={() => { setEditingTransaction(null); setIsFormOpen(true); }}><Plus className="mr-2"/>Add Transaction</Button>
+                </div>
+                <TabsContent value="ledger" className="mt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>General Ledger</CardTitle>
+                            <CardDescription>A complete record of all financial transactions.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead>Category</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                        <TableHead className="w-[50px]"></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {transactions.map(t => (
+                                    <TableRow key={t.id}>
+                                        <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
+                                        <TableCell className="font-medium">{t.description}</TableCell>
+                                        <TableCell>{t.category}</TableCell>
+                                        <TableCell>{statusBadge(t.status, t.date)}</TableCell>
+                                        <TableCell className={`text-right font-mono ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
+                                        {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
+                                        </TableCell>
+                                        <TableCell>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon"><MoreVertical/></Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => {setEditingTransaction(t); setIsFormOpen(true);}}><Edit className="mr-2"/>Edit</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => removeTransaction(t.id)} className="text-destructive"><Trash2 className="mr-2"/>Delete</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="receivable" className="mt-4">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Accounts Receivable</CardTitle>
+                            <CardDescription>Money owed to you (unpaid income).</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Due Date</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                        <TableHead className="w-[120px]"></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {accountsReceivable.map(t => (
+                                        <TableRow key={t.id}>
+                                            <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
+                                            <TableCell className="font-medium">{t.description}</TableCell>
+                                            <TableCell>{statusBadge(t.status, t.date)}</TableCell>
+                                            <TableCell className="text-right font-mono text-green-500">+${t.amount.toFixed(2)}</TableCell>
+                                            <TableCell>
+                                                <Button size="sm" onClick={() => markAsPaid(t)}>Mark as Paid</Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                     </Card>
+                </TabsContent>
+                <TabsContent value="payable" className="mt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Accounts Payable</CardTitle>
+                            <CardDescription>Money you owe (unpaid expenses).</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                              <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Due Date</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                        <TableHead className="w-[120px]"></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {accountsPayable.map(t => (
+                                        <TableRow key={t.id}>
+                                            <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
+                                            <TableCell className="font-medium">{t.description}</TableCell>
+                                            <TableCell>{statusBadge(t.status, t.date)}</TableCell>
+                                            <TableCell className="text-right font-mono text-red-500">-${t.amount.toFixed(2)}</TableCell>
+                                            <TableCell>
+                                                <Button size="sm" onClick={() => markAsPaid(t)}>Mark as Paid</Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+            
 
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                  <TransactionForm onSave={handleSaveTransaction} transaction={editingTransaction} projects={projectList} />
             </Dialog>
 
-            <Dialog open={isBudgetFormOpen} onOpenChange={setIsBudgetFormOpen}>
-                 <BudgetForm onSave={handleSaveBudget} budget={editingBudget} />
-            </Dialog>
         </div>
     );
 }
-
-    
