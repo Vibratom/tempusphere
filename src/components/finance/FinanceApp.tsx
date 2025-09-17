@@ -126,8 +126,17 @@ export function FinanceApp() {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const { totalBalance, monthlySpending } = useMemo(() => {
+    if (!isClient) {
+        return { totalBalance: 0, monthlySpending: 0 };
+    }
+
     let balance = 0;
     let spending = 0;
     const currentMonth = new Date().getMonth();
@@ -147,7 +156,7 @@ export function FinanceApp() {
     });
 
     return { totalBalance: balance, monthlySpending: spending };
-  }, [transactions]);
+  }, [transactions, isClient]);
   
   const getProjectTitle = (projectId?: string) => {
     if(!projectId) return 'N/A';
@@ -184,7 +193,7 @@ export function FinanceApp() {
                 <Landmark className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">${totalBalance.toFixed(2)}</div>
+                <div className="text-2xl font-bold">${isClient ? totalBalance.toFixed(2) : '0.00'}</div>
                 <p className="text-xs text-muted-foreground">Across {transactions.length} transactions</p>
             </CardContent>
         </Card>
@@ -194,8 +203,8 @@ export function FinanceApp() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">${monthlySpending.toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">In {format(new Date(), 'MMMM')}</p>
+                <div className="text-2xl font-bold">${isClient ? monthlySpending.toFixed(2) : '0.00'}</div>
+                {isClient && <p className="text-xs text-muted-foreground">In {format(new Date(), 'MMMM')}</p>}
             </CardContent>
         </Card>
         <Card>
