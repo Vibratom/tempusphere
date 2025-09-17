@@ -61,6 +61,7 @@ const allMetrics = {
 export function DynamicReportChart() {
     const { transactions } = useFinance();
     const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['sales', 'netIncome', 'totalAssets']);
+    const [yAxisRange, setYAxisRange] = useState<{min: number | 'auto', max: number | 'auto'}>({min: 'auto', max: 'auto'});
 
     const financialData = useMemo(() => {
         // --- Income Statement Calcs ---
@@ -142,6 +143,7 @@ export function DynamicReportChart() {
                             />
                             <YAxis 
                                 type="number"
+                                domain={[yAxisRange.min, yAxisRange.max]}
                                 tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                             />
                             <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
@@ -161,7 +163,27 @@ export function DynamicReportChart() {
                         <ScrollArea className="h-96">
                            <div className="space-y-4 pr-4">
                                 <div>
-                                    <h4 className="font-bold mb-2">Income Statement</h4>
+                                    <h4 className="font-bold mb-2">Metrics</h4>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs text-muted-foreground">Y-Axis Range</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input 
+                                              type="number"
+                                              placeholder="Min"
+                                              className="h-8"
+                                              onChange={(e) => setYAxisRange(prev => ({...prev, min: e.target.value === '' ? 'auto' : Number(e.target.value)}))}
+                                            />
+                                            <Input
+                                              type="number"
+                                              placeholder="Max"
+                                              className="h-8"
+                                              onChange={(e) => setYAxisRange(prev => ({...prev, max: e.target.value === '' ? 'auto' : Number(e.target.value)}))}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <h4 className="font-bold mb-2 text-sm">Income Statement</h4>
                                     {allMetrics.income.map(metric => (
                                         <div key={metric.key} className="flex items-center space-x-2 my-1">
                                             <Checkbox id={metric.key} checked={selectedMetrics.includes(metric.key)} onCheckedChange={(c) => handleMetricToggle(metric.key, !!c)}/>
@@ -169,8 +191,8 @@ export function DynamicReportChart() {
                                         </div>
                                     ))}
                                 </div>
-                                <div>
-                                    <h4 className="font-bold mb-2">Balance Sheet</h4>
+                                <div className="space-y-2">
+                                    <h4 className="font-bold mb-2 text-sm">Balance Sheet</h4>
                                     {allMetrics.balance.map(metric => (
                                         <div key={metric.key} className="flex items-center space-x-2 my-1">
                                             <Checkbox id={metric.key} checked={selectedMetrics.includes(metric.key)} onCheckedChange={(c) => handleMetricToggle(metric.key, !!c)}/>
@@ -178,8 +200,8 @@ export function DynamicReportChart() {
                                         </div>
                                     ))}
                                 </div>
-                                <div>
-                                    <h4 className="font-bold mb-2">Cash Flow</h4>
+                                <div className="space-y-2">
+                                    <h4 className="font-bold mb-2 text-sm">Cash Flow</h4>
                                     {allMetrics.cashFlow.map(metric => (
                                         <div key={metric.key} className="flex items-center space-x-2 my-1">
                                             <Checkbox id={metric.key} checked={selectedMetrics.includes(metric.key)} onCheckedChange={(c) => handleMetricToggle(metric.key, !!c)}/>
