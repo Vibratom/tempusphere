@@ -214,7 +214,7 @@ export function FinanceApp() {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">Not Set</div>
-                <p className="text-xs text-muted-foreground">Create a budget to get started</p>
+                {isClient && <p className="text-xs text-muted-foreground">Create a budget to get started</p>}
             </CardContent>
         </Card>
       </div>
@@ -237,7 +237,7 @@ export function FinanceApp() {
               </div>
           </CardHeader>
           <CardContent>
-              {transactions.length > 0 ? (
+              {isClient && transactions.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -269,13 +269,13 @@ export function FinanceApp() {
                     ))}
                   </TableBody>
                 </Table>
-              ) : (
+              ) : isClient ? (
                  <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
                     <Landmark className="w-16 h-16 mb-4" />
                     <h3 className="text-xl font-semibold">No Transactions Yet</h3>
                     <p className="text-sm">Add your first transaction to see it here.</p>
                 </div>
-              )}
+              ) : null}
           </CardContent>
           {transactions.length > 0 && isClient && (
             <CardFooter>
