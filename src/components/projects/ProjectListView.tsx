@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Flag, Search, ArrowUp, ArrowDown, Plus, Calendar as CalendarIcon, MoreHorizontal, Edit, Trash2, Send, Link as LinkIcon, GitCommit, Brain, DraftingCompass, Clock, Separator } from 'lucide-react';
+import { Flag, Search, ArrowUp, ArrowDown, Plus, Calendar as CalendarIcon, MoreHorizontal, Edit, Trash2, Send, Link as LinkIcon, GitCommit, Brain, DraftingCompass, Clock } from 'lucide-react';
 import { Button } from '../ui/button';
 import {
   AlertDialog,
@@ -64,7 +64,247 @@ const resourceMap: Record<ResourceType, { icon: React.ElementType, href: string 
 };
 
 
-const NewTaskDialog = () => {
+function EditTaskDialog({ task, isOpen, onOpenChange, onSave }: { task: TaskCard | null, isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (updatedTask: TaskCard, newStatusTitle?: string) => void }) {
+    const { board } = useProjects();
+    const { events, updateEvent, addEvent, removeEvent } = useCalendar();
+    
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [status, setStatus] = useState('');
+    const [priority, setPriority] = useState<Priority>('none');
+    const [startDate, setStartDate] = useState<Date | undefined>();
+    const [dueDate, setDueDate] = useState<Date | undefined>();
+    const [linkedResources, setLinkedResources] = useState<LinkedResource[]>([]);
+    const [timeLogged, setTimeLogged] = useState(0);
+    const [timeLogInput, setTimeLogInput] = useState('');
+
+    React.useEffect(() => {
+        if (task) {
+            const currentColumn = Object.values(board.columns).find(c => c.taskIds.includes(task.id));
+            setTitle(task.title);
+            setDescription(task.description || '');
+            setStatus(currentColumn?.title || '');
+            setPriority(task.priority);
+            setStartDate(task.startDate ? new Date(task.startDate) : undefined);
+            setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
+            setLinkedResources(task.linkedResources || []);
+            setTimeLogged(task.timeLogged || 0);
+        }
+    }, [task, board.columns]);
+
+    const parseTimeInput = (input: string): number => {
+        let totalSeconds = 0;
+        const hoursMatch = input.match(/(\d+)\s*h/);
+        const minutesMatch = input.match(/(\d+)\s*m/);
+
+        if (hoursMatch) totalSeconds += parseInt(hoursMatch[1]) * 3600;
+        if (minutesMatch) totalSeconds += parseInt(minutesMatch[1]) * 60;
+        
+        if (!hoursMatch && !minutesMatch && /^\d+$/.test(input)) {
+            totalSeconds += parseInt(input) * 60;
+        }
+
+        return totalSeconds;
+    };
+
+    const handleLogTime = () => {
+        const secondsToAdd = parseTimeInput(timeLogInput);
+        if (secondsToAdd > 0) {
+            setTimeLogged(prev => prev + secondsToAdd);
+            setTimeLogInput('');
+        }
+    };
+
+    const handleSubmit = () => {
+        if (!task || !title.trim() || !status) return;
+        
+        const updatedTask: TaskCard = {
+            ...task,
+            title,
+            description: description || undefined,
+            priority,
+            startDate: startDate?.toISOString(),
+            dueDate: dueDate?.toISOString(),
+            linkedResources,
+            timeLogged
+        };
+        onSave(updatedTask, status);
+
+        const calendarEvent = events.find(e => e.sourceId === task.id);
+        if (updatedTask.dueDate) {
+            const eventData = {
+                date: updatedTask.dueDate,
+                time: '09:00',
+                title: updatedTask.title,
+                description: `Project Task: ${updatedTask.title}`,
+                color: 'purple',
+                type: 'Work',
+                sourceId: updatedTask.id,
+            };
+            if (calendarEvent) {
+                updateEvent({ ...calendarEvent, ...eventData });
+            } else {
+                addEvent(eventData);
+            }
+        } else if (calendarEvent) {
+            removeEvent(calendarEvent.id);
+        }
+    }
+    
+    const handleAddResource = (type: ResourceType) => {
+        if (linkedResources.some(r => r.type === type)) return;
+        const newResource: LinkedResource = { type, label: `${type.charAt(0).toUpperCase() + type.slice(1)}` };
+        setLinkedResources([...linkedResources, newResource]);
+    }
+
+    const handleRemoveResource = (type: ResourceType) => {
+        setLinkedResources(linkedResources.filter(r => r.type !== type));
+    }
+
+    if (!isOpen || !task) {
+        return null;
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-xl">
+                <DialogHeader>
+                    <DialogTitle>Edit Task</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-title-edit" className="text-right">Title</Label>
+                        <Input id="task-title-edit" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-start gap-4">
+                        <Label htmlFor="task-desc-edit" className="text-right pt-2">Description</Label>
+                        <Textarea id="task-desc-edit" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" rows={3} />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-status-edit" className="text-right">Status</Label>
+                        <Select value={status} onValueChange={setStatus}>
+                            <SelectTrigger id="task-status-edit" className="col-span-3">
+                                <SelectValue placeholder="Select a status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {board.columnOrder.map(colId => (
+                                    <SelectItem key={colId} value={board.columns[colId].title}>{board.columns[colId].title}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-priority-edit" className="text-right">Priority</Label>
+                        <Select value={priority} onValueChange={(p) => setPriority(p as Priority)}>
+                            <SelectTrigger id="task-priority-edit" className="col-span-3">
+                                <SelectValue placeholder="Set priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="low">Low</SelectItem>
+                                <SelectItem value="medium">Medium</SelectItem>
+                                <SelectItem value="high">High</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-startDate-edit" className="text-right">Start Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                  id="task-startDate-edit"
+                                  variant={"outline"}
+                                  className={cn("col-span-3 justify-start text-left font-normal", !startDate && "text-muted-foreground")}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="task-dueDate-edit" className="text-right">End Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                  id="task-dueDate-edit"
+                                  variant={"outline"}
+                                  className={cn("col-span-3 justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {dueDate ? format(dueDate, "PPP") : <span>Pick an end date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <DropdownMenuSeparator />
+                     <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">Time Log</Label>
+                        <div className="col-span-3 space-y-2">
+                             <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-muted-foreground"/>
+                                <span className="font-semibold">{formatSeconds(timeLogged)}</span>
+                                <span className="text-muted-foreground">total time logged</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Input placeholder="e.g., 1h 30m" value={timeLogInput} onChange={(e) => setTimeLogInput(e.target.value)} />
+                                <Button onClick={handleLogTime}>Log Time</Button>
+                            </div>
+                        </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                     <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">Linked Resources</Label>
+                         <div className="col-span-3 space-y-2">
+                             {linkedResources.length > 0 && (
+                                <div className="space-y-2">
+                                {linkedResources.map(resource => {
+                                    const { icon: Icon, href } = resourceMap[resource.type];
+                                    return (
+                                        <div key={resource.type} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                                            <div className="flex items-center gap-2">
+                                                <Icon className="h-4 w-4 text-muted-foreground"/>
+                                                <Link href={href} className="text-sm font-medium hover:underline">{resource.label}</Link>
+                                            </div>
+                                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleRemoveResource(resource.type)}><Trash2 className="h-4 w-4"/></Button>
+                                        </div>
+                                    )
+                                })}
+                                </div>
+                            )}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full">
+                                        <LinkIcon className="mr-2 h-4 w-4" /> Add Resource
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    {Object.keys(resourceMap).map(type => (
+                                        <DropdownMenuItem key={type} onSelect={() => handleAddResource(type as ResourceType)} disabled={linkedResources.some(r => r.type === type)}>
+                                            <resourceMap[type as ResourceType].icon className="mr-2 h-4 w-4"/>
+                                            <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                         </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleSubmit} disabled={!title.trim() || !status}>Save Changes</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function NewTaskDialog() {
     const { board, addTask } = useProjects();
     const { addEvent } = useCalendar();
     const [title, setTitle] = useState('');
@@ -210,242 +450,6 @@ const formatSeconds = (totalSeconds: number) => {
     return result.trim() || '0m';
 };
 
-
-const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard | null, isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (updatedTask: TaskCard, newStatusTitle?: string) => void }) => {
-    const { board } = useProjects();
-    const { events, updateEvent, addEvent, removeEvent } = useCalendar();
-    
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
-    const [status, setStatus] = useState('');
-    const [priority, setPriority] = useState<Priority>('none');
-    const [startDate, setStartDate] = useState<Date | undefined>();
-    const [dueDate, setDueDate] = useState<Date | undefined>();
-    const [linkedResources, setLinkedResources] = useState<LinkedResource[]>([]);
-    const [timeLogged, setTimeLogged] = useState(0);
-    const [timeLogInput, setTimeLogInput] = useState('');
-
-    React.useEffect(() => {
-        if (task) {
-            const currentColumn = Object.values(board.columns).find(c => c.taskIds.includes(task.id));
-            setTitle(task.title);
-            setDescription(task.description || '');
-            setStatus(currentColumn?.title || '');
-            setPriority(task.priority);
-            setStartDate(task.startDate ? new Date(task.startDate) : undefined);
-            setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
-            setLinkedResources(task.linkedResources || []);
-            setTimeLogged(task.timeLogged || 0);
-        }
-    }, [task, board.columns]);
-
-    const parseTimeInput = (input: string): number => {
-        let totalSeconds = 0;
-        const hoursMatch = input.match(/(\d+)\s*h/);
-        const minutesMatch = input.match(/(\d+)\s*m/);
-
-        if (hoursMatch) totalSeconds += parseInt(hoursMatch[1]) * 3600;
-        if (minutesMatch) totalSeconds += parseInt(minutesMatch[1]) * 60;
-        
-        // If no units, assume minutes
-        if (!hoursMatch && !minutesMatch && /^\d+$/.test(input)) {
-            totalSeconds += parseInt(input) * 60;
-        }
-
-        return totalSeconds;
-    };
-
-    const handleLogTime = () => {
-        const secondsToAdd = parseTimeInput(timeLogInput);
-        if (secondsToAdd > 0) {
-            setTimeLogged(prev => prev + secondsToAdd);
-            setTimeLogInput('');
-        }
-    };
-
-    const handleSubmit = () => {
-        if (!task || !title.trim() || !status) return;
-        
-        const updatedTask: TaskCard = {
-            ...task,
-            title,
-            description: description || undefined,
-            priority,
-            startDate: startDate?.toISOString(),
-            dueDate: dueDate?.toISOString(),
-            linkedResources,
-            timeLogged
-        };
-        onSave(updatedTask, status);
-
-        const calendarEvent = events.find(e => e.sourceId === task.id);
-        if (updatedTask.dueDate) {
-            const eventData = {
-                date: updatedTask.dueDate,
-                time: '09:00',
-                title: updatedTask.title,
-                description: `Project Task: ${updatedTask.title}`,
-                color: 'purple',
-                type: 'Work',
-                sourceId: updatedTask.id,
-            };
-            if (calendarEvent) {
-                updateEvent({ ...calendarEvent, ...eventData });
-            } else {
-                addEvent(eventData);
-            }
-        } else if (calendarEvent) {
-            removeEvent(calendarEvent.id);
-        }
-    }
-    
-    const handleAddResource = (type: ResourceType) => {
-        if (linkedResources.some(r => r.type === type)) return;
-        const newResource: LinkedResource = { type, label: `${type.charAt(0).toUpperCase() + type.slice(1)}` };
-        setLinkedResources([...linkedResources, newResource]);
-    }
-
-    const handleRemoveResource = (type: ResourceType) => {
-        setLinkedResources(linkedResources.filter(r => r.type !== type));
-    }
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-xl">
-                <DialogHeader>
-                    <DialogTitle>Edit Task</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="task-title" className="text-right">Title</Label>
-                        <Input id="task-title" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-start gap-4">
-                        <Label htmlFor="task-desc" className="text-right pt-2">Description</Label>
-                        <Textarea id="task-desc" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" rows={3} />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="task-status" className="text-right">Status</Label>
-                        <Select value={status} onValueChange={setStatus}>
-                            <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Select a status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {board.columnOrder.map(colId => (
-                                    <SelectItem key={colId} value={board.columns[colId].title}>{board.columns[colId].title}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="task-priority" className="text-right">Priority</Label>
-                        <Select value={priority} onValueChange={(p) => setPriority(p as Priority)}>
-                            <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Set priority" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                <SelectItem value="low">Low</SelectItem>
-                                <SelectItem value="medium">Medium</SelectItem>
-                                <SelectItem value="high">High</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="task-startDate" className="text-right">Start Date</Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn("col-span-3 justify-start text-left font-normal", !startDate && "text-muted-foreground")}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="task-dueDate" className="text-right">End Date</Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn("col-span-3 justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                    <Separator />
-                     <div className="grid grid-cols-4 items-start gap-4">
-                        <Label className="text-right pt-2">Time Log</Label>
-                        <div className="col-span-3 space-y-2">
-                             <div className="flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-muted-foreground"/>
-                                <span className="font-semibold">{formatSeconds(timeLogged)}</span>
-                                <span className="text-muted-foreground">total time logged</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Input placeholder="e.g., 1h 30m" value={timeLogInput} onChange={(e) => setTimeLogInput(e.target.value)} />
-                                <Button onClick={handleLogTime}>Log Time</Button>
-                            </div>
-                        </div>
-                    </div>
-                    <Separator />
-                     <div className="grid grid-cols-4 items-start gap-4">
-                        <Label className="text-right pt-2">Linked Resources</Label>
-                         <div className="col-span-3 space-y-2">
-                             {linkedResources.length > 0 && (
-                                <div className="space-y-2">
-                                {linkedResources.map(resource => {
-                                    const { icon: Icon, href } = resourceMap[resource.type];
-                                    return (
-                                        <div key={resource.type} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                                            <div className="flex items-center gap-2">
-                                                <Icon className="h-4 w-4 text-muted-foreground"/>
-                                                <Link href={href} className="text-sm font-medium hover:underline">{resource.label}</Link>
-                                            </div>
-                                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleRemoveResource(resource.type)}><Trash2 className="h-4 w-4"/></Button>
-                                        </div>
-                                    )
-                                })}
-                                </div>
-                            )}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-full">
-                                        <LinkIcon className="mr-2 h-4 w-4" /> Add Resource
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    {Object.keys(resourceMap).map(type => (
-                                        <DropdownMenuItem key={type} onSelect={() => handleAddResource(type as ResourceType)} disabled={linkedResources.some(r => r.type === type)}>
-                                            <resourceMap[type as ResourceType].icon className="mr-2 h-4 w-4"/>
-                                            <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                         </div>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button onClick={handleSubmit} disabled={!title.trim() || !status}>Save Changes</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
 export function ProjectListView() {
     const { board, updateTask, removeTask, setBoard } = useProjects();
     const { events, removeEvent } = useCalendar();
@@ -478,7 +482,6 @@ export function ProjectListView() {
     const filteredAndSortedTasks = useMemo(() => {
         let tasks = tasksWithStatus;
 
-        // Filtering
         if (filter) {
             tasks = tasks.filter(task => task.title.toLowerCase().includes(filter.toLowerCase()));
         }
@@ -489,7 +492,6 @@ export function ProjectListView() {
             tasks = tasks.filter(task => task.priority === priorityFilter);
         }
 
-        // Sorting
         tasks.sort((a, b) => {
             let compareA: any;
             let compareB: any;
