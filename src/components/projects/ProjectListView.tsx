@@ -2,12 +2,12 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useProjects, Priority, TaskCard } from '@/contexts/ProjectsContext';
+import { useProjects, Priority, TaskCard, ResourceType, LinkedResource } from '@/contexts/ProjectsContext';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Flag, Search, ArrowUp, ArrowDown, Plus, Calendar as CalendarIcon, MoreHorizontal, Edit, Trash2, Send } from 'lucide-react';
+import { Flag, Search, ArrowUp, ArrowDown, Plus, Calendar as CalendarIcon, MoreHorizontal, Edit, Trash2, Send, Link as LinkIcon, GitCommit, Brain, DraftingCompass } from 'lucide-react';
 import { Button } from '../ui/button';
 import {
   AlertDialog,
@@ -31,6 +31,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuPortal,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
@@ -43,6 +44,7 @@ import { Badge } from '../ui/badge';
 import { useCalendar } from '@/contexts/CalendarContext';
 import { useChecklist } from '@/contexts/ChecklistContext';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 type SortKey = 'title' | 'status' | 'priority' | 'dueDate';
 type SortDirection = 'asc' | 'desc';
@@ -54,6 +56,13 @@ const priorityColors: Record<Priority, string> = {
     medium: 'text-yellow-500',
     high: 'text-red-500',
 }
+
+const resourceMap: Record<ResourceType, { icon: React.ElementType, href: string }> = {
+    'chart': { icon: GitCommit, href: '/projects/chart' },
+    'mindmap': { icon: Brain, href: '/projects/mindmap' },
+    'canvas': { icon: DraftingCompass, href: '/projects/canvas' },
+};
+
 
 const NewTaskDialog = () => {
     const { board, addTask } = useProjects();
@@ -201,6 +210,7 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
     const [priority, setPriority] = useState<Priority>('none');
     const [startDate, setStartDate] = useState<Date | undefined>();
     const [dueDate, setDueDate] = useState<Date | undefined>();
+    const [linkedResources, setLinkedResources] = useState<LinkedResource[]>([]);
 
     React.useEffect(() => {
         if (task) {
@@ -211,6 +221,7 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
             setPriority(task.priority);
             setStartDate(task.startDate ? new Date(task.startDate) : undefined);
             setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
+            setLinkedResources(task.linkedResources || []);
         }
     }, [task, board.columns]);
 
@@ -223,7 +234,8 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
             description: description || undefined,
             priority,
             startDate: startDate?.toISOString(),
-            dueDate: dueDate?.toISOString()
+            dueDate: dueDate?.toISOString(),
+            linkedResources
         };
         onSave(updatedTask, status);
 
@@ -246,6 +258,16 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
         } else if (calendarEvent) {
             removeEvent(calendarEvent.id);
         }
+    }
+    
+    const handleAddResource = (type: ResourceType) => {
+        if (linkedResources.some(r => r.type === type)) return;
+        const newResource: LinkedResource = { type, label: `${type.charAt(0).toUpperCase() + type.slice(1)}` };
+        setLinkedResources([...linkedResources, newResource]);
+    }
+
+    const handleRemoveResource = (type: ResourceType) => {
+        setLinkedResources(linkedResources.filter(r => r.type !== type));
     }
 
     return (
@@ -323,6 +345,43 @@ const EditTaskDialog = ({ task, isOpen, onOpenChange, onSave }: { task: TaskCard
                                 <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
                             </PopoverContent>
                         </Popover>
+                    </div>
+                    <Separator />
+                     <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">Linked Resources</Label>
+                         <div className="col-span-3 space-y-2">
+                             {linkedResources.length > 0 && (
+                                <div className="space-y-2">
+                                {linkedResources.map(resource => {
+                                    const { icon: Icon, href } = resourceMap[resource.type];
+                                    return (
+                                        <div key={resource.type} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                                            <div className="flex items-center gap-2">
+                                                <Icon className="h-4 w-4 text-muted-foreground"/>
+                                                <Link href={href} className="text-sm font-medium hover:underline">{resource.label}</Link>
+                                            </div>
+                                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleRemoveResource(resource.type)}><Trash2 className="h-4 w-4"/></Button>
+                                        </div>
+                                    )
+                                })}
+                                </div>
+                            )}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full">
+                                        <LinkIcon className="mr-2 h-4 w-4" /> Add Resource
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    {Object.keys(resourceMap).map(type => (
+                                        <DropdownMenuItem key={type} onSelect={() => handleAddResource(type as ResourceType)} disabled={linkedResources.some(r => r.type === type)}>
+                                            <resourceMap[type as ResourceType].icon className="mr-2 h-4 w-4"/>
+                                            <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                         </div>
                     </div>
                 </div>
                 <DialogFooter>
@@ -513,10 +572,25 @@ export function ProjectListView() {
                                 <div className="flex justify-between items-start gap-4">
                                     <div className="flex-1">
                                         <p className="font-medium">{task.title}</p>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                                             <Badge variant="secondary">{task.status}</Badge>
                                             {isClient && task.dueDate && <span>- Due {format(parseISO(task.dueDate), 'MMM d')}</span>}
                                         </div>
+                                         {task.linkedResources && task.linkedResources.length > 0 && (
+                                            <div className="flex items-center gap-3 mt-2">
+                                                {task.linkedResources.map(resource => {
+                                                    const { icon: Icon, href } = resourceMap[resource.type];
+                                                    return (
+                                                        <Link key={resource.type} href={href}>
+                                                            <Badge variant="outline" className="hover:bg-accent">
+                                                                <Icon className="mr-1 h-3 w-3"/>
+                                                                {resource.label}
+                                                            </Badge>
+                                                        </Link>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Flag className={cn("h-4 w-4", priorityColors[task.priority])} />
