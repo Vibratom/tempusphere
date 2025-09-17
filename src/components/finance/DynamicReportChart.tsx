@@ -128,7 +128,7 @@ export function DynamicReportChart() {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="md:col-span-3 h-96">
+            <div className="md:col-span-3 min-h-[24rem]">
                 <ChartContainer config={{}} className="h-full w-full">
                     <ResponsiveContainer>
                         <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
@@ -143,6 +143,7 @@ export function DynamicReportChart() {
                                 interval={0}
                             />
                             <YAxis 
+                                type="number"
                                 tickFormatter={(value: number | string) => {
                                   if (typeof value === 'number') {
                                     return `$${(value / 1000).toFixed(0)}k`
