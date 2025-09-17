@@ -31,13 +31,18 @@ interface FinanceContextType {
   updateTransaction: (transaction: Transaction) => void;
   budgets: Budget[];
   setBudgets: Dispatch<SetStateAction<Budget[]>>;
+  categories: string[];
+  addCategory: (category: string) => void;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
+const defaultCategories = ['Groceries', 'Utilities', 'Rent/Mortgage', 'Transportation', 'Entertainment', 'Salary', 'Freelance', 'Other'];
+
 export function FinanceProvider({ children }: { children: ReactNode }) {
-  const [transactions, setTransactions] = useLocalStorage<Transaction[]>('finance:transactionsV2', []);
+  const [transactions, setTransactions] = useLocalStorage<Transaction[]>('finance:transactionsV3', []);
   const [budgets, setBudgets] = useLocalStorage<Budget[]>('finance:budgetsV1', []);
+  const [categories, setCategories] = useLocalStorage<string[]>('finance:categoriesV1', defaultCategories);
 
   const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
     const newTransaction = { ...transaction, id: `txn-${Date.now()}-${Math.random()}` };
@@ -52,6 +57,12 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setTransactions(prev => prev.map(t => t.id === updatedTransaction.id ? updatedTransaction : t).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   };
 
+  const addCategory = (category: string) => {
+    if (category && !categories.includes(category)) {
+      setCategories(prev => [...prev, category].sort());
+    }
+  };
+
   const value = {
     transactions,
     setTransactions,
@@ -59,7 +70,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     removeTransaction,
     updateTransaction,
     budgets,
-    setBudgets
+    setBudgets,
+    categories,
+    addCategory,
   };
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;

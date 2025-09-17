@@ -14,15 +14,18 @@ import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '../ui/badge';
 
 const TransactionDialog = ({ transaction, onSave, onOpenChange, open, children }: { transaction?: Transaction | null, onSave: (t: Omit<Transaction, 'id'>, id?: string) => void, open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode }) => {
     const { board } = useProjects();
+    const { categories } = useFinance();
     const { toast } = useToast();
 
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [type, setType] = useState<'income' | 'expense'>('expense');
+    const [category, setCategory] = useState('Other');
     const [projectId, setProjectId] = useState<string | undefined>();
     
     useEffect(() => {
@@ -31,12 +34,14 @@ const TransactionDialog = ({ transaction, onSave, onOpenChange, open, children }
             setAmount(String(transaction.amount));
             setDate(transaction.date);
             setType(transaction.type);
+            setCategory(transaction.category);
             setProjectId(transaction.projectId);
         } else {
             setDescription('');
             setAmount('');
             setDate(new Date().toISOString().split('T')[0]);
             setType('expense');
+            setCategory('Other');
             setProjectId(undefined);
         }
     }, [transaction]);
@@ -59,7 +64,7 @@ const TransactionDialog = ({ transaction, onSave, onOpenChange, open, children }
             amount: parseFloat(amount),
             date,
             type,
-            category: 'Uncategorized',
+            category,
             projectId
         }, transaction?.id);
         
@@ -95,6 +100,15 @@ const TransactionDialog = ({ transaction, onSave, onOpenChange, open, children }
                             <SelectContent>
                                 <SelectItem value="expense">Expense</SelectItem>
                                 <SelectItem value="income">Income</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="category" className="text-right">Category</Label>
+                         <Select value={category} onValueChange={setCategory}>
+                            <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -243,6 +257,7 @@ export function FinanceApp() {
                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Description</TableHead>
+                      <TableHead>Category</TableHead>
                       <TableHead>Project</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                        <TableHead className="w-[100px]"></TableHead>
@@ -253,6 +268,7 @@ export function FinanceApp() {
                       <TableRow key={t.id}>
                         <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
                         <TableCell className="font-medium">{t.description}</TableCell>
+                        <TableCell><Badge variant="secondary">{t.category}</Badge></TableCell>
                         <TableCell className="text-muted-foreground">{getProjectTitle(t.projectId)}</TableCell>
                         <TableCell className={`text-right font-mono ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
                           {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
@@ -277,7 +293,7 @@ export function FinanceApp() {
                 </div>
               ) : null}
           </CardContent>
-          {transactions.length > 0 && isClient && (
+          {isClient && transactions.length > 0 && (
             <CardFooter>
                 <p className="text-xs text-muted-foreground">Showing all {transactions.length} transactions.</p>
             </CardFooter>
