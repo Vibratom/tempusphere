@@ -17,9 +17,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useProjects } from '@/contexts/ProjectsContext';
-import { Progress } from '../ui/progress';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Pie, PieChart, ResponsiveContainer, Legend, Cell } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Legend, Cell, Tooltip } from 'recharts';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Badge } from '../ui/badge';
@@ -184,6 +183,18 @@ export function FinanceApp() {
         const ap = transactions.filter(t => t.type === 'expense' && t.status !== 'paid');
         return { accountsReceivable: ar, accountsPayable: ap };
     }, [transactions]);
+
+    const expenseByCategory = useMemo(() => {
+        const expenses = transactions.filter(t => t.type === 'expense');
+        const byCategory = expenses.reduce((acc, t) => {
+            if (!acc[t.category]) {
+                acc[t.category] = { name: t.category, value: 0 };
+            }
+            acc[t.category].value += t.amount;
+            return acc;
+        }, {} as Record<string, {name: string, value: number}>);
+        return Object.values(byCategory);
+    }, [transactions]);
     
     const markAsPaid = (transaction: Transaction) => {
         updateTransaction({ ...transaction, status: 'paid' });
@@ -209,8 +220,7 @@ export function FinanceApp() {
                 <p className="text-lg text-muted-foreground mt-2">Your central hub for tracking income, expenses, and budgets.</p>
             </div>
             
-            {/* KPI Cards */}
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Total Income</CardTitle></CardHeader>
                     <CardContent><p className="text-3xl font-bold text-green-500">${financialSummary.totalIncome.toFixed(2)}</p></CardContent>
@@ -223,133 +233,162 @@ export function FinanceApp() {
                     <CardHeader><CardTitle>Net Balance</CardTitle></CardHeader>
                     <CardContent><p className="text-3xl font-bold">${(financialSummary.totalIncome - financialSummary.totalExpense).toFixed(2)}</p></CardContent>
                 </Card>
+                 <Card>
+                    <CardHeader><CardTitle>A/P vs A/R</CardTitle></CardHeader>
+                    <CardContent>
+                        <div className="flex justify-between items-center">
+                            <div className="text-center">
+                                <p className="text-sm text-muted-foreground">Receivable</p>
+                                <p className="text-lg font-bold text-green-500">${accountsReceivable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
+                            </div>
+                             <div className="text-center">
+                                <p className="text-sm text-muted-foreground">Payable</p>
+                                <p className="text-lg font-bold text-red-500">${accountsPayable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
-            <Tabs defaultValue="ledger">
-                <div className="flex justify-between items-center">
-                    <TabsList>
-                        <TabsTrigger value="ledger"><FileText className="mr-2"/>General Ledger</TabsTrigger>
-                        <TabsTrigger value="receivable"><FilePlus className="mr-2"/>Accounts Receivable</TabsTrigger>
-                        <TabsTrigger value="payable"><HandCoins className="mr-2"/>Accounts Payable</TabsTrigger>
-                    </TabsList>
-                     <Button onClick={() => { setEditingTransaction(null); setIsFormOpen(true); }}><Plus className="mr-2"/>Add Transaction</Button>
+            <div className="grid md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                    <Tabs defaultValue="ledger">
+                        <div className="flex justify-between items-center mb-4">
+                            <TabsList>
+                                <TabsTrigger value="ledger"><FileText className="mr-2"/>Ledger</TabsTrigger>
+                                <TabsTrigger value="receivable"><FilePlus className="mr-2"/>Receivable</TabsTrigger>
+                                <TabsTrigger value="payable"><HandCoins className="mr-2"/>Payable</TabsTrigger>
+                            </TabsList>
+                            <Button onClick={() => { setEditingTransaction(null); setIsFormOpen(true); }}><Plus className="mr-2"/>Add Transaction</Button>
+                        </div>
+                        <TabsContent value="ledger">
+                            <Card>
+                                <CardContent className="p-0">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Date</TableHead>
+                                                <TableHead>Description</TableHead>
+                                                <TableHead>Category</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead className="text-right">Amount</TableHead>
+                                                <TableHead className="w-[50px]"></TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {transactions.map(t => (
+                                            <TableRow key={t.id}>
+                                                <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
+                                                <TableCell className="font-medium">{t.description}</TableCell>
+                                                <TableCell>{t.category}</TableCell>
+                                                <TableCell>{statusBadge(t.status, t.date)}</TableCell>
+                                                <TableCell className={`text-right font-mono ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
+                                                {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon"><MoreVertical/></Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent>
+                                                            <DropdownMenuItem onSelect={() => {setEditingTransaction(t); setIsFormOpen(true);}}><Edit className="mr-2"/>Edit</DropdownMenuItem>
+                                                            <DropdownMenuItem onSelect={() => removeTransaction(t.id)} className="text-destructive"><Trash2 className="mr-2"/>Delete</DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        <TabsContent value="receivable">
+                            <Card>
+                                <CardContent className="p-0">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Due Date</TableHead>
+                                                <TableHead>Description</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead className="text-right">Amount</TableHead>
+                                                <TableHead className="w-[120px]"></TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {accountsReceivable.map(t => (
+                                                <TableRow key={t.id}>
+                                                    <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
+                                                    <TableCell className="font-medium">{t.description}</TableCell>
+                                                    <TableCell>{statusBadge(t.status, t.date)}</TableCell>
+                                                    <TableCell className="text-right font-mono text-green-500">+${t.amount.toFixed(2)}</TableCell>
+                                                    <TableCell>
+                                                        <Button size="sm" onClick={() => markAsPaid(t)}>Mark as Paid</Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        <TabsContent value="payable">
+                            <Card>
+                                <CardContent className="p-0">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Due Date</TableHead>
+                                                <TableHead>Description</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead className="text-right">Amount</TableHead>
+                                                <TableHead className="w-[120px]"></TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {accountsPayable.map(t => (
+                                                <TableRow key={t.id}>
+                                                    <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
+                                                    <TableCell className="font-medium">{t.description}</TableCell>
+                                                    <TableCell>{statusBadge(t.status, t.date)}</TableCell>
+                                                    <TableCell className="text-right font-mono text-red-500">-${t.amount.toFixed(2)}</TableCell>
+                                                    <TableCell>
+                                                        <Button size="sm" onClick={() => markAsPaid(t)}>Mark as Paid</Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
                 </div>
-                <TabsContent value="ledger" className="mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>General Ledger</CardTitle>
-                            <CardDescription>A complete record of all financial transactions.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Description</TableHead>
-                                        <TableHead>Category</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">Amount</TableHead>
-                                        <TableHead className="w-[50px]"></TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {transactions.map(t => (
-                                    <TableRow key={t.id}>
-                                        <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
-                                        <TableCell className="font-medium">{t.description}</TableCell>
-                                        <TableCell>{t.category}</TableCell>
-                                        <TableCell>{statusBadge(t.status, t.date)}</TableCell>
-                                        <TableCell className={`text-right font-mono ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
-                                        {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon"><MoreVertical/></Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onSelect={() => {setEditingTransaction(t); setIsFormOpen(true);}}><Edit className="mr-2"/>Edit</DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => removeTransaction(t.id)} className="text-destructive"><Trash2 className="mr-2"/>Delete</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="receivable" className="mt-4">
+                <div className="md:col-span-1">
                      <Card>
                         <CardHeader>
-                            <CardTitle>Accounts Receivable</CardTitle>
-                            <CardDescription>Money owed to you (unpaid income).</CardDescription>
+                            <CardTitle>Expense Breakdown</CardTitle>
+                            <CardDescription>Spending by category</CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Due Date</TableHead>
-                                        <TableHead>Description</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">Amount</TableHead>
-                                        <TableHead className="w-[120px]"></TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {accountsReceivable.map(t => (
-                                        <TableRow key={t.id}>
-                                            <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
-                                            <TableCell className="font-medium">{t.description}</TableCell>
-                                            <TableCell>{statusBadge(t.status, t.date)}</TableCell>
-                                            <TableCell className="text-right font-mono text-green-500">+${t.amount.toFixed(2)}</TableCell>
-                                            <TableCell>
-                                                <Button size="sm" onClick={() => markAsPaid(t)}>Mark as Paid</Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                     </Card>
-                </TabsContent>
-                <TabsContent value="payable" className="mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Accounts Payable</CardTitle>
-                            <CardDescription>Money you owe (unpaid expenses).</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                              <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Due Date</TableHead>
-                                        <TableHead>Description</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">Amount</TableHead>
-                                        <TableHead className="w-[120px]"></TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {accountsPayable.map(t => (
-                                        <TableRow key={t.id}>
-                                            <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
-                                            <TableCell className="font-medium">{t.description}</TableCell>
-                                            <TableCell>{statusBadge(t.status, t.date)}</TableCell>
-                                            <TableCell className="text-right font-mono text-red-500">-${t.amount.toFixed(2)}</TableCell>
-                                            <TableCell>
-                                                <Button size="sm" onClick={() => markAsPaid(t)}>Mark as Paid</Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                            <ChartContainer config={{}} className="h-64 w-full">
+                                <ResponsiveContainer>
+                                    <PieChart>
+                                        <Tooltip content={<ChartTooltipContent hideLabel />} />
+                                        <Pie data={expenseByCategory} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
+                                             {expenseByCategory.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Legend iconType="circle"/>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
-                </TabsContent>
-            </Tabs>
-            
+                </div>
+            </div>
 
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                  <TransactionForm onSave={handleSaveTransaction} transaction={editingTransaction} projects={projectList} />
@@ -358,3 +397,5 @@ export function FinanceApp() {
         </div>
     );
 }
+
+    
