@@ -43,7 +43,6 @@ export function IncomeStatementWaterfall() {
                         tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} 
                         tickLine={false}
                         axisLine={false}
-                        domain={['auto', 'auto']}
                     />
                      <Tooltip 
                         cursor={{ fill: 'hsl(var(--muted))' }} 
