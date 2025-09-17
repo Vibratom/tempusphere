@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance, Transaction, TransactionType, TransactionStatus } from '@/contexts/FinanceContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
@@ -22,6 +22,7 @@ import { Pie, PieChart, ResponsiveContainer, Legend, Cell, Tooltip } from 'recha
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Badge } from '../ui/badge';
+import { Skeleton } from '../ui/skeleton';
 
 
 const COLORS = ['#16a34a', '#3b82f6', '#ef4444', '#f97316', '#8b5cf6', '#d946ef', '#14b8a6', '#eab308'];
@@ -155,6 +156,11 @@ export function FinanceApp() {
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const handleSaveTransaction = (transaction: Omit<Transaction, 'id'>, id?: string) => {
         if(id) {
@@ -217,19 +223,26 @@ export function FinanceApp() {
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Total Income</CardTitle></CardHeader>
-                    <CardContent><p className="text-3xl font-bold text-green-500">${financialSummary.totalIncome.toFixed(2)}</p></CardContent>
+                    <CardContent>
+                        {isClient ? <p className="text-3xl font-bold text-green-500">${financialSummary.totalIncome.toFixed(2)}</p> : <Skeleton className="h-9 w-32" />}
+                    </CardContent>
                 </Card>
                  <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><ArrowDown className="text-red-500"/> Total Expenses</CardTitle></CardHeader>
-                    <CardContent><p className="text-3xl font-bold text-red-500">${financialSummary.totalExpense.toFixed(2)}</p></CardContent>
+                    <CardContent>
+                        {isClient ? <p className="text-3xl font-bold text-red-500">${financialSummary.totalExpense.toFixed(2)}</p> : <Skeleton className="h-9 w-32" />}
+                    </CardContent>
                 </Card>
                  <Card>
                     <CardHeader><CardTitle>Net Balance</CardTitle></CardHeader>
-                    <CardContent><p className="text-3xl font-bold">${(financialSummary.totalIncome - financialSummary.totalExpense).toFixed(2)}</p></CardContent>
+                    <CardContent>
+                        {isClient ? <p className="text-3xl font-bold">${(financialSummary.totalIncome - financialSummary.totalExpense).toFixed(2)}</p> : <Skeleton className="h-9 w-32" />}
+                    </CardContent>
                 </Card>
                  <Card>
                     <CardHeader><CardTitle>A/P vs A/R</CardTitle></CardHeader>
                     <CardContent>
+                        {isClient ? (
                         <div className="flex justify-between items-center">
                             <div className="text-center">
                                 <p className="text-sm text-muted-foreground">Receivable</p>
@@ -240,6 +253,7 @@ export function FinanceApp() {
                                 <p className="text-lg font-bold text-red-500">${accountsPayable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
                             </div>
                         </div>
+                        ) : <Skeleton className="h-9 w-full" />}
                     </CardContent>
                 </Card>
             </div>
