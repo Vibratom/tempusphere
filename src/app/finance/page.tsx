@@ -1,3 +1,4 @@
+
 'use client';
 
 import { FinanceApp } from '@/components/finance/FinanceApp';

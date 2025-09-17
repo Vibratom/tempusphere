@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Landmark, BrainCircuit, DraftingCompass, KanbanSquare, FileText, Table, UtensilsCrossed, ListChecks } from "lucide-react";
@@ -135,7 +136,7 @@ export function LandingPage() {
                     </div>
                 </section>
             </main>
-            <Footer />
+            <Footer showEcosystem={true} />
         </div>
     );
 }

@@ -17,26 +17,29 @@ const vibratomPlatforms = [
     { name: 'NexusPlay', href: 'https://nexusplay.vibratomstudios.com/', logo: '/logos/nexusplay.webp', description: 'Engaging brain games designed to challenge and entertain your mind.' },
 ];
 
-export function Footer() {
+export function Footer({ showEcosystem = false }: { showEcosystem?: boolean }) {
     return (
         <footer className="bg-[#101319] text-gray-300 w-full mt-auto py-12">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
 
-                <section className="mb-12 text-center">
-                    <h2 className="text-3xl font-bold text-white mb-3">Explore the Vibratom Studios Ecosystem</h2>
-                    <p className="max-w-3xl mx-auto text-lg text-gray-400 mb-8">
-                        Vibratom Studios is a comprehensive digital ecosystem designed to enhance every aspect of your creative and productive life.
-                    </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
-                        {vibratomPlatforms.map(p => <PlatformCard key={p.name} {...p} />)}
-                    </div>
-                     <Link href="https://www.vibratomstudios.com" target="_blank" rel="noopener noreferrer" className="text-lg text-pink-400 hover:text-pink-300 hover:underline mt-8 inline-block">
-                        Visit our main site at VibratomStudios.com
-                    </Link>
-                </section>
+                {showEcosystem && (
+                    <>
+                        <section className="mb-12 text-center">
+                            <h2 className="text-3xl font-bold text-white mb-3">Explore the Vibratom Studios Ecosystem</h2>
+                            <p className="max-w-3xl mx-auto text-lg text-gray-400 mb-8">
+                                Vibratom Studios is a comprehensive digital ecosystem designed to enhance every aspect of your creative and productive life.
+                            </p>
+                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
+                                {vibratomPlatforms.map(p => <PlatformCard key={p.name} {...p} />)}
+                            </div>
+                            <Link href="https://www.vibratomstudios.com" target="_blank" rel="noopener noreferrer" className="text-lg text-pink-400 hover:text-pink-300 hover:underline mt-8 inline-block">
+                                Visit our main site at VibratomStudios.com
+                            </Link>
+                        </section>
+                        <hr className="border-gray-700 mb-10" />
+                    </>
+                )}
                 
-                <hr className="border-gray-700 mb-10" />
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-center md:text-left">
                     <div className="space-y-4">
                          <h3 className="text-xl font-semibold text-white">Tempusphere</h3>
