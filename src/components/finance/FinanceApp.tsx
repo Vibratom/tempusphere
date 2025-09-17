@@ -220,7 +220,7 @@ export function FinanceApp() {
     
     return (
         <div className="w-full flex flex-col gap-8">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Total Income</CardTitle></CardHeader>
                     <CardContent>
@@ -261,13 +261,13 @@ export function FinanceApp() {
             <div className="grid md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
                     <Tabs defaultValue="ledger">
-                        <div className="flex justify-between items-center mb-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
                             <TabsList>
                                 <TabsTrigger value="ledger"><FileText className="mr-2"/>Ledger</TabsTrigger>
                                 <TabsTrigger value="receivable"><FilePlus className="mr-2"/>Receivable</TabsTrigger>
                                 <TabsTrigger value="payable"><HandCoins className="mr-2"/>Payable</TabsTrigger>
                             </TabsList>
-                            <Button onClick={() => { setEditingTransaction(null); setIsFormOpen(true); }}><Plus className="mr-2"/>Add Transaction</Button>
+                            <Button onClick={() => { setEditingTransaction(null); setIsFormOpen(true); }} className="w-full sm:w-auto"><Plus className="mr-2"/>Add Transaction</Button>
                         </div>
                         <TabsContent value="ledger">
                             <Card>
