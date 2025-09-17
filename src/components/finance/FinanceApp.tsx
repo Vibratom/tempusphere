@@ -1,11 +1,12 @@
+
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useFinance, Transaction } from '@/contexts/FinanceContext';
-import { useProjects, TaskCard } from '@/contexts/ProjectsContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { useProjects } from '@/contexts/ProjectsContext';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Landmark, TrendingUp, PieChart, Plus, Trash2 } from 'lucide-react';
+import { Landmark, TrendingUp, PieChart, Plus, Trash2, Edit } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { Label } from '../ui/label';
@@ -14,19 +15,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
-const TransactionDialog = () => {
-    const { addTransaction } = useFinance();
+const TransactionDialog = ({ transaction, onSave, onOpenChange, open, children }: { transaction?: Transaction | null, onSave: (t: Omit<Transaction, 'id'>, id?: string) => void, open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode }) => {
     const { board } = useProjects();
     const { toast } = useToast();
 
-    const [isOpen, setIsOpen] = useState(false);
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [type, setType] = useState<'income' | 'expense'>('expense');
-    const [category, setCategory] = useState('');
     const [projectId, setProjectId] = useState<string | undefined>();
     
+    useEffect(() => {
+        if (transaction) {
+            setDescription(transaction.description);
+            setAmount(String(transaction.amount));
+            setDate(transaction.date);
+            setType(transaction.type);
+            setProjectId(transaction.projectId);
+        } else {
+            setDescription('');
+            setAmount('');
+            setDate(new Date().toISOString().split('T')[0]);
+            setType('expense');
+            setProjectId(undefined);
+        }
+    }, [transaction]);
+
     const projectOptions = useMemo(() => {
         return Object.values(board.tasks).map(task => ({
             value: task.id,
@@ -40,38 +54,26 @@ const TransactionDialog = () => {
             return;
         }
 
-        addTransaction({
+        onSave({
             description,
             amount: parseFloat(amount),
             date,
             type,
-            category: category || 'Uncategorized',
+            category: 'Uncategorized',
             projectId
-        });
+        }, transaction?.id);
         
-        toast({ title: "Transaction Added!", description: `Added ${description} for $${amount}.`});
-
-        // Reset form
-        setDescription('');
-        setAmount('');
-        setDate(new Date().toISOString().split('T')[0]);
-        setType('expense');
-        setCategory('');
-        setProjectId(undefined);
-        setIsOpen(false);
+        onOpenChange(false);
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>
-                <Button>
-                    <Plus className="mr-2"/>
-                    Add Transaction
-                </Button>
+                {children}
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Add Transaction</DialogTitle>
+                    <DialogTitle>{transaction ? 'Edit' : 'Add'} Transaction</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -118,8 +120,12 @@ const TransactionDialog = () => {
 }
 
 export function FinanceApp() {
-  const { transactions, removeTransaction } = useFinance();
+  const { transactions, addTransaction, removeTransaction, updateTransaction } = useFinance();
   const { board } = useProjects();
+  const { toast } = useToast();
+  
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   
   const { totalBalance, monthlySpending } = useMemo(() => {
     let balance = 0;
@@ -148,6 +154,20 @@ export function FinanceApp() {
     return board.tasks[projectId]?.title || 'Unknown Project';
   }
 
+  const handleSaveTransaction = (transactionData: Omit<Transaction, 'id'>, id?: string) => {
+    if (id) {
+        updateTransaction({ ...transactionData, id });
+        toast({ title: "Transaction Updated!", description: `Updated ${transactionData.description}.`});
+    } else {
+        addTransaction(transactionData);
+        toast({ title: "Transaction Added!", description: `Added ${transactionData.description}.`});
+    }
+  };
+
+  const handleOpenDialog = (transaction: Transaction | null = null) => {
+      setSelectedTransaction(transaction);
+      setIsDialogOpen(true);
+  }
 
   return (
     <div className="w-full max-w-7xl mx-auto">
@@ -194,7 +214,17 @@ export function FinanceApp() {
           <CardHeader>
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <CardTitle>Recent Transactions</CardTitle>
-                <TransactionDialog />
+                <TransactionDialog 
+                    open={isDialogOpen} 
+                    onOpenChange={setIsDialogOpen}
+                    transaction={selectedTransaction}
+                    onSave={handleSaveTransaction}
+                >
+                    <Button onClick={() => handleOpenDialog()}>
+                        <Plus className="mr-2"/>
+                        Add Transaction
+                    </Button>
+                </TransactionDialog>
               </div>
           </CardHeader>
           <CardContent>
@@ -206,7 +236,7 @@ export function FinanceApp() {
                       <TableHead>Description</TableHead>
                       <TableHead>Project</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
-                       <TableHead className="w-[50px]"></TableHead>
+                       <TableHead className="w-[100px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -218,7 +248,10 @@ export function FinanceApp() {
                         <TableCell className={`text-right font-mono ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
                           {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(t)}>
+                                <Edit className="h-4 w-4" />
+                            </Button>
                             <Button variant="ghost" size="icon" onClick={() => removeTransaction(t.id)}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>
