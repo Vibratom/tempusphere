@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { useProjects, Priority } from '@/contexts/ProjectsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, ListChecks, ListTodo, Loader, Wallet, CalendarClock } from 'lucide-react';
+import { CheckCircle2, ListTodo, Loader, Wallet, CalendarClock } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell, Legend } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { useFinance } from '@/contexts/FinanceContext';
@@ -109,10 +109,10 @@ export function ProjectDashboard() {
   const statusChartColors = ['#3b82f6', '#f97316', '#16a34a', '#9333ea', '#f43f5e'];
 
   return (
-    <div className="p-4 md:p-6 grid gap-6 grid-cols-1 lg:grid-cols-4">
+    <div className="p-4 md:p-6 grid gap-4 grid-cols-2 md:grid-cols-4">
 
       {/* KPIs */}
-      <Card className="lg:col-span-1">
+      <Card className="col-span-1">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><ListTodo /> Total Tasks</CardTitle>
         </CardHeader>
@@ -121,27 +121,27 @@ export function ProjectDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="lg:col-span-1">
+      <Card className="col-span-1">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><CheckCircle2 /> Completed Tasks</CardTitle>
+          <CardTitle className="flex items-center gap-2"><CheckCircle2 /> Completed</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-4xl font-bold">{dashboardStats.completedTasks}</p>
         </CardContent>
       </Card>
       
-       <Card className="lg:col-span-1">
+       <Card className="col-span-1">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Loader /> Project Progress</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Loader /> Progress</CardTitle>
         </CardHeader>
         <CardContent>
            <p className="text-4xl font-bold">{dashboardStats.progress.toFixed(0)}%</p>
         </CardContent>
       </Card>
       
-       <Card className="lg:col-span-1">
+       <Card className="col-span-1">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Wallet /> Project Budget</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Wallet /> Budget</CardTitle>
         </CardHeader>
         <CardContent>
            <p className="text-4xl font-bold">${dashboardStats.totalBudget.toLocaleString()}</p>
@@ -150,7 +150,7 @@ export function ProjectDashboard() {
 
 
       {/* Charts */}
-      <Card className="lg:col-span-2">
+      <Card className="col-span-2">
         <CardHeader>
           <CardTitle>Tasks by Status</CardTitle>
           <CardDescription>Distribution of tasks across your Kanban board columns.</CardDescription>
@@ -174,7 +174,7 @@ export function ProjectDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="lg:col-span-2">
+      <Card className="col-span-2">
         <CardHeader>
           <CardTitle>Tasks by Priority</CardTitle>
            <CardDescription>How tasks are prioritized across the project.</CardDescription>
@@ -192,7 +192,7 @@ export function ProjectDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="lg:col-span-4">
+      <Card className="col-span-2 md:col-span-4">
         <CardHeader>
             <CardTitle className="flex items-center gap-2"><CalendarClock/>Project Timeline</CardTitle>
             <CardDescription>Overall project duration based on task start and end dates.</CardDescription>
@@ -218,7 +218,7 @@ export function ProjectDashboard() {
         </CardContent>
       </Card>
       
-      <Card className="lg:col-span-2">
+      <Card className="col-span-2">
         <CardHeader>
             <CardTitle>Upcoming Deadlines</CardTitle>
             <CardDescription>Tasks with the soonest due dates.</CardDescription>
@@ -238,7 +238,7 @@ export function ProjectDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="lg:col-span-2">
+      <Card className="col-span-2">
         <CardHeader>
             <CardTitle>Checklist Progress</CardTitle>
             <CardDescription>Overview of your project-related checklists.</CardDescription>
