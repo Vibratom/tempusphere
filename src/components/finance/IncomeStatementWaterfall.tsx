@@ -1,16 +1,15 @@
-
 'use client'
 
 import React, { useMemo } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
-import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Skeleton } from '../ui/skeleton';
 
 interface WaterfallDataPoint {
     name: string;
-    value?: number;
-    base: number;
+    value: number; // The visible value of the bar (can be negative)
+    base: number;  // The transparent base for stacking
     fill: string;
 }
 
@@ -42,8 +41,8 @@ export function IncomeStatementWaterfall() {
         if (totalExpenses > 0) {
             data.push({
                 name: 'Expenses',
-                value: -totalExpenses,
-                base: runningTotal - totalExpenses,
+                value: -totalExpenses, // Negative value
+                base: runningTotal - totalExpenses, // Start from where the expense ends
                 fill: 'hsl(var(--chart-5))', // Red
             });
             runningTotal -= totalExpenses;
@@ -52,7 +51,7 @@ export function IncomeStatementWaterfall() {
         // 3. Net Income (as a total bar)
         data.push({
             name: 'Net Income',
-            value: runningTotal,
+            value: runningTotal, // The final value
             base: 0,
             fill: 'hsl(var(--chart-1))', // Blue
         });
@@ -74,11 +73,16 @@ export function IncomeStatementWaterfall() {
                         content={<ChartTooltipContent 
                             formatter={(value, name, props) => {
                                 const payload = props.payload as WaterfallDataPoint;
-                                // For negative bars, the 'value' is the negative amount. For totals, it's the final value.
-                                const displayValue = name === 'Expenses' ? payload.value : value;
+                                let displayValue = payload.value;
+                                
+                                // For the tooltip, we show the absolute change for expenses
+                                if (payload.name === 'Expenses') {
+                                    displayValue = Math.abs(payload.value);
+                                }
+                                
                                 return (
                                     <div className="flex flex-col">
-                                        <span className="font-bold">{name}</span>
+                                        <span className="font-bold">{payload.name}</span>
                                         <span>{`$${Number(displayValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}</span>
                                     </div>
                                 )
@@ -86,8 +90,11 @@ export function IncomeStatementWaterfall() {
                             hideLabel 
                         />}
                     />
+                    {/* Transparent base bar */}
                     <Bar dataKey="base" stackId="a" fill="transparent" />
-                    <Bar dataKey="value" stackId="a" >
+                    
+                    {/* Visible value bar */}
+                    <Bar dataKey="value" stackId="a">
                        <LabelList 
                             dataKey="value"
                             position="top" 
@@ -95,6 +102,9 @@ export function IncomeStatementWaterfall() {
                             formatter={(value: number) => `$${value.toLocaleString(undefined, {maximumFractionDigits: 0})}`}
                             className="fill-foreground text-sm font-medium"
                         />
+                         {waterfallData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
                     </Bar>
                 </BarChart>
             </ResponsiveContainer>
