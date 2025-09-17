@@ -213,13 +213,7 @@ export function FinanceApp() {
     }
     
     return (
-        <div className="w-full max-w-7xl mx-auto flex flex-col gap-8">
-            <div className="flex flex-col items-center text-center mb-4">
-                <Banknote className="w-16 h-16 mb-4 text-primary" />
-                <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Finance Dashboard</h1>
-                <p className="text-lg text-muted-foreground mt-2">Your central hub for tracking income, expenses, and budgets.</p>
-            </div>
-            
+        <div className="w-full flex flex-col gap-8">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Total Income</CardTitle></CardHeader>
