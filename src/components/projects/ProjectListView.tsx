@@ -63,6 +63,16 @@ const resourceMap: Record<ResourceType, { icon: React.ElementType, href: string 
     'canvas': { icon: DraftingCompass, href: '/projects/canvas' },
 };
 
+const formatSeconds = (totalSeconds: number) => {
+    if (!totalSeconds) return '0m';
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    let result = '';
+    if (hours > 0) result += `${hours}h `;
+    if (minutes > 0) result += `${minutes}m`;
+    return result.trim() || '0m';
+};
+
 
 function EditTaskDialog({ task, isOpen, onOpenChange, onSave }: { task: TaskCard | null, isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (updatedTask: TaskCard, newStatusTitle?: string) => void }) {
     const { board } = useProjects();
@@ -439,16 +449,6 @@ function NewTaskDialog() {
         </Dialog>
     )
 }
-
-const formatSeconds = (totalSeconds: number) => {
-    if (!totalSeconds) return '0m';
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    let result = '';
-    if (hours > 0) result += `${hours}h `;
-    if (minutes > 0) result += `${minutes}m`;
-    return result.trim() || '0m';
-};
 
 export function ProjectListView() {
     const { board, updateTask, removeTask, setBoard } = useProjects();
