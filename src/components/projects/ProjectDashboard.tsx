@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useProjects, Priority } from '@/contexts/ProjectsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, ListTodo, Loader, Wallet, CalendarClock } from 'lucide-react';
@@ -11,6 +12,7 @@ import { Badge } from '../ui/badge';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { useChecklist } from '@/contexts/ChecklistContext';
 import { Progress } from '../ui/progress';
+import { Skeleton } from '../ui/skeleton';
 
 const priorityColors: Record<Priority, string> = {
     none: '#94a3b8',    // slate-400
@@ -28,6 +30,11 @@ export function ProjectDashboard() {
   const { board } = useProjects();
   const { transactions } = useFinance();
   const { lists: checklists } = useChecklist();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const dashboardStats = useMemo(() => {
     const tasks = Object.values(board.tasks);
@@ -144,7 +151,11 @@ export function ProjectDashboard() {
           <CardTitle className="flex items-center gap-2"><Wallet /> Budget</CardTitle>
         </CardHeader>
         <CardContent>
-           <p className="text-4xl font-bold">${dashboardStats.totalBudget.toLocaleString()}</p>
+           {isClient ? (
+            <p className="text-4xl font-bold">${dashboardStats.totalBudget.toLocaleString()}</p>
+          ) : (
+            <Skeleton className="h-10 w-24" />
+          )}
         </CardContent>
       </Card>
 
