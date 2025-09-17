@@ -11,6 +11,7 @@ import { ProjectsProvider } from '@/contexts/ProjectsContext';
 import { usePathname } from 'next/navigation';
 import { ProjectNav } from '@/components/projects/ProjectNav';
 import { Card, CardContent } from '@/components/ui/card';
+import { FinanceProvider } from '@/contexts/FinanceContext';
 
 export default function ProjectsLayout({
   children,
@@ -29,13 +30,15 @@ export default function ProjectsLayout({
             <CalendarProvider>
               <ChecklistProvider>
                 <ProjectsProvider>
-                  <div className="min-h-screen w-full bg-background flex flex-col">
-                      <Header />
-                      <main className="flex-1 flex flex-col">
-                          {children}
-                      </main>
-                      <Footer />
-                  </div>
+                  <FinanceProvider>
+                    <div className="min-h-screen w-full bg-background flex flex-col">
+                        <Header />
+                        <main className="flex-1 flex flex-col">
+                            {children}
+                        </main>
+                        <Footer />
+                    </div>
+                  </FinanceProvider>
                 </ProjectsProvider>
               </ChecklistProvider>
             </CalendarProvider>
@@ -51,22 +54,24 @@ export default function ProjectsLayout({
         <CalendarProvider>
           <ChecklistProvider>
             <ProjectsProvider>
-              <div className="min-h-screen w-full bg-background flex flex-col">
-                  <Header />
-                  <main className="flex-1 flex flex-col">
-                      <div className="flex-1 flex flex-col items-center p-4 md:p-8">
-                        <div className="w-full max-w-7xl flex flex-col flex-1 gap-4">
-                          <ProjectNav activeTool={activeTool} />
-                           <Card className="flex-1">
-                              <CardContent className="p-4 md:p-6 h-full">
-                                {children}
-                              </CardContent>
-                          </Card>
+              <FinanceProvider>
+                <div className="min-h-screen w-full bg-background flex flex-col">
+                    <Header />
+                    <main className="flex-1 flex flex-col">
+                        <div className="flex-1 flex flex-col items-center p-4 md:p-8">
+                          <div className="w-full max-w-7xl flex flex-col flex-1 gap-4">
+                            <ProjectNav activeTool={activeTool} />
+                             <Card className="flex-1">
+                                <CardContent className="p-4 md:p-6 h-full">
+                                  {children}
+                                </CardContent>
+                            </Card>
+                          </div>
                         </div>
-                      </div>
-                  </main>
-                  <Footer />
-              </div>
+                    </main>
+                    <Footer />
+                </div>
+              </FinanceProvider>
             </ProjectsProvider>
           </ChecklistProvider>
         </CalendarProvider>
