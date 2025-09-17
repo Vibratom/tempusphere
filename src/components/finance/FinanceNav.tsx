@@ -3,11 +3,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, FileText } from 'lucide-react';
+import { LayoutDashboard, FileText, ListFilter } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
     { value: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', href: '/finance' },
+    { value: 'transactions', icon: ListFilter, label: 'Transactions', href: '/finance/transactions' },
     { value: 'reports', icon: FileText, label: 'Reports', href: '/finance/reports' },
 ];
 
