@@ -10,7 +10,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { Pie, PieChart, ResponsiveContainer, Legend, Cell, Tooltip, BarChart, XAxis, YAxis, Bar, CartesianGrid } from 'recharts';
 import { Skeleton } from '../ui/skeleton';
 import { format, startOfMonth, subMonths, parseISO } from 'date-fns';
-import { Table, TableBody, TableCell, TableRow } from '../ui/table';
+import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from '../ui/table';
 
 const COLORS = ['#16a34a', '#3b82f6', '#ef4444', '#f97316', '#8b5cf6', '#d946ef', '#14b8a6', '#eab308'];
 
@@ -201,85 +201,101 @@ export function FinanceApp() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Income vs Expense Breakdown</CardTitle>
-                    <CardDescription>Spending and earnings by category (all time)</CardDescription>
+                    <CardTitle>Income Statement</CardTitle>
+                    <CardDescription>A summary of revenues and expenses for all time.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-8">
-                     <div className="flex flex-col gap-4">
-                        <h4 className="text-center font-semibold">Income Sources</h4>
-                        <ChartContainer config={{}} className="h-48 w-full">
-                             <ResponsiveContainer>
-                                <PieChart>
-                                    <Tooltip content={<ChartTooltipContent hideLabel />} />
-                                    <Pie data={incomeStatement.incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={30} outerRadius={50}>
-                                        {incomeStatement.incomeChartData.map((entry, index) => (
-                                            <Cell key={`cell-inc-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Legend align="right" verticalAlign="middle" layout="vertical" iconType="circle"/>
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-                    </div>
-                     <div className="flex flex-col gap-4">
-                        <h4 className="text-center font-semibold">Expense Categories</h4>
-                        <ChartContainer config={{}} className="h-48 w-full">
-                             <ResponsiveContainer>
-                                <PieChart>
-                                    <Tooltip content={<ChartTooltipContent hideLabel />} />
-                                    <Pie data={incomeStatement.expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={30} outerRadius={50}>
-                                        {incomeStatement.expenseChartData.map((entry, index) => (
-                                            <Cell key={`cell-exp-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Legend align="right" verticalAlign="middle" layout="vertical" iconType="circle"/>
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-                    </div>
+                <CardContent>
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Category</TableHead>
+                                <TableHead className="text-right">Amount</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            <TableRow className="font-bold bg-muted/50">
+                                <TableCell>Income</TableCell>
+                                <TableCell></TableCell>
+                            </TableRow>
+                            {Object.entries(incomeStatement.incomeByCategory).map(([cat, amt]) => (
+                                <TableRow key={`inc-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell></TableRow>
+                            ))}
+                            <TableRow className="font-semibold border-t">
+                                <TableCell className="pl-4">Total Income</TableCell>
+                                <TableCell className="text-right font-mono text-green-500">${incomeStatement.totalIncome.toFixed(2)}</TableCell>
+                            </TableRow>
+                            
+                            <TableRow className="font-bold bg-muted/50">
+                                <TableCell>Expenses</TableCell>
+                                <TableCell></TableCell>
+                            </TableRow>
+                             {Object.entries(incomeStatement.expensesByCategory).map(([cat, amt]) => (
+                                <TableRow key={`exp-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell></TableRow>
+                            ))}
+                            <TableRow className="font-semibold border-t">
+                                <TableCell className="pl-4">Total Expenses</TableCell>
+                                <TableCell className="text-right font-mono text-red-500">${incomeStatement.totalExpenses.toFixed(2)}</TableCell>
+                            </TableRow>
+
+                            <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
+                                <TableCell>Net Income</TableCell>
+                                <TableCell className="text-right font-mono">${incomeStatement.netIncome.toFixed(2)}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
 
             <div className="grid md:grid-cols-2 gap-4">
-                <Card>
+               <Card>
                     <CardHeader>
-                        <CardTitle>Cash Flow</CardTitle>
+                        <CardTitle>Cash Flow Statement</CardTitle>
                         <CardDescription>Movement of cash from paid transactions.</CardDescription>
                     </CardHeader>
                      <CardContent>
-                        <ChartContainer config={{}} className="h-40 w-full">
-                            <ResponsiveContainer>
-                                <BarChart data={cashFlowStatement.chartData} layout="vertical" margin={{ left: 10 }}>
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" hide />
-                                    <Tooltip cursor={false} content={<ChartTooltipContent hideLabel hideIndicator />} />
-                                    <Bar dataKey="value" radius={5}/>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
+                        <Table>
+                           <TableBody>
+                                <TableRow>
+                                    <TableCell className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Cash Inflows</TableCell>
+                                    <TableCell className="text-right font-mono text-green-500">+${cashFlowStatement.cashIn.toFixed(2)}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell className="flex items-center gap-2"><ArrowDown className="text-red-500"/> Cash Outflows</TableCell>
+                                    <TableCell className="text-right font-mono text-red-500">-${cashFlowStatement.cashOut.toFixed(2)}</TableCell>
+                                </TableRow>
+                                <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
+                                    <TableCell>Net Cash Flow</TableCell>
+                                    <TableCell className="text-right font-mono">${cashFlowStatement.netCashFlow.toFixed(2)}</TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle>Balance Sheet (Simplified)</CardTitle>
-                        <CardDescription>Snapshot of assets and liabilities.</CardDescription>
+                        <CardDescription>A snapshot of assets and liabilities.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                         <ChartContainer config={{}} className="h-40 w-full">
-                            <ResponsiveContainer>
-                                <BarChart data={balanceSheet.chartData} layout="vertical" margin={{ left: 10 }}>
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" hide />
-                                    <Tooltip cursor={false} content={<ChartTooltipContent hideLabel hideIndicator />} />
-                                    <Bar dataKey="value" radius={5}/>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
+                        <Table>
+                           <TableBody>
+                                <TableRow className="font-bold bg-muted/50"><TableCell>Assets</TableCell><TableCell></TableCell></TableRow>
+                                <TableRow><TableCell className="pl-6">Accounts Receivable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
+                                <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Assets</TableCell><TableCell className="text-right font-mono text-green-500">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
+                                
+                                <TableRow className="font-bold bg-muted/50"><TableCell>Liabilities & Equity</TableCell><TableCell></TableCell></TableRow>
+                                <TableRow><TableCell className="pl-6">Accounts Payable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalLiabilities.toFixed(2)}</TableCell></TableRow>
+                                <TableRow><TableCell className="pl-6">Retained Earnings (Net Income)</TableCell><TableCell className="text-right font-mono">${balanceSheet.equity.toFixed(2)}</TableCell></TableRow>
+                                <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Liabilities & Equity</TableCell><TableCell className="text-right font-mono text-red-500">${balanceSheet.totalLiabilitiesAndEquity.toFixed(2)}</TableCell></TableRow>
+                            </TableBody>
+                        </Table>
                     </CardContent>
                 </Card>
             </div>
         </div>
     );
 }
+
+    
 
     
