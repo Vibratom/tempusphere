@@ -55,7 +55,7 @@ export function FinanceApp() {
                     <CardDescription>An overview of your financial transactions and health.</CardDescription>
                 </CardHeader>
             </Card>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Total Income</CardTitle></CardHeader>
                     <CardContent>
