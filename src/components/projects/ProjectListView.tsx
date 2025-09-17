@@ -183,7 +183,7 @@ const NewTaskDialog = () => {
                                   className={cn("col-span-3 justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                                    {dueDate ? format(dueDate, "PPP") : <span>Pick an end date</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0">
@@ -722,3 +722,4 @@ export function ProjectListView() {
         </div>
     );
 }
+
