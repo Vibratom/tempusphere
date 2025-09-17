@@ -7,8 +7,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectsContext';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Pie, PieChart, ResponsiveContainer, Legend, Cell, Tooltip } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Legend, Cell, Tooltip, BarChart, XAxis, YAxis, Bar, CartesianGrid } from 'recharts';
 import { Skeleton } from '../ui/skeleton';
+import { format, startOfMonth, subMonths } from 'date-fns';
 
 const COLORS = ['#16a34a', '#3b82f6', '#ef4444', '#f97316', '#8b5cf6', '#d946ef', '#14b8a6', '#eab308'];
 
@@ -46,15 +47,33 @@ export function FinanceApp() {
         }, {} as Record<string, {name: string, value: number}>);
         return Object.values(byCategory);
     }, [transactions]);
+
+    const monthlyTrends = useMemo(() => {
+        const now = new Date();
+        const data: Record<string, { name: string, income: number, expense: number }> = {};
+
+        for (let i = 5; i >= 0; i--) {
+            const month = subMonths(now, i);
+            const monthKey = format(month, 'MMM yy');
+            data[monthKey] = { name: monthKey, income: 0, expense: 0 };
+        }
+
+        transactions.forEach(t => {
+            const monthKey = format(new Date(t.date), 'MMM yy');
+            if (data[monthKey]) {
+                if (t.type === 'income') {
+                    data[monthKey].income += t.amount;
+                } else {
+                    data[monthKey].expense += t.amount;
+                }
+            }
+        });
+        
+        return Object.values(data);
+    }, [transactions]);
     
     return (
         <div className="w-full flex flex-col gap-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Finance Dashboard</CardTitle>
-                    <CardDescription>An overview of your financial transactions and health.</CardDescription>
-                </CardHeader>
-            </Card>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Total Income</CardTitle></CardHeader>
@@ -93,6 +112,28 @@ export function FinanceApp() {
                 </Card>
             </div>
             
+             <Card>
+                <CardHeader>
+                    <CardTitle>Monthly Income vs. Expense</CardTitle>
+                    <CardDescription>Trends over the last 6 months.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={{}} className="h-64 w-full">
+                         <ResponsiveContainer>
+                            <BarChart data={monthlyTrends}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                                <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
+                                <Tooltip content={<ChartTooltipContent />} />
+                                <Legend iconType="circle" />
+                                <Bar dataKey="income" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="expense" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>Expense Breakdown</CardTitle>
