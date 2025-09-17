@@ -57,44 +57,6 @@ const allMetrics = {
     ],
 };
 
-// Function to calculate "nice" axis bounds and ticks
-function getNiceAxis(minValue: number, maxValue: number, numTicks = 5) {
-  const range = maxValue - minValue;
-
-  if (range === 0) {
-    const absValue = Math.abs(maxValue);
-    if (absValue === 0) return { domain: [-10, 10], ticks: [-10, -5, 0, 5, 10] };
-    const buffer = absValue * 0.2;
-    return {
-      domain: [minValue - buffer, maxValue + buffer],
-      ticks: [minValue - buffer, minValue, maxValue, maxValue + buffer]
-    };
-  }
-
-  const tickSpacing = range / (numTicks - 1);
-  const magnitude = Math.pow(10, Math.floor(Math.log10(tickSpacing)));
-  const normalizedTick = tickSpacing / magnitude;
-
-  let niceTick;
-  if (normalizedTick < 1.5) niceTick = 1;
-  else if (normalizedTick < 3.5) niceTick = 2;
-  else if (normalizedTick < 7.5) niceTick = 5;
-  else niceTick = 10;
-  
-  niceTick *= magnitude;
-
-  const niceMin = Math.floor(minValue / niceTick) * niceTick;
-  const niceMax = Math.ceil(maxValue / niceTick) * niceTick;
-
-  const domain = [niceMin, niceMax];
-  const ticks = [];
-  for (let i = niceMin; i <= niceMax; i += niceTick) {
-    ticks.push(i);
-  }
-  
-  return { domain, ticks };
-}
-
 
 export function DynamicReportChart() {
     const { transactions } = useFinance();
@@ -154,17 +116,6 @@ export function DynamicReportChart() {
         }).filter(item => item.value !== undefined);
     }, [selectedMetrics, financialData]);
     
-    const yAxisConfig = useMemo(() => {
-        if (chartData.length === 0) {
-            return { domain: [-100, 100], ticks: [-100, -50, 0, 50, 100] };
-        }
-        const values = chartData.map(d => d.value);
-        const maxValue = Math.max(...values, 0);
-        const minValue = Math.min(...values, 0);
-        
-        return getNiceAxis(minValue, maxValue);
-    }, [chartData]);
-    
     const handleMetricToggle = (key: string, checked: boolean) => {
         setSelectedMetrics(prev => 
             checked ? [...prev, key] : prev.filter(m => m !== key)
@@ -192,8 +143,6 @@ export function DynamicReportChart() {
                             <YAxis 
                                 type="number"
                                 tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                                domain={yAxisConfig.domain}
-                                ticks={yAxisConfig.ticks}
                             />
                             <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
                             <ReferenceLine y={0} stroke="hsl(var(--border))" />
