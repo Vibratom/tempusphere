@@ -265,7 +265,7 @@ export function FinanceApp() {
   const getProjectTitle = (projectId?: string) => {
     if(!projectId) return 'N/A';
     return board.tasks[projectId]?.title || 'Unknown Project';
-  }
+  };
 
   const handleSaveTransaction = (transactionData: Omit<Transaction, 'id'>, id?: string) => {
     if (id) {
@@ -520,3 +520,5 @@ export function FinanceApp() {
     </div>
   );
 }
+
+    

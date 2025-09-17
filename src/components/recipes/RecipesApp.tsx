@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { v4 as uuidv4 } from 'uuid';
-import { UtensilsCrossed, Plus, BookOpen, Trash2, Edit, GitBranch, ArrowLeft, Search, Sparkles, ChefHat, ShoppingBag } from 'lucide-react';
+import { UtensilsCrossed, Plus, BookOpen, Trash2, Edit, GitBranch, ArrowLeft, Search, Sparkles, ChefHat, ShoppingBag, CalendarPlus } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../ui/dialog';
@@ -29,6 +29,10 @@ import { Separator } from '../ui/separator';
 import Image from 'next/image';
 import { useChecklist } from '@/contexts/ChecklistContext';
 import { useToast } from '@/hooks/use-toast';
+import { useCalendar } from '@/contexts/CalendarContext';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Calendar } from '../ui/calendar';
+import { format } from 'date-fns';
 
 interface Recipe {
   id: string;
@@ -124,6 +128,7 @@ const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => 
 const RecipeDetailView = ({ recipe, onBack, onViewRecipe, onEdit, onRemix, onDelete }: { recipe: Recipe, onBack: () => void, onViewRecipe: (recipe: Recipe) => void, onEdit: (recipe: Recipe) => void, onRemix: (recipe: Recipe) => void, onDelete: (id: string) => void }) => {
     const { recipes } = useRecipesContext();
     const { addList, addTask, lists } = useChecklist();
+    const { addEvent, addEventType } = useCalendar();
     const { toast } = useToast();
 
     const parentRecipe = recipe.remixedFrom ? recipes.find(r => r.id === recipe.remixedFrom) : null;
@@ -164,13 +169,42 @@ const RecipeDetailView = ({ recipe, onBack, onViewRecipe, onEdit, onRemix, onDel
             description: `Added ${ingredientsToAdd.length} items to your "Shopping List".`
         })
     };
+
+    const handleAddToCalendar = (date: Date | undefined) => {
+        if (!date) return;
+        addEventType('Meals');
+        addEvent({
+            date: date.toISOString(),
+            time: '18:00', // Default to 6 PM for dinner
+            title: recipe.title,
+            description: `Meal: ${recipe.title}`,
+            color: 'orange',
+            type: 'Meals'
+        });
+        toast({
+            title: "Added to Meal Plan!",
+            description: `Scheduled "${recipe.title}" for ${format(date, "PPP")}.`
+        });
+    }
     
     return (
         <Card className="w-full">
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <Button variant="ghost" onClick={onBack}><ArrowLeft className="mr-2 h-4 w-4" /> Back to Cookbook</Button>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline"><CalendarPlus className="mr-2 h-4 w-4" />Add to Meal Plan</Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    onSelect={handleAddToCalendar}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
                         <Button variant="outline" onClick={handleAddToList}><ShoppingBag className="mr-2 h-4 w-4"/>Add to List</Button>
                         <Button variant="outline" onClick={() => onEdit(recipe)}><Edit className="mr-2 h-4 w-4"/>Edit</Button>
                         <Button onClick={() => onRemix(recipe)}><GitBranch className="mr-2 h-4 w-4"/>Remix</Button>
