@@ -175,16 +175,16 @@ export function FinancialReports() {
                                     <TableCell className="text-right font-mono">${incomeStatement.totalIncome.toFixed(2)}</TableCell>
                                 </TableRow>
                                 {Object.entries(incomeStatement.incomeByCategory).map(([cat, amt]) => (
-                                    <TableRow key={`inc-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
+                                    <TableRow key={`inc-${cat}`}><TableCell className="pl-4">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
                                 ))}
                                 
-                                <TableRow className="font-bold pt-4">
+                                <TableRow className="font-bold">
                                     <TableCell>Expenses</TableCell>
                                     <TableCell></TableCell>
                                     <TableCell className="text-right font-mono">${incomeStatement.totalExpenses.toFixed(2)}</TableCell>
                                 </TableRow>
                                  {Object.entries(incomeStatement.expensesByCategory).map(([cat, amt]) => (
-                                    <TableRow key={`exp-${cat}`}><TableCell className="pl-6">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
+                                    <TableRow key={`exp-${cat}`}><TableCell className="pl-4">{cat}</TableCell><TableCell className="text-right font-mono">${amt.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
                                 ))}
 
                                 <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
@@ -205,16 +205,16 @@ export function FinancialReports() {
                          <CardContent>
                             <Table>
                                <TableBody>
-                                    <TableRow className="font-semibold"><TableCell colSpan={3}>Cash Flow From Operations</TableCell></TableRow>
-                                    <TableRow><TableCell className="pl-6">Net Earnings</TableCell><TableCell className="text-right font-mono">${cashFlowStatement.netEarnings.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
-                                    <TableRow><TableCell className="pl-6">Operating Expenses</TableCell><TableCell className="text-right font-mono">(${cashFlowStatement.operatingExpenses.toFixed(2)})</TableCell><TableCell></TableCell></TableRow>
-                                    <TableRow className="font-medium border-t"><TableCell className="pl-4">Net Cash From Operations</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">${cashFlowStatement.netCashFromOps.toFixed(2)}</TableCell></TableRow>
+                                    <TableRow><TableCell className="font-semibold col-span-3">Cash Flow From Operations</TableCell></TableRow>
+                                    <TableRow><TableCell className="pl-4">Net Earnings</TableCell><TableCell className="text-right font-mono">${cashFlowStatement.netEarnings.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
+                                    <TableRow><TableCell className="pl-4">Operating Expenses</TableCell><TableCell className="text-right font-mono">(${cashFlowStatement.operatingExpenses.toFixed(2)})</TableCell><TableCell></TableCell></TableRow>
+                                    <TableRow className="font-medium border-t"><TableCell>Net Cash From Operations</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">${cashFlowStatement.netCashFromOps.toFixed(2)}</TableCell></TableRow>
                                     
-                                    <TableRow className="font-semibold"><TableCell colSpan={3}>Cash Flow From Investing</TableCell></TableRow>
-                                    <TableRow><TableCell className="pl-6">Equipment & Investments</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">(${cashFlowStatement.investingCashFlow.toFixed(2)})</TableCell></TableRow>
+                                    <TableRow><TableCell className="font-semibold col-span-3 pt-4">Cash Flow From Investing</TableCell></TableRow>
+                                    <TableRow><TableCell className="pl-4">Equipment & Investments</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">(${cashFlowStatement.investingCashFlow.toFixed(2)})</TableCell></TableRow>
                                     
-                                    <TableRow className="font-semibold"><TableCell colSpan={3}>Cash Flow From Financing</TableCell></TableRow>
-                                    <TableRow><TableCell className="pl-6">Loans & Financing</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">(${cashFlowStatement.financingCashFlow.toFixed(2)})</TableCell></TableRow>
+                                    <TableRow><TableCell className="font-semibold col-span-3 pt-4">Cash Flow From Financing</TableCell></TableRow>
+                                    <TableRow><TableCell className="pl-4">Loans & Financing</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">(${cashFlowStatement.financingCashFlow.toFixed(2)})</TableCell></TableRow>
                                     
                                     <TableRow className="font-bold bg-muted border-t-2 border-border">
                                         <TableCell>Net Cash Flow</TableCell>
@@ -232,18 +232,18 @@ export function FinancialReports() {
                         <CardContent>
                             <Table>
                                <TableBody>
-                                    <TableRow className="font-bold"><TableCell colSpan={3}>Assets</TableCell></TableRow>
+                                    <TableRow><TableCell className="font-bold col-span-3">Assets</TableCell></TableRow>
                                     <TableRow className="font-semibold"><TableCell className="pl-4">Current Assets</TableCell><TableCell></TableCell><TableCell></TableCell></TableRow>
-                                    <TableRow><TableCell className="pl-8">Accounts Receivable</TableCell><TableCell className="text-right font-mono">${balanceSheet.accountsReceivable.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
+                                    <TableRow><TableCell className="pl-6">Accounts Receivable</TableCell><TableCell className="text-right font-mono">${balanceSheet.accountsReceivable.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
                                     <TableRow className="font-bold border-t"><TableCell>Total Assets</TableCell><TableCell></TableCell><TableCell className="text-right font-mono border-t-2 border-double border-foreground">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
                                     
-                                    <TableRow className="font-bold pt-4"><TableCell colSpan={3}>Liabilities & Equity</TableCell></TableRow>
+                                    <TableRow><TableCell className="font-bold pt-4 col-span-3">Liabilities & Equity</TableCell></TableRow>
                                     <TableRow className="font-semibold"><TableCell className="pl-4">Liabilities</TableCell><TableCell></TableCell><TableCell></TableCell></TableRow>
-                                    <TableRow><TableCell className="pl-8">Accounts Payable</TableCell><TableCell className="text-right font-mono">${balanceSheet.accountsPayable.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
+                                    <TableRow><TableCell className="pl-6">Accounts Payable</TableCell><TableCell className="text-right font-mono">${balanceSheet.accountsPayable.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
                                     <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Liabilities</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">${balanceSheet.totalLiabilities.toFixed(2)}</TableCell></TableRow>
                                     
                                     <TableRow className="font-semibold"><TableCell className="pl-4">Shareholders' Equity</TableCell><TableCell></TableCell><TableCell></TableCell></TableRow>
-                                    <TableRow><TableCell className="pl-8">Retained Earnings (Net Income)</TableCell><TableCell className="text-right font-mono">${balanceSheet.retainedEarnings.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
+                                    <TableRow><TableCell className="pl-6">Retained Earnings (Net Income)</TableCell><TableCell className="text-right font-mono">${balanceSheet.retainedEarnings.toFixed(2)}</TableCell><TableCell></TableCell></TableRow>
                                     <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Equity</TableCell><TableCell></TableCell><TableCell className="text-right font-mono">${balanceSheet.totalEquity.toFixed(2)}</TableCell></TableRow>
                                     
                                     <TableRow className="font-bold border-t"><TableCell>Total Liabilities & Equity</TableCell><TableCell></TableCell><TableCell className="text-right font-mono border-t-2 border-double border-foreground">${balanceSheet.totalLiabilitiesAndEquity.toFixed(2)}</TableCell></TableRow>
