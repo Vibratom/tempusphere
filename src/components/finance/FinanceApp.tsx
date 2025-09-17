@@ -247,34 +247,16 @@ export function FinanceApp() {
                         <CardDescription>Movement of cash from paid transactions.</CardDescription>
                     </CardHeader>
                      <CardContent>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Table>
-                            <TableBody>
-                                <TableRow>
-                                    <TableCell className="flex items-center gap-2"><ArrowUp className="text-green-500"/> Cash Inflows</TableCell>
-                                    <TableCell className="text-right font-mono text-green-500">+${cashFlowStatement.cashIn.toFixed(2)}</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="flex items-center gap-2"><ArrowDown className="text-red-500"/> Cash Outflows</TableCell>
-                                    <TableCell className="text-right font-mono text-red-500">-${cashFlowStatement.cashOut.toFixed(2)}</TableCell>
-                                </TableRow>
-                                <TableRow className="font-bold text-lg bg-muted border-t-2 border-border">
-                                    <TableCell>Net Cash Flow</TableCell>
-                                    <TableCell className="text-right font-mono">${cashFlowStatement.netCashFlow.toFixed(2)}</TableCell>
-                                </TableRow>
-                            </TableBody>
-                            </Table>
-                            <ChartContainer config={{}} className="h-40 w-full">
-                                <ResponsiveContainer>
-                                    <BarChart data={cashFlowStatement.chartData} layout="vertical" margin={{ left: 10 }}>
-                                        <XAxis type="number" hide />
-                                        <YAxis dataKey="name" type="category" hide />
-                                        <Tooltip cursor={false} content={<ChartTooltipContent hideLabel hideIndicator />} />
-                                        <Bar dataKey="value" radius={5}/>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </ChartContainer>
-                        </div>
+                        <ChartContainer config={{}} className="h-40 w-full">
+                            <ResponsiveContainer>
+                                <BarChart data={cashFlowStatement.chartData} layout="vertical" margin={{ left: 10 }}>
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" hide />
+                                    <Tooltip cursor={false} content={<ChartTooltipContent hideLabel hideIndicator />} />
+                                    <Bar dataKey="value" radius={5}/>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
                 <Card>
@@ -283,30 +265,16 @@ export function FinanceApp() {
                         <CardDescription>Snapshot of assets and liabilities.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Table>
-                                <TableBody>
-                                    <TableRow className="font-bold bg-muted/50"><TableCell>Assets</TableCell><TableCell></TableCell></TableRow>
-                                    <TableRow><TableCell className="pl-6">Accounts Receivable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
-                                    <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Assets</TableCell><TableCell className="text-right font-mono text-green-500">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
-                                    
-                                    <TableRow className="font-bold bg-muted/50"><TableCell>Liabilities & Equity</TableCell><TableCell></TableCell></TableRow>
-                                    <TableRow><TableCell className="pl-6">Accounts Payable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalLiabilities.toFixed(2)}</TableCell></TableRow>
-                                    <TableRow><TableCell className="pl-6">Retained Earnings (Net Income)</TableCell><TableCell className="text-right font-mono">${balanceSheet.equity.toFixed(2)}</TableCell></TableRow>
-                                    <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Liabilities & Equity</TableCell><TableCell className="text-right font-mono text-red-500">${balanceSheet.totalLiabilitiesAndEquity.toFixed(2)}</TableCell></TableRow>
-                                </TableBody>
-                            </Table>
-                             <ChartContainer config={{}} className="h-48 w-full">
-                                <ResponsiveContainer>
-                                    <BarChart data={balanceSheet.chartData} layout="vertical" margin={{ left: 10 }}>
-                                        <XAxis type="number" hide />
-                                        <YAxis dataKey="name" type="category" hide />
-                                        <Tooltip cursor={false} content={<ChartTooltipContent hideLabel hideIndicator />} />
-                                        <Bar dataKey="value" radius={5}/>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </ChartContainer>
-                        </div>
+                         <ChartContainer config={{}} className="h-40 w-full">
+                            <ResponsiveContainer>
+                                <BarChart data={balanceSheet.chartData} layout="vertical" margin={{ left: 10 }}>
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" hide />
+                                    <Tooltip cursor={false} content={<ChartTooltipContent hideLabel hideIndicator />} />
+                                    <Bar dataKey="value" radius={5}/>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
             </div>
