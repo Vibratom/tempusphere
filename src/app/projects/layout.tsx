@@ -19,7 +19,7 @@ export default function ProjectsLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
-  const activeTool = useMemo(() => pathname.split('/')[2] || '', [pathname]);
+  const activeTool = useMemo(() => pathname.split('/')[2] || 'dashboard', [pathname]);
 
   return (
     <Suspense fallback={<div className="w-full h-screen flex items-center justify-center">Loading Page...</div>}>

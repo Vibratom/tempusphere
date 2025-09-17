@@ -3,12 +3,14 @@
 import React, { useMemo } from 'react';
 import { useProjects, Priority } from '@/contexts/ProjectsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, ListTodo, Loader, Wallet } from 'lucide-react';
+import { CheckCircle2, ListChecks, ListTodo, Loader, Wallet } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell, Legend } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { useFinance } from '@/contexts/FinanceContext';
 import { Badge } from '../ui/badge';
 import { format, parseISO } from 'date-fns';
+import { useChecklist } from '@/contexts/ChecklistContext';
+import { Progress } from '../ui/progress';
 
 const priorityColors: Record<Priority, string> = {
     none: '#94a3b8',    // slate-400
@@ -25,6 +27,7 @@ const getPriorityLabel = (priority: Priority) => {
 export function ProjectDashboard() {
   const { board } = useProjects();
   const { transactions } = useFinance();
+  const { lists: checklists } = useChecklist();
 
   const dashboardStats = useMemo(() => {
     const tasks = Object.values(board.tasks);
@@ -65,6 +68,23 @@ export function ProjectDashboard() {
       upcomingDeadlines
     };
   }, [board, transactions]);
+
+  const checklistStats = useMemo(() => {
+    return checklists.map(list => {
+      const flattenTasks = (tasks: any[]): any[] => tasks.flatMap(t => [t, ...flattenTasks(t.subtasks)]);
+      const allTasks = flattenTasks(list.tasks);
+      const total = allTasks.filter(t => !t.isRecurring).length;
+      const completed = allTasks.filter(t => t.completed && !t.isRecurring).length;
+      const progress = total > 0 ? (completed / total) * 100 : 0;
+      return {
+        id: list.id,
+        title: list.title,
+        completed,
+        total,
+        progress,
+      }
+    })
+  }, [checklists]);
 
   const priorityChartData = Object.entries(dashboardStats.tasksByPriority).map(([priority, count]) => ({
     name: getPriorityLabel(priority as Priority),
@@ -159,7 +179,7 @@ export function ProjectDashboard() {
         </CardContent>
       </Card>
       
-      <Card className="lg:col-span-4">
+      <Card className="lg:col-span-2">
         <CardHeader>
             <CardTitle>Upcoming Deadlines</CardTitle>
             <CardDescription>Tasks with the soonest due dates.</CardDescription>
@@ -175,6 +195,26 @@ export function ProjectDashboard() {
                         <Badge variant="outline">{format(parseISO(task.dueDate!), 'MMM d, yyyy')}</Badge>
                     </div>
                 )) : <p className="text-muted-foreground text-center py-4">No upcoming deadlines found.</p>}
+            </div>
+        </CardContent>
+      </Card>
+
+      <Card className="lg:col-span-2">
+        <CardHeader>
+            <CardTitle>Checklist Progress</CardTitle>
+            <CardDescription>Overview of your project-related checklists.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="space-y-4">
+                {checklistStats.length > 0 ? checklistStats.map(list => (
+                    <div key={list.id}>
+                        <div className="flex justify-between items-center mb-1">
+                            <p className="font-medium">{list.title}</p>
+                            <p className="text-sm text-muted-foreground">{list.completed}/{list.total}</p>
+                        </div>
+                        <Progress value={list.progress} />
+                    </div>
+                )) : <p className="text-muted-foreground text-center py-4">No checklists found.</p>}
             </div>
         </CardContent>
       </Card>
