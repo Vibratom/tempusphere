@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useProjects } from '@/contexts/ProjectsContext';
 import { useFinance, Transaction, TransactionType } from '@/contexts/FinanceContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -130,6 +130,11 @@ export function ProjectBudgetView() {
     const { transactions, addTransaction, removeTransaction } = useFinance();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const { toast } = useToast();
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const projectTransactions = useMemo(() => {
         const projectTaskIds = new Set(Object.keys(board.tasks));
@@ -166,6 +171,10 @@ export function ProjectBudgetView() {
         toast({ title: "Transaction Added", description: `Added ${transaction.description} for $${transaction.amount}.`})
         setIsFormOpen(false);
     };
+
+    if (!isClient) {
+        return null;
+    }
 
     return (
         <div className="w-full h-full flex flex-col gap-4">
