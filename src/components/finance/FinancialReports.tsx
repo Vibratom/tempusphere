@@ -237,14 +237,21 @@ export function FinancialReports() {
                     <CardContent>
                         <Table>
                            <TableBody>
-                                <TableRow className="font-bold bg-muted/50"><TableCell>Assets</TableCell><TableCell></TableCell></TableRow>
-                                <TableRow><TableCell className="pl-6">Accounts Receivable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
-                                <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Assets</TableCell><TableCell className="text-right font-mono text-green-500">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
+                                <TableRow className="font-bold bg-muted/50"><TableCell colSpan={2}>Assets</TableCell></TableRow>
+                                <TableRow className="font-semibold"><TableCell className="pl-4">Current Assets</TableCell><TableCell></TableCell></TableRow>
+                                <TableRow><TableCell className="pl-8">Accounts Receivable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
+                                <TableRow className="font-bold border-t"><TableCell>Total Assets</TableCell><TableCell className="text-right font-mono text-green-500">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
                                 
-                                <TableRow className="font-bold bg-muted/50"><TableCell>Liabilities & Equity</TableCell><TableCell></TableCell></TableRow>
-                                <TableRow><TableCell className="pl-6">Accounts Payable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalLiabilities.toFixed(2)}</TableCell></TableRow>
-                                <TableRow><TableCell className="pl-6">Retained Earnings (Net Income)</TableCell><TableCell className="text-right font-mono">${balanceSheet.equity.toFixed(2)}</TableCell></TableRow>
-                                <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Liabilities & Equity</TableCell><TableCell className="text-right font-mono text-red-500">${balanceSheet.totalLiabilitiesAndEquity.toFixed(2)}</TableCell></TableRow>
+                                <TableRow className="font-bold bg-muted/50"><TableCell colSpan={2}>Liabilities & Equity</TableCell></TableRow>
+                                <TableRow className="font-semibold"><TableCell className="pl-4">Liabilities</TableCell><TableCell></TableCell></TableRow>
+                                <TableRow><TableCell className="pl-8">Accounts Payable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalLiabilities.toFixed(2)}</TableCell></TableRow>
+                                <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Liabilities</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalLiabilities.toFixed(2)}</TableCell></TableRow>
+                                
+                                <TableRow className="font-semibold"><TableCell className="pl-4">Equity</TableCell><TableCell></TableCell></TableRow>
+                                <TableRow><TableCell className="pl-8">Retained Earnings (Net Income)</TableCell><TableCell className="text-right font-mono">${balanceSheet.equity.toFixed(2)}</TableCell></TableRow>
+                                <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Equity</TableCell><TableCell className="text-right font-mono">${balanceSheet.equity.toFixed(2)}</TableCell></TableRow>
+                                
+                                <TableRow className="font-bold border-t-2 border-border"><TableCell>Total Liabilities & Equity</TableCell><TableCell className="text-right font-mono text-red-500">${balanceSheet.totalLiabilitiesAndEquity.toFixed(2)}</TableCell></TableRow>
                             </TableBody>
                         </Table>
                     </CardContent>
