@@ -115,11 +115,16 @@ export function FinancialReports() {
             
         const equity = incomeStatement.netIncome;
 
+        const totalAssets = accountsReceivable;
+        const totalLiabilities = accountsPayable;
+
         return {
-            totalAssets: accountsReceivable,
-            totalLiabilities: accountsPayable,
+            totalAssets,
+            accountsReceivable,
+            totalLiabilities,
+            accountsPayable,
             equity,
-            totalLiabilitiesAndEquity: accountsPayable + equity
+            totalLiabilitiesAndEquity: totalLiabilities + equity
         }
     }, [filteredTransactions, incomeStatement]);
 
@@ -231,7 +236,7 @@ export function FinancialReports() {
                 </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Balance Sheet (Simplified)</CardTitle>
+                        <CardTitle>Balance Sheet</CardTitle>
                         <CardDescription>A snapshot of assets and liabilities.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -239,12 +244,12 @@ export function FinancialReports() {
                            <TableBody>
                                 <TableRow className="font-bold bg-muted/50"><TableCell colSpan={2}>Assets</TableCell></TableRow>
                                 <TableRow className="font-semibold"><TableCell className="pl-4">Current Assets</TableCell><TableCell></TableCell></TableRow>
-                                <TableRow><TableCell className="pl-8">Accounts Receivable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
+                                <TableRow><TableCell className="pl-8">Accounts Receivable</TableCell><TableCell className="text-right font-mono">${balanceSheet.accountsReceivable.toFixed(2)}</TableCell></TableRow>
                                 <TableRow className="font-bold border-t"><TableCell>Total Assets</TableCell><TableCell className="text-right font-mono text-green-500">${balanceSheet.totalAssets.toFixed(2)}</TableCell></TableRow>
                                 
                                 <TableRow className="font-bold bg-muted/50"><TableCell colSpan={2}>Liabilities & Equity</TableCell></TableRow>
-                                <TableRow className="font-semibold"><TableCell className="pl-4">Liabilities</TableCell><TableCell></TableCell></TableRow>
-                                <TableRow><TableCell className="pl-8">Accounts Payable</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalLiabilities.toFixed(2)}</TableCell></TableRow>
+                                <TableRow className="font-semibold"><TableCell className="pl-4">Current Liabilities</TableCell><TableCell></TableCell></TableRow>
+                                <TableRow><TableCell className="pl-8">Accounts Payable</TableCell><TableCell className="text-right font-mono">${balanceSheet.accountsPayable.toFixed(2)}</TableCell></TableRow>
                                 <TableRow className="font-semibold border-t"><TableCell className="pl-4">Total Liabilities</TableCell><TableCell className="text-right font-mono">${balanceSheet.totalLiabilities.toFixed(2)}</TableCell></TableRow>
                                 
                                 <TableRow className="font-semibold"><TableCell className="pl-4">Equity</TableCell><TableCell></TableCell></TableRow>
