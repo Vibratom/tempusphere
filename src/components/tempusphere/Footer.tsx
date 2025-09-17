@@ -27,7 +27,7 @@ export function Footer() {
                     <p className="max-w-3xl mx-auto text-lg text-gray-400 mb-8">
                         Vibratom Studios is a comprehensive digital ecosystem designed to enhance every aspect of your creative and productive life.
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
                         {vibratomPlatforms.map(p => <PlatformCard key={p.name} {...p} />)}
                     </div>
                      <Link href="https://www.vibratomstudios.com" target="_blank" rel="noopener noreferrer" className="text-lg text-pink-400 hover:text-pink-300 hover:underline mt-8 inline-block">
@@ -41,7 +41,7 @@ export function Footer() {
                     <div className="space-y-4">
                          <h3 className="text-xl font-semibold text-white">Tempusphere</h3>
                          <p className="text-gray-400">Your all-in-one solution for time management. Built with privacy and customization in mind.</p>
-                         <div className="flex justify-center md:justify-start space-x-4 text-gray-400">
+                         <div className="flex flex-col sm:flex-row justify-center md:justify-start space-y-2 sm:space-y-0 sm:space-x-4 text-gray-400">
                              <Link href="/about" className="hover:text-white">About Us</Link>
                              <Link href="/contact" className="hover:text-white">Contact</Link>
                              <Link href="https://lumina.vibratomstudios.com/?team=Tempusphere" target="_blank" rel="noopener noreferrer" className="hover:text-white">Blogs</Link>
