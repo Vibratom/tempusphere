@@ -32,6 +32,28 @@ export function FinanceApp() {
         return { accountsReceivable: ar, accountsPayable: ap };
     }, [transactions]);
 
+    if (!isClient) {
+        return (
+             <div className="w-full flex flex-col gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card><CardHeader><Skeleton className="h-5 w-24" /></CardHeader><CardContent><Skeleton className="h-8 w-24" /></CardContent></Card>
+                    <Card><CardHeader><Skeleton className="h-5 w-24" /></CardHeader><CardContent><Skeleton className="h-8 w-24" /></CardContent></Card>
+                    <Card><CardHeader><Skeleton className="h-5 w-20" /></CardHeader><CardContent><Skeleton className="h-8 w-24" /></CardContent></Card>
+                    <Card><CardHeader><Skeleton className="h-5 w-20" /></CardHeader><CardContent><Skeleton className="h-9 w-full" /></CardContent></Card>
+                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Income Statement</CardTitle>
+                        <CardDescription>A visual breakdown of revenue, expenses, and net income.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-80 w-full" />
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
     return (
         <div className="w-full flex flex-col gap-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -40,7 +62,7 @@ export function FinanceApp() {
                         <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground"><ArrowUp className="text-green-500"/> Total Income</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {isClient ? <p className="text-2xl font-bold text-green-500">${financialSummary.totalIncome.toFixed(2)}</p> : <Skeleton className="h-8 w-24" />}
+                        <p className="text-2xl font-bold text-green-500">${financialSummary.totalIncome.toFixed(2)}</p>
                     </CardContent>
                 </Card>
                  <Card>
@@ -48,7 +70,7 @@ export function FinanceApp() {
                         <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground"><ArrowDown className="text-red-500"/> Total Expenses</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {isClient ? <p className="text-2xl font-bold text-red-500">${financialSummary.totalExpense.toFixed(2)}</p> : <Skeleton className="h-8 w-24" />}
+                        <p className="text-2xl font-bold text-red-500">${financialSummary.totalExpense.toFixed(2)}</p>
                     </CardContent>
                 </Card>
                  <Card>
@@ -56,7 +78,7 @@ export function FinanceApp() {
                         <CardTitle className="text-sm font-medium text-muted-foreground">Net Balance</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {isClient ? <p className="text-2xl font-bold">${(financialSummary.totalIncome - financialSummary.totalExpense).toFixed(2)}</p> : <Skeleton className="h-8 w-24" />}
+                        <p className="text-2xl font-bold">${(financialSummary.totalIncome - financialSummary.totalExpense).toFixed(2)}</p>
                     </CardContent>
                 </Card>
                  <Card>
@@ -64,7 +86,6 @@ export function FinanceApp() {
                          <CardTitle className="text-sm font-medium text-muted-foreground">A/P vs A/R</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {isClient ? (
                         <div className="flex justify-between items-center">
                             <div className="text-center">
                                 <p className="text-xs text-muted-foreground">Receivable</p>
@@ -75,7 +96,6 @@ export function FinanceApp() {
                                 <p className="text-base font-bold text-red-500">${accountsPayable.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</p>
                             </div>
                         </div>
-                        ) : <Skeleton className="h-9 w-full" />}
                     </CardContent>
                 </Card>
             </div>

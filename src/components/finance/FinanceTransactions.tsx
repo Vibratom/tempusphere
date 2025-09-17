@@ -213,6 +213,20 @@ export function FinanceTransactions() {
             finalStatus === 'overdue' && 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
         )}>{finalStatus}</Badge>
     }
+
+    if (!isClient) {
+        return (
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-64" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-64 w-full" />
+                </CardContent>
+            </Card>
+        )
+    }
     
     return (
         <div className="w-full flex flex-col gap-8">
@@ -243,7 +257,7 @@ export function FinanceTransactions() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {isClient && transactions.map(t => (
+                                    {transactions.map(t => (
                                     <TableRow key={t.id}>
                                         <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
                                         <TableCell className="font-medium">{t.description}</TableCell>
@@ -264,16 +278,6 @@ export function FinanceTransactions() {
                                             </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
-                                    ))}
-                                    {!isClient && Array.from({length: 5}).map((_, i) => (
-                                        <TableRow key={`skl-${i}`}>
-                                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                                            <TableCell></TableCell>
-                                        </TableRow>
                                     ))}
                                 </TableBody>
                             </Table>
@@ -298,7 +302,7 @@ export function FinanceTransactions() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {isClient && accountsReceivable.map(t => (
+                                    {accountsReceivable.map(t => (
                                         <TableRow key={t.id}>
                                             <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
                                             <TableCell className="font-medium">{t.description}</TableCell>
@@ -307,15 +311,6 @@ export function FinanceTransactions() {
                                             <TableCell>
                                                 <Button size="sm" onClick={() => markAsPaid(t)}>Mark as Paid</Button>
                                             </TableCell>
-                                        </TableRow>
-                                    ))}
-                                    {!isClient && Array.from({length: 3}).map((_, i) => (
-                                        <TableRow key={`skl-ar-${i}`}>
-                                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                                            <TableCell><Skeleton className="h-8 w-24" /></TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -341,7 +336,7 @@ export function FinanceTransactions() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {isClient && accountsPayable.map(t => (
+                                    {accountsPayable.map(t => (
                                         <TableRow key={t.id}>
                                             <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
                                             <TableCell className="font-medium">{t.description}</TableCell>
@@ -350,15 +345,6 @@ export function FinanceTransactions() {
                                             <TableCell>
                                                 <Button size="sm" onClick={() => markAsPaid(t)}>Mark as Paid</Button>
                                             </TableCell>
-                                        </TableRow>
-                                    ))}
-                                    {!isClient && Array.from({length: 3}).map((_, i) => (
-                                        <TableRow key={`skl-ap-${i}`}>
-                                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                                            <TableCell><Skeleton className="h-8 w-24" /></TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
