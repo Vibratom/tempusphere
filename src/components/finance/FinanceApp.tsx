@@ -2,19 +2,22 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useFinance, Transaction } from '@/contexts/FinanceContext';
+import { useFinance, Transaction, Budget } from '@/contexts/FinanceContext';
 import { useProjects } from '@/contexts/ProjectsContext';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Landmark, TrendingUp, PieChart, Plus, Trash2, Edit } from 'lucide-react';
+import { Landmark, TrendingUp, PieChart, Plus, Trash2, Edit, MoreVertical, Target } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
+import { Progress } from '../ui/progress';
 
 const TransactionDialog = ({ transaction, onSave, onOpenChange, open, children }: { transaction?: Transaction | null, onSave: (t: Omit<Transaction, 'id'>, id?: string) => void, open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode }) => {
     const { board } = useProjects();
@@ -133,8 +136,46 @@ const TransactionDialog = ({ transaction, onSave, onOpenChange, open, children }
     )
 }
 
+const BudgetForm = ({ onSave, budget }: { onSave: (b: Omit<Budget, 'id'>, id?: string) => void; budget?: Budget | null }) => {
+    const { categories } = useFinance();
+    const [category, setCategory] = useState(budget?.category || categories[0] || '');
+    const [amount, setAmount] = useState(budget?.amount.toString() || '');
+    const [period, setPeriod] = useState(budget?.period || 'monthly');
+
+    const handleSave = () => {
+        if (category && amount) {
+            onSave({ category, amount: parseFloat(amount), period: period as 'monthly' | 'yearly' }, budget?.id);
+            setCategory(categories[0] || '');
+            setAmount('');
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>{budget ? 'Edit' : 'Create'} Budget</CardTitle>
+            </CardHeader>
+            <CardContent className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+                 <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
+                    <SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+                <Input type="number" placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value)} />
+                <Select value={period} onValueChange={(v:any) => setPeriod(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Button onClick={handleSave}>{budget ? 'Update' : 'Add'} Budget</Button>
+            </CardContent>
+        </Card>
+    );
+};
+
 export function FinanceApp() {
-  const { transactions, addTransaction, removeTransaction, updateTransaction } = useFinance();
+  const { transactions, addTransaction, removeTransaction, updateTransaction, budgets, addBudget, removeBudget, updateBudget } = useFinance();
   const { board } = useProjects();
   const { toast } = useToast();
   
@@ -146,9 +187,9 @@ export function FinanceApp() {
     setIsClient(true);
   }, []);
   
-  const { totalBalance, monthlySpending } = useMemo(() => {
+  const { totalBalance, monthlySpending, monthlyBudgetTotal, monthlyBudgetProgress } = useMemo(() => {
     if (!isClient) {
-        return { totalBalance: 0, monthlySpending: 0 };
+        return { totalBalance: 0, monthlySpending: 0, monthlyBudgetTotal: 0, monthlyBudgetProgress: 0 };
     }
 
     let balance = 0;
@@ -169,8 +210,11 @@ export function FinanceApp() {
       }
     });
 
-    return { totalBalance: balance, monthlySpending: spending };
-  }, [transactions, isClient]);
+    const budgetTotal = budgets.reduce((sum, b) => b.period === 'monthly' ? sum + b.amount : sum, 0);
+    const budgetProgress = budgetTotal > 0 ? (spending / budgetTotal) * 100 : 0;
+
+    return { totalBalance: balance, monthlySpending: spending, monthlyBudgetTotal: budgetTotal, monthlyBudgetProgress: budgetProgress };
+  }, [transactions, budgets, isClient]);
   
   const getProjectTitle = (projectId?: string) => {
     if(!projectId) return 'N/A';
@@ -187,10 +231,35 @@ export function FinanceApp() {
     }
   };
 
+  const handleSaveBudget = (budgetData: Omit<Budget, 'id'>, id?: string) => {
+    if (id) {
+        updateBudget({ ...budgetData, id });
+        toast({ title: "Budget Updated!"});
+    } else {
+        addBudget(budgetData);
+        toast({ title: "Budget Added!"});
+    }
+  };
+
+
   const handleOpenDialog = (transaction: Transaction | null = null) => {
       setSelectedTransaction(transaction);
       setIsDialogOpen(true);
   }
+
+  const monthlySpendingPerCategory = useMemo(() => {
+    const spending: Record<string, number> = {};
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    transactions.forEach(t => {
+        const tDate = parseISO(t.date);
+        if (t.type === 'expense' && tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
+            spending[t.category] = (spending[t.category] || 0) + t.amount;
+        }
+    });
+    return spending;
+  }, [transactions]);
+
 
   return (
     <div className="w-full max-w-7xl mx-auto">
@@ -223,82 +292,150 @@ export function FinanceApp() {
         </Card>
         <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Budget Progress</CardTitle>
+                <CardTitle className="text-sm font-medium">Monthly Budget</CardTitle>
                 <PieChart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">Not Set</div>
-                {isClient && <p className="text-xs text-muted-foreground">Create a budget to get started</p>}
+                {isClient && monthlyBudgetTotal > 0 ? (
+                    <>
+                      <div className="text-2xl font-bold">${monthlySpending.toFixed(2)} / ${monthlyBudgetTotal.toFixed(2)}</div>
+                      <Progress value={monthlyBudgetProgress} className="mt-2" />
+                    </>
+                ) : (
+                   <>
+                    <div className="text-2xl font-bold">Not Set</div>
+                    <p className="text-xs text-muted-foreground">Create a budget to get started</p>
+                   </>
+                )}
             </CardContent>
         </Card>
       </div>
 
-       <Card>
-          <CardHeader>
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <CardTitle>Recent Transactions</CardTitle>
-                <TransactionDialog 
-                    open={isDialogOpen} 
-                    onOpenChange={setIsDialogOpen}
-                    transaction={selectedTransaction}
-                    onSave={handleSaveTransaction}
-                >
-                    <Button onClick={() => handleOpenDialog()}>
-                        <Plus className="mr-2"/>
-                        Add Transaction
-                    </Button>
-                </TransactionDialog>
-              </div>
-          </CardHeader>
-          <CardContent>
-              {isClient && transactions.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Project</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                       <TableHead className="w-[100px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.map(t => (
-                      <TableRow key={t.id}>
-                        <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
-                        <TableCell className="font-medium">{t.description}</TableCell>
-                        <TableCell><Badge variant="secondary">{t.category}</Badge></TableCell>
-                        <TableCell className="text-muted-foreground">{getProjectTitle(t.projectId)}</TableCell>
-                        <TableCell className={`text-right font-mono ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
-                          {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="flex gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(t)}>
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => removeTransaction(t.id)}>
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : isClient ? (
-                 <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
-                    <Landmark className="w-16 h-16 mb-4" />
-                    <h3 className="text-xl font-semibold">No Transactions Yet</h3>
-                    <p className="text-sm">Add your first transaction to see it here.</p>
-                </div>
-              ) : null}
-          </CardContent>
-          {isClient && transactions.length > 0 && (
-            <CardFooter>
-                <p className="text-xs text-muted-foreground">Showing all {transactions.length} transactions.</p>
-            </CardFooter>
-          )}
-       </Card>
+      <Tabs defaultValue="transactions">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="budgets">Budgets</TabsTrigger>
+        </TabsList>
+        <TabsContent value="transactions">
+           <Card>
+              <CardHeader>
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <CardTitle>Recent Transactions</CardTitle>
+                    <TransactionDialog 
+                        open={isDialogOpen} 
+                        onOpenChange={setIsDialogOpen}
+                        transaction={selectedTransaction}
+                        onSave={handleSaveTransaction}
+                    >
+                        <Button onClick={() => handleOpenDialog()}>
+                            <Plus className="mr-2"/>
+                            Add Transaction
+                        </Button>
+                    </TransactionDialog>
+                  </div>
+              </CardHeader>
+              <CardContent>
+                  {isClient && transactions.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Project</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                           <TableHead className="w-[100px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {transactions.map(t => (
+                          <TableRow key={t.id}>
+                            <TableCell>{format(parseISO(t.date), 'MMM d, yyyy')}</TableCell>
+                            <TableCell className="font-medium">{t.description}</TableCell>
+                            <TableCell><Badge variant="secondary">{t.category}</Badge></TableCell>
+                            <TableCell className="text-muted-foreground">{getProjectTitle(t.projectId)}</TableCell>
+                            <TableCell className={`text-right font-mono ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
+                              {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="flex gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(t)}>
+                                    <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => removeTransaction(t.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : isClient ? (
+                     <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
+                        <Landmark className="w-16 h-16 mb-4" />
+                        <h3 className="text-xl font-semibold">No Transactions Yet</h3>
+                        <p className="text-sm">Add your first transaction to see it here.</p>
+                    </div>
+                  ) : null}
+              </CardContent>
+              {isClient && transactions.length > 0 && (
+                <CardFooter>
+                    <p className="text-xs text-muted-foreground">Showing all {transactions.length} transactions.</p>
+                </CardFooter>
+              )}
+           </Card>
+        </TabsContent>
+        <TabsContent value="budgets">
+            <div className="space-y-6">
+                <BudgetForm onSave={handleSaveBudget} />
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Your Budgets</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {budgets.length > 0 ? (
+                            budgets.map(budget => {
+                                const spent = monthlySpendingPerCategory[budget.category] || 0;
+                                const progress = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
+                                const remaining = budget.amount - spent;
+                                return (
+                                    <Card key={budget.id}>
+                                        <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                            <div className="flex-1 space-y-2">
+                                                <div className="flex items-center gap-4">
+                                                    <h4 className="font-semibold text-lg">{budget.category}</h4>
+                                                    <Badge variant="outline">{budget.period}</Badge>
+                                                </div>
+                                                <Progress value={progress} />
+                                            </div>
+                                            <div className="text-right font-mono shrink-0">
+                                                <p>${spent.toFixed(2)} / ${budget.amount.toFixed(2)}</p>
+                                                <p className={`text-sm ${remaining >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                    ${remaining.toFixed(2)} {remaining >= 0 ? 'left' : 'over'}
+                                                </p>
+                                            </div>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    {/* <DropdownMenuItem>Edit</DropdownMenuItem> */}
+                                                    <DropdownMenuItem onClick={() => removeBudget(budget.id)}>Delete</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })
+                        ) : (
+                             <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
+                                <Target className="w-16 h-16 mb-4" />
+                                <h3 className="text-xl font-semibold">No Budgets Set</h3>
+                                <p className="text-sm">Create your first budget to start tracking.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

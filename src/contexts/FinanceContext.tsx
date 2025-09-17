@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction } from 'react';
@@ -31,6 +30,9 @@ interface FinanceContextType {
   updateTransaction: (transaction: Transaction) => void;
   budgets: Budget[];
   setBudgets: Dispatch<SetStateAction<Budget[]>>;
+  addBudget: (budget: Omit<Budget, 'id'>) => void;
+  removeBudget: (budgetId: string) => void;
+  updateBudget: (budget: Budget) => void;
   categories: string[];
   addCategory: (category: string) => void;
 }
@@ -41,7 +43,7 @@ const defaultCategories = ['Groceries', 'Utilities', 'Rent/Mortgage', 'Transport
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useLocalStorage<Transaction[]>('finance:transactionsV3', []);
-  const [budgets, setBudgets] = useLocalStorage<Budget[]>('finance:budgetsV1', []);
+  const [budgets, setBudgets] = useLocalStorage<Budget[]>('finance:budgetsV2', []);
   const [categories, setCategories] = useLocalStorage<string[]>('finance:categoriesV1', defaultCategories);
 
   const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
@@ -63,6 +65,20 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const addBudget = (budget: Omit<Budget, 'id'>) => {
+    const newBudget = { ...budget, id: `budget-${Date.now()}` };
+    setBudgets(prev => [...prev, newBudget]);
+  };
+
+  const removeBudget = (budgetId: string) => {
+    setBudgets(prev => prev.filter(b => b.id !== budgetId));
+  };
+
+  const updateBudget = (updatedBudget: Budget) => {
+    setBudgets(prev => prev.map(b => b.id === updatedBudget.id ? updatedBudget : b));
+  };
+
+
   const value = {
     transactions,
     setTransactions,
@@ -71,6 +87,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     updateTransaction,
     budgets,
     setBudgets,
+    addBudget,
+    removeBudget,
+    updateBudget,
     categories,
     addCategory,
   };
