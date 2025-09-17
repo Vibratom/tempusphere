@@ -57,12 +57,48 @@ const allMetrics = {
     ],
 };
 
+// Function to calculate "nice" axis bounds and ticks
+function getNiceAxis(minValue: number, maxValue: number, numTicks = 5) {
+  const range = maxValue - minValue;
+
+  if (range === 0) {
+    const absValue = Math.abs(maxValue);
+    if (absValue === 0) return { domain: [-10, 10], ticks: [-10, -5, 0, 5, 10] };
+    const buffer = absValue * 0.2;
+    return {
+      domain: [minValue - buffer, maxValue + buffer],
+      ticks: [minValue - buffer, minValue, maxValue, maxValue + buffer]
+    };
+  }
+
+  const tickSpacing = range / (numTicks - 1);
+  const magnitude = Math.pow(10, Math.floor(Math.log10(tickSpacing)));
+  const normalizedTick = tickSpacing / magnitude;
+
+  let niceTick;
+  if (normalizedTick < 1.5) niceTick = 1;
+  else if (normalizedTick < 3.5) niceTick = 2;
+  else if (normalizedTick < 7.5) niceTick = 5;
+  else niceTick = 10;
+  
+  niceTick *= magnitude;
+
+  const niceMin = Math.floor(minValue / niceTick) * niceTick;
+  const niceMax = Math.ceil(maxValue / niceTick) * niceTick;
+
+  const domain = [niceMin, niceMax];
+  const ticks = [];
+  for (let i = niceMin; i <= niceMax; i += niceTick) {
+    ticks.push(i);
+  }
+  
+  return { domain, ticks };
+}
+
+
 export function DynamicReportChart() {
     const { transactions } = useFinance();
     const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['sales', 'netIncome', 'totalAssets']);
-    const [yMin, setYMin] = useState<string | number>('auto');
-    const [yMax, setYMax] = useState<string | number>('auto');
-
 
     const financialData = useMemo(() => {
         // --- Income Statement Calcs ---
@@ -118,13 +154,24 @@ export function DynamicReportChart() {
         }).filter(item => item.value !== undefined);
     }, [selectedMetrics, financialData]);
     
+    const yAxisConfig = useMemo(() => {
+        if (chartData.length === 0) {
+            return { domain: [-100, 100], ticks: [-100, -50, 0, 50, 100] };
+        }
+        const values = chartData.map(d => d.value);
+        const maxValue = Math.max(...values, 0);
+        const minValue = Math.min(...values, 0);
+        
+        return getNiceAxis(minValue, maxValue);
+    }, [chartData]);
+    
     const handleMetricToggle = (key: string, checked: boolean) => {
         setSelectedMetrics(prev => 
             checked ? [...prev, key] : prev.filter(m => m !== key)
         );
     };
 
-    if (!financialData) return <Skeleton className="h-80 w-full" />;
+    if (!financialData) return <Skeleton className="h-96 w-full" />;
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -139,18 +186,14 @@ export function DynamicReportChart() {
                                 axisLine={false}
                                 angle={-45}
                                 textAnchor="end"
-                                height={1} // Recharts requires a height > 0 to render ticks
+                                height={80}
                                 interval={0}
                             />
                             <YAxis 
                                 type="number"
-                                tickFormatter={(value: number | string) => {
-                                  if (typeof value === 'number') {
-                                    return `$${(value / 1000).toFixed(0)}k`
-                                  }
-                                  return value;
-                                }}
-                                domain={[yMin === 'auto' ? 'auto' : Number(yMin), yMax === 'auto' ? 'auto' : Number(yMax)]}
+                                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                                domain={yAxisConfig.domain}
+                                ticks={yAxisConfig.ticks}
                             />
                             <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
                             <ReferenceLine y={0} stroke="hsl(var(--border))" />
@@ -168,20 +211,6 @@ export function DynamicReportChart() {
                     <CardContent className="p-4">
                         <ScrollArea className="h-96">
                            <div className="space-y-4 pr-4">
-                                <div className="space-y-2">
-                                     <h4 className="font-bold">Axis Range</h4>
-                                     <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <Label htmlFor="yMin" className="text-xs">Min</Label>
-                                            <Input id="yMin" type="number" placeholder="auto" value={yMin} onChange={e => setYMin(e.target.value || 'auto')} />
-                                        </div>
-                                         <div>
-                                            <Label htmlFor="yMax" className="text-xs">Max</Label>
-                                            <Input id="yMax" type="number" placeholder="auto" value={yMax} onChange={e => setYMax(e.target.value || 'auto')} />
-                                        </div>
-                                     </div>
-                                </div>
-
                                 <div>
                                     <h4 className="font-bold mb-2">Income Statement</h4>
                                     {allMetrics.income.map(metric => (
@@ -217,4 +246,3 @@ export function DynamicReportChart() {
         </div>
     );
 }
-
