@@ -7,7 +7,7 @@ import { Calendar } from '../ui/calendar';
 import { format, parseISO, startOfDay } from 'date-fns';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Plus, Trash2, X, Edit, Check } from 'lucide-react';
+import { Plus, Trash2, X, Edit, Check, History, Loader2 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
 import {
@@ -23,8 +23,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DayProps } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { useProjects } from '@/contexts/ProjectsContext';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 
 const eventColors = ['blue', 'green', 'red', 'purple', 'orange', 'yellow', 'pink'];
+
+interface HistoricalEventsData {
+  date: string;
+  data: {
+    Events: string[];
+  };
+}
 
 interface CalendarPanelProps {
     fullscreen?: boolean;
@@ -51,6 +59,63 @@ const EditEventForm = ({ event, onSave, onCancel }: { event: CalendarEvent, onSa
                 <Button size="sm" onClick={handleSave}>Save</Button>
             </div>
         </div>
+    )
+}
+
+const OnThisDayDialog = ({ date }: { date: Date }) => {
+    const [eventsData, setEventsData] = useState<HistoricalEventsData | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchEvents = useCallback(async () => {
+      setIsLoading(true);
+      setError(null);
+      setEventsData(null);
+
+      try {
+        const response = await fetch(`https://byabbe.se/on-this-day/${date.getMonth() + 1}/${date.getDate()}/events.json`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        if (data && data.events && data.date) {
+            setEventsData({ date: data.date, data: { Events: data.events.map((e: any) => `${e.year}: ${e.description}`) } });
+        } else {
+            throw new Error("Unexpected API response structure.");
+        }
+      } catch (e) {
+        console.error(e);
+        setError('Failed to fetch historical events. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    }, [date]);
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm" onClick={fetchEvents}>
+                    <History className="mr-2 h-4 w-4" /> On This Day
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>On This Day in History: {format(date, 'MMMM d')}</DialogTitle>
+                    <DialogDescription>Significant events that occurred on this day throughout history.</DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[60vh]">
+                     {isLoading && <div className="flex justify-center p-8"><Loader2 className="animate-spin h-10 w-10"/></div>}
+                     {error && <p className="text-destructive text-center">{error}</p>}
+                     {eventsData && (
+                        <ScrollArea className="h-full">
+                           <ul className="list-disc pl-5 space-y-2 text-sm text-muted-foreground pr-4">
+                                {eventsData.data.Events.map((event, index) => (
+                                    <li key={index}>{event}</li>
+                                ))}
+                           </ul>
+                        </ScrollArea>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
     )
 }
 
@@ -239,11 +304,18 @@ export function CalendarPanel({ fullscreen = false, glass = false }: CalendarPan
                 </Popover>
               </div>
             </Tabs>
-            
+
+            <div className="flex justify-between items-center pr-4">
+                <h4 className="font-semibold text-lg">
+                    {selectedDate ? `Events for ${format(selectedDate, 'PPP')}` : 'Select a date'}
+                </h4>
+                {selectedDate && <OnThisDayDialog date={selectedDate} />}
+            </div>
+
             {activeTab !== 'All' && (
               <div className="p-4 border rounded-lg space-y-3 animation-fade-in">
                 <h4 className="font-semibold text-lg">
-                  {selectedDate ? `Add ${activeTab} Event for ${format(selectedDate, 'PPP')}` : 'Select a date'}
+                  {selectedDate ? `Add ${activeTab} Event` : 'Select a date'}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-center">
                     <Input placeholder="Event title..." value={newEventTitle} onChange={e => setNewEventTitle(e.target.value)} disabled={!selectedDate} />

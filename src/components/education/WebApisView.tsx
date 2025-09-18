@@ -1,7 +1,6 @@
 'use client';
 
 import { Card } from '../ui/card';
-import { HistoricalEvents } from './HistoricalEvents';
 import { LanguageTools } from './LanguageTools';
 
 export function WebApisView() {
@@ -9,9 +8,6 @@ export function WebApisView() {
         <div className="space-y-8">
             <Card>
                 <LanguageTools />
-            </Card>
-            <Card>
-                <HistoricalEvents />
             </Card>
         </div>
     )
