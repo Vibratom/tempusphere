@@ -28,7 +28,7 @@ export function HistoricalEvents() {
 
       try {
         // Switched to a more direct and reliable API endpoint for historical events.
-        const response = await fetch('https://byabbe.se/on-this-day/' + new Date().getDate() + '/' + (new Date().getMonth() + 1) + '/events.json');
+        const response = await fetch('https://byabbe.se/on-this-day/' + (new Date().getMonth() + 1) + '/' + new Date().getDate() + '/events.json');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
