@@ -54,16 +54,24 @@ function JournalForm({ onSave, template }: { onSave: (entry: Omit<JournalEntry, 
     const { toast } = useToast();
     
     useEffect(() => {
-        if(template) {
+        if (template) {
+            setDescription(template.name);
+            setSources(template.credit.map((c, i) => ({ id: `s-${i}`, account: c, amount: 0 })));
+            setDestinations(template.debit.map((d, i) => ({ id: `d-${i}`, account: d, amount: 0 })));
+            
             const allTemplateAccounts = [...template.credit, ...template.debit];
             allTemplateAccounts.forEach(acc => {
                 if(!categories.includes(acc)) {
                     addCategory(acc);
                 }
-            })
+            });
+        } else {
+            // Reset to default when there's no template
+            setDescription('');
+            setSources([{ id: `s-${Date.now()}`, account: '', amount: 0 }]);
+            setDestinations([{ id: `d-${Date.now()}`, account: '', amount: 0 }]);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [template, addCategory]);
+    }, [template, addCategory, categories]);
 
 
     const handleAllocationChange = (type: 'source' | 'destination', index: number, field: 'account' | 'amount', value: string | number) => {
