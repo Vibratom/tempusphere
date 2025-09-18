@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -41,14 +42,14 @@ interface AllocationEntry {
     amount: number;
 }
 
-function JournalForm({ onSave, template }: { onSave: (entry: Omit<JournalEntry, 'id'>) => void, template?: JournalTemplate }) {
+function JournalForm({ onSave, template, onAddTemplate }: { onSave: (entry: Omit<JournalEntry, 'id'>) => void, template?: JournalTemplate, onAddTemplate: (template: JournalTemplate) => void }) {
     const { categories, addCategory } = useFinance();
     const [date, setDate] = useState<Date>(new Date());
-    const [description, setDescription] = useState(template?.name || '');
+    const [description, setDescription] = useState('');
     const [totalAmount, setTotalAmount] = useState(0);
 
-    const [sources, setSources] = useState<AllocationEntry[]>(template?.credit.map((c, i) => ({ id: `s-${i}`, account: c, amount: 0 })) || [{ id: `s-${Date.now()}`, account: '', amount: 0 }]);
-    const [destinations, setDestinations] = useState<AllocationEntry[]>(template?.debit.map((d, i) => ({ id: `d-${i}`, account: d, amount: 0 })) || [{ id: `d-${Date.now()}`, account: '', amount: 0 }]);
+    const [sources, setSources] = useState<AllocationEntry[]>([{ id: `s-${Date.now()}`, account: '', amount: 0 }]);
+    const [destinations, setDestinations] = useState<AllocationEntry[]>([{ id: `d-${Date.now()}`, account: '', amount: 0 }]);
 
     const { toast } = useToast();
     
@@ -69,6 +70,7 @@ function JournalForm({ onSave, template }: { onSave: (entry: Omit<JournalEntry, 
             setDescription('');
             setSources([{ id: `s-${Date.now()}`, account: '', amount: 0 }]);
             setDestinations([{ id: `d-${Date.now()}`, account: '', amount: 0 }]);
+            setTotalAmount(0);
         }
     }, [template, addCategory, categories]);
 
@@ -128,6 +130,15 @@ function JournalForm({ onSave, template }: { onSave: (entry: Omit<JournalEntry, 
             });
             return;
         }
+
+        if (!template) {
+            const newTemplate: JournalTemplate = {
+                name: description,
+                credit: sources.map(s => s.account),
+                debit: destinations.map(d => d.account)
+            };
+            onAddTemplate(newTemplate);
+        }
         
         const journalEntries = [
             ...sources.map(s => ({ account: s.account, debit: 0, credit: s.amount })),
@@ -140,9 +151,9 @@ function JournalForm({ onSave, template }: { onSave: (entry: Omit<JournalEntry, 
     return (
         <DialogContent className="max-w-3xl">
             <DialogHeader>
-                <DialogTitle>New Journal Entry</DialogTitle>
+                <DialogTitle>{template ? 'New Journal Entry' : 'New Custom Journal Entry'}</DialogTitle>
                 <DialogDescription>
-                    Record a financial transaction. Enter the total amount, then specify where the money came from and where it went.
+                   {template ? 'Enter the total amount for this transaction.' : 'Record a custom transaction. This will be saved as a new template for future use.'}
                 </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
@@ -245,9 +256,9 @@ function JournalForm({ onSave, template }: { onSave: (entry: Omit<JournalEntry, 
     )
 }
 
-function JournalTemplateSelector({ onSelect, onCustom }: { onSelect: (template: JournalTemplate) => void, onCustom: () => void }) {
+function JournalTemplateSelector({ onSelect, onCustom, templates }: { onSelect: (template: JournalTemplate) => void, onCustom: () => void, templates: JournalTemplate[] }) {
     const [search, setSearch] = useState('');
-    const filteredTemplates = journalTemplates.filter(t => t.name.toLowerCase().includes(search.toLowerCase()));
+    const filteredTemplates = templates.filter(t => t.name.toLowerCase().includes(search.toLowerCase()));
 
     return (
         <DialogContent className="max-w-2xl">
@@ -292,6 +303,8 @@ const statusBadge = (status: TransactionStatus, date: string) => {
 export function FinanceJournal() {
     const { transactions, addTransaction, removeTransaction, updateTransaction } = useFinance();
     const [journalEntries, setJournalEntries] = useLocalStorage<JournalEntry[]>('finance:journalEntriesV1', []);
+    const [customTemplates, setCustomTemplates] = useLocalStorage<JournalTemplate[]>('finance:journalTemplatesV1', []);
+
     
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -299,6 +312,22 @@ export function FinanceJournal() {
     
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState('journal');
+
+    const allTemplates = useMemo(() => {
+        const combined = [...customTemplates, ...journalTemplates];
+        // Remove duplicates by name, preferring custom templates
+        const unique = combined.filter((template, index, self) => 
+            index === self.findIndex((t) => t.name === template.name)
+        );
+        return unique.sort((a,b) => a.name.localeCompare(b.name));
+    }, [customTemplates]);
+    
+    const handleAddTemplate = (template: JournalTemplate) => {
+        // Avoid adding a duplicate template
+        if (!customTemplates.some(t => t.name.toLowerCase() === template.name.toLowerCase())) {
+            setCustomTemplates(prev => [template, ...prev]);
+        }
+    };
     
     const handleSaveJournalEntry = (entry: Omit<JournalEntry, 'id'>) => {
         entry.entries.forEach(e => {
@@ -356,10 +385,10 @@ export function FinanceJournal() {
                     <DialogTrigger asChild>
                         <Button><Plus className="mr-2"/>New Journal Entry</Button>
                     </DialogTrigger>
-                    <JournalTemplateSelector onSelect={handleTemplateSelect} onCustom={handleCustomEntry} />
+                    <JournalTemplateSelector onSelect={handleTemplateSelect} onCustom={handleCustomEntry} templates={allTemplates} />
                  </Dialog>
                  <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) setSelectedTemplate(undefined); setIsFormOpen(open); }}>
-                    <JournalForm onSave={handleSaveJournalEntry} template={selectedTemplate} />
+                    <JournalForm onSave={handleSaveJournalEntry} template={selectedTemplate} onAddTemplate={handleAddTemplate} />
                  </Dialog>
             </CardHeader>
             <CardContent>
@@ -491,4 +520,5 @@ export function FinanceJournal() {
     
 
     
+
 
