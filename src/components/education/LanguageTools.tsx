@@ -108,41 +108,40 @@ export function LanguageTools() {
         setTranslationResults(null);
 
         try {
-            // Dictionary API call for the source word, based on the dictionary language setting
+             // 1. Fetch definition for the original search term in the selected dictionary language
             const dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/${dictionaryLang}/${searchTerm}`)
-              .then(res => {
-                  if (!res.ok) throw new Error(`Dictionary API error for "${searchTerm}" in ${dictionaryLang}.`);
-                  return res.json();
-              })
+              .then(res => res.json())
               .then(data => {
-                  if (data.title === "No Definitions Found") {
-                       // This is an expected outcome, not an error.
-                       return;
+                  if (Array.isArray(data)) {
+                      setDictionaryResults(data);
                   }
-                  setDictionaryResults(data);
-              }).catch(e => {
-                  // This is an expected failure (e.g., word not found), so we don't log an error.
-                  // The UI will simply not show a dictionary result.
+                  // If 'data' is an error object from the API, we'll just let it fail silently
+                  // and the UI will show "No definition found".
+              }).catch(() => {
+                  // This catch block handles network errors or JSON parsing failures.
+                  // API "not found" errors are handled by checking the response structure above.
               });
-
-            // Translator API call, based on the independent from/to language settings
+            
+             // 2. Translate the original search term
             const transPromise = fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=${translateFromLang}|${translateToLang}`)
               .then(res => res.json())
               .then(async (data: TranslationResponse) => {
-                  if (data.responseStatus !== 200) {
+                  if (data.responseStatus !== 200 || !data.responseData.translatedText) {
                       throw new Error('Translation failed.');
                   }
                   const translatedText = data.responseData.translatedText;
 
-                  // Now, try to get the dictionary definition for the *translated* word
-                  const targetDictionaryLang = supportedDictionaryLanguages.find(l => l.code.startsWith(translateToLang))?.code || null;
+                  // 3. Fetch definition for the *translated* word
+                  // Find the corresponding dictionary code for the target translation language
+                  const targetLangCode = translateToLang.split('-')[0]; // 'zh-CN' -> 'zh'
+                  const targetDictionaryLang = supportedDictionaryLanguages.find(l => l.code.startsWith(targetLangCode))?.code;
                   
                   if(targetDictionaryLang) {
                       try {
                           const transDictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${targetDictionaryLang}/${translatedText}`);
-                          if(transDictRes.ok){
+                          if (transDictRes.ok) {
                             const transDictData = await transDictRes.json();
-                             if (transDictData.title !== "No Definitions Found") {
+                             if (Array.isArray(transDictData)) {
                                 setTranslationResults(transDictData);
                                 return; // Exit if we successfully get a definition
                             }
@@ -152,7 +151,7 @@ export function LanguageTools() {
                       }
                   }
 
-                  // Fallback: If no dictionary entry is found for the translated word, just show the translation.
+                  // 4. Fallback: If no dictionary entry is found for the translated word, just show the translation.
                   const fallbackResult: DictionaryEntry[] = [{
                       word: translatedText,
                       phonetic: '',
@@ -163,6 +162,8 @@ export function LanguageTools() {
                       }]
                   }];
                   setTranslationResults(fallbackResult);
+              }).catch(() => {
+                  // If translation fails, do nothing, the translation column will just remain empty.
               });
             
             await Promise.allSettled([dictPromise, transPromise]);
