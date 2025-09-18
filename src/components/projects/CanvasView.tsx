@@ -540,7 +540,7 @@ export function CanvasView() {
     if (!isClient) return <div className="w-full h-full bg-muted animate-pulse"></div>;
 
     return (
-        <div className="w-full h-full flex flex-col gap-4" tabIndex={0} ref={canvasContainerRef}>
+        <div className="w-full h-[80vh] flex flex-col gap-4" tabIndex={0} ref={canvasContainerRef}>
             <Card>
                 <CardHeader>
                     <CardTitle>Design Canvas</CardTitle>
