@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, FileText, ListFilter, BookCopy } from 'lucide-react';
+import { LayoutDashboard, FileText, BookCopy } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
