@@ -34,7 +34,7 @@ interface DictionaryEntry {
   meanings: Meaning[];
 }
 
-const supportedLanguages = [
+const supportedDictionaryLanguages = [
     { code: 'en_US', name: 'English (US)' }, { code: 'hi', name: 'Hindi' }, { code: 'es', name: 'Spanish' },
     { code: 'fr', name: 'French' }, { code: 'ja', name: 'Japanese' }, { code: 'ru', name: 'Russian' },
     { code: 'en_GB', name: 'English (UK)' }, { code: 'de', name: 'German' }, { code: 'it', name: 'Italian' },
@@ -90,15 +90,15 @@ const WordDefinition = ({ results }: { results: DictionaryEntry[] | null }) => {
 
 export function LanguageTools() {
     const [searchTerm, setSearchTerm] = useState('hello');
-    const [sourceLang, setSourceLang] = useState('en_US');
-    const [targetLang, setTargetLang] = useState('es');
+    const [dictionaryLang, setDictionaryLang] = useState('en_US');
+    const [translateFromLang, setTranslateFromLang] = useState('en');
+    const [translateToLang, setTranslateToLang] = useState('es');
     
     const [dictionaryResults, setDictionaryResults] = useState<DictionaryEntry[] | null>(null);
     const [translationResults, setTranslationResults] = useState<DictionaryEntry[] | null>(null);
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const audioRef = useRef<HTMLAudioElement>(null);
 
     const fetchResults = async () => {
         if (!searchTerm.trim()) return;
@@ -108,15 +108,16 @@ export function LanguageTools() {
         setTranslationResults(null);
 
         try {
-            // Dictionary API call for the source word
-            const dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/${sourceLang}/${searchTerm}`)
+            // Dictionary API call for the source word, based on the dictionary language setting
+            const dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/${dictionaryLang}/${searchTerm}`)
               .then(res => {
-                  if (!res.ok) throw new Error(`Dictionary API error for "${searchTerm}".`);
+                  if (!res.ok) throw new Error(`Dictionary API error for "${searchTerm}" in ${dictionaryLang}.`);
                   return res.json();
               })
               .then(data => {
                   if (data.title === "No Definitions Found") {
-                      throw new Error(`No dictionary definitions found for "${searchTerm}".`);
+                       // This is an expected outcome, not an error.
+                       return;
                   }
                   setDictionaryResults(data);
               }).catch(e => {
@@ -124,9 +125,8 @@ export function LanguageTools() {
                   // The UI will simply not show a dictionary result.
               });
 
-            // Translator API call
-            const translatorSourceLang = sourceLang.split('_')[0]; // e.g. en_US -> en
-            const transPromise = fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=${translatorSourceLang}|${targetLang}`)
+            // Translator API call, based on the independent from/to language settings
+            const transPromise = fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=${translateFromLang}|${translateToLang}`)
               .then(res => res.json())
               .then(async (data: TranslationResponse) => {
                   if (data.responseStatus !== 200) {
@@ -134,7 +134,8 @@ export function LanguageTools() {
                   }
                   const translatedText = data.responseData.translatedText;
 
-                  const targetDictionaryLang = supportedLanguages.find(l => l.code.startsWith(targetLang))?.code || null;
+                  // Now, try to get the dictionary definition for the *translated* word
+                  const targetDictionaryLang = supportedDictionaryLanguages.find(l => l.code.startsWith(translateToLang))?.code || null;
                   
                   if(targetDictionaryLang) {
                       try {
@@ -143,7 +144,7 @@ export function LanguageTools() {
                             const transDictData = await transDictRes.json();
                              if (transDictData.title !== "No Definitions Found") {
                                 setTranslationResults(transDictData);
-                                return;
+                                return; // Exit if we successfully get a definition
                             }
                           }
                       } catch (e) {
@@ -151,7 +152,7 @@ export function LanguageTools() {
                       }
                   }
 
-                  // Fallback if no dictionary entry is found for the translated word
+                  // Fallback: If no dictionary entry is found for the translated word, just show the translation.
                   const fallbackResult: DictionaryEntry[] = [{
                       word: translatedText,
                       phonetic: '',
@@ -187,15 +188,18 @@ export function LanguageTools() {
                         <Input type="search" placeholder="Search for a word..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="text-base flex-1" />
                         <Button type="submit" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : <Search />}<span className="ml-2">Search</span></Button>
                     </div>
-                     <div className="flex flex-col sm:flex-row gap-2 items-center">
-                        <Select value={sourceLang} onValueChange={setSourceLang}>
-                            <SelectTrigger><div className="flex items-center gap-2"><BookOpen/><span>Dictionary: {supportedLanguages.find(l=>l.code === sourceLang)?.name}</span></div></SelectTrigger>
-                            <SelectContent>{supportedLanguages.map(lang => <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <ArrowRightLeft className="h-5 w-5 text-muted-foreground flex-shrink-0 my-2 sm:my-0"/>
-                        <Select value={targetLang} onValueChange={setTargetLang}>
-                            <SelectTrigger><div className="flex items-center gap-2"><ArrowRightLeft/><span>Translate to: {translatorLanguages.find(l=>l.code === targetLang)?.name}</span></div></SelectTrigger>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                        <Select value={translateFromLang} onValueChange={setTranslateFromLang}>
+                            <SelectTrigger><div className="flex items-center gap-2"><span className="text-muted-foreground">From:</span><span>{translatorLanguages.find(l=>l.code === translateFromLang)?.name}</span></div></SelectTrigger>
                             <SelectContent>{translatorLanguages.map(lang => <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={translateToLang} onValueChange={setTranslateToLang}>
+                            <SelectTrigger><div className="flex items-center gap-2"><span className="text-muted-foreground">To:</span><span>{translatorLanguages.find(l=>l.code === translateToLang)?.name}</span></div></SelectTrigger>
+                            <SelectContent>{translatorLanguages.map(lang => <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={dictionaryLang} onValueChange={setDictionaryLang}>
+                           <SelectTrigger><div className="flex items-center gap-2"><BookOpen className="text-muted-foreground" /><span>Dictionary: {supportedDictionaryLanguages.find(l=>l.code === dictionaryLang)?.name}</span></div></SelectTrigger>
+                           <SelectContent>{supportedDictionaryLanguages.map(lang => <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
                 </form>
@@ -205,10 +209,12 @@ export function LanguageTools() {
 
                 <div className="grid md:grid-cols-2 gap-6 mt-4">
                     <div className="space-y-4">
-                        {dictionaryResults && <WordDefinition results={dictionaryResults} />}
+                        <h3 className="font-bold text-lg text-center">Definition ({dictionaryLang.split('_')[0]})</h3>
+                        {dictionaryResults ? <WordDefinition results={dictionaryResults} /> : <p className="text-muted-foreground text-center pt-4">No definition found.</p>}
                     </div>
                     <div className="space-y-4">
-                        {translationResults && <WordDefinition results={translationResults} />}
+                         <h3 className="font-bold text-lg text-center">Translation ({translateToLang})</h3>
+                        {translationResults ? <WordDefinition results={translationResults} /> : <p className="text-muted-foreground text-center pt-4">No translation found.</p>}
                     </div>
                 </div>
             </CardContent>
