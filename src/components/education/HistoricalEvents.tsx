@@ -50,7 +50,7 @@ export function HistoricalEvents() {
   }, []);
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
         <div className="flex flex-col items-center text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">On This Day in History</h1>
             <p className="text-lg text-muted-foreground mt-2 max-w-3xl">A look at significant events that occurred on {format(new Date(), 'MMMM d')}.</p>

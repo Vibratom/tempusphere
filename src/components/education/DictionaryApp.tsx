@@ -83,7 +83,7 @@ export function DictionaryApp() {
   const firstPhoneticWithAudio = results?.[0]?.phonetics.find(p => p.audio);
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
         <audio ref={audioRef} />
         <div className="flex flex-col items-center text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Dictionary</h1>
