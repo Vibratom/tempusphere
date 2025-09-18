@@ -86,7 +86,6 @@ export function DictionaryApp() {
     <div className="w-full max-w-4xl mx-auto">
         <audio ref={audioRef} />
         <div className="flex flex-col items-center text-center mb-8">
-            <BookOpen className="w-16 h-16 mb-4 text-primary" />
             <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Dictionary</h1>
             <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Look up word definitions, pronunciations, synonyms, and more.</p>
         </div>
@@ -168,4 +167,3 @@ export function DictionaryApp() {
     </div>
   );
 }
-
