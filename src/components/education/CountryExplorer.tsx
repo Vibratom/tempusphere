@@ -83,12 +83,12 @@ export function CountryExplorer() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
-        <div className="flex flex-col items-center text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Country Explorer</h1>
-            <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Discover information about countries around the world.</p>
+        <div className="flex flex-col items-center text-center mb-6">
+            <h1 className="text-3xl font-bold tracking-tighter">Country Explorer</h1>
+            <p className="text-md text-muted-foreground mt-1 max-w-3xl">Discover information about countries around the world.</p>
         </div>
 
-        <form onSubmit={handleSearch} className="flex gap-2 mb-8">
+        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
             <Input
                 type="search"
                 placeholder="Search for a country..."
@@ -116,16 +116,16 @@ export function CountryExplorer() {
         )}
 
         {results && (
-            <ScrollArea className="h-[60vh]">
-                <div className="space-y-6 pr-4">
+            <ScrollArea className="h-96">
+                <div className="space-y-4 pr-4">
                 {results.map(country => (
                     <Card key={country.name.official}>
                         <CardHeader>
-                            <CardTitle className="text-2xl font-bold">{country.name.common}</CardTitle>
+                            <CardTitle className="text-xl font-bold">{country.name.common}</CardTitle>
                             <CardDescription>{country.name.official}</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
+                        <CardContent className="grid md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
                                 <div className="relative aspect-video bg-muted rounded-lg overflow-hidden border">
                                     <Image src={country.flags.svg} alt={country.flags.alt || `Flag of ${country.name.common}`} layout="fill" objectFit="contain" className="p-2"/>
                                 </div>
@@ -135,11 +135,11 @@ export function CountryExplorer() {
                                     </a>
                                 </Button>
                             </div>
-                            <div className="space-y-3">
+                            <div className="space-y-2">
                                 <InfoRow icon={<Landmark />} label="Capital" value={country.capital?.join(', ')} />
                                 <InfoRow icon={<Users />} label="Population" value={country.population.toLocaleString()} />
                                 <InfoRow icon={<Globe />} label="Region" value={`${country.region} / ${country.subregion}`} />
-                                <Separator />
+                                <Separator className="my-2" />
                                 <InfoRow icon={<Languages />} label="Languages" value={Object.values(country.languages).join(', ')} />
                                 <InfoRow icon={<Coins />} label="Currencies" value={Object.entries(country.currencies).map(([code, c]) => `${c.name} (${c.symbol})`).join(', ')} />
                             </div>

@@ -85,12 +85,12 @@ export function DictionaryApp() {
   return (
     <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
         <audio ref={audioRef} />
-        <div className="flex flex-col items-center text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Dictionary</h1>
-            <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Look up word definitions, pronunciations, synonyms, and more.</p>
+        <div className="flex flex-col items-center text-center mb-6">
+            <h1 className="text-3xl font-bold tracking-tighter">Dictionary</h1>
+            <p className="text-md text-muted-foreground mt-1 max-w-3xl">Look up word definitions, pronunciations, synonyms, and more.</p>
         </div>
 
-        <form onSubmit={handleSearch} className="flex gap-2 mb-8">
+        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
             <Input
                 type="search"
                 placeholder="Search for a word..."
@@ -117,11 +117,11 @@ export function DictionaryApp() {
 
         {results && (
              <Card>
-                <ScrollArea className="h-[60vh]">
+                <ScrollArea className="h-96">
                     <CardHeader>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div>
-                                <CardTitle className="text-4xl font-bold">{results[0].word}</CardTitle>
+                                <CardTitle className="text-3xl font-bold">{results[0].word}</CardTitle>
                                 <CardDescription className="text-lg text-primary">{results[0].phonetic}</CardDescription>
                             </div>
                              {firstPhoneticWithAudio && (
@@ -136,7 +136,7 @@ export function DictionaryApp() {
                         {results[0].meanings.map((meaning, index) => (
                             <div key={index}>
                                 <div className="flex items-center gap-4 mb-4">
-                                    <h3 className="text-2xl font-bold italic">{meaning.partOfSpeech}</h3>
+                                    <h3 className="text-xl font-bold italic">{meaning.partOfSpeech}</h3>
                                     <Separator className="flex-1" />
                                 </div>
                                 
