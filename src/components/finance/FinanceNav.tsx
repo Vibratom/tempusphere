@@ -2,12 +2,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, FileText, BookCopy } from 'lucide-react';
+import { LayoutDashboard, FileText, BookCopy, Banknote } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
     { value: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', href: '/finance' },
     { value: 'journal', icon: BookCopy, label: 'Journal', href: '/finance/journal' },
+    { value: 'budget', icon: Banknote, label: 'Budget', href: '/finance/budget' },
     { value: 'reports', icon: FileText, label: 'Reports', href: '/finance/reports' },
 ];
 

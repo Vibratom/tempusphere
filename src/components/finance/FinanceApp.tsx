@@ -12,6 +12,7 @@ import { BalanceSheetChart } from './BalanceSheetChart';
 import { CashFlowChart } from './CashFlowChart';
 import { DynamicReportChart } from './DynamicReportChart';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { BudgetHealth } from './BudgetHealth';
 
 export type ChartType = 'bar' | 'pie' | 'radar' | 'radial' | 'treemap';
 
@@ -125,6 +126,8 @@ export function FinanceApp() {
                     </CardContent>
                 </Card>
             </div>
+            
+            <BudgetHealth />
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-8">
                 <Card className="xl:col-span-1">
