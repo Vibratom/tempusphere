@@ -15,7 +15,7 @@ import { SettingsProvider } from '@/contexts/SettingsContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DraftingCompass, Target, Image as ImageEditIcon } from 'lucide-react';
 import { HabitTracker } from '@/components/productivity/HabitTracker';
-import { ImageEditor } from '@/components/productivity/ImageEditor';
+import { ImageEditor } from '@/components/productivity/Image-editor';
 
 function DesignTool() {
     return (
