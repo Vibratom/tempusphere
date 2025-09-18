@@ -9,7 +9,6 @@ import { Loader2, ArrowRightLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Footer } from '../tempusphere/Footer';
 import { Header } from '../tempusphere/Header';
-import { translate } from '@/ai/flows/translator-flow';
 import { translatorLanguages } from '@/lib/translator-languages';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,11 +27,24 @@ export function Translator() {
         setTranslatedText('');
 
         try {
-            const result = await translate({
-                text: sourceText,
-                sourceLang: translatorLanguages.find(l => l.code === sourceLang)?.name || 'English',
-                targetLang: translatorLanguages.find(l => l.code === targetLang)?.name || 'Spanish'
+            const res = await fetch('/api/translate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    text: sourceText,
+                    sourceLang: translatorLanguages.find(l => l.code === sourceLang)?.name || 'English',
+                    targetLang: translatorLanguages.find(l => l.code === targetLang)?.name || 'Spanish'
+                }),
             });
+
+            if (!res.ok) {
+                const errorBody = await res.json();
+                throw new Error(errorBody.error || 'An unknown error occurred');
+            }
+
+            const result = await res.json();
             if (result.translation) {
                 setTranslatedText(result.translation);
             } else {
