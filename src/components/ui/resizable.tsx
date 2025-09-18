@@ -18,6 +18,7 @@ const ResizablePanelGroup = React.forwardRef<
     {...props}
   />
 ))
+ResizablePanelGroup.displayName = "ResizablePanelGroup"
 
 const ResizablePanel = ResizablePrimitivePanel
 
@@ -40,5 +41,6 @@ const ResizableHandle = React.forwardRef<
     )}
   </ResizablePrimitivePanelResizeHandle>
 ))
+ResizableHandle.displayName = "ResizableHandle"
 
 export { ResizablePanelGroup, ResizablePanel, ResizableHandle }

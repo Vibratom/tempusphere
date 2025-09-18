@@ -21,11 +21,11 @@ function ProductivityContent() {
                 <TopToolbar />
                 <div className="flex-1 flex overflow-hidden">
                     <ResizablePanelGroup direction="horizontal">
-                        <ResizablePanel defaultSize={15} minSize={15}>
+                        <ResizablePanel defaultSize={20} minSize={15}>
                             <LeftSidebar />
                         </ResizablePanel>
                         <ResizableHandle withHandle />
-                        <ResizablePanel defaultSize={60}>
+                        <ResizablePanel defaultSize={55}>
                             <div className="flex flex-col h-full">
                                 <div className="flex-1 relative bg-background">
                                     <Canvas />
