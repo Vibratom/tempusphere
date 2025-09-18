@@ -148,7 +148,7 @@ export function LanguageTools() {
                             }
                           }
                       } catch (e) {
-                          console.error("Target dictionary error:", e);
+                          // This is an expected failure if the translated word isn't in the dictionary.
                       }
                   }
 
@@ -221,5 +221,7 @@ export function LanguageTools() {
         </>
     )
 }
+
+    
 
     
