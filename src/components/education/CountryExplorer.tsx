@@ -9,6 +9,7 @@ import { Loader2, Search, Map, Users, Languages, Landmark, Coins, Globe, Clock, 
 import { ScrollArea } from '../ui/scroll-area';
 import Image from 'next/image';
 import { Separator } from '../ui/separator';
+import { cn } from '@/lib/utils';
 
 // API Response Types
 interface Country {
@@ -133,10 +134,10 @@ export function CountryExplorer() {
                         <CardContent className="grid md:grid-cols-2 gap-6">
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="relative aspect-video bg-muted rounded-lg overflow-hidden border">
-                                        <Image src={country.flags.svg} alt={country.flags.alt || `Flag of ${country.name.common}`} layout="fill" objectFit="contain" className="p-2"/>
+                                    <div className="relative w-32 h-20 bg-muted rounded-lg overflow-hidden border">
+                                        <Image src={country.flags.svg} alt={country.flags.alt || `Flag of ${country.name.common}`} layout="fill" objectFit="contain" className="p-1"/>
                                     </div>
-                                    <div className="relative aspect-video bg-muted rounded-lg overflow-hidden border">
+                                    <div className="relative w-32 h-20 bg-muted rounded-lg overflow-hidden border">
                                         {country.coatOfArms.svg ? (
                                              <Image src={country.coatOfArms.svg} alt={`Coat of arms of ${country.name.common}`} layout="fill" objectFit="contain" className="p-2"/>
                                         ) : (
