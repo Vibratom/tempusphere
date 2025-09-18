@@ -27,14 +27,15 @@ export function HistoricalEvents() {
       setEventsData(null);
 
       try {
-        const response = await fetch('https://today.zenquotes.io/api?cors');
+        // Switched to a more direct and reliable API endpoint for historical events.
+        const response = await fetch('https://byabbe.se/on-this-day/' + new Date().getDate() + '/' + (new Date().getMonth() + 1) + '/events.json');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        // The actual data is nested inside a 'data' property in the response
-        if (data && data.data && data.data.Events) {
-            setEventsData({ date: data.date, data: data.data });
+        // The new API has a different structure. Adapt to it.
+        if (data && data.events && data.date) {
+            setEventsData({ date: data.date, data: { Events: data.events.map((e: any) => `${e.year}: ${e.description}`) } });
         } else {
             throw new Error("Unexpected API response structure.");
         }
