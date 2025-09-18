@@ -12,7 +12,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { translatorLanguages } from '@/lib/translator-languages';
 
 
-// --- Dictionary Types ---
+// --- Wiktionary Types ---
+interface WiktionaryDefinition {
+  partOfSpeech: string;
+  text: string;
+  examples?: { text: string }[];
+}
+
+interface WiktionaryEntry {
+  definitions: WiktionaryDefinition[];
+}
+
+// --- Internal Dictionary Types (to match existing UI) ---
 interface Phonetic {
   text: string;
   audio: string;
@@ -34,20 +45,32 @@ interface DictionaryEntry {
   meanings: Meaning[];
 }
 
-const supportedDictionaryLanguages = [
-    { code: 'en_US', name: 'English (US)' }, { code: 'hi', name: 'Hindi' }, { code: 'es', name: 'Spanish' },
-    { code: 'fr', name: 'French' }, { code: 'ja', name: 'Japanese' }, { code: 'ru', name: 'Russian' },
-    { code: 'en_GB', name: 'English (UK)' }, { code: 'de', name: 'German' }, { code: 'it', name: 'Italian' },
-    { code: 'ko', name: 'Korean' }, { code: 'pt-BR', name: 'Brazilian Portuguese' }, { code: 'ar', name: 'Arabic' },
-    { code: 'tr', name: 'Turkish' },
-];
-
-
 // --- Translator Types ---
 interface TranslationResponse {
   responseData: { translatedText: string; };
   responseStatus: number;
 }
+
+const parseWiktionaryResponse = (word: string, data: any[]): DictionaryEntry[] | null => {
+    if (!data || data.length === 0) return null;
+
+    const meanings: Meaning[] = data.map((entry: WiktionaryEntry) => ({
+        partOfSpeech: entry.definitions[0]?.partOfSpeech || 'unknown',
+        definitions: entry.definitions.map(def => ({
+            definition: def.text,
+            example: def.examples?.[0]?.text.replace(/<[^>]*>/g, '') || '',
+            synonyms: [],
+            antonyms: []
+        }))
+    }));
+
+    return [{
+        word: word,
+        phonetic: '',
+        phonetics: [],
+        meanings: meanings
+    }];
+};
 
 
 const WordDefinition = ({ results, langName }: { results: DictionaryEntry[] | null, langName: string }) => {
@@ -64,7 +87,7 @@ const WordDefinition = ({ results, langName }: { results: DictionaryEntry[] | nu
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <div>
                     <h2 className="text-3xl font-bold">{results[0].word}</h2>
-                    <p className="text-lg text-primary">{results[0].phonetic}</p>
+                    {results[0].phonetic && <p className="text-lg text-primary">{results[0].phonetic}</p>}
                 </div>
                  {firstPhoneticWithAudio && (<Button variant="outline" onClick={() => playAudio(firstPhoneticWithAudio.audio)}><Volume2 className="mr-2"/>Play</Button>)}
             </div>
@@ -98,6 +121,20 @@ export function LanguageTools() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const fetchWiktionaryDefinition = async (word: string, langCode: string): Promise<DictionaryEntry[] | null> => {
+        try {
+            const wiktionaryLangCode = langCode.split('-')[0]; // Use base language code (e.g., 'zh' from 'zh-CN')
+            const response = await fetch(`https://${wiktionaryLangCode}.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`);
+            if (response.ok) {
+                const data = await response.json();
+                return parseWiktionaryResponse(word, data.definitions);
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    };
+
     const fetchResults = async () => {
         if (!searchTerm.trim()) return;
         setIsLoading(true);
@@ -107,58 +144,37 @@ export function LanguageTools() {
 
         try {
             // --- 1. Fetch source definition ---
-            const sourceLangCode = translateFromLang.split('-')[0];
-            const sourceDictionaryLang = supportedDictionaryLanguages.find(l => l.code.startsWith(sourceLangCode))?.code;
-            if (sourceDictionaryLang) {
-                try {
-                    const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${sourceDictionaryLang}/${searchTerm}`);
-                    if (dictRes.ok) {
-                        const dictData = await dictRes.json();
-                        setSourceResults(dictData);
-                    }
-                } catch (e) {
-                    // Do not show an error, just no results
-                }
-            }
+            const sourceDefPromise = fetchWiktionaryDefinition(searchTerm, translateFromLang);
 
             // --- 2. Fetch translation and its definition ---
-            const transPromise = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=${translateFromLang}|${translateToLang}`);
-            const transData: TranslationResponse = await transPromise.json();
-            
-            if (transData.responseStatus !== 200 || !transData.responseData.translatedText) {
-              throw new Error('Translation failed.');
-            }
-            const translatedText = transData.responseData.translatedText;
-            
-            const targetLangCode = translateToLang.split('-')[0];
-            const targetDictionaryLang = supportedDictionaryLanguages.find(l => l.code.startsWith(targetLangCode))?.code;
-
-            if (targetDictionaryLang) {
-              try {
-                const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${targetDictionaryLang}/${translatedText}`);
-                if (dictRes.ok) {
-                    const dictData = await dictRes.json();
-                    if (Array.isArray(dictData)) {
-                        setTranslationResults(dictData);
-                        return; // Success, we are done
+            const translationPromise = fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=${translateFromLang}|${translateToLang}`)
+                .then(res => res.json() as Promise<TranslationResponse>)
+                .then(data => {
+                    if (data.responseStatus !== 200 || !data.responseData.translatedText) {
+                        throw new Error('Translation failed.');
                     }
-                }
-              } catch (e) {
-                 // Dictionary for translated word not found, proceed to fallback
-              }
-            }
+                    const translatedText = data.responseData.translatedText;
+                    return fetchWiktionaryDefinition(translatedText, translateToLang);
+                })
+                .catch(() => {
+                    // If dictionary for translated word fails, create a fallback.
+                     const translatedText = "Translation unavailable";
+                     const fallbackResult: DictionaryEntry[] = [{
+                        word: translatedText,
+                        phonetic: '',
+                        phonetics: [],
+                        meanings: [{
+                            partOfSpeech: 'translation',
+                            definitions: [{ definition: `Could not find definition for translated word.`, example: '', synonyms: [], antonyms: [] }]
+                        }]
+                    }];
+                    return fallbackResult;
+                });
             
-            // Fallback: If no dictionary entry is found for the translated word, just show the translation.
-            const fallbackResult: DictionaryEntry[] = [{
-                word: translatedText,
-                phonetic: '',
-                phonetics: [],
-                meanings: [{
-                    partOfSpeech: 'translation',
-                    definitions: [{ definition: `Direct translation of "${searchTerm}"`, example: '', synonyms: [], antonyms: [] }]
-                }]
-            }];
-            setTranslationResults(fallbackResult);
+            const [sourceDef, translationDef] = await Promise.all([sourceDefPromise, translationPromise]);
+            
+            setSourceResults(sourceDef);
+            setTranslationResults(translationDef);
 
         } catch (e) {
             setError((e as Error).message);
