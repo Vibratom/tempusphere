@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction } from 'react';
@@ -43,31 +42,41 @@ interface FinanceContextType {
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 const defaultCategories = [
-    // Income
-    'Salary', 
-    'Freelance', 
-    'Investment Gain', 
-    'Interest Income',
+    // Assets
+    'Cash',
+    'Accounts Receivable',
+    'Inventory',
+    'Office Equipment',
+    // Liabilities
+    'Accounts Payable',
     'Loan',
+    // Equity
+    'Owner Investment',
+    'Retained Earnings',
+    // Revenue
+    'Sales', 
+    'Service Revenue',
+    'Interest Income',
+    'Investment Gain', 
     // Expenses
     'Cost of Goods Sold',
     'Advertising',
     'Commission',
     'Office Supplies',
-    'Office Equipment',
     'Groceries', 
     'Utilities', 
     'Rent/Mortgage', 
     'Transportation', 
     'Entertainment', 
     'Interest Expense',
+    'Salaries',
     'Other'
 ];
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useLocalStorage<Transaction[]>('finance:transactionsV5', []);
   const [budgets, setBudgets] = useLocalStorage<Budget[]>('finance:budgetsV2', []);
-  const [categories, setCategories] = useLocalStorage<string[]>('finance:categoriesV2', defaultCategories);
+  const [categories, setCategories] = useLocalStorage<string[]>('finance:categoriesV3', defaultCategories);
 
   const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
     const newTransaction = { ...transaction, id: `txn-${Date.now()}-${Math.random()}` };

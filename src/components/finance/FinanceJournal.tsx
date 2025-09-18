@@ -4,10 +4,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance, Transaction, TransactionType, TransactionStatus } from '@/contexts/FinanceContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
-import { Plus, Trash2, Edit, MoreVertical, FileText, FilePlus, HandCoins, BookCopy } from 'lucide-react';
+import { Plus, Trash2, Edit, MoreVertical, FileText, FilePlus, HandCoins, BookCopy, ArrowRight, Wallet } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { format, parseISO, isPast } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -32,67 +32,97 @@ interface JournalEntry {
     }[];
 }
 
+interface AllocationEntry {
+    id: string;
+    account: string;
+    amount: number;
+}
+
 function JournalForm({ onSave }: { onSave: (entry: Omit<JournalEntry, 'id'>) => void }) {
-    const { categories, addCategory } = useFinance();
+    const { categories } = useFinance();
     const [date, setDate] = useState<Date>(new Date());
     const [description, setDescription] = useState('');
-    const [entries, setEntries] = useState([
-        { account: '', debit: 0, credit: 0 },
-        { account: '', debit: 0, credit: 0 },
-    ]);
+    const [totalAmount, setTotalAmount] = useState(0);
+
+    const [sources, setSources] = useState<AllocationEntry[]>([{ id: `s-${Date.now()}`, account: '', amount: 0 }]);
+    const [destinations, setDestinations] = useState<AllocationEntry[]>([{ id: `d-${Date.now()}`, account: '', amount: 0 }]);
+
     const { toast } = useToast();
 
-    const handleEntryChange = (index: number, field: 'account' | 'debit' | 'credit', value: string | number) => {
-        const newEntries = [...entries];
-        const entry = { ...newEntries[index] };
+    const handleAllocationChange = (type: 'source' | 'destination', index: number, field: 'account' | 'amount', value: string | number) => {
+        const list = type === 'source' ? sources : destinations;
+        const setter = type === 'source' ? setSources : setDestinations;
         
-        if(field === 'account') entry.account = value as string;
-        if(field === 'debit') {
-            entry.debit = Number(value);
-            if (Number(value) > 0) entry.credit = 0;
-        }
-        if(field === 'credit') {
-            entry.credit = Number(value);
-             if (Number(value) > 0) entry.debit = 0;
-        }
+        const newList = [...list];
+        const entry = { ...newList[index] };
         
-        newEntries[index] = entry;
-        setEntries(newEntries);
+        if (field === 'account') entry.account = value as string;
+        if (field === 'amount') entry.amount = Number(value) || 0;
+        
+        newList[index] = entry;
+        setter(newList);
     };
 
-    const addEntryRow = () => {
-        setEntries([...entries, { account: '', debit: 0, credit: 0 }]);
-    }
-    
-    const removeEntryRow = (index: number) => {
-        if(entries.length > 2) {
-            setEntries(entries.filter((_, i) => i !== index));
-        }
-    }
+    const addAllocationRow = (type: 'source' | 'destination') => {
+        const setter = type === 'source' ? setSources : setDestinations;
+        setter(prev => [...prev, { id: `${type === 'source' ? 's' : 'd'}-${Date.now()}`, account: '', amount: 0 }]);
+    };
 
-    const { totalDebit, totalCredit, isBalanced } = useMemo(() => {
-        const totalDebit = entries.reduce((sum, e) => sum + e.debit, 0);
-        const totalCredit = entries.reduce((sum, e) => sum + e.credit, 0);
-        return { totalDebit, totalCredit, isBalanced: totalDebit === totalCredit && totalDebit > 0 };
-    }, [entries]);
+    const removeAllocationRow = (type: 'source' | 'destination', id: string) => {
+        const list = type === 'source' ? sources : destinations;
+        const setter = type === 'source' ? setSources : setDestinations;
+        if (list.length > 1) {
+            setter(list.filter(item => item.id !== id));
+        }
+    };
+    
+    const { totalSource, totalDestination, isBalanced } = useMemo(() => {
+        const sourceSum = sources.reduce((sum, s) => sum + s.amount, 0);
+        const destSum = destinations.reduce((sum, d) => sum + d.amount, 0);
+        const balanced = totalAmount > 0 && sourceSum === totalAmount && destSum === totalAmount;
+        return { totalSource: sourceSum, totalDestination: destSum, isBalanced: balanced };
+    }, [sources, destinations, totalAmount]);
+    
+     const autoFill = (type: 'source' | 'destination') => {
+        const list = type === 'source' ? sources : destinations;
+        const setter = type === 'source' ? setSources : setDestinations;
+        const totalAllocated = list.reduce((sum, item) => sum + item.amount, 0);
+        const firstEmpty = list.find(item => item.amount === 0);
+
+        if (firstEmpty) {
+            const remainder = totalAmount - totalAllocated;
+            handleAllocationChange(type, list.findIndex(i => i.id === firstEmpty.id), 'amount', remainder);
+        }
+    };
 
     const handleSave = () => {
-        if (!description || !isBalanced || entries.some(e => !e.account)) {
+        if (!description || !isBalanced || sources.some(e => !e.account) || destinations.some(e => !e.account)) {
              toast({
                 title: "Invalid Entry",
-                description: "Description must be filled, debits must equal credits, and all accounts must be selected.",
+                description: "Please fill the description, ensure the transaction is balanced, and all accounts are selected.",
                 variant: "destructive"
             });
             return;
         }
-        onSave({ date: date.toISOString(), description, entries });
+        
+        const journalEntries = [
+            ...sources.map(s => ({ account: s.account, debit: 0, credit: s.amount })),
+            ...destinations.map(d => ({ account: d.account, debit: d.amount, credit: 0 })),
+        ];
+        
+        onSave({ date: date.toISOString(), description, entries: journalEntries });
     };
 
     return (
-        <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle>New Journal Entry</DialogTitle></DialogHeader>
-            <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+        <DialogContent className="max-w-3xl">
+            <DialogHeader>
+                <DialogTitle>New Journal Entry</DialogTitle>
+                <DialogDescription>
+                    Record a financial transaction. Enter the total amount, then specify where the money came from and where it went.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="grid gap-2">
                         <Label>Date</Label>
                         <Popover>
@@ -106,37 +136,80 @@ function JournalForm({ onSave }: { onSave: (entry: Omit<JournalEntry, 'id'>) => 
                     </div>
                      <div className="grid gap-2">
                         <Label htmlFor="description">Description</Label>
-                        <Input id="description" value={description} onChange={e => setDescription(e.target.value)} />
+                        <Input id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="e.g., Office supply purchase"/>
+                    </div>
+                     <div className="grid gap-2">
+                        <Label htmlFor="totalAmount">Total Amount</Label>
+                        <Input id="totalAmount" type="number" value={totalAmount || ''} onChange={e => setTotalAmount(Number(e.target.value))} placeholder="100.00" />
                     </div>
                 </div>
-                <div className="space-y-2">
-                    {entries.map((entry, index) => (
-                         <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                            <div className="col-span-5">
-                                <Select value={entry.account} onValueChange={(v) => handleEntryChange(index, 'account', v)}>
-                                    <SelectTrigger><SelectValue placeholder="Select account..." /></SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    {/* --- SOURCES --- */}
+                    <div className="space-y-2 rounded-lg border p-4">
+                        <h4 className="font-semibold text-center">Money Came From (Source / Credit)</h4>
+                        {sources.map((entry, index) => (
+                             <div key={entry.id} className="grid grid-cols-12 gap-2 items-center">
+                                <div className="col-span-7">
+                                    <Select value={entry.account} onValueChange={(v) => handleAllocationChange('source', index, 'account', v)}>
+                                        <SelectTrigger><SelectValue placeholder="Select account..." /></SelectTrigger>
+                                        <SelectContent>
+                                            {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="col-span-4">
+                                    <Input type="number" placeholder="Amount" value={entry.amount || ''} onChange={e => handleAllocationChange('source', index, 'amount', e.target.value)} />
+                                </div>
+                                 <div className="col-span-1">
+                                    <Button size="icon" variant="ghost" onClick={() => removeAllocationRow('source', entry.id)} disabled={sources.length <= 1}><Trash2 className="h-4 w-4"/></Button>
+                                </div>
                             </div>
-                            <div className="col-span-3">
-                                <Input type="number" placeholder="Debit" value={entry.debit || ''} onChange={e => handleEntryChange(index, 'debit', e.target.value)} />
-                            </div>
-                            <div className="col-span-3">
-                                <Input type="number" placeholder="Credit" value={entry.credit || ''} onChange={e => handleEntryChange(index, 'credit', e.target.value)} />
-                            </div>
-                             <div className="col-span-1">
-                                <Button size="icon" variant="ghost" onClick={() => removeEntryRow(index)} disabled={entries.length <= 2}><Trash2 className="h-4 w-4"/></Button>
-                            </div>
+                        ))}
+                        <Button variant="outline" size="sm" onClick={() => addAllocationRow('source')}><Plus className="mr-2 h-4 w-4"/>Add Source</Button>
+                        <div className="font-mono font-bold border-t pt-2 mt-2 text-right pr-2 flex justify-between items-center">
+                            <span>Total Source:</span>
+                             <span className={cn(totalSource !== totalAmount && "text-destructive")}>${totalSource.toFixed(2)}</span>
                         </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={addEntryRow}><Plus className="mr-2 h-4 w-4"/>Add Line</Button>
+                        {totalAmount > 0 && totalSource < totalAmount && <Button size="sm" variant="secondary" onClick={() => autoFill('source')}>Auto-fill</Button>}
+                    </div>
+                    
+                    {/* --- DESTINATIONS --- */}
+                    <div className="space-y-2 rounded-lg border p-4">
+                        <h4 className="font-semibold text-center">Money Went To (Destination / Debit)</h4>
+                        {destinations.map((entry, index) => (
+                             <div key={entry.id} className="grid grid-cols-12 gap-2 items-center">
+                                <div className="col-span-7">
+                                    <Select value={entry.account} onValueChange={(v) => handleAllocationChange('destination', index, 'account', v)}>
+                                        <SelectTrigger><SelectValue placeholder="Select account..." /></SelectTrigger>
+                                        <SelectContent>
+                                            {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="col-span-4">
+                                    <Input type="number" placeholder="Amount" value={entry.amount || ''} onChange={e => handleAllocationChange('destination', index, 'amount', e.target.value)} />
+                                </div>
+                                 <div className="col-span-1">
+                                    <Button size="icon" variant="ghost" onClick={() => removeAllocationRow('destination', entry.id)} disabled={destinations.length <= 1}><Trash2 className="h-4 w-4"/></Button>
+                                </div>
+                            </div>
+                        ))}
+                        <Button variant="outline" size="sm" onClick={() => addAllocationRow('destination')}><Plus className="mr-2 h-4 w-4"/>Add Destination</Button>
+                         <div className="font-mono font-bold border-t pt-2 mt-2 text-right pr-2 flex justify-between items-center">
+                            <span>Total Destination:</span>
+                            <span className={cn(totalDestination !== totalAmount && "text-destructive")}>${totalDestination.toFixed(2)}</span>
+                        </div>
+                        {totalAmount > 0 && totalDestination < totalAmount && <Button size="sm" variant="secondary" onClick={() => autoFill('destination')}>Auto-fill</Button>}
+                    </div>
                 </div>
-                <div className="grid grid-cols-12 gap-2 font-mono font-bold border-t pt-2">
-                    <div className="col-start-6 col-span-3 text-right pr-2">{totalDebit.toFixed(2)}</div>
-                    <div className="col-span-3 text-right pr-2">{totalCredit.toFixed(2)}</div>
-                    {!isBalanced && totalDebit > 0 && <div className="col-span-12 text-right text-destructive text-xs pr-2">Debits and credits must be equal.</div>}
+                 <div className="flex items-center justify-center p-4 rounded-lg text-lg font-bold gap-4"
+                    style={{ background: isBalanced ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--destructive) / 0.1)', color: isBalanced ? 'hsl(var(--primary))' : 'hsl(var(--destructive))' }}
+                 >
+                    <span>${totalSource.toFixed(2)}</span>
+                    <ArrowRight />
+                    <span>${totalDestination.toFixed(2)}</span>
+                    <Badge variant={isBalanced ? 'default' : 'destructive'} className="ml-4">{isBalanced ? 'Balanced' : 'Unbalanced'}</Badge>
                 </div>
             </div>
             <DialogFooter>
@@ -161,7 +234,7 @@ const statusBadge = (status: TransactionStatus, date: string) => {
 
 export function FinanceJournal() {
     const { transactions, addTransaction, removeTransaction, updateTransaction } = useFinance();
-    const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+    const [journalEntries, setJournalEntries] = useLocalStorage<JournalEntry[]>('finance:journalEntriesV1', []);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState('journal');
@@ -174,7 +247,7 @@ export function FinanceJournal() {
                     description: entry.description,
                     amount: e.debit || e.credit,
                     type: e.credit > 0 ? 'income' : 'expense',
-                    status: 'paid',
+                    status: 'paid', // Journal entries are considered recorded and thus 'paid'
                     category: e.account,
                 })
             }
