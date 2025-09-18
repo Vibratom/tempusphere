@@ -29,17 +29,20 @@ const getObjectBounds = (object: CanvasObject): { x: number, y: number, width: n
 const applyFilterIntensity = (filterValue: string = 'none', intensity: number = 100): string => {
     if (filterValue === 'none') return 'none';
     const ratio = intensity / 100;
+    // This regex handles functions like brightness(150%) or hue-rotate(90deg)
     return filterValue.replace(/([a-zA-Z-]+)\(([^)]+)\)/g, (match, func, val) => {
         const num = parseFloat(val);
         const unit = val.replace(String(num), '');
-        if (['hue-rotate'].includes(func)) {
-            return `${func}(${(num * ratio).toFixed(2)}${unit})`;
-        }
-        if (['brightness', 'contrast', 'saturate', 'opacity'].includes(func)) {
+
+        // For filters that are percentages and pivot around 100% (like brightness, contrast, saturate)
+        if (['brightness', 'contrast', 'saturate'].includes(func)) {
+             // The base is 1, so we calculate the deviation from 100, scale it, and add back to 100.
             const scaledValue = 100 + (num - 100) * ratio;
             return `${func}(${scaledValue.toFixed(2)}%)`;
         }
-        return `${func}(${(num * ratio).toFixed(2)}${unit})`;
+        
+        // For filters that are just a value (like hue-rotate, sepia, invert)
+        return `${func}(${(num * ratio).toFixed(2)}${unit || ''})`;
     });
 };
 
@@ -75,6 +78,9 @@ export function Canvas() {
             newHistory = [...history.slice(0, historyIndex), newEntry];
             newIndex = historyIndex;
         } else {
+            // If the user went back in history and now makes a new change,
+            // we should discard the "future" history.
+            const futureIsDiscarded = historyIndex < history.length - 1;
             newHistory = [...history.slice(0, historyIndex + 1), newEntry];
             newIndex = newHistory.length - 1;
         }
@@ -106,10 +112,19 @@ export function Canvas() {
         } else if (obj.type === 'IMAGE') {
             const img = new Image();
             img.src = obj.data;
-
-            const appliedFilter = applyFilterIntensity(obj.activeFilter, obj.filterIntensity);
-            ctx.filter = `${appliedFilter !== 'none' ? appliedFilter : ''} brightness(${obj.brightness || 100}%) contrast(${obj.contrast || 100}%) saturate(${obj.saturation || 100}%) hue-rotate(${obj.hue || 0}deg) blur(${obj.blur || 0}px)`.trim();
             
+            // Combine all filter properties into one string
+            const appliedFilter = applyFilterIntensity(obj.activeFilter, obj.filterIntensity);
+            ctx.filter = [
+                appliedFilter,
+                `brightness(${obj.brightness || 100}%)`,
+                `contrast(${obj.contrast || 100}%)`,
+                `saturate(${obj.saturation || 100}%)`,
+                `hue-rotate(${obj.hue || 0}deg)`,
+                `blur(${obj.blur || 0}px)`
+            ].filter(f => f && f !== 'none').join(' ');
+
+            // Apply transformations
             ctx.translate(obj.x + obj.width / 2, obj.y + obj.height / 2);
             ctx.rotate((obj.rotation || 0) * Math.PI / 180);
             ctx.scale(obj.scaleX || 1, obj.scaleY || 1);
@@ -129,15 +144,23 @@ export function Canvas() {
     };
     
     const drawSelectionBox = (ctx: CanvasRenderingContext2D, object: CanvasObject) => {
+        ctx.save();
         ctx.strokeStyle = '#3b82f6';
         ctx.lineWidth = 1 / scale;
         ctx.setLineDash([4 / scale, 2 / scale]);
         
         const bounds = getObjectBounds(object);
-        if(bounds) {
-             ctx.strokeRect(bounds.x - 5, bounds.y - 5, bounds.width + 10, bounds.height + 10);
+        if (bounds) {
+             // If rotated, we need to transform the context to draw the bounding box correctly
+            if ('rotation' in object && object.rotation) {
+                ctx.translate(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+                ctx.rotate(object.rotation * Math.PI / 180);
+                ctx.strokeRect(-bounds.width / 2 - 5, -bounds.height / 2 - 5, bounds.width + 10, bounds.height + 10);
+            } else {
+                ctx.strokeRect(bounds.x - 5, bounds.y - 5, bounds.width + 10, bounds.height + 10);
+            }
         }
-        ctx.setLineDash([]);
+        ctx.restore();
     }
     
     const redrawCanvas = useCallback(() => {
@@ -235,7 +258,7 @@ export function Canvas() {
                 }
                 return obj;
             });
-            // Update without history for performance
+            // Update without history for performance during drawing
             setCanvasState(prev => ({ ...prev, slides: prev.slides.map(s => s.id === activeSlideId ? {...s, objects: newObjects} : s)}));
 
         } else if (isMoving && selectedObjectId) {
@@ -245,6 +268,7 @@ export function Canvas() {
                 }
                 return obj;
             })
+             // Update without history for performance during moving
             setCanvasState(prev => ({ ...prev, slides: prev.slides.map(s => s.id === activeSlideId ? {...s, objects: newObjects} : s)}));
         }
     };
@@ -257,7 +281,7 @@ export function Canvas() {
         }
         if (isMoving) {
             setIsMoving(null);
-            updateHistory(objects);
+            updateHistory(objects); // Finalize history entry
         }
     };
 
@@ -274,6 +298,7 @@ export function Canvas() {
     };
 
     const findClickedObject = (pos: Point): CanvasObject | null => {
+        // Search in reverse order to find the topmost object first
         for (let i = objects.length - 1; i >= 0; i--) {
             const obj = objects[i];
             const bounds = getObjectBounds(obj);
@@ -290,7 +315,7 @@ export function Canvas() {
         <div 
           ref={canvasContainerRef}
           className="w-full h-full relative"
-          tabIndex={-1}
+          tabIndex={-1} // Make it focusable for key events
         >
             <canvas
                 ref={canvasRef}
@@ -325,5 +350,7 @@ export function Canvas() {
         </div>
     );
 }
+
+    
 
     

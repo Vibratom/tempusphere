@@ -8,7 +8,6 @@ import { Label } from '../ui/label';
 import { Slider } from '../ui/slider';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { useProductivity, ImageObject } from '@/contexts/ProductivityContext';
 
 const filters = [
@@ -42,9 +41,27 @@ const filters = [
 
 
 export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
-    const { setCanvasState } = useProductivity();
+    const { canvasState, setCanvasState } = useProductivity();
+    
+    // --- History Management ---
+    const updateHistoryWithChange = (newObjects: CanvasObject[]) => {
+        const { slides, activeSlideId } = canvasState;
+        const activeSlide = slides.find(s => s.id === activeSlideId);
+        if (!activeSlide) return;
 
-    const updateImageState = (id: string, updates: Partial<ImageObject>) => {
+        const newHistory = [...activeSlide.history.slice(0, activeSlide.historyIndex + 1), { objects: newObjects }];
+
+        setCanvasState(prev => ({
+            ...prev,
+            slides: prev.slides.map(slide => 
+                slide.id === activeSlideId 
+                ? { ...slide, objects: newObjects, history: newHistory, historyIndex: newHistory.length - 1 }
+                : slide
+            )
+        }));
+    };
+
+    const updateImageState = (id: string, updates: Partial<ImageObject>, finalizeHistory: boolean = false) => {
         setCanvasState(prev => {
             const newSlides = prev.slides.map(slide => {
                 if (slide.id === prev.activeSlideId) {
@@ -54,6 +71,12 @@ export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
                         }
                         return obj;
                     });
+                    
+                    if (finalizeHistory) {
+                        const newHistory = [...slide.history.slice(0, slide.historyIndex + 1), { objects: newObjects }];
+                        return { ...slide, objects: newObjects, history: newHistory, historyIndex: newHistory.length - 1 };
+                    }
+                    
                     return { ...slide, objects: newObjects };
                 }
                 return slide;
@@ -65,6 +88,14 @@ export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
     const handleValueChange = (property: keyof ImageObject, value: any) => {
         updateImageState(selectedImage.id, { [property]: value });
     };
+
+    const handleSliderCommit = (property: keyof ImageObject, value: any) => {
+        updateImageState(selectedImage.id, { [property]: value }, true);
+    }
+    
+    const handleTransform = (property: keyof ImageObject, value: any) => {
+        updateImageState(selectedImage.id, { [property]: value }, true);
+    }
 
     const {
         brightness = 100,
@@ -86,10 +117,10 @@ export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
                 <AccordionContent>
                     <div className="grid gap-4 pt-4">
                         <div className="grid grid-cols-2 gap-2">
-                            <Button variant="outline" onClick={() => handleValueChange('rotation', (rotation || 0) - 90)}><RotateCcw className="mr-2"/>-90°</Button>
-                            <Button variant="outline" onClick={() => handleValueChange('rotation', (rotation || 0) + 90)}><RotateCw className="mr-2"/>+90°</Button>
-                            <Button variant="outline" onClick={() => handleValueChange('scaleX', (scaleX || 1) * -1)}><FlipHorizontal className="mr-2"/>Flip H</Button>
-                            <Button variant="outline" onClick={() => handleValueChange('scaleY', (scaleY || 1) * -1)}><FlipVertical className="mr-2"/>Flip V</Button>
+                            <Button variant="outline" onClick={() => handleTransform('rotation', (rotation || 0) - 90)}><RotateCcw className="mr-2"/>-90°</Button>
+                            <Button variant="outline" onClick={() => handleTransform('rotation', (rotation || 0) + 90)}><RotateCw className="mr-2"/>+90°</Button>
+                            <Button variant="outline" onClick={() => handleTransform('scaleX', (scaleX || 1) * -1)}><FlipHorizontal className="mr-2"/>Flip H</Button>
+                            <Button variant="outline" onClick={() => handleTransform('scaleY', (scaleY || 1) * -1)}><FlipVertical className="mr-2"/>Flip V</Button>
                         </div>
                     </div>
                 </AccordionContent>
@@ -101,23 +132,23 @@ export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
                     <div className="grid gap-4 pt-4">
                         <div className="grid gap-1.5">
                             <Label>Brightness</Label>
-                            <Slider value={[brightness]} onValueChange={(v) => handleValueChange('brightness', v[0])} max={200} />
+                            <Slider value={[brightness]} onValueChange={(v) => handleValueChange('brightness', v[0])} onValueCommit={(v) => handleSliderCommit('brightness', v[0])} max={200} />
                         </div>
                         <div className="grid gap-1.5">
                             <Label>Contrast</Label>
-                            <Slider value={[contrast]} onValueChange={(v) => handleValueChange('contrast', v[0])} max={200} />
+                            <Slider value={[contrast]} onValueChange={(v) => handleValueChange('contrast', v[0])} onValueCommit={(v) => handleSliderCommit('contrast', v[0])} max={200} />
                         </div>
                         <div className="grid gap-1.5">
                             <Label>Saturation</Label>
-                            <Slider value={[saturation]} onValueChange={(v) => handleValueChange('saturation', v[0])} max={200} />
+                            <Slider value={[saturation]} onValueChange={(v) => handleValueChange('saturation', v[0])} onValueCommit={(v) => handleSliderCommit('saturation', v[0])} max={200} />
                         </div>
                         <div className="grid gap-1.5">
                             <Label>Hue</Label>
-                            <Slider value={[hue]} onValueChange={(v) => handleValueChange('hue', v[0])} max={360} />
+                            <Slider value={[hue]} onValueChange={(v) => handleValueChange('hue', v[0])} onValueCommit={(v) => handleSliderCommit('hue', v[0])} max={360} />
                         </div>
                             <div className="grid gap-1.5">
                             <Label>Blur</Label>
-                            <Slider value={[blur]} onValueChange={(v) => handleValueChange('blur', v[0])} max={20} />
+                            <Slider value={[blur]} onValueChange={(v) => handleValueChange('blur', v[0])} onValueCommit={(v) => handleSliderCommit('blur', v[0])} max={20} />
                         </div>
                     </div>
                 </AccordionContent>
@@ -130,7 +161,7 @@ export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
                         {filters.map(filter => (
                             <button
                                 key={filter.name}
-                                onClick={() => handleValueChange('activeFilter', filter.value)}
+                                onClick={() => handleTransform('activeFilter', filter.value)}
                                 className={cn("aspect-square rounded-md text-xs font-medium text-center flex items-center justify-center p-1 transition-all", activeFilter === filter.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:ring-1 hover:ring-primary')}
                             >
                                 <div className="relative w-full h-full rounded overflow-hidden">
@@ -144,10 +175,18 @@ export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
                     </div>
                     <div className="grid gap-1.5 pt-4">
                         <Label>Filter Intensity</Label>
-                        <Slider value={[filterIntensity]} onValueChange={(v) => handleValueChange('filterIntensity', v[0])} max={100} disabled={activeFilter === 'none'} />
+                        <Slider 
+                            value={[filterIntensity]} 
+                            onValueChange={(v) => handleValueChange('filterIntensity', v[0])} 
+                            onValueCommit={(v) => handleSliderCommit('filterIntensity', v[0])}
+                            max={100} 
+                            disabled={activeFilter === 'none'} 
+                        />
                     </div>
                 </AccordionContent>
             </AccordionItem>
         </Accordion>
     );
 }
+
+    
