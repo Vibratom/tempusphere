@@ -255,8 +255,8 @@ function JournalTemplateSelector({ onSelect, onCustom }: { onSelect: (template: 
             </div>
             <ScrollArea className="h-[60vh]">
                 <div className="pr-4 space-y-2">
-                    {filteredTemplates.map(template => (
-                        <Card key={template.name} className="hover:bg-muted/50 cursor-pointer" onClick={() => onSelect(template)}>
+                    {filteredTemplates.map((template, index) => (
+                        <Card key={`${template.name}-${index}`} className="hover:bg-muted/50 cursor-pointer" onClick={() => onSelect(template)}>
                             <CardHeader className="p-3">
                                 <CardTitle className="text-base">{template.name}</CardTitle>
                             </CardHeader>
@@ -478,3 +478,5 @@ export function FinanceJournal() {
         </Card>
     );
 }
+
+    
