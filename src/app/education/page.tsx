@@ -20,7 +20,7 @@ function EducationContent() {
       <div className="min-h-screen w-full bg-background flex flex-col">
         <Header />
         <main className="flex-1 flex flex-col items-center p-4 md:p-8">
-            <div className="w-full max-w-7xl">
+            <div className="w-full max-w-7xl flex-1 flex flex-col">
                 {isClient && <EducationStudioView />}
             </div>
         </main>

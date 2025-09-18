@@ -282,7 +282,7 @@ export function ChartEditor() {
   if (!isClient) return <div className="w-full h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
   return (
-    <div className="w-full h-full flex flex-col gap-4">
+    <div className="w-full h-full flex flex-col gap-4 p-4">
         <div className="grid md:grid-cols-2 gap-4">
           <Card>
               <CardHeader>
@@ -380,7 +380,7 @@ export function ChartEditor() {
                               <pre className="mt-2 text-xs bg-black/20 p-2 rounded-md whitespace-pre-wrap max-w-full text-left">{renderError}</pre>
                           </div>
                       ) : svg ? (
-                          <div dangerouslySetInnerHTML={{ __html: svg }} className="w-full h-full flex items-center justify-center [&>svg]:max-w-none [&>svg]:max-h-none"/>
+                          <div dangerouslySetInnerHTML={{ __html: svg }} className="w-full h-full flex items-center justify-center [&gt;svg]:max-w-none [&gt;svg]:max-h-none"/>
                       ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                               {code.trim() ? <Loader2 className="h-8 w-8 animate-spin"/> : <p>Diagram will appear here.</p>}
