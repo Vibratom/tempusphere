@@ -1,11 +1,13 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { PlatformLink } from '../tempusphere/PlatformLink';
-import { Brain, GitCommit, DraftingCompass, Table, Code, Languages } from 'lucide-react';
+import { Brain, GitCommit, DraftingCompass, Table, Code, Languages, MessageSquare } from 'lucide-react';
 
 const tools = [
-    { name: 'AI Text Generator', category: 'AI', icon: Languages, href: '/education/text-generator', color: 'bg-blue-500 hover:bg-blue-600', description: 'Generate text with AI.' },
+    { name: 'Translator', category: 'AI', icon: Languages, href: '/education/translator', color: 'bg-green-500 hover:bg-green-600', description: 'Translate text between languages.' },
+    { name: 'AI Text Generator', category: 'AI', icon: MessageSquare, href: '/education/text-generator', color: 'bg-blue-500 hover:bg-blue-600', description: 'Generate text with AI.' },
     { name: 'Chart Editor', category: 'Productivity', icon: GitCommit, href: '/projects/chart', color: 'bg-green-500 hover:bg-green-600', description: 'Create flowcharts and diagrams.' },
     { name: 'Mind Map', category: 'Productivity', icon: Brain, href: '/projects/mindmap', color: 'bg-purple-500 hover:bg-purple-600', description: 'Organize ideas with mind maps.' },
     { name: 'Canvas', category: 'Productivity', icon: DraftingCompass, href: '/projects/canvas', color: 'bg-sky-500 hover:bg-sky-600', description: 'A freeform canvas for your ideas.' },
