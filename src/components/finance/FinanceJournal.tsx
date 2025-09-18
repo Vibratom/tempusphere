@@ -58,6 +58,7 @@ function JournalForm({ onSave, template, onAddTemplate }: { onSave: (entry: Omit
             setDescription(template.name);
             setSources(template.credit.map((c, i) => ({ id: `s-${i}`, account: c, amount: 0 })));
             setDestinations(template.debit.map((d, i) => ({ id: `d-${i}`, account: d, amount: 0 })));
+            setTotalAmount(0); // Reset amount when template changes
             
             const allTemplateAccounts = [...template.credit, ...template.debit];
             allTemplateAccounts.forEach(acc => {
@@ -288,6 +289,80 @@ function JournalTemplateSelector({ onSelect, onCustom, templates }: { onSelect: 
     )
 }
 
+function EditTransactionForm({ transaction, onSave, onCancel }: { transaction: Transaction, onSave: (t: Transaction) => void, onCancel: () => void }) {
+    const { categories } = useFinance();
+    const [editedTransaction, setEditedTransaction] = useState(transaction);
+
+    const handleSave = () => {
+        onSave(editedTransaction);
+    }
+    
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Edit Transaction</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Input id="description" value={editedTransaction.description} onChange={e => setEditedTransaction({...editedTransaction, description: e.target.value})}/>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="amount">Amount</Label>
+                        <Input id="amount" type="number" value={editedTransaction.amount} onChange={e => setEditedTransaction({...editedTransaction, amount: parseFloat(e.target.value) || 0})}/>
+                    </div>
+                     <div className="grid gap-2">
+                        <Label>Type</Label>
+                        <Select value={editedTransaction.type} onValueChange={v => setEditedTransaction({...editedTransaction, type: v as TransactionType})}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="expense">Expense</SelectItem>
+                                <SelectItem value="income">Income</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label>Category</Label>
+                        <Select value={editedTransaction.category} onValueChange={v => setEditedTransaction({...editedTransaction, category: v})}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label>Status</Label>
+                        <Select value={editedTransaction.status} onValueChange={v => setEditedTransaction({...editedTransaction, status: v as TransactionStatus})}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="paid">Paid</SelectItem>
+                                <SelectItem value="unpaid">Unpaid</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <div className="grid gap-2">
+                    <Label>Date</Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="justify-start text-left font-normal">
+                                {format(parseISO(editedTransaction.date), 'PPP')}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={parseISO(editedTransaction.date)} onSelect={(d) => d && setEditedTransaction({...editedTransaction, date: d.toISOString()})} initialFocus /></PopoverContent>
+                    </Popover>
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+                <Button onClick={handleSave}>Save Changes</Button>
+            </DialogFooter>
+        </DialogContent>
+    );
+}
 
 const statusBadge = (status: TransactionStatus, date: string) => {
     const isOverdue = status === 'unpaid' && isPast(parseISO(date));
@@ -309,6 +384,7 @@ export function FinanceJournal() {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<JournalTemplate | undefined>(undefined);
+    const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState('journal');
@@ -362,6 +438,12 @@ export function FinanceJournal() {
         setIsSelectorOpen(false);
         setIsFormOpen(true);
     }
+    
+    const handleUpdateTransaction = (transaction: Transaction) => {
+        updateTransaction(transaction);
+        setEditingTransaction(null);
+        toast({title: "Transaction Updated"});
+    }
 
     const { accountsReceivable, accountsPayable } = useMemo(() => {
         const ar = transactions.filter(t => t.type === 'income' && t.status !== 'paid');
@@ -390,6 +472,15 @@ export function FinanceJournal() {
                  <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) setSelectedTemplate(undefined); setIsFormOpen(open); }}>
                     <JournalForm onSave={handleSaveJournalEntry} template={selectedTemplate} onAddTemplate={handleAddTemplate} />
                  </Dialog>
+                 {editingTransaction && (
+                    <Dialog open={!!editingTransaction} onOpenChange={(open) => !open && setEditingTransaction(null)}>
+                        <EditTransactionForm 
+                            transaction={editingTransaction}
+                            onSave={handleUpdateTransaction}
+                            onCancel={() => setEditingTransaction(null)}
+                        />
+                    </Dialog>
+                 )}
             </CardHeader>
             <CardContent>
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -440,6 +531,7 @@ export function FinanceJournal() {
                                     <TableHead>Category</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead className="text-right">Amount</TableHead>
+                                    <TableHead className="w-[100px] text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -451,6 +543,10 @@ export function FinanceJournal() {
                                     <TableCell>{statusBadge(t.status, t.date)}</TableCell>
                                     <TableCell className={`text-right font-mono ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
                                     {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="icon" onClick={() => setEditingTransaction(t)}><Edit className="h-4 w-4"/></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => removeTransaction(t.id)}><Trash2 className="h-4 w-4"/></Button>
                                     </TableCell>
                                 </TableRow>
                                 ))}
@@ -522,3 +618,6 @@ export function FinanceJournal() {
     
 
 
+
+
+  
