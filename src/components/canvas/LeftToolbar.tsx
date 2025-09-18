@@ -2,7 +2,7 @@
 'use client';
 
 import { Button } from "../ui/button";
-import { MousePointer, Crop, Type, Upload, Image as ImageIcon, Palette, Shapes, Pencil, Hand, Frame } from "lucide-react";
+import { MousePointer, Crop, Type, Upload, Image as ImageIcon, Palette, Shapes, Pencil, Hand, Frame, LayoutTemplate } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 
 const mainTools = [
@@ -16,7 +16,7 @@ const mainTools = [
 ];
 
 const assetTools = [
-    { id: 'templates', icon: Image, label: 'Templates' },
+    { id: 'templates', icon: LayoutTemplate, label: 'Templates' },
     { id: 'elements', icon: Shapes, label: 'Elements' },
     { id: 'image', icon: ImageIcon, label: 'Image' },
     { id: 'uploads', icon: Upload, label: 'Uploads' },
