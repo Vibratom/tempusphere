@@ -13,7 +13,7 @@ import { useTheme } from 'next-themes';
 import { ClockSettingsPanel } from './ClockSettingsPanel';
 import { cn } from '@/lib/utils';
 
-export function Header({ tabs, className }: { tabs?: ReactNode, className?: string }) {
+export function Header({ tabs, className, centerContent }: { tabs?: ReactNode, className?: string, centerContent?: ReactNode }) {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const { theme, setTheme, resolvedTheme } = useTheme();
     const [isClient, setIsClient] = useState(false);
@@ -70,7 +70,9 @@ export function Header({ tabs, className }: { tabs?: ReactNode, className?: stri
             
             {tabs && <div className="absolute left-1/2 -translate-x-1/2">{tabs}</div>}
 
-            <div className="flex items-center gap-2">
+            {centerContent && <div className="flex-1 flex items-center justify-center">{centerContent}</div>}
+
+            <div className="flex items-center gap-2 ml-auto">
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -80,16 +82,6 @@ export function Header({ tabs, className }: { tabs?: ReactNode, className?: stri
                         </TooltipTrigger>
                         <TooltipContent>
                             <p>Vibratom Studios</p>
-                        </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button asChild variant="outline" size="icon">
-                                <Link href="/"><Home className="h-5 w-5" /></Link>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Homepage</p>
                         </TooltipContent>
                     </Tooltip>
                     {isClient && (
