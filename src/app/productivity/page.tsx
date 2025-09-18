@@ -13,8 +13,9 @@ import { Footer } from '@/components/tempusphere/Footer';
 import { ProductivityProvider } from '@/contexts/ProductivityContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DraftingCompass, Target } from 'lucide-react';
+import { DraftingCompass, Target, Image as ImageEditIcon } from 'lucide-react';
 import { HabitTracker } from '@/components/productivity/HabitTracker';
+import { ImageEditor } from '@/components/productivity/ImageEditor';
 
 function DesignTool() {
     return (
@@ -60,6 +61,10 @@ function ProductivityContent() {
                                 <Target className="w-5 h-5" />
                                 <span>Habits</span>
                             </TabsTrigger>
+                            <TabsTrigger value="image-editor" className="flex-col h-auto gap-1 p-2 md:p-3 lg:flex-row lg:gap-2">
+                                <ImageEditIcon className="w-5 h-5" />
+                                <span>Image Editor</span>
+                            </TabsTrigger>
                         </TabsList>
                     </div>
                     <TabsContent value="design" className="flex-1 flex flex-col">
@@ -67,6 +72,9 @@ function ProductivityContent() {
                     </TabsContent>
                     <TabsContent value="habits" className="p-4 md:p-8 flex-1">
                         <HabitTracker />
+                    </TabsContent>
+                    <TabsContent value="image-editor" className="p-4 md:p-8 flex-1">
+                        <ImageEditor />
                     </TabsContent>
                 </Tabs>
             </main>
