@@ -3,6 +3,8 @@
 
 import React, { createContext, useContext, ReactNode, Dispatch, SetStateAction } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { v4 as uuidv4 } from 'uuid';
+
 
 // --- Types for Canvas ---
 
@@ -56,11 +58,25 @@ interface CanvasState {
     viewOffset: { x: number; y: number };
 }
 
+// --- Types for Habit Tracker ---
+export interface Habit {
+    id: string;
+    name: string;
+    frequency: 'daily' | 'weekly';
+    completions: string[]; // Array of date strings 'YYYY-MM-DD'
+    createdAt: string;
+}
+
+
 // --- Main Context ---
 
 interface ProductivityContextType {
     canvasState: CanvasState;
     setCanvasState: Dispatch<SetStateAction<CanvasState>>;
+    habits: Habit[];
+    addHabit: (habit: Omit<Habit, 'id' | 'completions' | 'createdAt'>) => void;
+    removeHabit: (habitId: string) => void;
+    toggleHabitCompletion: (habitId: string, date: string) => void;
 }
 
 const ProductivityContext = createContext<ProductivityContextType | undefined>(undefined);
@@ -78,9 +94,44 @@ export function ProductivityProvider({ children }: { children: ReactNode }) {
         viewOffset: { x: 50, y: 50 },
     });
 
+    const [habits, setHabits] = useLocalStorage<Habit[]>('productivity:habitsV1', []);
+
+    const addHabit = (habitData: Omit<Habit, 'id' | 'completions' | 'createdAt'>) => {
+        const newHabit: Habit = {
+            ...habitData,
+            id: uuidv4(),
+            completions: [],
+            createdAt: new Date().toISOString(),
+        };
+        setHabits(prev => [...prev, newHabit]);
+    };
+
+    const removeHabit = (habitId: string) => {
+        setHabits(prev => prev.filter(h => h.id !== habitId));
+    };
+
+    const toggleHabitCompletion = (habitId: string, date: string) => {
+        setHabits(prev => prev.map(habit => {
+            if (habit.id === habitId) {
+                const completions = new Set(habit.completions);
+                if (completions.has(date)) {
+                    completions.delete(date);
+                } else {
+                    completions.add(date);
+                }
+                return { ...habit, completions: Array.from(completions) };
+            }
+            return habit;
+        }));
+    };
+
     const value = {
         canvasState,
         setCanvasState,
+        habits,
+        addHabit,
+        removeHabit,
+        toggleHabitCompletion,
     };
 
     return <ProductivityContext.Provider value={value}>{children}</ProductivityContext.Provider>;
