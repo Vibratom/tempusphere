@@ -13,6 +13,11 @@ export function ImageEditor() {
     const [image, setImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [brightness, setBrightness] = useState(100);
+    const [contrast, setContrast] = useState(100);
+    const [saturation, setSaturation] = useState(100);
+
+
     const handleImageUpload = (file: File) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -52,7 +57,14 @@ export function ImageEditor() {
                             {image ? (
                                 <div className="max-w-full max-h-full p-4">
                                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={image} alt="Uploaded preview" className="max-w-full max-h-[60vh] object-contain" />
+                                    <img 
+                                        src={image} 
+                                        alt="Uploaded preview" 
+                                        className="max-w-full max-h-[60vh] object-contain"
+                                        style={{
+                                            filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`
+                                        }}
+                                    />
                                 </div>
                             ) : (
                                 <div 
@@ -96,15 +108,15 @@ export function ImageEditor() {
                                         <div className="grid gap-4">
                                             <div className="grid gap-1.5">
                                                 <Label>Brightness</Label>
-                                                <Slider defaultValue={[50]} disabled />
+                                                <Slider value={[brightness]} onValueChange={(v) => setBrightness(v[0])} max={200} disabled={!image} />
                                             </div>
                                             <div className="grid gap-1.5">
                                                 <Label>Contrast</Label>
-                                                <Slider defaultValue={[50]} disabled />
+                                                <Slider value={[contrast]} onValueChange={(v) => setContrast(v[0])} max={200} disabled={!image} />
                                             </div>
                                             <div className="grid gap-1.5">
                                                 <Label>Saturation</Label>
-                                                <Slider defaultValue={[50]} disabled />
+                                                <Slider value={[saturation]} onValueChange={(v) => setSaturation(v[0])} max={200} disabled={!image} />
                                             </div>
                                         </div>
                                     </div>
