@@ -4,18 +4,41 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance, Transaction } from '@/contexts/FinanceContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart, PieChart, Radar, GitCommit, AppWindow } from 'lucide-react';
 import { useProjects } from '@/contexts/ProjectsContext';
 import { Skeleton } from '../ui/skeleton';
-import { IncomeStatementWaterfall } from './IncomeStatementWaterfall';
+import { IncomeStatementChart } from './IncomeStatementWaterfall';
 import { BalanceSheetChart } from './BalanceSheetChart';
 import { CashFlowChart } from './CashFlowChart';
 import { DynamicReportChart } from './DynamicReportChart';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+
+export type ChartType = 'bar' | 'pie' | 'radar' | 'radial' | 'treemap';
+
+const ChartTypeSelector = ({ value, onChange }: { value: ChartType, onChange: (value: ChartType) => void }) => {
+    return (
+        <Select value={value} onValueChange={onChange}>
+            <SelectTrigger className="w-32">
+                <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="bar"><div className="flex items-center gap-2"><BarChart className="h-4 w-4"/> Bar</div></SelectItem>
+                <SelectItem value="pie"><div className="flex items-center gap-2"><PieChart className="h-4 w-4"/> Pie</div></SelectItem>
+                <SelectItem value="radar"><div className="flex items-center gap-2"><Radar className="h-4 w-4"/> Radar</div></SelectItem>
+                <SelectItem value="radial"><div className="flex items-center gap-2"><GitCommit className="h-4 w-4"/> Radial</div></SelectItem>
+                <SelectItem value="treemap"><div className="flex items-center gap-2"><AppWindow className="h-4 w-4"/> Treemap</div></SelectItem>
+            </SelectContent>
+        </Select>
+    )
+}
 
 export function FinanceApp() {
     const { transactions } = useFinance();
     const { board } = useProjects();
     const [isClient, setIsClient] = useState(false);
+    const [incomeChartType, setIncomeChartType] = useState<ChartType>('bar');
+    const [balanceChartType, setBalanceChartType] = useState<ChartType>('bar');
+    const [cashFlowChartType, setCashFlowChartType] = useState<ChartType>('bar');
 
     useEffect(() => {
         setIsClient(true);
@@ -106,29 +129,44 @@ export function FinanceApp() {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-8">
                 <Card className="xl:col-span-1">
                     <CardHeader>
-                        <CardTitle>Income Statement</CardTitle>
-                        <CardDescription>Revenue, expenses, and net income.</CardDescription>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Income Statement</CardTitle>
+                                <CardDescription>Revenue, expenses, and net income.</CardDescription>
+                            </div>
+                            <ChartTypeSelector value={incomeChartType} onChange={setIncomeChartType} />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <IncomeStatementWaterfall />
+                        <IncomeStatementChart chartType={incomeChartType}/>
                     </CardContent>
                 </Card>
                 <Card className="xl:col-span-1">
                     <CardHeader>
-                        <CardTitle>Balance Sheet</CardTitle>
-                        <CardDescription>Assets vs. Liabilities & Equity.</CardDescription>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Balance Sheet</CardTitle>
+                                <CardDescription>Assets vs. Liabilities & Equity.</CardDescription>
+                            </div>
+                             <ChartTypeSelector value={balanceChartType} onChange={setBalanceChartType} />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <BalanceSheetChart />
+                        <BalanceSheetChart chartType={balanceChartType} />
                     </CardContent>
                 </Card>
                 <Card className="xl:col-span-1">
                     <CardHeader>
-                        <CardTitle>Cash Flow</CardTitle>
-                        <CardDescription>Change in cash from activities.</CardDescription>
+                         <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Cash Flow</CardTitle>
+                                <CardDescription>Change in cash from activities.</CardDescription>
+                            </div>
+                            <ChartTypeSelector value={cashFlowChartType} onChange={setCashFlowChartType} />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <CashFlowChart />
+                        <CashFlowChart chartType={cashFlowChartType} />
                     </CardContent>
                 </Card>
             </div>
