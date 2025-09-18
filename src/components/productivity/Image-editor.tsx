@@ -40,7 +40,7 @@ const filters = [
 ];
 
 
-export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
+export function ImageEditor({ selectedImage, disabled }: { selectedImage: ImageObject | undefined, disabled: boolean }) {
     const { canvasState, setCanvasState } = useProductivity();
     
     // --- History Management ---
@@ -86,14 +86,17 @@ export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
     };
 
     const handleValueChange = (property: keyof ImageObject, value: any) => {
+        if (!selectedImage) return;
         updateImageState(selectedImage.id, { [property]: value });
     };
 
     const handleSliderCommit = (property: keyof ImageObject, value: any) => {
+        if (!selectedImage) return;
         updateImageState(selectedImage.id, { [property]: value }, true);
     }
     
     const handleTransform = (property: keyof ImageObject, value: any) => {
+        if (!selectedImage) return;
         updateImageState(selectedImage.id, { [property]: value }, true);
     }
 
@@ -108,61 +111,62 @@ export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
         scaleY = 1,
         activeFilter = 'none',
         filterIntensity = 100
-    } = selectedImage;
+    } = selectedImage || {};
 
     return (
         <Accordion type="multiple" defaultValue={['adjustments', 'filters']} className="w-full">
             <AccordionItem value="crop">
-                <AccordionTrigger className="text-base"><h4 className="font-semibold flex items-center gap-2"><Crop className="h-5 w-5" /> Crop & Transform</h4></AccordionTrigger>
+                <AccordionTrigger className="text-base" disabled={disabled}><h4 className="font-semibold flex items-center gap-2"><Crop className="h-5 w-5" /> Crop & Transform</h4></AccordionTrigger>
                 <AccordionContent>
                     <div className="grid gap-4 pt-4">
                         <div className="grid grid-cols-2 gap-2">
-                            <Button variant="outline" onClick={() => handleTransform('rotation', (rotation || 0) - 90)}><RotateCcw className="mr-2"/>-90°</Button>
-                            <Button variant="outline" onClick={() => handleTransform('rotation', (rotation || 0) + 90)}><RotateCw className="mr-2"/>+90°</Button>
-                            <Button variant="outline" onClick={() => handleTransform('scaleX', (scaleX || 1) * -1)}><FlipHorizontal className="mr-2"/>Flip H</Button>
-                            <Button variant="outline" onClick={() => handleTransform('scaleY', (scaleY || 1) * -1)}><FlipVertical className="mr-2"/>Flip V</Button>
+                            <Button variant="outline" onClick={() => handleTransform('rotation', (rotation || 0) - 90)} disabled={disabled}><RotateCcw className="mr-2"/>-90°</Button>
+                            <Button variant="outline" onClick={() => handleTransform('rotation', (rotation || 0) + 90)} disabled={disabled}><RotateCw className="mr-2"/>+90°</Button>
+                            <Button variant="outline" onClick={() => handleTransform('scaleX', (scaleX || 1) * -1)} disabled={disabled}><FlipHorizontal className="mr-2"/>Flip H</Button>
+                            <Button variant="outline" onClick={() => handleTransform('scaleY', (scaleY || 1) * -1)} disabled={disabled}><FlipVertical className="mr-2"/>Flip V</Button>
                         </div>
                     </div>
                 </AccordionContent>
             </AccordionItem>
             
             <AccordionItem value="adjustments">
-                <AccordionTrigger className="text-base"><h4 className="font-semibold flex items-center gap-2"><Sun className="h-5 w-5" /> Adjustments</h4></AccordionTrigger>
+                <AccordionTrigger className="text-base" disabled={disabled}><h4 className="font-semibold flex items-center gap-2"><Sun className="h-5 w-5" /> Adjustments</h4></AccordionTrigger>
                 <AccordionContent>
                     <div className="grid gap-4 pt-4">
                         <div className="grid gap-1.5">
                             <Label>Brightness</Label>
-                            <Slider value={[brightness]} onValueChange={(v) => handleValueChange('brightness', v[0])} onValueCommit={(v) => handleSliderCommit('brightness', v[0])} max={200} />
+                            <Slider value={[brightness]} onValueChange={(v) => handleValueChange('brightness', v[0])} onValueCommit={(v) => handleSliderCommit('brightness', v[0])} max={200} disabled={disabled} />
                         </div>
                         <div className="grid gap-1.5">
                             <Label>Contrast</Label>
-                            <Slider value={[contrast]} onValueChange={(v) => handleValueChange('contrast', v[0])} onValueCommit={(v) => handleSliderCommit('contrast', v[0])} max={200} />
+                            <Slider value={[contrast]} onValueChange={(v) => handleValueChange('contrast', v[0])} onValueCommit={(v) => handleSliderCommit('contrast', v[0])} max={200} disabled={disabled} />
                         </div>
                         <div className="grid gap-1.5">
                             <Label>Saturation</Label>
-                            <Slider value={[saturation]} onValueChange={(v) => handleValueChange('saturation', v[0])} onValueCommit={(v) => handleSliderCommit('saturation', v[0])} max={200} />
+                            <Slider value={[saturation]} onValueChange={(v) => handleValueChange('saturation', v[0])} onValueCommit={(v) => handleSliderCommit('saturation', v[0])} max={200} disabled={disabled} />
                         </div>
                         <div className="grid gap-1.5">
                             <Label>Hue</Label>
-                            <Slider value={[hue]} onValueChange={(v) => handleValueChange('hue', v[0])} onValueCommit={(v) => handleSliderCommit('hue', v[0])} max={360} />
+                            <Slider value={[hue]} onValueChange={(v) => handleValueChange('hue', v[0])} onValueCommit={(v) => handleSliderCommit('hue', v[0])} max={360} disabled={disabled} />
                         </div>
                             <div className="grid gap-1.5">
                             <Label>Blur</Label>
-                            <Slider value={[blur]} onValueChange={(v) => handleValueChange('blur', v[0])} onValueCommit={(v) => handleSliderCommit('blur', v[0])} max={20} />
+                            <Slider value={[blur]} onValueChange={(v) => handleValueChange('blur', v[0])} onValueCommit={(v) => handleSliderCommit('blur', v[0])} max={20} disabled={disabled} />
                         </div>
                     </div>
                 </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="filters">
-                <AccordionTrigger className="text-base"><h4 className="font-semibold flex items-center gap-2"><Sliders className="h-5 w-5" /> Filters</h4></AccordionTrigger>
+                <AccordionTrigger className="text-base" disabled={disabled}><h4 className="font-semibold flex items-center gap-2"><Sliders className="h-5 w-5" /> Filters</h4></AccordionTrigger>
                 <AccordionContent>
                     <div className="grid grid-cols-3 gap-2 pr-2 mt-4">
                         {filters.map(filter => (
                             <button
                                 key={filter.name}
                                 onClick={() => handleTransform('activeFilter', filter.value)}
-                                className={cn("aspect-square rounded-md text-xs font-medium text-center flex items-center justify-center p-1 transition-all", activeFilter === filter.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:ring-1 hover:ring-primary')}
+                                disabled={disabled}
+                                className={cn("aspect-square rounded-md text-xs font-medium text-center flex items-center justify-center p-1 transition-all", activeFilter === filter.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:ring-1 hover:ring-primary', disabled && "pointer-events-none opacity-50")}
                             >
                                 <div className="relative w-full h-full rounded overflow-hidden">
                                     <div className="w-full h-full bg-muted" />
@@ -180,7 +184,7 @@ export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
                             onValueChange={(v) => handleValueChange('filterIntensity', v[0])} 
                             onValueCommit={(v) => handleSliderCommit('filterIntensity', v[0])}
                             max={100} 
-                            disabled={activeFilter === 'none'} 
+                            disabled={disabled || activeFilter === 'none'} 
                         />
                     </div>
                 </AccordionContent>

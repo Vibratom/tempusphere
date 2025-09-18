@@ -17,7 +17,9 @@ export function RightSidebar() {
     const activeSlide = slides.find(s => s.id === activeSlideId);
     const selectedObject = activeSlide?.objects.find(o => o.id === selectedObjectId);
 
-    const isImage = selectedObject?.type === 'IMAGE';
+    const selectedImage = selectedObject?.type === 'IMAGE' ? selectedObject as ImageObject : undefined;
+    const selectedText = selectedObject?.type === 'TEXT' ? selectedObject : undefined;
+    const selectedShape = selectedObject?.type === 'PATH' ? selectedObject : undefined;
 
     return (
         <Tabs defaultValue="properties" className="h-full w-full flex flex-col">
@@ -30,30 +32,26 @@ export function RightSidebar() {
             </CardHeader>
             <TabsContent value="properties" className="flex-1 overflow-auto">
                  <ScrollArea className="h-full p-4">
-                    {isImage ? (
-                        <ImageEditor selectedImage={selectedObject as ImageObject} />
-                    ) : (
-                         <div className="space-y-4">
-                            <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Type/> Text Properties</CardTitle></CardHeader>
-                                <CardContent>
-                                    <Label className="text-muted-foreground">Select a text element to see properties.</Label>
-                                </CardContent>
-                            </Card>
-                             <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><ImageIconProp/> Image Properties</CardTitle></CardHeader>
-                                <CardContent>
-                                     <Label className="text-muted-foreground">Select an image to edit its properties.</Label>
-                                </CardContent>
-                            </Card>
-                             <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Crop/> Shape Properties</CardTitle></CardHeader>
-                                <CardContent>
-                                     <Label className="text-muted-foreground">Select a shape to see properties.</Label>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
+                    <div className="space-y-4">
+                        <Card>
+                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><ImageIconProp/> Image Properties</CardTitle></CardHeader>
+                            <CardContent className="p-0">
+                                 <ImageEditor selectedImage={selectedImage} disabled={!selectedImage} />
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Type/> Text Properties</CardTitle></CardHeader>
+                            <CardContent>
+                                <Label className="text-muted-foreground">{selectedText ? "Editing Text" : "Select a text element to see properties."}</Label>
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Crop/> Shape Properties</CardTitle></CardHeader>
+                            <CardContent>
+                                 <Label className="text-muted-foreground">{selectedShape ? "Editing Shape" : "Select a shape to see properties."}</Label>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </ScrollArea>
             </TabsContent>
             <TabsContent value="layers" className="flex-1 overflow-auto p-4">
