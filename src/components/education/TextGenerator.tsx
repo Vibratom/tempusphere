@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateText } from '@/ai/flows/text-generator-flow';
 import { Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -26,11 +25,24 @@ export function TextGenerator() {
         setResponse('');
 
         try {
-            const result = await generateText({ prompt });
+            const res = await fetch('/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ prompt }),
+            });
+
+            if (!res.ok) {
+                const errorBody = await res.json();
+                throw new Error(errorBody.error || 'An unknown error occurred');
+            }
+            
+            const result = await res.json();
             setResponse(result.text);
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error generating text:', e);
-            setError('Failed to generate response. Please try again later.');
+            setError(e.message || 'Failed to generate response. Please try again later.');
         } finally {
             setIsLoading(false);
         }
