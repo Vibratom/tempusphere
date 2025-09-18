@@ -58,7 +58,13 @@ function BudgetForm({ onSave, budgetToEdit }: { onSave: (b: Omit<Budget, 'id'>) 
                  <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                         <Label htmlFor="amount">Amount</Label>
-                        <Input id="amount" type="number" value={amount} onChange={e => setAmount(parseFloat(e.target.value))} placeholder="500.00"/>
+                        <Input 
+                            id="amount" 
+                            type="number" 
+                            value={amount || ''} 
+                            onChange={e => setAmount(parseFloat(e.target.value) || 0)} 
+                            placeholder="500.00"
+                        />
                     </div>
                      <div className="grid gap-2">
                         <Label>Period</Label>
