@@ -27,12 +27,17 @@ export function HistoricalEvents() {
       setEventsData(null);
 
       try {
-        const response = await fetch('https://today.zenquotes.io/api');
+        const response = await fetch('https://today.zenquotes.io/api?cors');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const data: EventsData = await response.json();
-        setEventsData(data);
+        const data = await response.json();
+        // The actual data is nested inside a 'data' property in the response
+        if (data && data.data && data.data.Events) {
+            setEventsData({ date: data.date, data: data.data });
+        } else {
+            throw new Error("Unexpected API response structure.");
+        }
       } catch (e) {
         console.error(e);
         setError('Failed to fetch historical events. Please try again later.');
