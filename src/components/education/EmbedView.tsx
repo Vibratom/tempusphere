@@ -10,11 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
-const defaultEmbedCode = `<div style="width: 100%;"><div style="position: relative; padding-bottom: 56.25%; padding-top: 0; height: 0;"><iframe title="Anatomy" frameborder="0" width="1200" height="675" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://view.genial.ly/5f35759324cf360d7c77c64f" type="text/html" allowscriptaccess="always" allowfullscreen="true" scrolling="yes" allownetworking="all"></iframe> </div> </div>`;
+const defaultEmbedCode = ``;
 
 export function EmbedView() {
     const [embedCode, setEmbedCode] = useLocalStorage<string>('education:embed-code-v2', defaultEmbedCode);
-    const [embedUrl, setEmbedUrl] = useLocalStorage<string>('education:embed-url-v2', 'https://view.genial.ly/5f35759324cf360d7c77c64f');
+    const [embedUrl, setEmbedUrl] = useLocalStorage<string>('education:embed-url-v2', '');
     const [activeTab, setActiveTab] = useState('simple');
 
     const generatedCode = useMemo(() => {
@@ -35,7 +35,7 @@ export function EmbedView() {
         <div className="w-full max-w-4xl mx-auto">
             <div className="flex flex-col items-center text-center mb-8">
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Interactive Content</h1>
-                <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Embed interactive lessons, quizzes, or presentations from platforms like Genially, H5P, Quizizz, or Kahoot.</p>
+                <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Embed interactive lessons, quizzes, or presentations from platforms like H5P, Quizizz, or Kahoot.</p>
             </div>
             
             <ResizablePanelGroup direction="horizontal" className="min-h-[60vh] rounded-lg border">
