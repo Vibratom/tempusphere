@@ -14,7 +14,7 @@ export function StatusBar() {
             </div>
             <div className="flex items-center gap-2 w-48">
                 <Button variant="ghost" size="icon" className="h-7 w-7"><ZoomOut /></Button>
-                <Slider defaultValue={[100]} max={200} step={10} />
+                <Slider defaultValue={[50]} max={200} step={10} />
                 <Button variant="ghost" size="icon" className="h-7 w-7"><ZoomIn /></Button>
             </div>
         </div>

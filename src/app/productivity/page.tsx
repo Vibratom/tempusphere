@@ -1,15 +1,13 @@
-
 'use client';
 
 import React from 'react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { LeftSidebar } from '@/components/canvas/LeftSidebar';
+import { LeftToolbar } from '@/components/canvas/LeftToolbar';
 import { RightSidebar } from '@/components/canvas/RightSidebar';
-import { TopToolbar } from '@/components/canvas/TopToolbar';
+import { OptionsBar } from '@/components/canvas/OptionsBar';
 import { StatusBar } from '@/components/canvas/StatusBar';
 import { Canvas } from '@/components/canvas/Canvas';
 import { Header } from '@/components/tempusphere/Header';
-import { Footer } from '@/components/tempusphere/Footer';
 import { ProductivityProvider } from '@/contexts/ProductivityContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,27 +17,26 @@ import { ImageEditor } from '@/components/productivity/ImageEditor';
 
 function DesignTool() {
     return (
-        <div className="w-full h-full flex flex-col">
-            <TopToolbar />
-            <div className="flex-1 flex overflow-hidden">
-                <ResizablePanelGroup direction="horizontal">
-                    <ResizablePanel defaultSize={20} minSize={15}>
-                        <LeftSidebar />
-                    </ResizablePanel>
-                    <ResizableHandle withHandle />
-                    <ResizablePanel defaultSize={55}>
-                        <div className="flex flex-col h-full">
-                            <div className="flex-1 relative bg-background">
-                                <Canvas />
+        <div className="w-full h-full flex">
+            <LeftToolbar />
+            <div className="flex-1 flex flex-col">
+                <OptionsBar />
+                <div className="flex-1 flex overflow-hidden">
+                    <ResizablePanelGroup direction="horizontal">
+                        <ResizablePanel defaultSize={75}>
+                            <div className="flex flex-col h-full">
+                                <div className="flex-1 relative bg-muted/50">
+                                    <Canvas />
+                                </div>
+                                <StatusBar />
                             </div>
-                            <StatusBar />
-                        </div>
-                    </ResizablePanel>
-                    <ResizableHandle withHandle />
-                    <ResizablePanel defaultSize={25} minSize={15}>
-                        <RightSidebar />
-                    </ResizablePanel>
-                </ResizablePanelGroup>
+                        </ResizablePanel>
+                        <ResizableHandle withHandle />
+                        <ResizablePanel defaultSize={25} minSize={15}>
+                            <RightSidebar />
+                        </ResizablePanel>
+                    </ResizablePanelGroup>
+                </div>
             </div>
         </div>
     );
