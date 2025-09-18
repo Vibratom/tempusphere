@@ -1,88 +1,53 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Textarea } from '../ui/textarea';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../ui/resizable';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 
-const defaultEmbedCode = ``;
+const defaultEmbedCode = `<div class="w-full h-full flex items-center justify-center bg-muted/50 rounded-lg">
+    <p class="text-muted-foreground">Paste your embed code in the editor to see a preview.</p>
+</div>`;
 
 export function EmbedView() {
-    const [embedCode, setEmbedCode] = useLocalStorage<string>('education:embed-code-v2', defaultEmbedCode);
-    const [embedUrl, setEmbedUrl] = useLocalStorage<string>('education:embed-url-v2', '');
-    const [activeTab, setActiveTab] = useState('simple');
-
-    const generatedCode = useMemo(() => {
-        if (!embedUrl) return '<p class="text-muted-foreground text-center p-8">Please enter a URL to generate an embed.</p>';
-        return `<iframe 
-    src="${embedUrl}" 
-    title="Embedded Content" 
-    frameborder="0" 
-    allow="fullscreen; picture-in-picture"
-    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-    allowfullscreen
-></iframe>`;
-    }, [embedUrl]);
-
-    const codeToRender = activeTab === 'simple' ? generatedCode : embedCode;
+    const [embedCode, setEmbedCode] = useLocalStorage<string>('education:embed-code-v3', defaultEmbedCode);
 
     return (
-        <div className="w-full max-w-4xl mx-auto">
+        <div className="w-full max-w-6xl mx-auto">
             <div className="flex flex-col items-center text-center mb-8">
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Interactive Content</h1>
-                <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Embed interactive lessons, quizzes, or presentations from platforms like Khan Academy, H5P, Quizizz, or Kahoot.</p>
+                <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Embed interactive lessons, quizzes, or presentations from platforms like Khan Academy, H5P, Quizizz, or Kahoot by pasting their HTML embed code.</p>
             </div>
             
-            <ResizablePanelGroup direction="horizontal" className="min-h-[60vh] rounded-lg border">
-                <ResizablePanel defaultSize={50}>
-                    <div className="flex h-full flex-col">
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                            <div className="p-2 border-b">
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="simple">Simple (URL)</TabsTrigger>
-                                    <TabsTrigger value="advanced">Advanced (HTML)</TabsTrigger>
-                                </TabsList>
-                            </div>
-                            <TabsContent value="simple" className="p-4 space-y-2">
-                                <Label htmlFor="embed-url">Embed URL</Label>
-                                <Input 
-                                    id="embed-url"
-                                    value={embedUrl}
-                                    onChange={(e) => setEmbedUrl(e.target.value)}
-                                    placeholder="Paste the share URL from your platform here"
-                                />
-                                <p className="text-xs text-muted-foreground">Find the "Share" or "Embed" link from your chosen platform and paste it here.</p>
-                            </TabsContent>
-                            <TabsContent value="advanced" className="m-0 p-0">
-                                <Textarea
-                                    value={embedCode}
-                                    onChange={(e) => setEmbedCode(e.target.value)}
-                                    placeholder="Paste your full embed code here (e.g., an iframe)"
-                                    className="w-full h-full flex-1 resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
-                                    style={{minHeight: '40vh'}}
-                                />
-                            </TabsContent>
-                        </Tabs>
-                    </div>
-                </ResizablePanel>
-                <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={50}>
-                     <div className="flex h-full flex-col">
-                        <div className="p-4 border-b">
-                            <h3 className="font-semibold">Live Preview</h3>
-                        </div>
-                        <div 
-                            className="flex-1 p-4 bg-muted/20 relative"
-                            dangerouslySetInnerHTML={{ __html: codeToRender }}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[60vh]">
+                <Card className="flex flex-col">
+                    <CardHeader>
+                        <CardTitle>Embed Code</CardTitle>
+                        <CardDescription>Paste your HTML embed code here.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-1 p-0">
+                        <Textarea
+                            value={embedCode}
+                            onChange={(e) => setEmbedCode(e.target.value)}
+                            placeholder="e.g., <iframe src='...'></iframe>"
+                            className="w-full h-full flex-1 resize-none border-0 rounded-none focus-visible:ring-0 p-4 font-mono text-sm"
                         />
-                    </div>
-                </ResizablePanel>
-            </ResizablePanelGroup>
+                    </CardContent>
+                </Card>
+                <Card className="flex flex-col">
+                    <CardHeader>
+                        <CardTitle>Live Preview</CardTitle>
+                        <CardDescription>The rendered content will appear here.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-1 relative">
+                        <div 
+                            className="absolute inset-0 w-full h-full"
+                            dangerouslySetInnerHTML={{ __html: embedCode }}
+                        />
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
