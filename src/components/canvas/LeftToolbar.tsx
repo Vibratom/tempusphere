@@ -4,6 +4,8 @@
 import { Button } from "../ui/button";
 import { MousePointer, Crop, Type, Upload, Image as ImageIcon, Palette, Shapes, Pencil, Hand, Frame, LayoutTemplate } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
+import { ScrollArea } from "../ui/scroll-area";
+import { SheetHeader, SheetTitle } from "../ui/sheet";
 
 const mainTools = [
     { id: 'select', icon: MousePointer, label: 'Select Tool (V)' },
@@ -25,9 +27,12 @@ const assetTools = [
 
 export function LeftToolbar() {
     return (
-        <div className="w-16 bg-background border-r flex flex-col items-center py-4 gap-4">
+        <div className="w-full h-full bg-background border-r flex flex-col items-center py-4 gap-4 md:w-16">
+             <div className="md:hidden p-4 w-full border-b">
+                <h3 className="text-lg font-semibold">Tools & Assets</h3>
+            </div>
             <TooltipProvider>
-                <div className="flex flex-col gap-2">
+                 <div className="flex md:flex-col gap-2 flex-wrap justify-center p-2 md:p-0">
                     {mainTools.map(tool => (
                         <Tooltip key={tool.id}>
                             <TooltipTrigger asChild>
@@ -39,7 +44,7 @@ export function LeftToolbar() {
                         </Tooltip>
                     ))}
                 </div>
-                 <div className="mt-auto flex flex-col gap-2">
+                 <div className="mt-auto flex md:flex-col gap-2 flex-wrap justify-center p-2 md:p-0">
                      {assetTools.map(tool => (
                         <Tooltip key={tool.id}>
                             <TooltipTrigger asChild>

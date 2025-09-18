@@ -57,9 +57,9 @@ export function SlidesPanel() {
     };
 
     return (
-        <div className="h-32 bg-background border-t p-2 flex items-center gap-4">
-            <Button variant="outline" className="h-full w-24 flex-col gap-1" onClick={addSlide}>
-                <Plus className="h-6 w-6"/>
+        <div className="h-28 md:h-32 bg-background border-t p-2 flex items-center gap-2 md:gap-4 absolute md:relative bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:right-auto">
+            <Button variant="outline" className="h-full w-20 md:w-24 flex-col gap-1" onClick={addSlide}>
+                <Plus className="h-5 w-5 md:h-6 md:w-6"/>
                 <span className="text-xs">New Slide</span>
             </Button>
             <ScrollArea className="h-full flex-1 whitespace-nowrap">
@@ -77,7 +77,7 @@ export function SlidesPanel() {
                              <Button
                                 variant="destructive"
                                 size="icon"
-                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-1 right-1 h-5 w-5 md:h-6 md:w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={(e) => { e.stopPropagation(); deleteSlide(slide.id); }}
                                 disabled={slides.length <= 1}
                             >
@@ -92,4 +92,3 @@ export function SlidesPanel() {
         </div>
     );
 }
-

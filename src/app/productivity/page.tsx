@@ -19,12 +19,15 @@ import { ImageEditor } from '@/components/productivity/ImageEditor';
 
 function DesignTool() {
     return (
-        <div className="w-full h-full flex">
-            <LeftToolbar />
-            <div className="flex-1 flex flex-col">
+        <div className="w-full h-full flex flex-col md:flex-row">
+            {/* Desktop Layout */}
+            <div className="hidden md:flex md:w-16">
+                <LeftToolbar />
+            </div>
+            <div className="flex-1 flex flex-col overflow-hidden">
                 <OptionsBar />
-                <div className="flex-1 flex flex-col overflow-hidden">
-                     <ResizablePanelGroup direction="horizontal" className="flex-1">
+                <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                     <ResizablePanelGroup direction="horizontal" className="flex-1 hidden md:flex">
                         <ResizablePanel defaultSize={75}>
                             <div className="flex flex-col h-full">
                                 <div className="flex-1 relative bg-muted/50">
@@ -38,6 +41,15 @@ function DesignTool() {
                             <RightSidebar />
                         </ResizablePanel>
                     </ResizablePanelGroup>
+
+                    {/* Mobile Layout */}
+                    <div className="md:hidden flex-1 flex flex-col h-full">
+                        <div className="flex-1 relative bg-muted/50">
+                            <Canvas />
+                        </div>
+                        <StatusBar />
+                    </div>
+
                     <SlidesPanel />
                 </div>
             </div>
