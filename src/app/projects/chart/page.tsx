@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ChartEditor } from '@/components/projects/ChartEditor';
