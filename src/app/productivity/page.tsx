@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -7,6 +8,7 @@ import { RightSidebar } from '@/components/canvas/RightSidebar';
 import { OptionsBar } from '@/components/canvas/OptionsBar';
 import { StatusBar } from '@/components/canvas/StatusBar';
 import { Canvas } from '@/components/canvas/Canvas';
+import { SlidesPanel } from '@/components/canvas/SlidesPanel';
 import { Header } from '@/components/tempusphere/Header';
 import { ProductivityProvider } from '@/contexts/ProductivityContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
@@ -21,8 +23,8 @@ function DesignTool() {
             <LeftToolbar />
             <div className="flex-1 flex flex-col">
                 <OptionsBar />
-                <div className="flex-1 flex overflow-hidden">
-                    <ResizablePanelGroup direction="horizontal">
+                <div className="flex-1 flex flex-col overflow-hidden">
+                     <ResizablePanelGroup direction="horizontal" className="flex-1">
                         <ResizablePanel defaultSize={75}>
                             <div className="flex flex-col h-full">
                                 <div className="flex-1 relative bg-muted/50">
@@ -36,6 +38,7 @@ function DesignTool() {
                             <RightSidebar />
                         </ResizablePanel>
                     </ResizablePanelGroup>
+                    <SlidesPanel />
                 </div>
             </div>
         </div>
@@ -70,7 +73,7 @@ function ProductivityContent() {
                     <TabsContent value="habits" className="p-4 md:p-8 flex-1">
                         <HabitTracker />
                     </TabsContent>
-                    <TabsContent value="image-editor" className="p-4 md:p-8 flex-1">
+                     <TabsContent value="image-editor" className="p-4 md:p-8 flex-1">
                         <ImageEditor />
                     </TabsContent>
                 </Tabs>

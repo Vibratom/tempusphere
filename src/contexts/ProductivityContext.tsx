@@ -44,12 +44,18 @@ interface TextObject extends BaseObject {
 }
 
 type CanvasObject = PathObject | ImageObject | TextObject;
-type HistoryEntry = { objects: CanvasObject[] };
 
-interface CanvasState {
+interface Slide {
+    id: string;
     objects: CanvasObject[];
     history: HistoryEntry[];
     historyIndex: number;
+}
+type HistoryEntry = { objects: CanvasObject[] };
+
+interface CanvasState {
+    slides: Slide[];
+    activeSlideId: string | null;
     selectedObjectId: string | null;
     tool: Tool;
     strokeColor: string;
@@ -82,10 +88,9 @@ interface ProductivityContextType {
 const ProductivityContext = createContext<ProductivityContextType | undefined>(undefined);
 
 export function ProductivityProvider({ children }: { children: ReactNode }) {
-    const [canvasState, setCanvasState] = useLocalStorage<CanvasState>('productivity:canvasStateV1', {
-        objects: [],
-        history: [{ objects: [] }],
-        historyIndex: 0,
+    const [canvasState, setCanvasState] = useLocalStorage<CanvasState>('productivity:canvasStateV2', {
+        slides: [{ id: uuidv4(), objects: [], history: [{ objects: [] }], historyIndex: 0 }],
+        activeSlideId: null, // will be set to first slide on mount
         selectedObjectId: null,
         tool: 'SELECT',
         strokeColor: '#000000',
@@ -93,6 +98,11 @@ export function ProductivityProvider({ children }: { children: ReactNode }) {
         scale: 0.5,
         viewOffset: { x: 50, y: 50 },
     });
+
+    if (canvasState.slides.length > 0 && !canvasState.activeSlideId) {
+        setCanvasState(prev => ({...prev, activeSlideId: prev.slides[0].id}));
+    }
+
 
     const [habits, setHabits] = useLocalStorage<Habit[]>('productivity:habitsV1', []);
 
