@@ -4,7 +4,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
-import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, Tooltip, Cell, ReferenceLine } from 'recharts';
+import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, Tooltip, Cell, ReferenceLine, Pie, PieChart, Legend } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Skeleton } from '../ui/skeleton';
 import { Checkbox } from '../ui/checkbox';
@@ -13,6 +13,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const INVESTING_CATEGORIES = ['Investment Gain'];
 const FINANCING_EXPENSE_CATEGORIES = ['Interest Expense'];
@@ -58,11 +59,13 @@ const allMetrics = {
     ],
 };
 
+type ChartType = 'bar' | 'pie';
 
 export function DynamicReportChart() {
     const { transactions } = useFinance();
     const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['sales', 'netIncome', 'totalAssets']);
     const [showValues, setShowValues] = useState(true);
+    const [chartType, setChartType] = useState<ChartType>('bar');
 
     const financialData = useMemo(() => {
         // --- Income Statement Calcs ---
@@ -131,31 +134,52 @@ export function DynamicReportChart() {
             <div className="md:col-span-3 min-h-[24rem]">
                 <ChartContainer config={{}} className="h-full w-full">
                     <ResponsiveContainer>
-                        <BarChart data={chartData} margin={{ top: 30, right: 20, left: 0, bottom: 60 }}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis 
-                                dataKey="name" 
-                                tickLine={false} 
-                                axisLine={false}
-                                angle={-45}
-                                textAnchor="end"
-                                height={80}
-                                interval={0}
-                            />
-                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
-                            <ReferenceLine y={0} stroke="hsl(var(--border))" />
-                            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                               {showValues && <LabelList
-                                    dataKey="value"
-                                    position="top"
-                                    formatter={(value: number) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                                    className="fill-foreground text-xs"
-                                />}
-                               {chartData.map((entry, index) => (
-                                 <Cell key={`cell-${index}`} fill={stringToColor(entry.name)} />
-                               ))}
-                            </Bar>
-                        </BarChart>
+                       {chartType === 'bar' ? (
+                            <BarChart data={chartData} margin={{ top: 30, right: 20, left: 0, bottom: 60 }}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis 
+                                    dataKey="name" 
+                                    tickLine={false} 
+                                    axisLine={false}
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={80}
+                                    interval={0}
+                                />
+                                <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
+                                <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                                {showValues && <LabelList
+                                        dataKey="value"
+                                        position="top"
+                                        formatter={(value: number) => value.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+                                        className="fill-foreground text-xs"
+                                    />}
+                                {chartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={stringToColor(entry.name)} />
+                                ))}
+                                </Bar>
+                            </BarChart>
+                       ) : (
+                            <PieChart>
+                                <Tooltip content={<ChartTooltipContent hideLabel />} />
+                                <Pie 
+                                    data={chartData.filter(d => d.value >= 0)} // Pie charts don't handle negative values well
+                                    dataKey="value" 
+                                    nameKey="name" 
+                                    cx="50%" 
+                                    cy="50%" 
+                                    outerRadius={100}
+                                    label={showValues ? (props) => `${props.name}: ${props.value.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })} (${props.percent.toFixed(0)}%)` : false}
+                                    labelLine={showValues}
+                                >
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={stringToColor(entry.name)} />
+                                    ))}
+                                </Pie>
+                                <Legend />
+                            </PieChart>
+                       )}
                     </ResponsiveContainer>
                 </ChartContainer>
             </div>
@@ -166,9 +190,21 @@ export function DynamicReportChart() {
                            <div className="space-y-4 pr-4">
                                 <div>
                                     <h4 className="font-bold mb-2">Metrics</h4>
-                                    <div className="flex items-center space-x-2">
-                                        <Switch id="show-values" checked={showValues} onCheckedChange={setShowValues} />
-                                        <Label htmlFor="show-values" className="text-sm font-normal">Show Values</Label>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center space-x-2">
+                                            <Switch id="show-values" checked={showValues} onCheckedChange={setShowValues} />
+                                            <Label htmlFor="show-values" className="text-sm font-normal">Show Values</Label>
+                                        </div>
+                                         <div className="grid gap-1.5">
+                                            <Label htmlFor="chart-type" className="text-sm font-normal">Chart Type</Label>
+                                            <Select value={chartType} onValueChange={(v) => setChartType(v as ChartType)}>
+                                                <SelectTrigger id="chart-type"><SelectValue/></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="bar">Bar Chart</SelectItem>
+                                                    <SelectItem value="pie">Pie Chart</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
