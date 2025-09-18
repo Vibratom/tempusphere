@@ -8,7 +8,7 @@ import { SettingsProvider } from '@/contexts/SettingsContext';
 import { WebApisView } from '@/components/education/WebApisView';
 import { EmbedView } from '@/components/education/EmbedView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, BookCopy, Pilcrow } from 'lucide-react';
+import { BookOpen, BookCopy } from 'lucide-react';
 
 function EducationContent() {
   return (
@@ -19,7 +19,7 @@ function EducationContent() {
             <div className="w-full max-w-5xl">
                  <Tabs defaultValue="web-apis" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="web-apis"><Pilcrow className="mr-2"/>Web APIs</TabsTrigger>
+                        <TabsTrigger value="web-apis"><BookOpen className="mr-2"/>Reference</TabsTrigger>
                         <TabsTrigger value="interactive"><BookCopy className="mr-2"/>Interactive</TabsTrigger>
                     </TabsList>
                     <TabsContent value="web-apis" className="mt-6">
