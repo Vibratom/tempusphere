@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { LeftToolbar } from '@/components/canvas/LeftToolbar';
 import { RightSidebar } from '@/components/canvas/RightSidebar';
@@ -58,38 +58,41 @@ function DesignTool() {
 }
 
 function ProductivityContent() {
+    const [activeTab, setActiveTab] = useState('design');
+
+    const headerTabs = (
+        <TabsList className="h-auto">
+            <TabsTrigger value="design" className="flex-col h-auto gap-1 p-2 md:p-3 lg:flex-row lg:gap-2">
+                <DraftingCompass className="w-5 h-5" />
+                <span>Design</span>
+            </TabsTrigger>
+            <TabsTrigger value="habits" className="flex-col h-auto gap-1 p-2 md:p-3 lg:flex-row lg:gap-2">
+                <Target className="w-5 h-5" />
+                <span>Habits</span>
+            </TabsTrigger>
+            <TabsTrigger value="image-editor" className="flex-col h-auto gap-1 p-2 md:p-3 lg:flex-row lg:gap-2">
+                <ImageEditIcon className="w-5 h-5" />
+                <span>Image Editor</span>
+            </TabsTrigger>
+        </TabsList>
+    );
+
     return (
-        <div className="min-h-screen w-full bg-muted/50 flex flex-col">
-            <Header />
-            <main className="flex-1 flex flex-col items-center">
-                 <Tabs defaultValue="design" className="w-full flex-1 flex flex-col">
-                    <div className="flex justify-center p-4">
-                        <TabsList className="h-auto">
-                            <TabsTrigger value="design" className="flex-col h-auto gap-1 p-2 md:p-3 lg:flex-row lg:gap-2">
-                                <DraftingCompass className="w-5 h-5" />
-                                <span>Design</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="habits" className="flex-col h-auto gap-1 p-2 md:p-3 lg:flex-row lg:gap-2">
-                                <Target className="w-5 h-5" />
-                                <span>Habits</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="image-editor" className="flex-col h-auto gap-1 p-2 md:p-3 lg:flex-row lg:gap-2">
-                                <ImageEditIcon className="w-5 h-5" />
-                                <span>Image Editor</span>
-                            </TabsTrigger>
-                        </TabsList>
-                    </div>
-                    <TabsContent value="design" className="flex-1 flex flex-col">
+        <div className="min-h-screen w-full bg-background flex flex-col">
+             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+                <Header tabs={headerTabs} className="bg-background/95 backdrop-blur-sm sticky top-0 z-30" />
+                <main className="flex-1 flex flex-col">
+                    <TabsContent value="design" className="flex-1 flex flex-col mt-0">
                         <DesignTool />
                     </TabsContent>
-                    <TabsContent value="habits" className="p-4 md:p-8 flex-1">
+                    <TabsContent value="habits" className="p-4 md:p-8 flex-1 mt-0">
                         <HabitTracker />
                     </TabsContent>
-                     <TabsContent value="image-editor" className="p-4 md:p-8 flex-1">
+                     <TabsContent value="image-editor" className="p-4 md:p-8 flex-1 mt-0">
                         <ImageEditor />
                     </TabsContent>
-                </Tabs>
-            </main>
+                </main>
+            </Tabs>
         </div>
     );
 }

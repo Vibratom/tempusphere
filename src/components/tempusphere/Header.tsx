@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Expand, Settings, Home, Atom, Sun, Moon } from 'lucide-react';
@@ -11,8 +11,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 import { useHotkeys } from '@/hooks/use-hotkeys';
 import { useTheme } from 'next-themes';
 import { ClockSettingsPanel } from './ClockSettingsPanel';
+import { cn } from '@/lib/utils';
 
-export function Header() {
+export function Header({ tabs, className }: { tabs?: ReactNode, className?: string }) {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const { theme, setTheme, resolvedTheme } = useTheme();
     const [isClient, setIsClient] = useState(false);
@@ -59,13 +60,16 @@ export function Header() {
     );
 
     return (
-        <header className="flex h-16 shrink-0 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 sticky top-0 z-30">
+        <header className={cn("flex h-16 shrink-0 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 sticky top-0 z-30", className)}>
             <div className="flex items-center gap-3 mr-auto">
                 <Link href="/" className="flex items-center gap-2 font-bold tracking-tighter text-xl">
                     <Image src="/logo.webp" alt="Tempusphere Logo" width={24} height={24} />
                     Tempusphere
                 </Link>
             </div>
+            
+            {tabs && <div className="absolute left-1/2 -translate-x-1/2">{tabs}</div>}
+
             <div className="flex items-center gap-2">
                 <TooltipProvider>
                     <Tooltip>
