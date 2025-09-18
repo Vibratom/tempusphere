@@ -1,13 +1,23 @@
 
 'use client';
 
+import { useProductivity, ImageObject } from '@/contexts/ProductivityContext';
 import { ScrollArea } from "../ui/scroll-area";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Sliders, Layers, Settings } from "lucide-react";
+import { Sliders, Layers, Settings, Sun, Type, Crop, Image as ImageIconProp } from "lucide-react";
+import { ImageEditor } from '../productivity/Image-editor';
+
 
 export function RightSidebar() {
+    const { canvasState } = useProductivity();
+    const { slides, activeSlideId, selectedObjectId } = canvasState;
+    const activeSlide = slides.find(s => s.id === activeSlideId);
+    const selectedObject = activeSlide?.objects.find(o => o.id === selectedObjectId);
+
+    const isImage = selectedObject?.type === 'IMAGE';
+
     return (
         <Tabs defaultValue="properties" className="h-full w-full flex flex-col">
             <CardHeader className="p-0">
@@ -19,26 +29,30 @@ export function RightSidebar() {
             </CardHeader>
             <TabsContent value="properties" className="flex-1 overflow-auto">
                  <ScrollArea className="h-full p-4">
-                    <div className="space-y-4">
-                        <Card>
-                            <CardHeader><CardTitle className="text-base">Text Properties</CardTitle></CardHeader>
-                            <CardContent>
-                                <Label className="text-muted-foreground">Select a text element to see properties.</Label>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader><CardTitle className="text-base">Image Properties</CardTitle></CardHeader>
-                            <CardContent>
-                                 <Label className="text-muted-foreground">Select an image to see properties.</Label>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader><CardTitle className="text-base">Shape Properties</CardTitle></CardHeader>
-                            <CardContent>
-                                 <Label className="text-muted-foreground">Select a shape to see properties.</Label>
-                            </CardContent>
-                        </Card>
-                    </div>
+                    {isImage ? (
+                        <ImageEditor selectedImage={selectedObject as ImageObject} />
+                    ) : (
+                         <div className="space-y-4">
+                            <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Type/> Text Properties</CardTitle></CardHeader>
+                                <CardContent>
+                                    <Label className="text-muted-foreground">Select a text element to see properties.</Label>
+                                </CardContent>
+                            </Card>
+                             <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><ImageIconProp/> Image Properties</CardTitle></CardHeader>
+                                <CardContent>
+                                     <Label className="text-muted-foreground">Select an image to edit its properties.</Label>
+                                </CardContent>
+                            </Card>
+                             <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Crop/> Shape Properties</CardTitle></CardHeader>
+                                <CardContent>
+                                     <Label className="text-muted-foreground">Select a shape to see properties.</Label>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
                 </ScrollArea>
             </TabsContent>
             <TabsContent value="layers" className="flex-1 overflow-auto p-4">

@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
-import { useProductivity, CanvasObject, TextObject } from '@/contexts/ProductivityContext';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useProductivity, CanvasObject, TextObject, ImageObject } from '@/contexts/ProductivityContext';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from '../ui/input';
 
@@ -29,6 +29,23 @@ const getObjectBounds = (object: CanvasObject): { x: number, y: number, width: n
     }
     return { x: object.x, y: object.y, width: object.width, height: object.height };
 }
+
+const applyFilterIntensity = (filterValue: string = 'none', intensity: number = 100): string => {
+    if (filterValue === 'none') return 'none';
+    const ratio = intensity / 100;
+    return filterValue.replace(/([a-zA-Z-]+)\(([^)]+)\)/g, (match, func, val) => {
+        const num = parseFloat(val);
+        const unit = val.replace(String(num), '');
+        if (['hue-rotate'].includes(func)) {
+            return `${func}(${(num * ratio).toFixed(2)}${unit})`;
+        }
+        if (['brightness', 'contrast', 'saturate', 'opacity'].includes(func)) {
+            const scaledValue = 100 + (num - 100) * ratio;
+            return `${func}(${scaledValue.toFixed(2)}%)`;
+        }
+        return `${func}(${(num * ratio).toFixed(2)}${unit})`;
+    });
+};
 
 // --- Main Component ---
 
@@ -79,6 +96,7 @@ export function Canvas() {
     // --- Canvas Drawing and Rendering ---
 
     const drawObject = (ctx: CanvasRenderingContext2D, obj: CanvasObject) => {
+        ctx.save();
         if (obj.type === 'PATH') {
             ctx.beginPath();
             ctx.strokeStyle = obj.strokeColor;
@@ -92,8 +110,16 @@ export function Canvas() {
         } else if (obj.type === 'IMAGE') {
             const img = new Image();
             img.src = obj.data;
+
+            const appliedFilter = applyFilterIntensity(obj.activeFilter, obj.filterIntensity);
+            ctx.filter = `${appliedFilter !== 'none' ? appliedFilter : ''} brightness(${obj.brightness || 100}%) contrast(${obj.contrast || 100}%) saturate(${obj.saturation || 100}%) hue-rotate(${obj.hue || 0}deg) blur(${obj.blur || 0}px)`.trim();
+            
+            ctx.translate(obj.x + obj.width / 2, obj.y + obj.height / 2);
+            ctx.rotate((obj.rotation || 0) * Math.PI / 180);
+            ctx.scale(obj.scaleX || 1, obj.scaleY || 1);
+            
             if (img.complete) {
-                ctx.drawImage(img, obj.x, obj.y, obj.width, obj.height);
+                ctx.drawImage(img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
             } else {
                  img.onload = () => redrawCanvas();
             }
@@ -103,6 +129,7 @@ export function Canvas() {
             ctx.textBaseline = 'top';
             ctx.fillText(obj.text, obj.x, obj.y);
         }
+        ctx.restore();
     };
     
     const drawSelectionBox = (ctx: CanvasRenderingContext2D, object: CanvasObject) => {
@@ -114,6 +141,7 @@ export function Canvas() {
         if(bounds) {
              ctx.strokeRect(bounds.x - 5, bounds.y - 5, bounds.width + 10, bounds.height + 10);
         }
+        ctx.setLineDash([]);
     }
     
     const redrawCanvas = useCallback(() => {
@@ -149,14 +177,15 @@ export function Canvas() {
         const container = canvasContainerRef.current;
         if (!container) return;
 
-        const resizeObserver = new ResizeObserver(() => redrawCanvas());
+        const resizeObserver = new ResizeObserver(() => {
+            const canvas = canvasRef.current;
+            if(canvas) {
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+                redrawCanvas();
+            }
+        });
         resizeObserver.observe(container);
-        
-        const canvas = canvasRef.current;
-        if(canvas) {
-          canvas.width = container.clientWidth;
-          canvas.height = container.clientHeight;
-        }
 
         return () => resizeObserver.disconnect();
     }, [redrawCanvas]);
