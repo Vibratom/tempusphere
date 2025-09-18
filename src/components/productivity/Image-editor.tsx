@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
-import { Upload, Crop, Sun, Sliders, Settings, Download } from 'lucide-react';
+import { Upload, Crop, Sun, Sliders, Download, RotateCcw, RotateCw, FlipHorizontal, FlipVertical } from 'lucide-react';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
 import { Label } from '../ui/label';
@@ -11,11 +11,13 @@ import { Slider } from '../ui/slider';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { useToast } from '@/hooks/use-toast';
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
+
 
 const filters = [
     { name: 'Original', value: 'none' },
     { name: 'Clarity', value: 'contrast(130%) saturate(110%)' },
-    { name: 'Cinematic', value: 'contrast(120%) saturate(120%)' },
+    { name: 'cinematic', value: 'contrast(120%) saturate(120%)' },
     { name: 'Grayscale', value: 'grayscale(100%)' },
     { name: 'Noir', value: 'grayscale(100%) contrast(130%)' },
     { name: 'Sepia', value: 'sepia(100%)' },
@@ -34,7 +36,6 @@ const filters = [
     { name: 'Ruby', value: 'hue-rotate(-25deg) saturate(150%)' },
     { name: 'Emerald', value: 'hue-rotate(60deg) saturate(130%) contrast(90%)' },
     { name: 'Sapphire', value: 'hue-rotate(25deg) saturate(150%)' },
-    // New Gradient-like filters
     { name: 'Sunset', value: 'sepia(50%) contrast(120%) hue-rotate(-20deg) saturate(150%)' },
     { name: 'Twilight', value: 'contrast(110%) saturate(160%) hue-rotate(-60deg) brightness(90%)' },
     { name: 'Aurora', value: 'contrast(110%) saturate(200%) hue-rotate(90deg)' },
@@ -50,24 +51,22 @@ const applyFilterIntensity = (filterValue: string, intensity: number): string =>
         const num = parseFloat(val);
         const unit = val.replace(String(num), '');
         if (['hue-rotate'].includes(func)) {
-             // For hue-rotate, intensity can mean rotating less of the angle
             return `${func}(${(num * ratio).toFixed(2)}${unit})`;
         }
         if (['brightness', 'contrast', 'saturate', 'opacity'].includes(func)) {
-            // These filters are centered around 1 or 100%.
-            // A 50% intensity should move the value halfway to its target from the default (100%).
             const scaledValue = 100 + (num - 100) * ratio;
             return `${func}(${scaledValue.toFixed(2)}%)`;
         }
-        // For others like grayscale, sepia, invert, just scale the value directly.
         return `${func}(${(num * ratio).toFixed(2)}${unit})`;
     });
 };
 
+type AspectRatio = 'free' | '1:1' | '16:9' | '4:3';
 
 export function ImageEditor() {
     const [image, setImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const imageRef = useRef<HTMLImageElement>(null);
 
     const [brightness, setBrightness] = useState(100);
     const [contrast, setContrast] = useState(100);
@@ -75,14 +74,24 @@ export function ImageEditor() {
     const [hue, setHue] = useState(0);
     const [blur, setBlur] = useState(0);
     
+    const [rotation, setRotation] = useState(0);
+    const [scaleX, setScaleX] = useState(1);
+    const [scaleY, setScaleY] = useState(1);
+    
     const [activeFilter, setActiveFilter] = useState('none');
     const [filterIntensity, setFilterIntensity] = useState(100);
+
+    const [isCropMode, setIsCropMode] = useState(false);
+    const [crop, setCrop] = useState({ x: 10, y: 10, width: 80, height: 80 }); // Percentage based
+    const [aspectRatio, setAspectRatio] = useState<AspectRatio>('free');
+
     const { toast } = useToast();
 
     const handleImageUpload = (file: File) => {
         const reader = new FileReader();
         reader.onload = (e) => {
             setImage(e.target?.result as string);
+            resetAdjustments();
         };
         reader.readAsDataURL(file);
     };
@@ -100,35 +109,40 @@ export function ImageEditor() {
         }
     };
 
-    const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-    };
+    const onDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
+    
+    const resetAdjustments = () => {
+        setBrightness(100);
+        setContrast(100);
+        setSaturation(100);
+        setHue(0);
+        setBlur(0);
+        setRotation(0);
+        setScaleX(1);
+        setScaleY(1);
+        setActiveFilter('none');
+        setFilterIntensity(100);
+        setIsCropMode(false);
+    }
 
     const imageStyle = useMemo(() => {
         const appliedFilter = applyFilterIntensity(activeFilter, filterIntensity);
         return {
-            filter: `${appliedFilter !== 'none' ? appliedFilter : ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hue}deg) blur(${blur}px)`.trim()
+            filter: `${appliedFilter !== 'none' ? appliedFilter : ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hue}deg) blur(${blur}px)`.trim(),
+            transform: `rotate(${rotation}deg) scaleX(${scaleX}) scaleY(${scaleY})`,
         }
-    }, [activeFilter, filterIntensity, brightness, contrast, saturation, hue, blur]);
+    }, [activeFilter, filterIntensity, brightness, contrast, saturation, hue, blur, rotation, scaleX, scaleY]);
 
     const handleDownload = () => {
         if (!image) {
-            toast({
-                variant: 'destructive',
-                title: 'No image to download',
-                description: 'Please upload an image first.',
-            });
+            toast({ variant: 'destructive', title: 'No image to download' });
             return;
         }
 
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-            toast({
-                variant: 'destructive',
-                title: 'Error preparing download',
-                description: 'Could not create an image canvas.',
-            });
+            toast({ variant: 'destructive', title: 'Error preparing download' });
             return;
         }
 
@@ -137,32 +151,50 @@ export function ImageEditor() {
             canvas.width = img.naturalWidth;
             canvas.height = img.naturalHeight;
             ctx.filter = imageStyle.filter;
-            ctx.drawImage(img, 0, 0);
+            // Transformation logic will need to be more complex here
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(rotation * Math.PI / 180);
+            ctx.scale(scaleX, scaleY);
+            ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 
             const link = document.createElement('a');
             link.download = 'edited-image.png';
             link.href = canvas.toDataURL('image/png');
             link.click();
-
-            toast({
-                title: 'Download Started',
-                description: 'Your edited image is being saved.',
-            });
+            toast({ title: 'Download Started' });
         };
         img.onerror = () => {
-             toast({
-                variant: 'destructive',
-                title: 'Error loading image',
-                description: 'Could not load the image for downloading.',
-            });
+             toast({ variant: 'destructive', title: 'Error loading image' });
         };
         img.src = image;
     };
 
+    const CropOverlay = () => {
+        if (!isCropMode || !image) return null;
+        return (
+            <div className="absolute inset-0 cursor-move">
+                <div
+                    className="absolute border-2 border-dashed border-white bg-black/30"
+                    style={{
+                        left: `${crop.x}%`,
+                        top: `${crop.y}%`,
+                        width: `${crop.width}%`,
+                        height: `${crop.height}%`,
+                    }}
+                >
+                    {/* Resizing handles */}
+                    <div className="absolute -top-1 -left-1 w-3 h-3 bg-white rounded-full cursor-nwse-resize"></div>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full cursor-nesw-resize"></div>
+                    <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-white rounded-full cursor-nesw-resize"></div>
+                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-white rounded-full cursor-nwse-resize"></div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="w-full h-full flex flex-col items-center">
             <div className="w-full max-w-7xl flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Canvas Area */}
                 <div className="lg:col-span-2 h-full">
                     <Card className="h-full flex flex-col">
                         <CardHeader className="flex-row justify-between items-center">
@@ -177,14 +209,15 @@ export function ImageEditor() {
                         </CardHeader>
                         <CardContent className="flex-1 flex items-center justify-center bg-muted/50 rounded-b-lg">
                             {image ? (
-                                <div className="max-w-full max-h-full p-4">
-                                     {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <div className="max-w-full max-h-full p-4 relative overflow-hidden">
                                     <img 
+                                        ref={imageRef}
                                         src={image} 
                                         alt="Uploaded preview" 
-                                        className="max-w-full max-h-[60vh] object-contain"
+                                        className="max-w-full max-h-[60vh] object-contain transition-transform"
                                         style={imageStyle}
                                     />
+                                    <CropOverlay />
                                 </div>
                             ) : (
                                 <div 
@@ -203,7 +236,6 @@ export function ImageEditor() {
                     </Card>
                 </div>
 
-                {/* Sidebar */}
                 <div className="lg:col-span-1 h-full">
                     <Card className="h-full">
                         <CardHeader>
@@ -214,11 +246,32 @@ export function ImageEditor() {
                             <ScrollArea className="h-[65vh]">
                                 <Accordion type="multiple" defaultValue={['adjustments', 'filters']} className="w-full pr-4">
                                     <AccordionItem value="crop">
-                                        <AccordionTrigger className="text-base"><h4 className="font-semibold flex items-center gap-2"><Crop className="h-5 w-5" /> Crop & Resize</h4></AccordionTrigger>
+                                        <AccordionTrigger className="text-base"><h4 className="font-semibold flex items-center gap-2"><Crop className="h-5 w-5" /> Crop & Transform</h4></AccordionTrigger>
                                         <AccordionContent>
-                                            <div className="grid gap-2 pt-2">
-                                                <Label>Aspect Ratio</Label>
-                                                <Button variant="outline" disabled>Freeform</Button>
+                                            <div className="grid gap-4 pt-4">
+                                                <Button onClick={() => setIsCropMode(!isCropMode)} variant={isCropMode ? 'secondary' : 'outline'} disabled={!image}>
+                                                    {isCropMode ? 'Cancel Crop' : 'Activate Crop Tool'}
+                                                </Button>
+                                                {isCropMode && (
+                                                    <>
+                                                        <div className="grid gap-1.5">
+                                                            <Label>Aspect Ratio</Label>
+                                                            <ToggleGroup type="single" value={aspectRatio} onValueChange={(v) => setAspectRatio(v as AspectRatio)} size="sm">
+                                                                <ToggleGroupItem value="free">Free</ToggleGroupItem>
+                                                                <ToggleGroupItem value="1:1">1:1</ToggleGroupItem>
+                                                                <ToggleGroupItem value="16:9">16:9</ToggleGroupItem>
+                                                                <ToggleGroupItem value="4:3">4:3</ToggleGroupItem>
+                                                            </ToggleGroup>
+                                                        </div>
+                                                        <Button disabled>Apply Crop</Button>
+                                                    </>
+                                                )}
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <Button variant="outline" onClick={() => setRotation(r => r - 90)} disabled={!image}><RotateCcw className="mr-2"/>-90°</Button>
+                                                    <Button variant="outline" onClick={() => setRotation(r => r + 90)} disabled={!image}><RotateCw className="mr-2"/>+90°</Button>
+                                                    <Button variant="outline" onClick={() => setScaleX(s => s * -1)} disabled={!image}><FlipHorizontal className="mr-2"/>Flip H</Button>
+                                                    <Button variant="outline" onClick={() => setScaleY(s => s * -1)} disabled={!image}><FlipVertical className="mr-2"/>Flip V</Button>
+                                                </div>
                                             </div>
                                         </AccordionContent>
                                     </AccordionItem>
@@ -260,19 +313,11 @@ export function ImageEditor() {
                                                         <button
                                                             key={filter.name}
                                                             onClick={() => setActiveFilter(filter.value)}
-                                                            className={cn(
-                                                                "aspect-square rounded-md text-xs font-medium text-center flex items-center justify-center p-1 transition-all",
-                                                                activeFilter === filter.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:ring-1 hover:ring-primary'
-                                                            )}
+                                                            className={cn("aspect-square rounded-md text-xs font-medium text-center flex items-center justify-center p-1 transition-all", activeFilter === filter.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:ring-1 hover:ring-primary')}
                                                             disabled={!image}
                                                         >
                                                             <div className="relative w-full h-full rounded overflow-hidden">
-                                                                {image ? (
-                                                                    // eslint-disable-next-line @next/next/no-img-element
-                                                                    <img src={image} alt={filter.name} className="w-full h-full object-cover" style={{ filter: filter.value }} />
-                                                                ) : (
-                                                                    <div className="w-full h-full bg-muted"></div>
-                                                                )}
+                                                                {image && <img src={image} alt={filter.name} className="w-full h-full object-cover" style={{ filter: filter.value }} />}
                                                                 <div className="absolute inset-0 bg-black/30 flex items-end justify-center">
                                                                     <p className="text-white text-[10px] p-0.5">{filter.name}</p>
                                                                 </div>
@@ -295,5 +340,8 @@ export function ImageEditor() {
             </div>
         </div>
     );
+}
+
+    
 
     
