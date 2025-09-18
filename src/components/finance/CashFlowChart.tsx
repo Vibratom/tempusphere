@@ -3,7 +3,7 @@
 
 import React, { useMemo } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
-import { Bar, BarChart, CartesianGrid, Label, ReferenceLine, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, Legend, PieChart, Pie, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, RadialBarChart, Treemap } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Label, ReferenceLine, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, Legend, PieChart, Pie, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, RadialBarChart, RadialBar, Treemap } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Skeleton } from '../ui/skeleton';
 import { type ChartType } from './FinanceApp';
@@ -90,11 +90,11 @@ export function CashFlowChart({ chartType }: { chartType: ChartType }) {
                  return (
                     <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="80%" barSize={10} data={positiveData}>
                         <Tooltip content={<ChartTooltipContent />} />
-                        <RadialBarChart dataKey="value">
+                        <RadialBar dataKey="value">
                              {positiveData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={RADIAL_COLORS[index % RADIAL_COLORS.length]} />
                             ))}
-                        </RadialBarChart>
+                        </RadialBar>
                         <Legend iconSize={10} wrapperStyle={{ bottom: 0 }} />
                         {hasNegative && <text x="50%" y="95%" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12">Negative values not shown</text>}
                     </RadialBarChart>

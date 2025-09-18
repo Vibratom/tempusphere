@@ -3,7 +3,7 @@
 
 import React, { useMemo } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
-import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, ReferenceLine, Pie, PieChart, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, RadialBarChart, Treemap } from 'recharts';
+import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, ReferenceLine, Pie, PieChart, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, RadialBarChart, RadialBar, Treemap } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Skeleton } from '../ui/skeleton';
 import { type ChartType } from './FinanceApp';
@@ -61,11 +61,11 @@ export function IncomeStatementChart({ chartType }: { chartType: ChartType }) {
                  return (
                     <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="80%" barSize={10} data={chartData.filter(d => d.value >= 0)}>
                         <Tooltip content={<ChartTooltipContent />} />
-                        <RadialBarChart dataKey="value">
-                             {chartData.map((entry, index) => (
+                        <RadialBar dataKey="value">
+                             {chartData.filter(d => d.value >= 0).map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={RADIAL_COLORS[index % RADIAL_COLORS.length]} />
                             ))}
-                        </RadialBarChart>
+                        </RadialBar>
                         <Legend iconSize={10} wrapperStyle={{ bottom: 0 }} />
                     </RadialBarChart>
                 );
@@ -146,4 +146,5 @@ const CustomTreemapContent = ({ root, depth, x, y, width, height, index, payload
     </g>
   );
 };
+
 
