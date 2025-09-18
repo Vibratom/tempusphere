@@ -51,24 +51,42 @@ interface TranslationResponse {
   responseStatus: number;
 }
 
-const parseWiktionaryResponse = (word: string, data: any[]): DictionaryEntry[] | null => {
-    if (!data || data.length === 0) return null;
+const parseWiktionaryResponse = (word: string, data: any): DictionaryEntry[] | null => {
+    // Wiktionary API can return data in different shapes. 
+    // Sometimes it's an array, sometimes an object with language keys.
+    const definitionsArray = Array.isArray(data) ? data : data[Object.keys(data)[0]];
 
-    const meanings: Meaning[] = data.map((entry: WiktionaryEntry) => ({
-        partOfSpeech: entry.definitions[0]?.partOfSpeech || 'unknown',
-        definitions: entry.definitions.map(def => ({
-            definition: def.text,
-            example: def.examples?.[0]?.text.replace(/<[^>]*>/g, '') || '',
-            synonyms: [],
-            antonyms: []
+    if (!definitionsArray || definitionsArray.length === 0) return null;
+
+    const meanings: Meaning[] = definitionsArray.flatMap((entry: WiktionaryEntry) => 
+        entry.definitions.map(def => ({
+            partOfSpeech: def.partOfSpeech || 'unknown',
+            definitions: [{
+                definition: def.text,
+                example: def.examples?.[0]?.text.replace(/<[^>]*>/g, '') || '',
+                synonyms: [],
+                antonyms: []
+            }]
         }))
-    }));
+    );
+    
+    // Group definitions by part of speech
+    const groupedMeanings = meanings.reduce((acc, current) => {
+        const existing = acc.find(m => m.partOfSpeech === current.partOfSpeech);
+        if (existing) {
+            existing.definitions.push(...current.definitions);
+        } else {
+            acc.push(current);
+        }
+        return acc;
+    }, [] as Meaning[]);
+
 
     return [{
         word: word,
         phonetic: '',
         phonetics: [],
-        meanings: meanings
+        meanings: groupedMeanings
     }];
 };
 
@@ -125,13 +143,15 @@ export function LanguageTools() {
         try {
             const wiktionaryLangCode = langCode.split('-')[0]; // Use base language code (e.g., 'zh' from 'zh-CN')
             const response = await fetch(`https://${wiktionaryLangCode}.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`);
-            if (response.ok) {
-                const data = await response.json();
-                return parseWiktionaryResponse(word, data.definitions);
+            if (!response.ok) {
+                 if (response.status === 404) return null; // Expected "not found" case
+                 throw new Error(`Wiktionary API error: ${response.status}`);
             }
-            return null;
+            const data = await response.json();
+            return parseWiktionaryResponse(word, data);
         } catch (e) {
-            return null;
+            console.warn(`Could not fetch Wiktionary definition for "${word}" in ${langCode}:`, e);
+            return null; // Return null on any error to not block the UI
         }
     };
 
@@ -154,10 +174,12 @@ export function LanguageTools() {
                         throw new Error('Translation failed.');
                     }
                     const translatedText = data.responseData.translatedText;
+                    // Now fetch the definition for the *translated* word
                     return fetchWiktionaryDefinition(translatedText, translateToLang);
                 })
-                .catch(() => {
-                    // If dictionary for translated word fails, create a fallback.
+                .catch((e) => {
+                    console.warn("Translation or translated definition fetch failed:", e);
+                    // Create a fallback result with just the translated text if lookup fails
                      const translatedText = "Translation unavailable";
                      const fallbackResult: DictionaryEntry[] = [{
                         word: translatedText,
@@ -244,5 +266,3 @@ export function LanguageTools() {
         </>
     )
 }
-
-    
