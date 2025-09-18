@@ -75,7 +75,6 @@ const featureList = [
 
 const otherPlatforms = [
     { name: 'Finance', category: 'Finance', icon: Landmark, href: '/finance', color: 'bg-indigo-500 hover:bg-indigo-600', description: 'Track expenses and manage budgets with ease.' },
-    { name: 'Education', category: 'Education', icon: BrainCircuit, href: '#', color: 'bg-amber-500 hover:bg-amber-600', description: 'Create and share interactive learning modules.' },
     { name: 'Canvas', category: 'Whiteboard', icon: DraftingCompass, href: '/projects/canvas', color: 'bg-sky-500 hover:bg-sky-600', description: 'Collaborate visually with a digital whiteboard.' },
     { name: 'Spreadsheets', category: 'Spreadsheets', icon: Table, href: '/projects/spreadsheet', color: 'bg-emerald-500 hover:bg-emerald-600', description: 'Organize and analyze data in spreadsheets.' },
     { name: 'Recipes', category: 'Recipes', icon: UtensilsCrossed, href: '/recipes', color: 'bg-yellow-500 hover:bg-yellow-600', description: 'Organize recipes and plan your meals.' },
