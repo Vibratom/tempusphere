@@ -8,7 +8,7 @@ import { Label } from '../ui/label';
 import { Slider } from '../ui/slider';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { useProductivity, ImageObject } from '@/contexts/ProductivityContext';
+import { useProductivity, ImageObject, CanvasObject } from '@/contexts/ProductivityContext';
 
 const filters = [
     { name: 'Original', value: 'none' },
@@ -188,5 +188,3 @@ export function ImageEditor({ selectedImage }: { selectedImage: ImageObject }) {
         </Accordion>
     );
 }
-
-    

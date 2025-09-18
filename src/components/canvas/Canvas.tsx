@@ -350,7 +350,3 @@ export function Canvas() {
         </div>
     );
 }
-
-    
-
-    
