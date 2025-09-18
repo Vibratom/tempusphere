@@ -165,8 +165,6 @@ export function CanvasView() {
             const initialEntry = { objects: initialObjects };
             setHistory([initialEntry]);
             setHistoryIndex(0);
-        } else {
-            setIsTemplateDialogOpen(true); // Open template picker if canvas is empty
         }
     }, []);
 
@@ -632,6 +630,3 @@ export function CanvasView() {
         </div>
     );
 }
-
-
-    
