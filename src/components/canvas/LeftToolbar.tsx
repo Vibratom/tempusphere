@@ -4,10 +4,8 @@
 import { Button } from "../ui/button";
 import { MousePointer, Crop, Type, Upload, Image as ImageIcon, Palette, Shapes, Pencil, Hand, Frame, LayoutTemplate } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
-import { ScrollArea } from "../ui/scroll-area";
-import { SheetHeader, SheetTitle } from "../ui/sheet";
 import { useProductivity } from "@/contexts/ProductivityContext";
-import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 const mainTools = [
     { id: 'select', icon: MousePointer, label: 'Select Tool (V)' },
@@ -29,10 +27,25 @@ const assetTools = [
 
 export function LeftToolbar() {
     const { canvasState, setCanvasState } = useProductivity();
+    const [isClient, setIsClient] = useState(false);
     const activeTool = canvasState.tool;
+    
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const handleToolChange = (toolId: any) => {
         setCanvasState(prev => ({...prev, tool: toolId}));
+    }
+    
+    if (!isClient) {
+        return (
+            <div className="w-full h-full bg-background border-r flex flex-col items-center py-4 gap-4 md:w-16">
+                 <div className="md:hidden p-4 w-full border-b">
+                    <h3 className="text-lg font-semibold">Tools & Assets</h3>
+                </div>
+            </div>
+        )
     }
 
     return (
