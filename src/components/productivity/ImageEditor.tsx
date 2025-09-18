@@ -41,8 +41,6 @@ export function ImageEditor() {
     const [brightness, setBrightness] = useState(100);
     const [contrast, setContrast] = useState(100);
     const [saturation, setSaturation] = useState(100);
-    const [grayscale, setGrayscale] = useState(0);
-    const [sepia, setSepia] = useState(0);
     const [hue, setHue] = useState(0);
     const [blur, setBlur] = useState(0);
     
@@ -75,7 +73,7 @@ export function ImageEditor() {
     };
 
     const imageStyle = {
-        filter: `${activeFilter !== 'none' ? activeFilter : ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) grayscale(${grayscale}%) sepia(${sepia}%) hue-rotate(${hue}deg) blur(${blur}px)`.trim()
+        filter: `${activeFilter !== 'none' ? activeFilter : ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hue}deg) blur(${blur}px)`.trim()
     };
 
     return (
@@ -150,14 +148,6 @@ export function ImageEditor() {
                                             <div className="grid gap-1.5">
                                                 <Label>Saturation</Label>
                                                 <Slider value={[saturation]} onValueChange={(v) => setSaturation(v[0])} max={200} disabled={!image} />
-                                            </div>
-                                            <div className="grid gap-1.5">
-                                                <Label>Sepia</Label>
-                                                <Slider value={[sepia]} onValueChange={(v) => setSepia(v[0])} max={100} disabled={!image} />
-                                            </div>
-                                            <div className="grid gap-1.5">
-                                                <Label>Grayscale</Label>
-                                                <Slider value={[grayscale]} onValueChange={(v) => setGrayscale(v[0])} max={100} disabled={!image} />
                                             </div>
                                             <div className="grid gap-1.5">
                                                 <Label>Hue</Label>
