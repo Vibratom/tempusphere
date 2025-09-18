@@ -8,6 +8,7 @@ import { Button } from '../ui/button';
 import { Loader2, Search, Volume2, BookOpen } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 // API Response Types
 interface Phonetic {
@@ -34,8 +35,25 @@ interface DictionaryEntry {
   meanings: Meaning[];
 }
 
+const supportedLanguages = [
+    { code: 'en_US', name: 'English (US)' },
+    { code: 'hi', name: 'Hindi' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'ru', name: 'Russian' },
+    { code: 'en_GB', name: 'English (UK)' },
+    { code: 'de', name: 'German' },
+    { code: 'it', name: 'Italian' },
+    { code: 'ko', name: 'Korean' },
+    { code: 'pt-BR', name: 'Brazilian Portuguese' },
+    { code: 'ar', name: 'Arabic' },
+    { code: 'tr', name: 'Turkish' },
+];
+
 export function DictionaryApp() {
   const [searchTerm, setSearchTerm] = useState('hello');
+  const [language, setLanguage] = useState('en_US');
   const [results, setResults] = useState<DictionaryEntry[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,10 +67,10 @@ export function DictionaryApp() {
     setResults(null);
 
     try {
-      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${language}/${word}`);
       if (!response.ok) {
         if (response.status === 404) {
-          setError(`No definitions found for "${word}". Please check the spelling.`);
+          setError(`No definitions found for "${word}". Please check the spelling or language.`);
         } else {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -86,19 +104,31 @@ export function DictionaryApp() {
     <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
         <audio ref={audioRef} />
         <div className="flex flex-col items-center text-center mb-6">
-            <h1 className="text-3xl font-bold tracking-tighter">Dictionary</h1>
-            <p className="text-md text-muted-foreground mt-1 max-w-3xl">Look up word definitions, pronunciations, synonyms, and more.</p>
+            <h1 className="text-2xl font-bold tracking-tighter">Dictionary</h1>
+            <p className="text-sm text-muted-foreground mt-1 max-w-2xl">Look up word definitions, pronunciations, synonyms, and more across multiple languages.</p>
         </div>
 
-        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-            <Input
-                type="search"
-                placeholder="Search for a word..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="text-base"
-            />
-            <Button type="submit" disabled={isLoading}>
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 mb-6">
+            <div className="flex-1 flex gap-2">
+                <Input
+                    type="search"
+                    placeholder="Search for a word..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="text-base"
+                />
+                <Select value={language} onValueChange={setLanguage}>
+                    <SelectTrigger className="w-48">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {supportedLanguages.map(lang => (
+                            <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <Button type="submit" disabled={isLoading} className="sm:w-auto">
                 {isLoading ? <Loader2 className="animate-spin" /> : <Search />}
                 <span className="sr-only sm:not-sr-only sm:ml-2">Search</span>
             </Button>
@@ -115,9 +145,11 @@ export function DictionaryApp() {
             </Card>
         )}
 
+        {isLoading && <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8"/></div>}
+
         {results && (
              <Card>
-                <ScrollArea className="h-96">
+                <ScrollArea className="h-72">
                     <CardHeader>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div>
