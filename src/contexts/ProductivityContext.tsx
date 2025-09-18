@@ -64,6 +64,17 @@ interface Slide {
 }
 type HistoryEntry = { objects: CanvasObject[] };
 
+export type PageSize = 'A4' | 'Letter' | 'Widescreen';
+export type PageOrientation = 'Portrait' | 'Landscape';
+
+export interface PageSetup {
+    size: PageSize;
+    orientation: PageOrientation;
+    width: number;
+    height: number;
+}
+
+
 export interface CanvasState {
     slides: Slide[];
     activeSlideId: string | null;
@@ -73,6 +84,7 @@ export interface CanvasState {
     strokeWidth: number;
     scale: number;
     viewOffset: { x: number; y: number };
+    page: PageSetup;
 }
 
 // --- Main Context ---
@@ -85,7 +97,7 @@ interface ProductivityContextType {
 const ProductivityContext = createContext<ProductivityContextType | undefined>(undefined);
 
 export function ProductivityProvider({ children }: { children: ReactNode }) {
-    const [canvasState, setCanvasState] = useLocalStorage<CanvasState>('productivity:canvasStateV3', {
+    const [canvasState, setCanvasState] = useLocalStorage<CanvasState>('productivity:canvasStateV4', {
         slides: [{ id: uuidv4(), objects: [], history: [{ objects: [] }], historyIndex: 0 }],
         activeSlideId: null, // will be set to first slide on mount
         selectedObjectId: null,
@@ -94,6 +106,7 @@ export function ProductivityProvider({ children }: { children: ReactNode }) {
         strokeWidth: 5,
         scale: 0.5,
         viewOffset: { x: 50, y: 50 },
+        page: { size: 'Widescreen', orientation: 'Landscape', width: 1920, height: 1080 }
     });
 
     if (canvasState.slides.length > 0 && !canvasState.activeSlideId) {

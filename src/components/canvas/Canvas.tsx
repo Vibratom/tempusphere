@@ -9,10 +9,6 @@ import { Input } from '../ui/input';
 // --- Types ---
 interface Point { x: number; y: number; }
 
-// --- Constants ---
-const PAGE_WIDTH = 1200;
-const PAGE_HEIGHT = 792; 
-
 // --- Helper Functions ---
 
 const getObjectBounds = (object: CanvasObject): { x: number, y: number, width: number, height: number } | null => {
@@ -51,7 +47,7 @@ const applyFilterIntensity = (filterValue: string = 'none', intensity: number = 
 
 export function Canvas() {
     const { canvasState, setCanvasState } = useProductivity();
-    const { slides, activeSlideId, selectedObjectId, tool, strokeColor, strokeWidth, scale, viewOffset } = canvasState;
+    const { slides, activeSlideId, selectedObjectId, tool, strokeColor, strokeWidth, scale, viewOffset, page } = canvasState;
     const activeSlide = slides.find(s => s.id === activeSlideId);
     
     const [isDrawing, setIsDrawing] = useState(false);
@@ -158,7 +154,7 @@ export function Canvas() {
         ctx.fillStyle = 'white';
         ctx.shadowColor = 'rgba(0,0,0,0.1)';
         ctx.shadowBlur = 10;
-        ctx.fillRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+        ctx.fillRect(0, 0, page.width, page.height);
         ctx.shadowColor = 'transparent';
 
         objects.forEach(obj => drawObject(ctx, obj));
@@ -169,7 +165,7 @@ export function Canvas() {
         }
         ctx.restore();
 
-    }, [objects, selectedObjectId, scale, viewOffset]);
+    }, [objects, selectedObjectId, scale, viewOffset, page]);
 
     useEffect(() => { redrawCanvas(); }, [redrawCanvas]);
 

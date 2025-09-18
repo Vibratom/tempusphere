@@ -66,8 +66,8 @@ export function SlidesPanel() {
              <div className="h-28 md:h-24 bg-background border-t p-2 flex items-center gap-2 flex-shrink-0">
                 <div className="h-full w-20 md:w-24 bg-muted rounded-md animate-pulse"></div>
                 <div className="flex h-full items-center gap-3">
-                    <div className="h-full aspect-video rounded-md bg-muted animate-pulse"></div>
-                    <div className="h-full aspect-video rounded-md bg-muted animate-pulse"></div>
+                    <div className="w-24 aspect-video rounded-md bg-muted animate-pulse"></div>
+                    <div className="w-24 aspect-video rounded-md bg-muted animate-pulse"></div>
                 </div>
             </div>
         );
@@ -85,7 +85,7 @@ export function SlidesPanel() {
                         <div 
                             key={slide.id}
                             className={cn(
-                                "h-full aspect-video rounded-md border-2 bg-white flex-shrink-0 cursor-pointer relative group",
+                                "h-[80px] w-[142px] rounded-md border-2 bg-white flex-shrink-0 cursor-pointer relative group",
                                 slide.id === activeSlideId ? 'border-primary' : 'border-border'
                             )}
                             onClick={() => selectSlide(slide.id)}

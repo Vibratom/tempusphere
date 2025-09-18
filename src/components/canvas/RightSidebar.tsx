@@ -6,8 +6,9 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Sliders, Layers, Settings, Sun, Type, Crop, Image as ImageIconProp } from "lucide-react";
+import { Sliders, Layers, Settings, Sun, Type, Crop, Image as ImageIconProp, File } from "lucide-react";
 import { ImageEditor } from '../productivity/Image-editor';
+import { PageSettings } from '../productivity/Page-settings';
 
 
 export function RightSidebar() {
@@ -24,7 +25,7 @@ export function RightSidebar() {
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="properties"><Sliders className="mr-2"/>Properties</TabsTrigger>
                     <TabsTrigger value="layers"><Layers className="mr-2"/>Layers</TabsTrigger>
-                    <TabsTrigger value="settings"><Settings className="mr-2"/>Settings</TabsTrigger>
+                    <TabsTrigger value="page"><File className="mr-2"/>Page</TabsTrigger>
                 </TabsList>
             </CardHeader>
             <TabsContent value="properties" className="flex-1 overflow-auto">
@@ -58,8 +59,8 @@ export function RightSidebar() {
             <TabsContent value="layers" className="flex-1 overflow-auto p-4">
                  <Label className="text-muted-foreground">Layer management will appear here.</Label>
             </TabsContent>
-             <TabsContent value="settings" className="flex-1 overflow-auto p-4">
-                 <Label className="text-muted-foreground">Document settings will appear here.</Label>
+             <TabsContent value="page" className="flex-1 overflow-auto">
+                <PageSettings />
             </TabsContent>
         </Tabs>
     );
