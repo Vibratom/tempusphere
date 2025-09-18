@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
-import { Upload, Crop, Sun, Sliders, Download, RotateCcw, RotateCw, FlipHorizontal, FlipVertical } from 'lucide-react';
+import { Upload, Crop, Sun, Sliders, Download, RotateCcw, RotateCw, FlipHorizontal, FlipVertical, Undo, Redo } from 'lucide-react';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
 import { Label } from '../ui/label';
@@ -43,7 +43,6 @@ const filters = [
     { name: 'Neon', value: 'saturate(200%) contrast(150%)' },
 ];
 
-// Helper to apply intensity to a filter string
 const applyFilterIntensity = (filterValue: string, intensity: number): string => {
     if (filterValue === 'none') return 'none';
     const ratio = intensity / 100;
@@ -64,24 +63,42 @@ const applyFilterIntensity = (filterValue: string, intensity: number): string =>
 type AspectRatio = 'free' | '1:1' | '16:9' | '4:3';
 type CropAction = 'move' | 'nw' | 'ne' | 'sw' | 'se';
 
+interface EditorState {
+    image: string | null;
+    brightness: number;
+    contrast: number;
+    saturation: number;
+    hue: number;
+    blur: number;
+    rotation: number;
+    scaleX: number;
+    scaleY: number;
+    activeFilter: string;
+    filterIntensity: number;
+}
+
+const initialState: EditorState = {
+    image: null,
+    brightness: 100,
+    contrast: 100,
+    saturation: 100,
+    hue: 0,
+    blur: 0,
+    rotation: 0,
+    scaleX: 1,
+    scaleY: 1,
+    activeFilter: 'none',
+    filterIntensity: 100,
+};
+
 export function ImageEditor() {
-    const [image, setImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
     const imageContainerRef = useRef<HTMLDivElement>(null);
-
-    const [brightness, setBrightness] = useState(100);
-    const [contrast, setContrast] = useState(100);
-    const [saturation, setSaturation] = useState(100);
-    const [hue, setHue] = useState(0);
-    const [blur, setBlur] = useState(0);
     
-    const [rotation, setRotation] = useState(0);
-    const [scaleX, setScaleX] = useState(1);
-    const [scaleY, setScaleY] = useState(1);
-    
-    const [activeFilter, setActiveFilter] = useState('none');
-    const [filterIntensity, setFilterIntensity] = useState(100);
+    const [editorState, setEditorState] = useState<EditorState>(initialState);
+    const [history, setHistory] = useState<EditorState[]>([initialState]);
+    const [historyIndex, setHistoryIndex] = useState(0);
 
     const [isCropMode, setIsCropMode] = useState(false);
     const [crop, setCrop] = useState({ x: 10, y: 10, width: 80, height: 80 }); // Percentage based
@@ -92,11 +109,61 @@ export function ImageEditor() {
 
     const { toast } = useToast();
 
+    const updateState = (newState: Partial<EditorState>, addToHistory = true) => {
+        const nextState = { ...editorState, ...newState };
+        setEditorState(nextState);
+        if (addToHistory) {
+            const newHistory = history.slice(0, historyIndex + 1);
+            setHistory([...newHistory, nextState]);
+            setHistoryIndex(newHistory.length);
+        }
+    };
+    
+    const handleUndo = useCallback(() => {
+        if (historyIndex > 0) {
+            setHistoryIndex(prev => {
+                const newIndex = prev - 1;
+                setEditorState(history[newIndex]);
+                return newIndex;
+            });
+        }
+    }, [history, historyIndex]);
+
+    const handleRedo = useCallback(() => {
+        if (historyIndex < history.length - 1) {
+            setHistoryIndex(prev => {
+                const newIndex = prev + 1;
+                setEditorState(history[newIndex]);
+                return newIndex;
+            });
+        }
+    }, [history, historyIndex]);
+    
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.metaKey || e.ctrlKey) {
+                if (e.key === 'z') {
+                    e.preventDefault();
+                    handleUndo();
+                } else if (e.key === 'y') {
+                    e.preventDefault();
+                    handleRedo();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleUndo, handleRedo]);
+
+
     const handleImageUpload = (file: File) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-            setImage(e.target?.result as string);
-            resetAdjustments();
+            const newImage = e.target?.result as string;
+            const newInitialState = { ...initialState, image: newImage };
+            setEditorState(newInitialState);
+            setHistory([newInitialState]);
+            setHistoryIndex(0);
         };
         reader.readAsDataURL(file);
     };
@@ -116,20 +183,7 @@ export function ImageEditor() {
 
     const onDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
     
-    const resetAdjustments = () => {
-        setBrightness(100);
-        setContrast(100);
-        setSaturation(100);
-        setHue(0);
-        setBlur(0);
-        setRotation(0);
-        setScaleX(1);
-        setScaleY(1);
-        setActiveFilter('none');
-        setFilterIntensity(100);
-        setIsCropMode(false);
-        setCrop({ x: 10, y: 10, width: 80, height: 80 });
-    }
+    const { image, brightness, contrast, saturation, hue, blur, rotation, scaleX, scaleY, activeFilter, filterIntensity } = editorState;
 
     const imageStyle = useMemo(() => {
         const appliedFilter = applyFilterIntensity(activeFilter, filterIntensity);
@@ -197,12 +251,10 @@ export function ImageEditor() {
         const startCrop = dragStartRef.current.crop;
         let newCrop = { ...startCrop };
         
-        // Apply deltas based on action
         if (cropAction === 'move') {
             newCrop.x = startCrop.x + dx;
             newCrop.y = startCrop.y + dy;
         } else {
-            // Corner resizing logic
             if (cropAction.includes('w')) {
                 newCrop.x = startCrop.x + dx;
                 newCrop.width = startCrop.width - dx;
@@ -219,7 +271,6 @@ export function ImageEditor() {
             }
         }
         
-        // Constrain aspect ratio
         if (aspectRatio !== 'free') {
             const ratioValue = aspectRatio === '1:1' ? 1 : aspectRatio === '16:9' ? 16 / 9 : 4 / 3;
             if (newCrop.width / newCrop.height > ratioValue) {
@@ -229,7 +280,6 @@ export function ImageEditor() {
             }
         }
 
-        // Clamp values to be within bounds (0-100)
         newCrop.x = Math.max(0, Math.min(newCrop.x, 100 - newCrop.width));
         newCrop.y = Math.max(0, Math.min(newCrop.y, 100 - newCrop.height));
         newCrop.width = Math.max(5, Math.min(newCrop.width, 100 - newCrop.x));
@@ -249,31 +299,32 @@ export function ImageEditor() {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        const scaleX = img.naturalWidth / img.width;
-        const scaleY = img.naturalHeight / img.height;
+        const scaleXImg = img.naturalWidth / img.width;
+        const scaleYImg = img.naturalHeight / img.height;
 
-        const cropX = (crop.x / 100) * img.width * scaleX;
-        const cropY = (crop.y / 100) * img.height * scaleY;
-        const cropWidth = (crop.width / 100) * img.width * scaleX;
-        const cropHeight = (crop.height / 100) * img.height * scaleY;
+        const cropX = (crop.x / 100) * img.width * scaleXImg;
+        const cropY = (crop.y / 100) * img.height * scaleYImg;
+        const cropWidth = (crop.width / 100) * img.width * scaleXImg;
+        const cropHeight = (crop.height / 100) * img.height * scaleYImg;
 
         canvas.width = cropWidth;
         canvas.height = cropHeight;
         
         ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
         
-        setImage(canvas.toDataURL('image/png'));
+        updateState({ image: canvas.toDataURL('image/png') });
         setIsCropMode(false);
     };
 
     useEffect(() => {
-        window.addEventListener('mousemove', handleMouseMove as any);
-        window.addEventListener('mouseup', handleMouseUp);
+        const moveHandler = (e: MouseEvent) => handleMouseMove(e as unknown as React.MouseEvent<HTMLDivElement>);
+        const upHandler = () => handleMouseUp();
+        window.addEventListener('mousemove', moveHandler);
+        window.addEventListener('mouseup', upHandler);
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove as any);
-            window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('mousemove', moveHandler);
+            window.removeEventListener('mouseup', upHandler);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [cropAction]);
 
     const CropOverlay = () => {
@@ -312,10 +363,14 @@ export function ImageEditor() {
                                 <CardTitle>Image Preview</CardTitle>
                                 <CardDescription>Your uploaded image will appear here.</CardDescription>
                             </div>
-                            <Button onClick={handleDownload} disabled={!image}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Download
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIndex <= 0}><Undo /></Button>
+                                <Button variant="ghost" size="icon" onClick={handleRedo} disabled={historyIndex >= history.length - 1}><Redo /></Button>
+                                <Button onClick={handleDownload} disabled={!image}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Download
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent ref={imageContainerRef} className="flex-1 flex items-center justify-center bg-muted/50 rounded-b-lg">
                             {image ? (
@@ -377,10 +432,10 @@ export function ImageEditor() {
                                                     </>
                                                 )}
                                                 <div className="grid grid-cols-2 gap-2">
-                                                    <Button variant="outline" onClick={() => setRotation(r => r - 90)} disabled={!image}><RotateCcw className="mr-2"/>-90°</Button>
-                                                    <Button variant="outline" onClick={() => setRotation(r => r + 90)} disabled={!image}><RotateCw className="mr-2"/>+90°</Button>
-                                                    <Button variant="outline" onClick={() => setScaleX(s => s * -1)} disabled={!image}><FlipHorizontal className="mr-2"/>Flip H</Button>
-                                                    <Button variant="outline" onClick={() => setScaleY(s => s * -1)} disabled={!image}><FlipVertical className="mr-2"/>Flip V</Button>
+                                                    <Button variant="outline" onClick={() => updateState({ rotation: rotation - 90 })} disabled={!image}><RotateCcw className="mr-2"/>-90°</Button>
+                                                    <Button variant="outline" onClick={() => updateState({ rotation: rotation + 90 })} disabled={!image}><RotateCw className="mr-2"/>+90°</Button>
+                                                    <Button variant="outline" onClick={() => updateState({ scaleX: scaleX * -1 })} disabled={!image}><FlipHorizontal className="mr-2"/>Flip H</Button>
+                                                    <Button variant="outline" onClick={() => updateState({ scaleY: scaleY * -1 })} disabled={!image}><FlipVertical className="mr-2"/>Flip V</Button>
                                                 </div>
                                             </div>
                                         </AccordionContent>
@@ -392,23 +447,23 @@ export function ImageEditor() {
                                             <div className="grid gap-4 pt-4">
                                                 <div className="grid gap-1.5">
                                                     <Label>Brightness</Label>
-                                                    <Slider value={[brightness]} onValueChange={(v) => setBrightness(v[0])} max={200} disabled={!image} />
+                                                    <Slider value={[brightness]} onValueChange={(v) => updateState({ brightness: v[0] }, false)} onValueCommit={() => updateState({})} max={200} disabled={!image} />
                                                 </div>
                                                 <div className="grid gap-1.5">
                                                     <Label>Contrast</Label>
-                                                    <Slider value={[contrast]} onValueChange={(v) => setContrast(v[0])} max={200} disabled={!image} />
+                                                    <Slider value={[contrast]} onValueChange={(v) => updateState({ contrast: v[0] }, false)} onValueCommit={() => updateState({})} max={200} disabled={!image} />
                                                 </div>
                                                 <div className="grid gap-1.5">
                                                     <Label>Saturation</Label>
-                                                    <Slider value={[saturation]} onValueChange={(v) => setSaturation(v[0])} max={200} disabled={!image} />
+                                                    <Slider value={[saturation]} onValueChange={(v) => updateState({ saturation: v[0] }, false)} onValueCommit={() => updateState({})} max={200} disabled={!image} />
                                                 </div>
                                                 <div className="grid gap-1.5">
                                                     <Label>Hue</Label>
-                                                    <Slider value={[hue]} onValueChange={(v) => setHue(v[0])} max={360} disabled={!image} />
+                                                    <Slider value={[hue]} onValueChange={(v) => updateState({ hue: v[0] }, false)} onValueCommit={() => updateState({})} max={360} disabled={!image} />
                                                 </div>
                                                  <div className="grid gap-1.5">
                                                     <Label>Blur</Label>
-                                                    <Slider value={[blur]} onValueChange={(v) => setBlur(v[0])} max={20} disabled={!image} />
+                                                    <Slider value={[blur]} onValueChange={(v) => updateState({ blur: v[0] }, false)} onValueCommit={() => updateState({})} max={20} disabled={!image} />
                                                 </div>
                                             </div>
                                         </AccordionContent>
@@ -422,7 +477,7 @@ export function ImageEditor() {
                                                     {filters.map(filter => (
                                                         <button
                                                             key={filter.name}
-                                                            onClick={() => setActiveFilter(filter.value)}
+                                                            onClick={() => updateState({ activeFilter: filter.value })}
                                                             className={cn("aspect-square rounded-md text-xs font-medium text-center flex items-center justify-center p-1 transition-all", activeFilter === filter.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:ring-1 hover:ring-primary')}
                                                             disabled={!image}
                                                         >
@@ -438,7 +493,7 @@ export function ImageEditor() {
                                             </ScrollArea>
                                             <div className="grid gap-1.5 pt-4">
                                                 <Label>Filter Intensity</Label>
-                                                <Slider value={[filterIntensity]} onValueChange={(v) => setFilterIntensity(v[0])} max={100} disabled={!image || activeFilter === 'none'} />
+                                                <Slider value={[filterIntensity]} onValueChange={(v) => updateState({ filterIntensity: v[0] }, false)} onValueCommit={() => updateState({})} max={100} disabled={!image || activeFilter === 'none'} />
                                             </div>
                                         </AccordionContent>
                                     </AccordionItem>
