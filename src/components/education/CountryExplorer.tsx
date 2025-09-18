@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Loader2, Search, Map, Users, Languages, Landmark, Coins, Globe } from 'lucide-react';
+import { Loader2, Search, Map, Users, Languages, Landmark, Coins, Globe, Clock, Compass, Maximize } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import Image from 'next/image';
 import { Separator } from '../ui/separator';
@@ -20,6 +20,9 @@ interface Country {
     svg: string;
     alt: string;
   };
+  coatOfArms: {
+    svg?: string;
+  };
   capital: string[];
   population: number;
   region: string;
@@ -29,6 +32,9 @@ interface Country {
   maps: {
     googleMaps: string;
   };
+  borders?: string[];
+  area: number;
+  timezones: string[];
 }
 
 export function CountryExplorer() {
@@ -45,7 +51,7 @@ export function CountryExplorer() {
     setResults(null);
 
     try {
-      const response = await fetch(`https://restcountries.com/v3.1/name/${name}`);
+      const response = await fetch(`https://restcountries.com/v3.1/name/${name}?fullText=false`);
       if (!response.ok) {
         if (response.status === 404) {
           setError(`Could not find a country named "${name}". Please check the spelling.`);
@@ -73,16 +79,16 @@ export function CountryExplorer() {
     fetchCountry(searchTerm);
   };
 
-  const InfoRow = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number | undefined }) => (
+  const InfoRow = ({ icon, label, value, valueClassName }: { icon: React.ReactNode, label: string, value: string | number | undefined, valueClassName?: string }) => (
     <div className="flex items-start gap-3 text-sm">
-        <div className="text-muted-foreground">{icon}</div>
+        <div className="text-muted-foreground pt-0.5">{icon}</div>
         <span className="font-semibold">{label}:</span>
-        <span className="text-muted-foreground text-right flex-1">{value || 'N/A'}</span>
+        <span className={cn("text-muted-foreground text-right flex-1 break-words", valueClassName)}>{value || 'N/A'}</span>
     </div>
   );
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
+    <div className="w-full max-w-4xl mx-auto">
         <div className="flex flex-col items-center text-center mb-6">
             <h1 className="text-2xl font-bold tracking-tighter">Country Explorer</h1>
             <p className="text-sm text-muted-foreground mt-1 max-w-3xl">Discover information about countries around the world.</p>
@@ -124,10 +130,19 @@ export function CountryExplorer() {
                             <CardTitle className="text-xl font-bold">{country.name.common}</CardTitle>
                             <CardDescription>{country.name.official}</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid md:grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                                <div className="relative h-24 w-full bg-muted rounded-lg overflow-hidden border">
-                                    <Image src={country.flags.svg} alt={country.flags.alt || `Flag of ${country.name.common}`} layout="fill" objectFit="contain" className="p-2"/>
+                        <CardContent className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="relative aspect-video bg-muted rounded-lg overflow-hidden border">
+                                        <Image src={country.flags.svg} alt={country.flags.alt || `Flag of ${country.name.common}`} layout="fill" objectFit="contain" className="p-2"/>
+                                    </div>
+                                    <div className="relative aspect-video bg-muted rounded-lg overflow-hidden border">
+                                        {country.coatOfArms.svg ? (
+                                             <Image src={country.coatOfArms.svg} alt={`Coat of arms of ${country.name.common}`} layout="fill" objectFit="contain" className="p-2"/>
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-xs text-muted-foreground">No Coat of Arms</div>
+                                        )}
+                                    </div>
                                 </div>
                                 <Button asChild className="w-full">
                                     <a href={country.maps.googleMaps} target="_blank" rel="noopener noreferrer">
@@ -138,10 +153,14 @@ export function CountryExplorer() {
                             <div className="space-y-2">
                                 <InfoRow icon={<Landmark />} label="Capital" value={country.capital?.join(', ')} />
                                 <InfoRow icon={<Users />} label="Population" value={country.population.toLocaleString()} />
+                                <InfoRow icon={<Maximize />} label="Area" value={`${country.area.toLocaleString()} km²`} />
                                 <InfoRow icon={<Globe />} label="Region" value={`${country.region} / ${country.subregion}`} />
                                 <Separator className="my-2" />
                                 <InfoRow icon={<Languages />} label="Languages" value={Object.values(country.languages).join(', ')} />
                                 <InfoRow icon={<Coins />} label="Currencies" value={Object.entries(country.currencies).map(([code, c]) => `${c.name} (${c.symbol})`).join(', ')} />
+                                 <Separator className="my-2" />
+                                <InfoRow icon={<Clock />} label="Timezones" value={country.timezones.join(', ')} />
+                                <InfoRow icon={<Compass />} label="Borders" value={country.borders?.join(', ') || 'None'} />
                             </div>
                         </CardContent>
                     </Card>
