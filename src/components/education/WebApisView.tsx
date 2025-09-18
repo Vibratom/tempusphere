@@ -1,13 +1,14 @@
+
 'use client';
 
 import { Card } from '../ui/card';
-import { ChartEditor } from '../projects/ChartEditor';
+import { TextGenerator } from './TextGenerator';
 
 export function EducationStudioView() {
     return (
         <div className="space-y-8">
             <Card>
-                <ChartEditor />
+                <TextGenerator />
             </Card>
         </div>
     )
