@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Upload, Crop, Sun, Sliders, Download, RotateCcw, RotateCw, FlipHorizontal, FlipVertical } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -62,11 +62,13 @@ const applyFilterIntensity = (filterValue: string, intensity: number): string =>
 };
 
 type AspectRatio = 'free' | '1:1' | '16:9' | '4:3';
+type CropAction = 'move' | 'nw' | 'ne' | 'sw' | 'se';
 
 export function ImageEditor() {
     const [image, setImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
+    const imageContainerRef = useRef<HTMLDivElement>(null);
 
     const [brightness, setBrightness] = useState(100);
     const [contrast, setContrast] = useState(100);
@@ -84,6 +86,9 @@ export function ImageEditor() {
     const [isCropMode, setIsCropMode] = useState(false);
     const [crop, setCrop] = useState({ x: 10, y: 10, width: 80, height: 80 }); // Percentage based
     const [aspectRatio, setAspectRatio] = useState<AspectRatio>('free');
+    
+    const [cropAction, setCropAction] = useState<CropAction | null>(null);
+    const dragStartRef = useRef<{ mouseX: number, mouseY: number, crop: typeof crop } | null>(null);
 
     const { toast } = useToast();
 
@@ -123,6 +128,7 @@ export function ImageEditor() {
         setActiveFilter('none');
         setFilterIntensity(100);
         setIsCropMode(false);
+        setCrop({ x: 10, y: 10, width: 80, height: 80 });
     }
 
     const imageStyle = useMemo(() => {
@@ -151,7 +157,7 @@ export function ImageEditor() {
             canvas.width = img.naturalWidth;
             canvas.height = img.naturalHeight;
             ctx.filter = imageStyle.filter;
-            // Transformation logic will need to be more complex here
+            
             ctx.translate(canvas.width / 2, canvas.height / 2);
             ctx.rotate(rotation * Math.PI / 180);
             ctx.scale(scaleX, scaleY);
@@ -168,25 +174,129 @@ export function ImageEditor() {
         };
         img.src = image;
     };
+    
+     const handleCropMouseDown = (e: React.MouseEvent<HTMLDivElement>, action: CropAction) => {
+        e.stopPropagation();
+        setCropAction(action);
+        dragStartRef.current = {
+            mouseX: e.clientX,
+            mouseY: e.clientY,
+            crop: { ...crop },
+        };
+    };
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!cropAction || !dragStartRef.current) return;
+
+        const container = imageContainerRef.current;
+        if (!container) return;
+
+        const rect = container.getBoundingClientRect();
+        const dx = (e.clientX - dragStartRef.current.mouseX) / rect.width * 100;
+        const dy = (e.clientY - dragStartRef.current.mouseY) / rect.height * 100;
+        const startCrop = dragStartRef.current.crop;
+        let newCrop = { ...startCrop };
+        
+        // Apply deltas based on action
+        if (cropAction === 'move') {
+            newCrop.x = startCrop.x + dx;
+            newCrop.y = startCrop.y + dy;
+        } else {
+            // Corner resizing logic
+            if (cropAction.includes('w')) {
+                newCrop.x = startCrop.x + dx;
+                newCrop.width = startCrop.width - dx;
+            }
+            if (cropAction.includes('n')) {
+                newCrop.y = startCrop.y + dy;
+                newCrop.height = startCrop.height - dy;
+            }
+            if (cropAction.includes('e')) {
+                newCrop.width = startCrop.width + dx;
+            }
+            if (cropAction.includes('s')) {
+                newCrop.height = startCrop.height + dy;
+            }
+        }
+        
+        // Constrain aspect ratio
+        if (aspectRatio !== 'free') {
+            const ratioValue = aspectRatio === '1:1' ? 1 : aspectRatio === '16:9' ? 16 / 9 : 4 / 3;
+            if (newCrop.width / newCrop.height > ratioValue) {
+                newCrop.height = newCrop.width / ratioValue;
+            } else {
+                newCrop.width = newCrop.height * ratioValue;
+            }
+        }
+
+        // Clamp values to be within bounds (0-100)
+        newCrop.x = Math.max(0, Math.min(newCrop.x, 100 - newCrop.width));
+        newCrop.y = Math.max(0, Math.min(newCrop.y, 100 - newCrop.height));
+        newCrop.width = Math.max(5, Math.min(newCrop.width, 100 - newCrop.x));
+        newCrop.height = Math.max(5, Math.min(newCrop.height, 100 - newCrop.y));
+
+        setCrop(newCrop);
+    };
+
+    const handleMouseUp = () => {
+        setCropAction(null);
+    };
+
+    const applyCrop = () => {
+        if (!imageRef.current) return;
+        const img = imageRef.current;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const scaleX = img.naturalWidth / img.width;
+        const scaleY = img.naturalHeight / img.height;
+
+        const cropX = (crop.x / 100) * img.width * scaleX;
+        const cropY = (crop.y / 100) * img.height * scaleY;
+        const cropWidth = (crop.width / 100) * img.width * scaleX;
+        const cropHeight = (crop.height / 100) * img.height * scaleY;
+
+        canvas.width = cropWidth;
+        canvas.height = cropHeight;
+        
+        ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+        
+        setImage(canvas.toDataURL('image/png'));
+        setIsCropMode(false);
+    };
+
+    useEffect(() => {
+        window.addEventListener('mousemove', handleMouseMove as any);
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove as any);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [cropAction]);
 
     const CropOverlay = () => {
         if (!isCropMode || !image) return null;
+        
+        const handleClass = "absolute w-3 h-3 bg-white rounded-full border border-gray-500";
+        
         return (
-            <div className="absolute inset-0 cursor-move">
+            <div className="absolute inset-0">
                 <div
-                    className="absolute border-2 border-dashed border-white bg-black/30"
+                    className="absolute border-2 border-dashed border-white/80 bg-black/30 cursor-move"
                     style={{
                         left: `${crop.x}%`,
                         top: `${crop.y}%`,
                         width: `${crop.width}%`,
                         height: `${crop.height}%`,
                     }}
+                    onMouseDown={(e) => handleCropMouseDown(e, 'move')}
                 >
-                    {/* Resizing handles */}
-                    <div className="absolute -top-1 -left-1 w-3 h-3 bg-white rounded-full cursor-nwse-resize"></div>
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full cursor-nesw-resize"></div>
-                    <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-white rounded-full cursor-nesw-resize"></div>
-                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-white rounded-full cursor-nwse-resize"></div>
+                    <div onMouseDown={e => handleCropMouseDown(e, 'nw')} className={cn(handleClass, "-top-1.5 -left-1.5 cursor-nwse-resize")}></div>
+                    <div onMouseDown={e => handleCropMouseDown(e, 'ne')} className={cn(handleClass, "-top-1.5 -right-1.5 cursor-nesw-resize")}></div>
+                    <div onMouseDown={e => handleCropMouseDown(e, 'sw')} className={cn(handleClass, "-bottom-1.5 -left-1.5 cursor-nesw-resize")}></div>
+                    <div onMouseDown={e => handleCropMouseDown(e, 'se')} className={cn(handleClass, "-bottom-1.5 -right-1.5 cursor-nwse-resize")}></div>
                 </div>
             </div>
         );
@@ -207,7 +317,7 @@ export function ImageEditor() {
                                 Download
                             </Button>
                         </CardHeader>
-                        <CardContent className="flex-1 flex items-center justify-center bg-muted/50 rounded-b-lg">
+                        <CardContent ref={imageContainerRef} className="flex-1 flex items-center justify-center bg-muted/50 rounded-b-lg">
                             {image ? (
                                 <div className="max-w-full max-h-full p-4 relative overflow-hidden">
                                     <img 
@@ -256,14 +366,14 @@ export function ImageEditor() {
                                                     <>
                                                         <div className="grid gap-1.5">
                                                             <Label>Aspect Ratio</Label>
-                                                            <ToggleGroup type="single" value={aspectRatio} onValueChange={(v) => setAspectRatio(v as AspectRatio)} size="sm">
+                                                            <ToggleGroup type="single" value={aspectRatio} onValueChange={(v) => v && setAspectRatio(v as AspectRatio)} size="sm">
                                                                 <ToggleGroupItem value="free">Free</ToggleGroupItem>
                                                                 <ToggleGroupItem value="1:1">1:1</ToggleGroupItem>
                                                                 <ToggleGroupItem value="16:9">16:9</ToggleGroupItem>
                                                                 <ToggleGroupItem value="4:3">4:3</ToggleGroupItem>
                                                             </ToggleGroup>
                                                         </div>
-                                                        <Button disabled>Apply Crop</Button>
+                                                        <Button onClick={applyCrop}>Apply Crop</Button>
                                                     </>
                                                 )}
                                                 <div className="grid grid-cols-2 gap-2">
@@ -341,7 +451,3 @@ export function ImageEditor() {
         </div>
     );
 }
-
-    
-
-    
