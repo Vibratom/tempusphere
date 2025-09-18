@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Upload, Crop, Sun, Sliders, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -34,6 +34,29 @@ const filters = [
     { name: 'Ocean', value: 'contrast(110%) brightness(105%) hue-rotate(-40deg) saturate(140%)' },
 ];
 
+// Helper to apply intensity to a filter string
+const applyFilterIntensity = (filterValue: string, intensity: number): string => {
+    if (filterValue === 'none') return 'none';
+    const ratio = intensity / 100;
+    return filterValue.replace(/([a-zA-Z-]+)\(([^)]+)\)/g, (match, func, val) => {
+        const num = parseFloat(val);
+        const unit = val.replace(String(num), '');
+        if (['hue-rotate'].includes(func)) {
+             // For hue-rotate, intensity can mean rotating less of the angle
+            return `${func}(${(num * ratio).toFixed(2)}${unit})`;
+        }
+        if (['brightness', 'contrast', 'saturate', 'opacity'].includes(func)) {
+            // These filters are centered around 1 or 100%.
+            // A 50% intensity should move the value halfway to its target from the default (100%).
+            const scaledValue = 100 + (num - 100) * ratio;
+            return `${func}(${scaledValue.toFixed(2)}%)`;
+        }
+        // For others like grayscale, sepia, invert, just scale the value directly.
+        return `${func}(${(num * ratio).toFixed(2)}${unit})`;
+    });
+};
+
+
 export function ImageEditor() {
     const [image, setImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,7 +68,7 @@ export function ImageEditor() {
     const [blur, setBlur] = useState(0);
     
     const [activeFilter, setActiveFilter] = useState('none');
-
+    const [filterIntensity, setFilterIntensity] = useState(100);
 
     const handleImageUpload = (file: File) => {
         const reader = new FileReader();
@@ -72,9 +95,12 @@ export function ImageEditor() {
         e.preventDefault();
     };
 
-    const imageStyle = {
-        filter: `${activeFilter !== 'none' ? activeFilter : ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hue}deg) blur(${blur}px)`.trim()
-    };
+    const imageStyle = useMemo(() => {
+        const appliedFilter = applyFilterIntensity(activeFilter, filterIntensity);
+        return {
+            filter: `${appliedFilter !== 'none' ? appliedFilter : ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hue}deg) blur(${blur}px)`.trim()
+        }
+    }, [activeFilter, filterIntensity, brightness, contrast, saturation, hue, blur]);
 
     return (
         <div className="w-full h-full flex flex-col items-center">
@@ -190,6 +216,10 @@ export function ImageEditor() {
                                                 ))}
                                             </div>
                                         </ScrollArea>
+                                        <div className="grid gap-1.5 pt-2">
+                                            <Label>Filter Intensity</Label>
+                                            <Slider value={[filterIntensity]} onValueChange={(v) => setFilterIntensity(v[0])} max={100} disabled={!image || activeFilter === 'none'} />
+                                        </div>
                                     </div>
                                 </div>
                             </ScrollArea>
