@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -20,6 +21,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 interface JournalEntry {
     id: string;
@@ -410,3 +412,5 @@ export function FinanceJournal() {
         </Card>
     );
 }
+
+    
