@@ -5,7 +5,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { Header } from '@/components/tempusphere/Header';
 import { Footer } from '@/components/tempusphere/Footer';
 import { SettingsProvider } from '@/contexts/SettingsContext';
-import { EducationStudioView } from '@/components/education/EducationStudioView';
+import { EducationStudioView } from '@/components/education/WebApisView';
 import { BookOpen } from 'lucide-react';
 
 function EducationContent() {
