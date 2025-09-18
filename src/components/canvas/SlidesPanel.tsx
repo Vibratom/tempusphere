@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useProductivity } from '@/contexts/ProductivityContext';
 import { Button } from '../ui/button';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
@@ -12,6 +12,11 @@ import { v4 as uuidv4 } from 'uuid';
 export function SlidesPanel() {
     const { canvasState, setCanvasState } = useProductivity();
     const { slides, activeSlideId } = canvasState;
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const addSlide = () => {
         const newSlide = {
@@ -55,6 +60,18 @@ export function SlidesPanel() {
     const selectSlide = (slideId: string) => {
         setCanvasState(prev => ({...prev, activeSlideId: slideId}));
     };
+
+    if (!isClient) {
+        return (
+             <div className="h-28 md:h-24 bg-background border-t p-2 flex items-center gap-2 flex-shrink-0">
+                <div className="h-full w-20 md:w-24 bg-muted rounded-md animate-pulse"></div>
+                <div className="flex h-full items-center gap-3">
+                    <div className="h-full aspect-video rounded-md bg-muted animate-pulse"></div>
+                    <div className="h-full aspect-video rounded-md bg-muted animate-pulse"></div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="h-28 md:h-24 bg-background border-t p-2 flex items-center gap-2 flex-shrink-0">
