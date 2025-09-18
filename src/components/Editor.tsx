@@ -31,5 +31,3 @@ export function Editor({ value, onValueChange, onBlur }: EditorProps) {
     </ScrollArea>
   );
 }
-
-    

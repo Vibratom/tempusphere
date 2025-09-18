@@ -1,13 +1,14 @@
+
 'use client';
 
 import { Card } from '../ui/card';
-import { LanguageTools } from './LanguageTools';
+import { EducationEditor } from './EducationEditor';
 
-export function WebApisView() {
+export function EducationStudioView() {
     return (
         <div className="space-y-8">
             <Card>
-                <LanguageTools />
+                <EducationEditor />
             </Card>
         </div>
     )
