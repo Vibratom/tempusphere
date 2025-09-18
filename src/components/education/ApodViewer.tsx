@@ -40,13 +40,16 @@ export function ApodViewer() {
       try {
         const response = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&date=${dateString}`);
         if (!response.ok) {
+            if (response.status === 429) {
+                throw new Error('Rate limit exceeded. The demo API key has too many requests. Please try again later or use your own API key.');
+            }
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data: ApodData = await response.json();
         setApodData(data);
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
-        setError('Failed to fetch data from NASA. Please try again later.');
+        setError(e.message || 'Failed to fetch data from NASA. Please try again later.');
       } finally {
         setIsLoading(false);
       }
