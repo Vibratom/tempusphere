@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useProductivity, CanvasObject, TextObject, ImageObject } from '@/contexts/ProductivityContext';
+import { useProductivity, CanvasObject, TextObject, ImageObject, PathObject } from '@/contexts/ProductivityContext';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from '../ui/input';
 
@@ -208,8 +208,8 @@ export function Canvas() {
 
         if (tool === 'select') {
             const clickedObject = findClickedObject(pos);
-            setSelectedObjectId(clickedObject ? clickedObject.id : null);
-            if (clickedObject) {
+            setCanvasState(prev => ({...prev, selectedObjectId: clickedObject ? clickedObject.id : null}));
+            if (clickedObject && (clickedObject.type === 'IMAGE' || clickedObject.type === 'TEXT')) {
                 setIsMoving({x: pos.x - clickedObject.x, y: pos.y - clickedObject.y });
             }
         } else if (tool === 'text') {
@@ -325,3 +325,5 @@ export function Canvas() {
         </div>
     );
 }
+
+    
