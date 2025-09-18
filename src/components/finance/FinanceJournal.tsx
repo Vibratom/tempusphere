@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Plus, Trash2, Edit, MoreVertical, FileText, FilePlus, HandCoins, BookCopy, ArrowRight, Wallet, Search } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { format, parseISO, isPast } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -54,12 +54,14 @@ function JournalForm({ onSave, template }: { onSave: (entry: Omit<JournalEntry, 
     const { toast } = useToast();
     
     useEffect(() => {
-        const allTemplateAccounts = [...(template?.credit || []), ...(template?.debit || [])];
-        allTemplateAccounts.forEach(acc => {
-            if(!categories.includes(acc)) {
-                addCategory(acc);
-            }
-        })
+        if(template) {
+            const allTemplateAccounts = [...template.credit, ...template.debit];
+            allTemplateAccounts.forEach(acc => {
+                if(!categories.includes(acc)) {
+                    addCategory(acc);
+                }
+            })
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [template, addCategory]);
 
