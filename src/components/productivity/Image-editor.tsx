@@ -3,13 +3,14 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
-import { Upload, Crop, Sun, Sliders, Settings } from 'lucide-react';
+import { Upload, Crop, Sun, Sliders, Settings, Download } from 'lucide-react';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
 import { Label } from '../ui/label';
 import { Slider } from '../ui/slider';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
+import { useToast } from '@/hooks/use-toast';
 
 const filters = [
     { name: 'Original', value: 'none' },
@@ -76,6 +77,7 @@ export function ImageEditor() {
     
     const [activeFilter, setActiveFilter] = useState('none');
     const [filterIntensity, setFilterIntensity] = useState(100);
+    const { toast } = useToast();
 
     const handleImageUpload = (file: File) => {
         const reader = new FileReader();
@@ -109,15 +111,69 @@ export function ImageEditor() {
         }
     }, [activeFilter, filterIntensity, brightness, contrast, saturation, hue, blur]);
 
+    const handleDownload = () => {
+        if (!image) {
+            toast({
+                variant: 'destructive',
+                title: 'No image to download',
+                description: 'Please upload an image first.',
+            });
+            return;
+        }
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            toast({
+                variant: 'destructive',
+                title: 'Error preparing download',
+                description: 'Could not create an image canvas.',
+            });
+            return;
+        }
+
+        const img = new window.Image();
+        img.onload = () => {
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            ctx.filter = imageStyle.filter;
+            ctx.drawImage(img, 0, 0);
+
+            const link = document.createElement('a');
+            link.download = 'edited-image.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            toast({
+                title: 'Download Started',
+                description: 'Your edited image is being saved.',
+            });
+        };
+        img.onerror = () => {
+             toast({
+                variant: 'destructive',
+                title: 'Error loading image',
+                description: 'Could not load the image for downloading.',
+            });
+        };
+        img.src = image;
+    };
+
     return (
         <div className="w-full h-full flex flex-col items-center">
             <div className="w-full max-w-7xl flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Canvas Area */}
                 <div className="lg:col-span-2 h-full">
                     <Card className="h-full flex flex-col">
-                        <CardHeader>
-                            <CardTitle>Image Preview</CardTitle>
-                            <CardDescription>Your uploaded image will appear here.</CardDescription>
+                        <CardHeader className="flex-row justify-between items-center">
+                            <div>
+                                <CardTitle>Image Preview</CardTitle>
+                                <CardDescription>Your uploaded image will appear here.</CardDescription>
+                            </div>
+                            <Button onClick={handleDownload} disabled={!image}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Download
+                            </Button>
                         </CardHeader>
                         <CardContent className="flex-1 flex items-center justify-center bg-muted/50 rounded-b-lg">
                             {image ? (
@@ -239,4 +295,5 @@ export function ImageEditor() {
             </div>
         </div>
     );
-}
+
+    
