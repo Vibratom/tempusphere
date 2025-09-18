@@ -120,8 +120,8 @@ export function LanguageTools() {
                   }
                   setDictionaryResults(data);
               }).catch(e => {
-                  console.error("Source dictionary error:", e.message);
-                  // Don't throw here, allow translation to proceed
+                  // This is an expected failure (e.g., word not found), so we don't log an error.
+                  // The UI will simply not show a dictionary result.
               });
 
             // Translator API call
