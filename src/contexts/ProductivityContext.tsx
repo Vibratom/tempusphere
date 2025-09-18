@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // --- Types for Canvas ---
 
-type Tool = 'PENCIL' | 'ERASER' | 'TEXT' | 'SELECT';
+type Tool = 'select' | 'hand' | 'crop' | 'draw' | 'text' | 'shape' | 'frame';
 interface Point { x: number; y: number; }
 type Path = Point[];
 
@@ -89,7 +89,7 @@ export function ProductivityProvider({ children }: { children: ReactNode }) {
         slides: [{ id: uuidv4(), objects: [], history: [{ objects: [] }], historyIndex: 0 }],
         activeSlideId: null, // will be set to first slide on mount
         selectedObjectId: null,
-        tool: 'SELECT',
+        tool: 'select',
         strokeColor: '#000000',
         strokeWidth: 5,
         scale: 0.5,

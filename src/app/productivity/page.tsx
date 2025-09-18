@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -25,7 +25,7 @@ import { PanelLeft, PanelRight } from 'lucide-react';
 function ProductivityHeaderContent() {
     const { canvasState, setCanvasState } = useProductivity();
 
-    const handleUndo = () => {
+    const handleUndo = useCallback(() => {
         setCanvasState(prev => {
             const activeSlide = prev.slides.find(s => s.id === prev.activeSlideId);
             if (!activeSlide || activeSlide.historyIndex <= 0) return prev;
@@ -42,9 +42,9 @@ function ProductivityHeaderContent() {
                 )
             };
         });
-    };
+    }, [setCanvasState]);
 
-    const handleRedo = () => {
+    const handleRedo = useCallback(() => {
          setCanvasState(prev => {
             const activeSlide = prev.slides.find(s => s.id === prev.activeSlideId);
             if (!activeSlide || activeSlide.historyIndex >= activeSlide.history.length - 1) return prev;
@@ -61,7 +61,45 @@ function ProductivityHeaderContent() {
                 )
             };
         });
-    };
+    }, [setCanvasState]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'z') {
+                    e.preventDefault();
+                    handleUndo();
+                } else if (e.key === 'y') {
+                    e.preventDefault();
+                    handleRedo();
+                }
+            } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                 setCanvasState(prev => {
+                    if (!prev.selectedObjectId) return prev;
+                    const activeSlide = prev.slides.find(s => s.id === prev.activeSlideId);
+                    if (!activeSlide) return prev;
+
+                    const newObjects = activeSlide.objects.filter(o => o.id !== prev.selectedObjectId);
+                    const newHistory = [...activeSlide.history.slice(0, activeSlide.historyIndex + 1), { objects: newObjects }];
+
+                    return {
+                        ...prev,
+                        selectedObjectId: null,
+                        slides: prev.slides.map(s => 
+                            s.id === prev.activeSlideId 
+                            ? { ...s, objects: newObjects, history: newHistory, historyIndex: newHistory.length - 1 }
+                            : s
+                        )
+                    };
+                });
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleUndo, handleRedo, setCanvasState]);
 
     return (
         <>

@@ -204,15 +204,65 @@ export function Canvas() {
     };
 
     const handleMouseDown = (e: React.MouseEvent) => {
-        // Event handling logic will be added here
+        const pos = getCoords(e);
+        if (tool === 'hand' || e.button === 1) { // Middle mouse or Hand tool
+            setIsPanning(true);
+            return;
+        }
+
+        if (tool === 'select') {
+            const clickedObject = findClickedObject(pos);
+            setSelectedObjectId(clickedObject ? clickedObject.id : null);
+            if (clickedObject) {
+                setIsMoving({x: pos.x - clickedObject.x, y: pos.y - clickedObject.y });
+            }
+        } else if (tool === 'text') {
+            // Logic to be added
+        } else { // Pencil or Eraser
+            setIsDrawing(true);
+            const newObjects = [...objects, { id: uuidv4(), type: 'PATH', path: [pos], strokeColor, strokeWidth, isErasing: tool === 'draw' ? false : true } as PathObject];
+            updateHistory(newObjects, false);
+        }
     };
 
     const handleMouseMove = (e: React.MouseEvent) => {
-        // Event handling logic will be added here
+        const pos = getCoords(e);
+        if (isPanning) {
+            setCanvasState(prev => ({ ...prev, viewOffset: { x: prev.viewOffset.x + e.movementX, y: prev.viewOffset.y + e.movementY }}));
+            return;
+        }
+
+        if (isDrawing) {
+            const newObjects = objects.map((obj, index) => {
+                if (index === objects.length - 1 && obj.type === 'PATH') {
+                    return { ...obj, path: [...obj.path, pos] };
+                }
+                return obj;
+            });
+            // Update without history for performance
+            setCanvasState(prev => ({ ...prev, slides: prev.slides.map(s => s.id === activeSlideId ? {...s, objects: newObjects} : s)}));
+
+        } else if (isMoving && selectedObjectId) {
+            const newObjects = objects.map(obj => {
+                if (obj.id === selectedObjectId && (obj.type === 'IMAGE' || obj.type === 'TEXT')) {
+                     return {...obj, x: pos.x - isMoving.x, y: pos.y - isMoving.y};
+                }
+                return obj;
+            })
+            setCanvasState(prev => ({ ...prev, slides: prev.slides.map(s => s.id === activeSlideId ? {...s, objects: newObjects} : s)}));
+        }
     };
 
     const handleMouseUp = () => {
-        // Event handling logic will be added here
+        if (isPanning) setIsPanning(false);
+        if (isDrawing) {
+            setIsDrawing(false);
+            updateHistory(objects); // Finalize history entry
+        }
+        if (isMoving) {
+            setIsMoving(null);
+            updateHistory(objects);
+        }
     };
 
     const handleDoubleClick = (e: React.MouseEvent) => {
@@ -220,7 +270,22 @@ export function Canvas() {
     }
     
     const handleWheel = (e: React.WheelEvent) => {
-        // Event handling logic will be added here
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            const scroll = e.deltaY * -0.001;
+            setCanvasState(prev => ({ ...prev, scale: Math.min(Math.max(0.1, prev.scale + scroll), 5) }));
+        }
+    };
+
+    const findClickedObject = (pos: Point): CanvasObject | null => {
+        for (let i = objects.length - 1; i >= 0; i--) {
+            const obj = objects[i];
+            const bounds = getObjectBounds(obj);
+            if (bounds && pos.x >= bounds.x && pos.x <= bounds.x + bounds.width && pos.y >= bounds.y && pos.y <= bounds.y + bounds.height) {
+                return obj;
+            }
+        }
+        return null;
     };
     
     const editingTextObject = editingTextId ? objects.find(o => o.id === editingTextId) as TextObject : null;

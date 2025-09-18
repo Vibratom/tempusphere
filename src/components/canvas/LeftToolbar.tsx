@@ -6,15 +6,17 @@ import { MousePointer, Crop, Type, Upload, Image as ImageIcon, Palette, Shapes, 
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 import { ScrollArea } from "../ui/scroll-area";
 import { SheetHeader, SheetTitle } from "../ui/sheet";
+import { useProductivity } from "@/contexts/ProductivityContext";
+import { cn } from "@/lib/utils";
 
 const mainTools = [
     { id: 'select', icon: MousePointer, label: 'Select Tool (V)' },
+    { id: 'hand', icon: Hand, label: 'Hand Tool (H)' },
     { id: 'crop', icon: Crop, label: 'Crop Tool (C)' },
     { id: 'text', icon: Type, label: 'Text Tool (T)' },
-    { id: 'shape', icon: Shapes, label: 'Shape Tool (U)' },
     { id: 'draw', icon: Pencil, label: 'Draw Tool (B)' },
+    { id: 'shape', icon: Shapes, label: 'Shape Tool (U)' },
     { id: 'frame', icon: Frame, label: 'Frame Tool (F)' },
-    { id: 'hand', icon: Hand, label: 'Hand Tool (H)' },
 ];
 
 const assetTools = [
@@ -26,6 +28,13 @@ const assetTools = [
 ]
 
 export function LeftToolbar() {
+    const { canvasState, setCanvasState } = useProductivity();
+    const activeTool = canvasState.tool;
+
+    const handleToolChange = (toolId: any) => {
+        setCanvasState(prev => ({...prev, tool: toolId}));
+    }
+
     return (
         <div className="w-full h-full bg-background border-r flex flex-col items-center py-4 gap-4 md:w-16">
              <div className="md:hidden p-4 w-full border-b">
@@ -36,7 +45,11 @@ export function LeftToolbar() {
                     {mainTools.map(tool => (
                         <Tooltip key={tool.id}>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon">
+                                <Button 
+                                  variant={activeTool === tool.id ? 'secondary' : 'ghost'} 
+                                  size="icon"
+                                  onClick={() => handleToolChange(tool.id)}
+                                >
                                     <tool.icon />
                                 </Button>
                             </TooltipTrigger>
