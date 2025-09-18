@@ -85,7 +85,7 @@ const features = [
 
 const mainTools = [
     { name: 'Clock', category: 'Clock', icon: Clock, href: '/app', color: 'bg-orange-500 hover:bg-orange-600', description: 'The core time-keeping features of Tempusphere.'},
-    { name: 'Productivity', category: 'Productivity', icon: Target, href: '/productivity', color: 'bg-blue-500 hover:bg-blue-600', description: 'Track habits and boost your efficiency.' },
+    { name: 'Productivity', category: 'Productivity', icon: DraftingCompass, href: '/productivity', color: 'bg-blue-500 hover:bg-blue-600', description: 'Create designs with a Canva-like tool.' },
     { name: 'Finance', category: 'Finance', icon: Landmark, href: '/finance', color: 'bg-indigo-500 hover:bg-indigo-600', description: 'Track expenses and manage budgets with ease.' },
     { name: 'Recipes', category: 'Recipes', icon: UtensilsCrossed, href: '/recipes', color: 'bg-yellow-500 hover:bg-yellow-600', description: 'Organize recipes and plan your meals.' },
     { name: 'Projects', category: 'Projects', icon: KanbanSquare, href: '/projects', color: 'bg-rose-500 hover:bg-rose-600', description: 'Manage projects with Kanban-style boards.' },
