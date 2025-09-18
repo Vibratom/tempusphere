@@ -84,8 +84,8 @@ export function CountryExplorer() {
   return (
     <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
         <div className="flex flex-col items-center text-center mb-6">
-            <h1 className="text-3xl font-bold tracking-tighter">Country Explorer</h1>
-            <p className="text-md text-muted-foreground mt-1 max-w-3xl">Discover information about countries around the world.</p>
+            <h1 className="text-2xl font-bold tracking-tighter">Country Explorer</h1>
+            <p className="text-sm text-muted-foreground mt-1 max-w-3xl">Discover information about countries around the world.</p>
         </div>
 
         <form onSubmit={handleSearch} className="flex gap-2 mb-6">
@@ -116,7 +116,7 @@ export function CountryExplorer() {
         )}
 
         {results && (
-            <ScrollArea className="h-96">
+            <ScrollArea className="h-80">
                 <div className="space-y-4 pr-4">
                 {results.map(country => (
                     <Card key={country.name.official}>
@@ -126,7 +126,7 @@ export function CountryExplorer() {
                         </CardHeader>
                         <CardContent className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-3">
-                                <div className="relative aspect-video bg-muted rounded-lg overflow-hidden border">
+                                <div className="relative h-24 w-full bg-muted rounded-lg overflow-hidden border">
                                     <Image src={country.flags.svg} alt={country.flags.alt || `Flag of ${country.name.common}`} layout="fill" objectFit="contain" className="p-2"/>
                                 </div>
                                 <Button asChild className="w-full">
