@@ -35,7 +35,7 @@ export function EmbedView() {
         <div className="w-full max-w-4xl mx-auto">
             <div className="flex flex-col items-center text-center mb-8">
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Interactive Content</h1>
-                <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Embed interactive lessons, quizzes, or presentations from platforms like H5P, Quizizz, or Kahoot.</p>
+                <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Embed interactive lessons, quizzes, or presentations from platforms like Khan Academy, H5P, Quizizz, or Kahoot.</p>
             </div>
             
             <ResizablePanelGroup direction="horizontal" className="min-h-[60vh] rounded-lg border">
