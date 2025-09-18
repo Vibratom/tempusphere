@@ -10,8 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { IncomeStatement } from './IncomeStatement';
 import { BalanceSheet } from './BalanceSheet';
 import { CashFlowStatement } from './CashFlowStatement';
+import { Label } from '../ui/label';
 
 type DateRange = 'this_month' | 'last_month' | 'last_90_days' | 'this_year' | 'all_time';
+export type AccountingStandard = 'GAAP' | 'IFRS' | 'HGB';
+
 
 export const getDateRange = (range: DateRange): { start: Date, end: Date } | null => {
     const today = new Date();
@@ -42,6 +45,7 @@ export const formatCurrency = (value: number) => {
 export function FinancialReports() {
     const { transactions, categories } = useFinance();
     const [dateRange, setDateRange] = useState<DateRange>('this_year');
+    const [standard, setStandard] = useState<AccountingStandard>('GAAP');
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -66,31 +70,47 @@ export function FinancialReports() {
         <div className="flex flex-col gap-8">
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                          <div>
                             <CardTitle>Financial Reports</CardTitle>
                             <CardDescription>A summary of your business's financial health.</CardDescription>
                          </div>
-                         <div className="w-48">
-                            <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select date range" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="this_month">This Month</SelectItem>
-                                    <SelectItem value="last_month">Last Month</SelectItem>
-                                    <SelectItem value="this_year">This Year</SelectItem>
-                                    <SelectItem value="all_time">All Time</SelectItem>
-                                </SelectContent>
-                            </Select>
+                         <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="grid gap-1.5">
+                                <Label>Date Range</Label>
+                                <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
+                                    <SelectTrigger className="w-full sm:w-48">
+                                        <SelectValue placeholder="Select date range" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="this_month">This Month</SelectItem>
+                                        <SelectItem value="last_month">Last Month</SelectItem>
+                                        <SelectItem value="this_year">This Year</SelectItem>
+                                        <SelectItem value="all_time">All Time</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-1.5">
+                                <Label>Accounting Standard</Label>
+                                <Select value={standard} onValueChange={(v) => setStandard(v as AccountingStandard)}>
+                                    <SelectTrigger className="w-full sm:w-48">
+                                        <SelectValue placeholder="Select standard" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="GAAP">GAAP (US)</SelectItem>
+                                        <SelectItem value="IFRS">IFRS (International)</SelectItem>
+                                        <SelectItem value="HGB">HGB (Germany)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                          </div>
                     </div>
                 </CardHeader>
             </Card>
             
-            <IncomeStatement transactions={filteredTransactions} dateRange={dateRange} />
-            <BalanceSheet transactions={filteredTransactions} dateRange={dateRange} />
-            <CashFlowStatement transactions={filteredTransactions} dateRange={dateRange} />
+            <IncomeStatement transactions={filteredTransactions} dateRange={dateRange} standard={standard} />
+            <BalanceSheet transactions={filteredTransactions} dateRange={dateRange} standard={standard} />
+            <CashFlowStatement transactions={filteredTransactions} dateRange={dateRange} standard={standard} />
         </div>
     );
 }
