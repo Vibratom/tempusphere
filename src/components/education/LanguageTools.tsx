@@ -90,11 +90,9 @@ const WordDefinition = ({ results }: { results: DictionaryEntry[] | null }) => {
 
 export function LanguageTools() {
     const [searchTerm, setSearchTerm] = useState('hello');
-    const [dictionaryLang, setDictionaryLang] = useState('en_US');
     const [translateFromLang, setTranslateFromLang] = useState('en');
     const [translateToLang, setTranslateToLang] = useState('es');
     
-    const [dictionaryResults, setDictionaryResults] = useState<DictionaryEntry[] | null>(null);
     const [translationResults, setTranslationResults] = useState<DictionaryEntry[] | null>(null);
 
     const [isLoading, setIsLoading] = useState(false);
@@ -104,69 +102,46 @@ export function LanguageTools() {
         if (!searchTerm.trim()) return;
         setIsLoading(true);
         setError(null);
-        setDictionaryResults(null);
         setTranslationResults(null);
 
         try {
-             // 1. Fetch definition for the original search term in the selected dictionary language
-            const dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/${dictionaryLang}/${searchTerm}`)
-              .then(res => res.json())
-              .then(data => {
-                  if (Array.isArray(data)) {
-                      setDictionaryResults(data);
-                  }
-                  // If 'data' is an error object from the API, we'll just let it fail silently
-                  // and the UI will show "No definition found".
-              }).catch(() => {
-                  // This catch block handles network errors or JSON parsing failures.
-                  // API "not found" errors are handled by checking the response structure above.
-              });
+            const transPromise = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=${translateFromLang}|${translateToLang}`);
+            const transData: TranslationResponse = await transPromise.json();
             
-             // 2. Translate the original search term
-            const transPromise = fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=${translateFromLang}|${translateToLang}`)
-              .then(res => res.json())
-              .then(async (data: TranslationResponse) => {
-                  if (data.responseStatus !== 200 || !data.responseData.translatedText) {
-                      throw new Error('Translation failed.');
-                  }
-                  const translatedText = data.responseData.translatedText;
-
-                  // 3. Fetch definition for the *translated* word
-                  // Find the corresponding dictionary code for the target translation language
-                  const targetLangCode = translateToLang.split('-')[0]; // 'zh-CN' -> 'zh'
-                  const targetDictionaryLang = supportedDictionaryLanguages.find(l => l.code.startsWith(targetLangCode))?.code;
-                  
-                  if(targetDictionaryLang) {
-                      try {
-                          const transDictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${targetDictionaryLang}/${translatedText}`);
-                          if (transDictRes.ok) {
-                            const transDictData = await transDictRes.json();
-                             if (Array.isArray(transDictData)) {
-                                setTranslationResults(transDictData);
-                                return; // Exit if we successfully get a definition
-                            }
-                          }
-                      } catch (e) {
-                          // This is an expected failure if the translated word isn't in the dictionary.
-                      }
-                  }
-
-                  // 4. Fallback: If no dictionary entry is found for the translated word, just show the translation.
-                  const fallbackResult: DictionaryEntry[] = [{
-                      word: translatedText,
-                      phonetic: '',
-                      phonetics: [],
-                      meanings: [{
-                          partOfSpeech: 'translation',
-                          definitions: [{ definition: `Direct translation of "${searchTerm}"`, example: '', synonyms: [], antonyms: [] }]
-                      }]
-                  }];
-                  setTranslationResults(fallbackResult);
-              }).catch(() => {
-                  // If translation fails, do nothing, the translation column will just remain empty.
-              });
+            if (transData.responseStatus !== 200 || !transData.responseData.translatedText) {
+              throw new Error('Translation failed.');
+            }
+            const translatedText = transData.responseData.translatedText;
             
-            await Promise.allSettled([dictPromise, transPromise]);
+            const targetLangCode = translateToLang.split('-')[0];
+            const targetDictionaryLang = supportedDictionaryLanguages.find(l => l.code.startsWith(targetLangCode))?.code;
+
+            if (targetDictionaryLang) {
+              try {
+                const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${targetDictionaryLang}/${translatedText}`);
+                if (dictRes.ok) {
+                    const dictData = await dictRes.json();
+                    if (Array.isArray(dictData)) {
+                        setTranslationResults(dictData);
+                        return; // Success, we are done
+                    }
+                }
+              } catch (e) {
+                 // Dictionary for translated word not found, proceed to fallback
+              }
+            }
+            
+            // Fallback: If no dictionary entry is found for the translated word, just show the translation.
+            const fallbackResult: DictionaryEntry[] = [{
+                word: translatedText,
+                phonetic: '',
+                phonetics: [],
+                meanings: [{
+                    partOfSpeech: 'translation',
+                    definitions: [{ definition: `Direct translation of "${searchTerm}"`, example: '', synonyms: [], antonyms: [] }]
+                }]
+            }];
+            setTranslationResults(fallbackResult);
 
         } catch (e) {
             setError((e as Error).message);
@@ -180,16 +155,16 @@ export function LanguageTools() {
     return (
         <>
             <CardHeader className="text-center">
-                <CardTitle className="text-2xl font-bold tracking-tighter">Language Lookup</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground mt-1 max-w-2xl mx-auto">Get definitions and translations for any word.</CardDescription>
+                <CardTitle className="text-2xl font-bold tracking-tighter">Language Translator & Dictionary</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground mt-1 max-w-2xl mx-auto">Translate a word and get its definition in the target language.</CardDescription>
             </CardHeader>
             <CardContent className="p-4 md:p-6">
                 <form onSubmit={handleSearch} className="flex flex-col gap-2 mb-4">
                     <div className="flex flex-col sm:flex-row gap-2">
-                        <Input type="search" placeholder="Search for a word..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="text-base flex-1" />
-                        <Button type="submit" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : <Search />}<span className="ml-2">Search</span></Button>
+                        <Input type="search" placeholder="Enter a word..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="text-base flex-1" />
+                        <Button type="submit" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : <Search />}<span className="ml-2">Translate</span></Button>
                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-center">
                         <Select value={translateFromLang} onValueChange={setTranslateFromLang}>
                             <SelectTrigger><div className="flex items-center gap-2"><span className="text-muted-foreground">From:</span><span>{translatorLanguages.find(l=>l.code === translateFromLang)?.name}</span></div></SelectTrigger>
                             <SelectContent>{translatorLanguages.map(lang => <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>)}</SelectContent>
@@ -198,25 +173,22 @@ export function LanguageTools() {
                             <SelectTrigger><div className="flex items-center gap-2"><span className="text-muted-foreground">To:</span><span>{translatorLanguages.find(l=>l.code === translateToLang)?.name}</span></div></SelectTrigger>
                             <SelectContent>{translatorLanguages.map(lang => <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>)}</SelectContent>
                         </Select>
-                        <Select value={dictionaryLang} onValueChange={setDictionaryLang}>
-                           <SelectTrigger><div className="flex items-center gap-2"><BookOpen className="text-muted-foreground" /><span>Dictionary: {supportedDictionaryLanguages.find(l=>l.code === dictionaryLang)?.name}</span></div></SelectTrigger>
-                           <SelectContent>{supportedDictionaryLanguages.map(lang => <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>)}</SelectContent>
-                        </Select>
                     </div>
                 </form>
 
                  {error && <Card className="bg-destructive/10 border-destructive mt-4"><CardHeader><CardTitle>Error</CardTitle></CardHeader><CardContent><p>{error}</p></CardContent></Card>}
-                {isLoading && <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8"/></div>}
-
-                <div className="grid md:grid-cols-2 gap-6 mt-4">
-                    <div className="space-y-4">
-                        <h3 className="font-bold text-lg text-center">Definition ({dictionaryLang.split('_')[0]})</h3>
-                        {dictionaryResults ? <WordDefinition results={dictionaryResults} /> : <p className="text-muted-foreground text-center pt-4">No definition found.</p>}
-                    </div>
-                    <div className="space-y-4">
-                         <h3 className="font-bold text-lg text-center">Translation ({translateToLang})</h3>
-                        {translationResults ? <WordDefinition results={translationResults} /> : <p className="text-muted-foreground text-center pt-4">No translation found.</p>}
-                    </div>
+                
+                <div className="mt-6">
+                    {isLoading && <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8"/></div>}
+                    {!isLoading && translationResults && (
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-lg text-center">Result in {translatorLanguages.find(l=>l.code === translateToLang)?.name}</h3>
+                            <WordDefinition results={translationResults} />
+                        </div>
+                    )}
+                     {!isLoading && !translationResults && !error && (
+                        <p className="text-muted-foreground text-center pt-4">Enter a word to get started.</p>
+                     )}
                 </div>
             </CardContent>
         </>
