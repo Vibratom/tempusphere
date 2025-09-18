@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Loader2, Search, Map, Users, Languages, Landmark, Coins, Globe, Clock, Compass, Maximize } from 'lucide-react';
+import { Loader2, Search, Map, Users, Languages, Landmark, Coins, Globe, Clock, Compass, Maximize, Globe2, Phone, Hash, Flag } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import Image from 'next/image';
 import { Separator } from '../ui/separator';
@@ -36,6 +36,18 @@ interface Country {
   borders?: string[];
   area: number;
   timezones: string[];
+  tld: string[];
+  idd: {
+    root: string;
+    suffixes: string[];
+  };
+  demonyms: {
+    eng: {
+      f: string;
+      m: string;
+    };
+  };
+  unMember: boolean;
 }
 
 export function CountryExplorer() {
@@ -80,7 +92,7 @@ export function CountryExplorer() {
     fetchCountry(searchTerm);
   };
 
-  const InfoRow = ({ icon, label, value, valueClassName }: { icon: React.ReactNode, label: string, value: string | number | undefined, valueClassName?: string }) => (
+  const InfoRow = ({ icon, label, value, valueClassName }: { icon: React.ReactNode, label: string, value: React.ReactNode, valueClassName?: string }) => (
     <div className="flex items-start gap-3 text-sm">
         <div className="text-muted-foreground pt-0.5">{icon}</div>
         <span className="font-semibold">{label}:</span>
@@ -151,15 +163,20 @@ export function CountryExplorer() {
                                     </a>
                                 </Button>
                             </div>
-                            <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                                 <InfoRow icon={<Landmark />} label="Capital" value={country.capital?.join(', ')} />
                                 <InfoRow icon={<Users />} label="Population" value={country.population.toLocaleString()} />
-                                <InfoRow icon={<Maximize />} label="Area" value={`${country.area.toLocaleString()} km²`} />
+                                <InfoRow icon={<Maximize />} label="Area" value={<>{country.area.toLocaleString()} km&sup2;</>} />
                                 <InfoRow icon={<Globe />} label="Region" value={`${country.region} / ${country.subregion}`} />
-                                <Separator className="my-2" />
+                                <Separator className="my-1 col-span-2" />
                                 <InfoRow icon={<Languages />} label="Languages" value={Object.values(country.languages).join(', ')} />
                                 <InfoRow icon={<Coins />} label="Currencies" value={Object.entries(country.currencies).map(([code, c]) => `${c.name} (${c.symbol})`).join(', ')} />
-                                 <Separator className="my-2" />
+                                <Separator className="my-1 col-span-2" />
+                                <InfoRow icon={<Globe2 />} label="TLD" value={country.tld?.join(', ')} />
+                                <InfoRow icon={<Phone />} label="Calling Code" value={`${country.idd.root}${country.idd.suffixes?.[0] || ''}`} />
+                                <InfoRow icon={<Users />} label="Demonym" value={country.demonyms?.eng.m} />
+                                <InfoRow icon={<Flag />} label="UN Member" value={country.unMember ? 'Yes' : 'No'} />
+                                 <Separator className="my-1 col-span-2" />
                                 <InfoRow icon={<Clock />} label="Timezones" value={country.timezones.join(', ')} />
                                 <InfoRow icon={<Compass />} label="Borders" value={country.borders?.join(', ') || 'None'} />
                             </div>
