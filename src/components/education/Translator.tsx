@@ -20,36 +20,58 @@ export function Translator() {
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
 
+    const fetchWithRetry = async (url: string, options: RequestInit, retries = 3, delay = 1000): Promise<Response> => {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                if (response.status === 429 && retries > 0) {
+                    console.warn(`Rate limit exceeded. Retrying in ${delay}ms...`);
+                    await new Promise(res => setTimeout(res, delay));
+                    return fetchWithRetry(url, options, retries - 1, delay * 2);
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response;
+        } catch (error) {
+            if (retries > 0) {
+                console.error(`Fetch failed. Retrying in ${delay}ms...`);
+                await new Promise(res => setTimeout(res, delay));
+                return fetchWithRetry(url, options, retries - 1, delay * 2);
+            }
+            throw error;
+        }
+    };
+
     const handleTranslate = async () => {
         if (!sourceText.trim()) return;
 
         setIsLoading(true);
         setTranslatedText('');
 
+        const sourceLangName = translatorLanguages.find(l => l.code === sourceLang)?.name || 'English';
+        const targetLangName = translatorLanguages.find(l => l.code === targetLang)?.name || 'Spanish';
+
+        const prompt = `Translate the following text from ${sourceLangName} to ${targetLangName}. Only provide the translated text, with no additional commentary or explanations.
+
+Text to translate:
+"${sourceText}"`;
+
+        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }],
+        };
+
         try {
-            const res = await fetch('/api/translate', {
+             const response = await fetchWithRetry(apiUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    text: sourceText,
-                    sourceLang: translatorLanguages.find(l => l.code === sourceLang)?.name || 'English',
-                    targetLang: translatorLanguages.find(l => l.code === targetLang)?.name || 'Spanish'
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
             });
+            const result = await response.json();
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "No response received. Please try again.";
+            setTranslatedText(text);
 
-            if (!res.ok) {
-                const errorBody = await res.json();
-                throw new Error(errorBody.error || 'An unknown error occurred');
-            }
-
-            const result = await res.json();
-            if (result.translation) {
-                setTranslatedText(result.translation);
-            } else {
-                throw new Error('Translation result was empty.');
-            }
         } catch (e: any) {
             console.error('Error translating text:', e);
             toast({
