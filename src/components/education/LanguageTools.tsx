@@ -50,13 +50,51 @@ interface TranslationResponse {
 }
 
 
+const WordDefinition = ({ results }: { results: DictionaryEntry[] | null }) => {
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const playAudio = (audioUrl: string) => { if (audioRef.current) { audioRef.current.src = audioUrl; audioRef.current.play(); }};
+    const firstPhoneticWithAudio = results?.[0]?.phonetics.find(p => p.audio);
+
+    if (!results) return null;
+
+    return (
+        <>
+            <audio ref={audioRef} />
+            <ScrollArea className="h-96 pr-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                    <div>
+                        <h2 className="text-3xl font-bold">{results[0].word}</h2>
+                        <p className="text-lg text-primary">{results[0].phonetic}</p>
+                    </div>
+                     {firstPhoneticWithAudio && (<Button variant="outline" onClick={() => playAudio(firstPhoneticWithAudio.audio)}><Volume2 className="mr-2"/>Play</Button>)}
+                </div>
+                <div className="space-y-6">
+                    {results[0].meanings.map((meaning, index) => (
+                        <div key={index}>
+                            <div className="flex items-center gap-4 mb-4"><h3 className="text-xl font-bold italic">{meaning.partOfSpeech}</h3><Separator className="flex-1" /></div>
+                            {meaning.definitions.map((def, defIndex) => (
+                                <div key={defIndex} className="ml-4 pl-4 border-l-2 border-primary/50 mb-4">
+                                    <p className="font-semibold">{defIndex + 1}. {def.definition}</p>
+                                    {def.example && <p className="text-muted-foreground italic mt-1">"{def.example}"</p>}
+                                    {def.synonyms?.length > 0 && <div className="mt-2"><span className="font-semibold text-sm">Synonyms: </span><span className="text-sm text-primary">{def.synonyms.join(', ')}</span></div>}
+                                    {def.antonyms?.length > 0 && <div className="mt-1"><span className="font-semibold text-sm">Antonyms: </span><span className="text-sm text-destructive">{def.antonyms.join(', ')}</span></div>}
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+            </ScrollArea>
+        </>
+    )
+}
+
 export function LanguageTools() {
     const [searchTerm, setSearchTerm] = useState('hello');
     const [sourceLang, setSourceLang] = useState('en_US');
     const [targetLang, setTargetLang] = useState('es');
     
     const [dictionaryResults, setDictionaryResults] = useState<DictionaryEntry[] | null>(null);
-    const [translatedText, setTranslatedText] = useState<string | null>(null);
+    const [translationResults, setTranslationResults] = useState<DictionaryEntry[] | null>(null);
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -67,28 +105,63 @@ export function LanguageTools() {
         setIsLoading(true);
         setError(null);
         setDictionaryResults(null);
-        setTranslatedText(null);
+        setTranslationResults(null);
 
         try {
-            // Dictionary API call
+            // Dictionary API call for the source word
             const dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/${sourceLang}/${searchTerm}`)
-              .then(res => res.json())
+              .then(res => {
+                  if (!res.ok) throw new Error(`Dictionary API error for "${searchTerm}".`);
+                  return res.json();
+              })
               .then(data => {
                   if (data.title === "No Definitions Found") {
                       throw new Error(`No dictionary definitions found for "${searchTerm}".`);
                   }
                   setDictionaryResults(data);
+              }).catch(e => {
+                  console.error("Source dictionary error:", e.message);
+                  // Don't throw here, allow translation to proceed
               });
 
             // Translator API call
             const translatorSourceLang = sourceLang.split('_')[0]; // e.g. en_US -> en
             const transPromise = fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=${translatorSourceLang}|${targetLang}`)
               .then(res => res.json())
-              .then((data: TranslationResponse) => {
+              .then(async (data: TranslationResponse) => {
                   if (data.responseStatus !== 200) {
                       throw new Error('Translation failed.');
                   }
-                  setTranslatedText(data.responseData.translatedText);
+                  const translatedText = data.responseData.translatedText;
+
+                  const targetDictionaryLang = supportedLanguages.find(l => l.code.startsWith(targetLang))?.code || null;
+                  
+                  if(targetDictionaryLang) {
+                      try {
+                          const transDictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${targetDictionaryLang}/${translatedText}`);
+                          if(transDictRes.ok){
+                            const transDictData = await transDictRes.json();
+                             if (transDictData.title !== "No Definitions Found") {
+                                setTranslationResults(transDictData);
+                                return;
+                            }
+                          }
+                      } catch (e) {
+                          console.error("Target dictionary error:", e);
+                      }
+                  }
+
+                  // Fallback if no dictionary entry is found for the translated word
+                  const fallbackResult: DictionaryEntry[] = [{
+                      word: translatedText,
+                      phonetic: '',
+                      phonetics: [],
+                      meanings: [{
+                          partOfSpeech: 'translation',
+                          definitions: [{ definition: `Direct translation of "${searchTerm}"`, example: '', synonyms: [], antonyms: [] }]
+                      }]
+                  }];
+                  setTranslationResults(fallbackResult);
               });
             
             await Promise.allSettled([dictPromise, transPromise]);
@@ -101,9 +174,6 @@ export function LanguageTools() {
     };
     
     const handleSearch = (e: React.FormEvent) => { e.preventDefault(); fetchResults(); };
-    const playAudio = (audioUrl: string) => { if (audioRef.current) { audioRef.current.src = audioUrl; audioRef.current.play(); }};
-    const firstPhoneticWithAudio = dictionaryResults?.[0]?.phonetics.find(p => p.audio);
-
 
     return (
         <>
@@ -112,7 +182,6 @@ export function LanguageTools() {
                 <CardDescription className="text-sm text-muted-foreground mt-1 max-w-2xl mx-auto">Get definitions and translations for any word.</CardDescription>
             </CardHeader>
             <CardContent className="p-4 md:p-6">
-                <audio ref={audioRef} />
                 <form onSubmit={handleSearch} className="flex flex-col gap-2 mb-4">
                     <div className="flex flex-col sm:flex-row gap-2">
                         <Input type="search" placeholder="Search for a word..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="text-base flex-1" />
@@ -135,47 +204,16 @@ export function LanguageTools() {
                 {isLoading && <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8"/></div>}
 
                 <div className="grid md:grid-cols-2 gap-6 mt-4">
-                    {/* Dictionary Result */}
                     <div className="space-y-4">
-                        {dictionaryResults && (
-                             <ScrollArea className="h-96 pr-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                                    <div>
-                                        <h2 className="text-3xl font-bold">{dictionaryResults[0].word}</h2>
-                                        <p className="text-lg text-primary">{dictionaryResults[0].phonetic}</p>
-                                    </div>
-                                     {firstPhoneticWithAudio && (<Button variant="outline" onClick={() => playAudio(firstPhoneticWithAudio.audio)}><Volume2 className="mr-2"/>Play</Button>)}
-                                </div>
-                                <div className="space-y-6">
-                                    {dictionaryResults[0].meanings.map((meaning, index) => (
-                                        <div key={index}>
-                                            <div className="flex items-center gap-4 mb-4"><h3 className="text-xl font-bold italic">{meaning.partOfSpeech}</h3><Separator className="flex-1" /></div>
-                                            {meaning.definitions.map((def, defIndex) => (
-                                                <div key={defIndex} className="ml-4 pl-4 border-l-2 border-primary/50 mb-4">
-                                                    <p className="font-semibold">{defIndex + 1}. {def.definition}</p>
-                                                    {def.example && <p className="text-muted-foreground italic mt-1">"{def.example}"</p>}
-                                                    {def.synonyms?.length > 0 && <div className="mt-2"><span className="font-semibold text-sm">Synonyms: </span><span className="text-sm text-primary">{def.synonyms.join(', ')}</span></div>}
-                                                    {def.antonyms?.length > 0 && <div className="mt-1"><span className="font-semibold text-sm">Antonyms: </span><span className="text-sm text-destructive">{def.antonyms.join(', ')}</span></div>}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                        )}
+                        {dictionaryResults && <WordDefinition results={dictionaryResults} />}
                     </div>
-                    {/* Translator Result */}
-                     <div className="space-y-4">
-                        {translatedText && (
-                            <div className="h-full flex flex-col items-center justify-center text-center p-4 bg-muted/50 rounded-lg">
-                                <p className="text-muted-foreground">Translation to {translatorLanguages.find(l=>l.code === targetLang)?.name}</p>
-                                <p className="text-4xl font-bold text-primary">{translatedText}</p>
-                            </div>
-                        )}
+                    <div className="space-y-4">
+                        {translationResults && <WordDefinition results={translationResults} />}
                     </div>
                 </div>
-
             </CardContent>
         </>
     )
 }
+
+    
