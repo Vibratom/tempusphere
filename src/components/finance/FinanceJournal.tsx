@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance, Transaction, TransactionType, TransactionStatus } from '@/contexts/FinanceContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
-import { Plus, Trash2, Edit, MoreVertical, FileText, FilePlus, HandCoins, BookCopy, ArrowRight, Wallet } from 'lucide-react';
+import { Plus, Trash2, Edit, MoreVertical, FileText, FilePlus, HandCoins, BookCopy, ArrowRight, Wallet, Search } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { format, parseISO, isPast } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription } from '../ui/dialog';
@@ -22,6 +22,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { journalTemplates, JournalTemplate } from '@/lib/journal-templates';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface JournalEntry {
     id: string;
@@ -40,16 +42,27 @@ interface AllocationEntry {
     amount: number;
 }
 
-function JournalForm({ onSave }: { onSave: (entry: Omit<JournalEntry, 'id'>) => void }) {
-    const { categories } = useFinance();
+function JournalForm({ onSave, template }: { onSave: (entry: Omit<JournalEntry, 'id'>) => void, template?: JournalTemplate }) {
+    const { categories, addCategory } = useFinance();
     const [date, setDate] = useState<Date>(new Date());
-    const [description, setDescription] = useState('');
+    const [description, setDescription] = useState(template?.name || '');
     const [totalAmount, setTotalAmount] = useState(0);
 
-    const [sources, setSources] = useState<AllocationEntry[]>([{ id: `s-${Date.now()}`, account: '', amount: 0 }]);
-    const [destinations, setDestinations] = useState<AllocationEntry[]>([{ id: `d-${Date.now()}`, account: '', amount: 0 }]);
+    const [sources, setSources] = useState<AllocationEntry[]>(template?.credit.map((c, i) => ({ id: `s-${i}`, account: c, amount: 0 })) || [{ id: `s-${Date.now()}`, account: '', amount: 0 }]);
+    const [destinations, setDestinations] = useState<AllocationEntry[]>(template?.debit.map((d, i) => ({ id: `d-${i}`, account: d, amount: 0 })) || [{ id: `d-${Date.now()}`, account: '', amount: 0 }]);
 
     const { toast } = useToast();
+    
+    useEffect(() => {
+        const allTemplateAccounts = [...(template?.credit || []), ...(template?.debit || [])];
+        allTemplateAccounts.forEach(acc => {
+            if(!categories.includes(acc)) {
+                addCategory(acc);
+            }
+        })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [template, addCategory]);
+
 
     const handleAllocationChange = (type: 'source' | 'destination', index: number, field: 'account' | 'amount', value: string | number) => {
         const list = type === 'source' ? sources : destinations;
@@ -223,6 +236,39 @@ function JournalForm({ onSave }: { onSave: (entry: Omit<JournalEntry, 'id'>) => 
     )
 }
 
+function JournalTemplateSelector({ onSelect, onCustom }: { onSelect: (template: JournalTemplate) => void, onCustom: () => void }) {
+    const [search, setSearch] = useState('');
+    const filteredTemplates = journalTemplates.filter(t => t.name.toLowerCase().includes(search.toLowerCase()));
+
+    return (
+        <DialogContent className="max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>New Journal Entry</DialogTitle>
+                <DialogDescription>Select a transaction template or create a custom entry.</DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-2">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Search templates..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8"/>
+                </div>
+                <Button variant="outline" onClick={onCustom}>Custom Entry</Button>
+            </div>
+            <ScrollArea className="h-[60vh]">
+                <div className="pr-4 space-y-2">
+                    {filteredTemplates.map(template => (
+                        <Card key={template.name} className="hover:bg-muted/50 cursor-pointer" onClick={() => onSelect(template)}>
+                            <CardHeader className="p-3">
+                                <CardTitle className="text-base">{template.name}</CardTitle>
+                            </CardHeader>
+                        </Card>
+                    ))}
+                </div>
+            </ScrollArea>
+        </DialogContent>
+    )
+}
+
+
 const statusBadge = (status: TransactionStatus, date: string) => {
     const isOverdue = status === 'unpaid' && isPast(parseISO(date));
     const finalStatus = isOverdue ? 'overdue' : status;
@@ -237,7 +283,11 @@ const statusBadge = (status: TransactionStatus, date: string) => {
 export function FinanceJournal() {
     const { transactions, addTransaction, removeTransaction, updateTransaction } = useFinance();
     const [journalEntries, setJournalEntries] = useLocalStorage<JournalEntry[]>('finance:journalEntriesV1', []);
+    
+    const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [selectedTemplate, setSelectedTemplate] = useState<JournalTemplate | undefined>(undefined);
+    
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState('journal');
     
@@ -260,6 +310,19 @@ export function FinanceJournal() {
 
         toast({ title: "Journal Entry Recorded" });
         setIsFormOpen(false);
+        setSelectedTemplate(undefined);
+    }
+    
+    const handleTemplateSelect = (template: JournalTemplate) => {
+        setSelectedTemplate(template);
+        setIsSelectorOpen(false);
+        setIsFormOpen(true);
+    };
+
+    const handleCustomEntry = () => {
+        setSelectedTemplate(undefined);
+        setIsSelectorOpen(false);
+        setIsFormOpen(true);
     }
 
     const { accountsReceivable, accountsPayable } = useMemo(() => {
@@ -280,12 +343,15 @@ export function FinanceJournal() {
                     <CardTitle>Financial Records</CardTitle>
                     <CardDescription>Manage journal entries, view the ledger, and track receivables/payables.</CardDescription>
                 </div>
-                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                 <Dialog open={isSelectorOpen} onOpenChange={setIsSelectorOpen}>
                     <DialogTrigger asChild>
                         <Button><Plus className="mr-2"/>New Journal Entry</Button>
                     </DialogTrigger>
-                    <JournalForm onSave={handleSaveJournalEntry} />
-                </Dialog>
+                    <JournalTemplateSelector onSelect={handleTemplateSelect} onCustom={handleCustomEntry} />
+                 </Dialog>
+                 <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) setSelectedTemplate(undefined); setIsFormOpen(open); }}>
+                    <JournalForm onSave={handleSaveJournalEntry} template={selectedTemplate} />
+                 </Dialog>
             </CardHeader>
             <CardContent>
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -412,5 +478,3 @@ export function FinanceJournal() {
         </Card>
     );
 }
-
-    
