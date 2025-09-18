@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
@@ -9,7 +10,7 @@ import { Input } from '../ui/input';
 import { Slider } from '../ui/slider';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
-import { Pencil, Eraser, MousePointer, Image as ImageIcon, Trash2, ArrowUp, ArrowDown, Text, Hand, Download, LayoutTemplate, Plus } from 'lucide-react';
+import { Pencil, Eraser, MousePointer, Image as ImageIcon, Trash2, ArrowUp, ArrowDown, Text, Hand, Download, LayoutTemplate, Plus, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Label } from '../ui/label';
@@ -160,12 +161,10 @@ export function CanvasView() {
     useLayoutEffect(() => {
         setIsClient(true);
         const initialObjects = deserializeObjects(savedObjects);
-        if (initialObjects.length > 0) {
-            setObjects(initialObjects);
-            const initialEntry = { objects: initialObjects };
-            setHistory([initialEntry]);
-            setHistoryIndex(0);
-        }
+        setObjects(initialObjects);
+        const initialEntry = { objects: initialObjects };
+        setHistory([initialEntry]);
+        setHistoryIndex(0);
     }, []);
 
     useEffect(() => {
@@ -570,30 +569,43 @@ export function CanvasView() {
             </Dialog>
 
             <div className="w-full flex-1 relative bg-muted/50 overflow-hidden border rounded-lg">
-                <div className="absolute top-2 left-2 z-10 bg-background/80 border rounded-lg p-1 flex gap-1 items-center shadow-md flex-wrap">
-                    <Button variant="outline" size="sm" onClick={() => setIsTemplateDialogOpen(true)}><LayoutTemplate className="mr-2"/>Templates</Button>
-                    <div className="w-[1px] h-6 bg-border mx-1"></div>
-                    <Button variant={tool === 'SELECT' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('SELECT')}><MousePointer /></Button>
-                    <Button variant={tool === 'PENCIL' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('PENCIL')}><Pencil /></Button>
-                    <Button variant={tool === 'TEXT' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('TEXT')}><Text /></Button>
-                    <input type="file" id="image-upload" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                    <Button asChild variant="ghost" size="icon"><label htmlFor="image-upload"><ImageIcon /></label></Button>
-                    <div className="w-[1px] h-6 bg-border mx-1"></div>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon"><div className="w-5 h-5 rounded-full border" style={{ backgroundColor: strokeColor }}></div></Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-2"><div className="grid grid-cols-6 gap-1">{colors.map(c => <Button key={c} size="icon" variant="ghost" className="w-8 h-8 rounded-full" style={{ backgroundColor: c }} onClick={() => setStrokeColor(c)} />)}</div></PopoverContent>
-                    </Popover>
-                    <Slider value={[strokeWidth]} onValueChange={([v]) => setStrokeWidth(v)} min={1} max={50} step={1} className="w-24" />
-                </div>
-                
-                 {selectedObjectId && (
-                     <div className="absolute top-2 right-2 z-10 bg-background/80 border rounded-lg p-1 flex gap-1 items-center shadow-md">
-                        <Button variant="ghost" size="icon" onClick={bringToFront}><ArrowUp /></Button>
-                        <Button variant="ghost" size="icon" onClick={sendToBack}><ArrowDown /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => { updateHistory(objects.filter(o => o.id !== selectedObjectId)); setSelectedObjectId(null); }}><Trash2/></Button>
-                     </div>
+                {objects.length === 0 ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10 text-center">
+                        <Sparkles className="w-16 h-16 text-muted-foreground mb-4" />
+                        <h2 className="text-2xl font-bold">Start your design journey</h2>
+                        <p className="text-muted-foreground mb-6 max-w-sm">Choose a template to get started, or add elements from the toolbar to create something from scratch.</p>
+                        <Button size="lg" onClick={() => setIsTemplateDialogOpen(true)}>
+                            <LayoutTemplate className="mr-2"/> Create a design
+                        </Button>
+                    </div>
+                ) : (
+                    <>
+                        <div className="absolute top-2 left-2 z-10 bg-background/80 border rounded-lg p-1 flex gap-1 items-center shadow-md flex-wrap">
+                            <Button variant="outline" size="sm" onClick={() => setIsTemplateDialogOpen(true)}><LayoutTemplate className="mr-2"/>Templates</Button>
+                            <div className="w-[1px] h-6 bg-border mx-1"></div>
+                            <Button variant={tool === 'SELECT' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('SELECT')}><MousePointer /></Button>
+                            <Button variant={tool === 'PENCIL' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('PENCIL')}><Pencil /></Button>
+                            <Button variant={tool === 'TEXT' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTool('TEXT')}><Text /></Button>
+                            <input type="file" id="image-upload" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                            <Button asChild variant="ghost" size="icon"><label htmlFor="image-upload"><ImageIcon /></label></Button>
+                            <div className="w-[1px] h-6 bg-border mx-1"></div>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="ghost" size="icon"><div className="w-5 h-5 rounded-full border" style={{ backgroundColor: strokeColor }}></div></Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-2"><div className="grid grid-cols-6 gap-1">{colors.map(c => <Button key={c} size="icon" variant="ghost" className="w-8 h-8 rounded-full" style={{ backgroundColor: c }} onClick={() => setStrokeColor(c)} />)}</div></PopoverContent>
+                            </Popover>
+                            <Slider value={[strokeWidth]} onValueChange={([v]) => setStrokeWidth(v)} min={1} max={50} step={1} className="w-24" />
+                        </div>
+                        
+                        {selectedObjectId && (
+                            <div className="absolute top-2 right-2 z-10 bg-background/80 border rounded-lg p-1 flex gap-1 items-center shadow-md">
+                                <Button variant="ghost" size="icon" onClick={bringToFront}><ArrowUp /></Button>
+                                <Button variant="ghost" size="icon" onClick={sendToBack}><ArrowDown /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => { updateHistory(objects.filter(o => o.id !== selectedObjectId)); setSelectedObjectId(null); }}><Trash2/></Button>
+                            </div>
+                        )}
+                    </>
                 )}
                 
                 <canvas
