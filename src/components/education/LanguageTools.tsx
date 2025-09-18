@@ -1,29 +1,18 @@
 
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Loader2, Search, Volume2, ArrowRight } from 'lucide-react';
+import { Loader2, Search, Volume2 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { translatorLanguages } from '@/lib/translator-languages';
 
 
-// --- Wiktionary Types ---
-interface WiktionaryDefinition {
-  partOfSpeech: string;
-  text: string;
-  examples?: { text: string }[];
-}
-
-interface WiktionaryEntry {
-  definitions: WiktionaryDefinition[];
-}
-
-// --- Internal Dictionary Types (to match existing UI) ---
+// --- API Types ---
 interface Phonetic {
   text: string;
   audio: string;
@@ -45,51 +34,20 @@ interface DictionaryEntry {
   meanings: Meaning[];
 }
 
-// --- Translator Types ---
-interface TranslationResponse {
-  responseData: { translatedText: string; };
-  responseStatus: number;
+interface LibreTranslateResponse {
+    translatedText: string;
 }
 
-const parseWiktionaryResponse = (word: string, data: any): DictionaryEntry[] | null => {
-    // Wiktionary API can return data in different shapes. 
-    // Sometimes it's an array, sometimes an object with language keys.
-    const definitionsArray = Array.isArray(data) ? data : data[Object.keys(data)[0]];
-
-    if (!definitionsArray || definitionsArray.length === 0) return null;
-
-    const meanings: Meaning[] = definitionsArray.flatMap((entry: WiktionaryEntry) => 
-        entry.definitions.map(def => ({
-            partOfSpeech: def.partOfSpeech || 'unknown',
-            definitions: [{
-                definition: def.text,
-                example: def.examples?.[0]?.text.replace(/<[^>]*>/g, '') || '',
-                synonyms: [],
-                antonyms: []
-            }]
-        }))
-    );
-    
-    // Group definitions by part of speech
-    const groupedMeanings = meanings.reduce((acc, current) => {
-        const existing = acc.find(m => m.partOfSpeech === current.partOfSpeech);
-        if (existing) {
-            existing.definitions.push(...current.definitions);
-        } else {
-            acc.push(current);
-        }
-        return acc;
-    }, [] as Meaning[]);
-
-
-    return [{
-        word: word,
-        phonetic: '',
-        phonetics: [],
-        meanings: groupedMeanings
-    }];
+const parseFreeDictionaryResponse = (data: any[]): DictionaryEntry[] | null => {
+    if (!data || data.length === 0) return null;
+    // The API returns an array, we'll work with the first result
+    return data.map(entry => ({
+        word: entry.word,
+        phonetic: entry.phonetic,
+        phonetics: entry.phonetics || [],
+        meanings: entry.meanings || [],
+    }));
 };
-
 
 const WordDefinition = ({ results, langName }: { results: DictionaryEntry[] | null, langName: string }) => {
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -139,21 +97,43 @@ export function LanguageTools() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchWiktionaryDefinition = async (word: string, langCode: string): Promise<DictionaryEntry[] | null> => {
+    const fetchDefinition = async (word: string, langCode: string): Promise<DictionaryEntry[] | null> => {
         try {
-            const wiktionaryLangCode = langCode.split('-')[0]; // Use base language code (e.g., 'zh' from 'zh-CN')
-            const response = await fetch(`https://${wiktionaryLangCode}.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`);
+            // Use the Free Dictionary API
+            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${langCode}/${encodeURIComponent(word)}`);
             if (!response.ok) {
-                 if (response.status === 404) return null; // Expected "not found" case
-                 throw new Error(`Wiktionary API error: ${response.status}`);
+                 if (response.status === 404) return null;
+                 throw new Error(`Dictionary API error: ${response.status}`);
             }
             const data = await response.json();
-            return parseWiktionaryResponse(word, data);
+            return parseFreeDictionaryResponse(data);
         } catch (e) {
-            console.warn(`Could not fetch Wiktionary definition for "${word}" in ${langCode}:`, e);
-            return null; // Return null on any error to not block the UI
+            console.warn(`Could not fetch definition for "${word}" in ${langCode}:`, e);
+            return null;
         }
     };
+    
+    const fetchTranslation = async (word: string, from: string, to: string): Promise<string | null> => {
+        try {
+            const response = await fetch("https://libretranslate.de/translate", {
+                method: "POST",
+                body: JSON.stringify({
+                    q: word,
+                    source: from.split('-')[0], // LibreTranslate uses base language codes
+                    target: to.split('-')[0],
+                    format: "text",
+                }),
+                headers: { "Content-Type": "application/json" }
+            });
+            if (!response.ok) throw new Error(`Translation API error: ${response.status}`);
+            const data: LibreTranslateResponse = await response.json();
+            return data.translatedText;
+        } catch (e) {
+             console.warn("Translation fetch failed:", e);
+            return null;
+        }
+    };
+
 
     const fetchResults = async () => {
         if (!searchTerm.trim()) return;
@@ -164,36 +144,30 @@ export function LanguageTools() {
 
         try {
             // --- 1. Fetch source definition ---
-            const sourceDefPromise = fetchWiktionaryDefinition(searchTerm, translateFromLang);
+            const sourceDefPromise = fetchDefinition(searchTerm, translateFromLang);
 
-            // --- 2. Fetch translation and its definition ---
-            const translationPromise = fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(searchTerm)}&langpair=${translateFromLang}|${translateToLang}`)
-                .then(res => res.json() as Promise<TranslationResponse>)
-                .then(data => {
-                    if (data.responseStatus !== 200 || !data.responseData.translatedText) {
-                        throw new Error('Translation failed.');
-                    }
-                    const translatedText = data.responseData.translatedText;
-                    // Now fetch the definition for the *translated* word
-                    return fetchWiktionaryDefinition(translatedText, translateToLang);
-                })
-                .catch((e) => {
-                    console.warn("Translation or translated definition fetch failed:", e);
-                    // Create a fallback result with just the translated text if lookup fails
-                     const translatedText = "Translation unavailable";
-                     const fallbackResult: DictionaryEntry[] = [{
-                        word: translatedText,
-                        phonetic: '',
-                        phonetics: [],
-                        meanings: [{
-                            partOfSpeech: 'translation',
-                            definitions: [{ definition: `Could not find definition for translated word.`, example: '', synonyms: [], antonyms: [] }]
-                        }]
-                    }];
-                    return fallbackResult;
-                });
+            // --- 2. Fetch translation ---
+            const translatedText = await fetchTranslation(searchTerm, translateFromLang, translateToLang);
             
-            const [sourceDef, translationDef] = await Promise.all([sourceDefPromise, translationPromise]);
+            let translationDefPromise: Promise<DictionaryEntry[] | null>;
+            if (translatedText) {
+                // --- 3. Fetch definition for the translated word ---
+                translationDefPromise = fetchDefinition(translatedText, translateToLang);
+            } else {
+                // Create a fallback result if translation fails
+                const fallbackResult: DictionaryEntry[] = [{
+                    word: "Translation unavailable",
+                    phonetic: '', phonetics: [],
+                    meanings: [{
+                        partOfSpeech: 'error',
+                        definitions: [{ definition: `Could not translate the word.`, example: '', synonyms: [], antonyms: [] }]
+                    }]
+                }];
+                translationDefPromise = Promise.resolve(fallbackResult);
+            }
+
+            // Await both definition lookups
+            const [sourceDef, translationDef] = await Promise.all([sourceDefPromise, translationDefPromise]);
             
             setSourceResults(sourceDef);
             setTranslationResults(translationDef);
@@ -266,3 +240,5 @@ export function LanguageTools() {
         </>
     )
 }
+
+    
