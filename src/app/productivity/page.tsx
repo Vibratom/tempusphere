@@ -142,7 +142,7 @@ function ProductivityContent() {
     <div className="min-h-screen w-full bg-background flex flex-col">
       <Header centerContent={<ProductivityHeaderContent />} />
       <main className="flex-1 flex flex-col">
-        <div className="w-full h-full flex flex-col md:flex-row">
+        <div className="w-full flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Desktop Layout */}
           <div className="hidden md:flex w-16 flex-shrink-0">
             <LeftToolbar />
@@ -162,7 +162,7 @@ function ProductivityContent() {
                 </ResizablePanel>
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={25} minSize={15}>
-                  <RightSidebar />
+                   <RightSidebar />
                 </ResizablePanel>
               </ResizablePanelGroup>
 

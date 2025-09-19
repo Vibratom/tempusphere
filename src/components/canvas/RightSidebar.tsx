@@ -27,7 +27,7 @@ export function RightSidebar() {
                     <TabsTrigger value="page" className="py-2.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none -mb-px"><File className="mr-2"/>Page</TabsTrigger>
                 </TabsList>
             </div>
-            <TabsContent value="properties" className="flex-1 overflow-auto">
+            <TabsContent value="properties" className="flex-1 overflow-hidden">
                  <ScrollArea className="h-full">
                     <ImageEditor selectedImage={selectedImage} disabled={!selectedImage} />
                  </ScrollArea>
