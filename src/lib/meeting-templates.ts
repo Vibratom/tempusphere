@@ -7,6 +7,49 @@ export interface MeetingTemplate {
 
 export const meetingTemplates: MeetingTemplate[] = [
     {
+        name: "Annual Meeting",
+        description: "A formal template for annual meetings, covering reports, elections, and voting.",
+        content: `### 1. Call to Order
+The meeting was called to order at [Time].
+
+### 2. Attendees
+| Name | Title / Role | Status |
+|---|---|---|
+| [Name] | [Role] | Present |
+| [Name] | [Role] | Absent |
+| [Name] | [Role] | Present |
+
+### 3. Approval of Previous Minutes
+The minutes from the previous annual meeting were reviewed and approved.
+
+### 4. Reports
+- **President's Report:**
+  - Summary of achievements in the past year.
+  - 
+- **Financial Report:**
+  - Overview of the financial health, balance sheet, and donations.
+  - 
+
+### 5. Elections
+- Nominations were opened for [Number] vacant board member positions.
+- The following candidates were nominated and elected:
+  - 
+
+### 6. Proposals and Voting
+- **Proposal:** [Describe the proposal]
+  - **Result:** Approved / Denied.
+
+### 7. Open Forum
+- Members can express appreciation, ask questions, and discuss upcoming events.
+- 
+
+### 8. Adjournment
+The meeting was adjourned at [Time].
+
+### Next Meeting
+The next meeting is scheduled for [Date] at [Time].`
+    },
+    {
         name: "Board Meeting",
         description: "A formal template for board meetings, including sections for reports, old/new business, and action items.",
         content: `### Call to Order
