@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -212,6 +212,11 @@ function DefaultMeetingMinutesTool() {
 export default function MoMPage() {
     const [activeTemplate, setActiveTemplate] = useLocalStorage<TemplateType>('productivity:active-template-v1', 'default');
     const { toast } = useToast();
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const handleTemplateSelect = (templateId: string) => {
         const selectedTemplate = meetingTemplates.find(t => t.id === templateId);
@@ -271,15 +276,11 @@ export default function MoMPage() {
                  </DropdownMenu>
              </div>
              
-            <div className="text-center mb-6">
+            {isClient && <div className="text-center mb-6">
                  <h2 className="text-2xl font-semibold text-muted-foreground">{activeTemplateName}</h2>
-            </div>
+            </div>}
             
-            {renderActiveTemplate()}
+            {isClient && renderActiveTemplate()}
         </div>
     );
 }
-
-    
-
-    
