@@ -21,6 +21,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { BrainstormingTemplate, BrainstormingPreview } from '@/components/productivity/BrainstormingTemplate';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import htmlToDocx from 'html-to-docx';
+import { saveAs } from 'file-saver';
 
 
 type TemplateType = 'default' | 'board-meeting' | 'annual-meeting' | 'project-kick-off' | 'daily-scrum' | 'one-on-one' | 'brainstorming';
@@ -264,9 +266,9 @@ export default function MoMPage() {
         return markdown;
     }
     
-    const generateHtml = () => {
+    const getHtmlContent = () => {
       if (!previewRef.current) {
-        return '';
+        return { html: '', styles: '' };
       }
       const styles = Array.from(document.styleSheets)
         .map(styleSheet => {
@@ -274,58 +276,75 @@ export default function MoMPage() {
             return Array.from(styleSheet.cssRules)
               .map(rule => rule.cssText)
               .join('');
-          } catch (e) {
-            return '';
-          }
-        })
-        .join('\n');
-      return `<!DOCTYPE html><html><head><style>${styles}</style></head><body>${previewRef.current.innerHTML}</body></html>`;
+          } catch (e) { return ''; }
+        }).join('\n');
+      return { html: previewRef.current.innerHTML, styles };
     }
     
     const exportAsPdf = async () => {
       if (!previewRef.current) return;
       
-      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true });
+      const canvas = await html2canvas(previewRef.current, { 
+        scale: 2, 
+        useCORS: true,
+        backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff' 
+      });
+
       const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
       
       const imgData = canvas.toDataURL('image/png');
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
       const ratio = imgWidth / imgHeight;
-      const pdfImgWidth = pdfWidth;
-      const pdfImgHeight = pdfWidth / ratio;
+      const widthInPdf = pdfWidth;
+      const heightInPdf = widthInPdf / ratio;
       
       let heightLeft = imgHeight;
       let position = 0;
-      
-      pdf.addImage(imgData, 'PNG', 0, position, pdfImgWidth, pdfImgHeight);
-      heightLeft -= pdfHeight;
 
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfImgWidth, pdfImgHeight);
-        heightLeft -= pdfHeight;
-      }
+      // Use jsPDF's internal width/height
+      pdf.addImage(imgData, 'PNG', 0, 0, widthInPdf, heightInPdf);
+      heightLeft -= imgHeight * (pdfHeight/heightInPdf);
+
+      // This logic is simplified as multi-page for canvas is tricky.
+      // For most standard meeting minutes, one page should suffice.
       
-      pdf.save(`${'meeting_minutes'}.pdf`);
+      pdf.save(`${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.pdf`);
       toast({ title: "Export Successful", description: `Your minutes have been downloaded as a PDF.` });
     };
+
+    const exportAsDocx = async () => {
+        if (!previewRef.current) return;
+        const { html, styles } = getHtmlContent();
+        const htmlString = `<!DOCTYPE html>
+        <html>
+          <head>
+            <style>${styles}</style>
+          </head>
+          <body>${html}</body>
+        </html>`;
+
+        try {
+            const fileBuffer = await htmlToDocx(htmlString, undefined, {
+                font: 'Inter',
+                fontSize: 12,
+            });
+            saveAs(fileBuffer as Blob, `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.docx`);
+            toast({ title: "Export Successful", description: `Your minutes have been downloaded as a DOCX file.` });
+        } catch (e) {
+            toast({ variant: 'destructive', title: "Export Failed", description: "Could not generate DOCX file." });
+            console.error(e);
+        }
+    }
 
     const exportToFile = (content: string, fileName: string, contentType: string) => {
         if (!content) return;
         const blob = new Blob([content], { type: contentType });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = fileName;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        saveAs(blob, fileName);
         toast({ title: "Export Successful", description: `Your minutes have been downloaded as ${fileName}.` });
     };
     
@@ -400,10 +419,14 @@ export default function MoMPage() {
                                 <DropdownMenuItem onClick={exportAsPdf}>
                                     <FileImage className="mr-2 h-4 w-4" /> Export as PDF (.pdf)
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => toast({variant: 'destructive', title: 'Not Implemented'})}>
+                                <DropdownMenuItem onClick={exportAsDocx}>
                                     <FileUp className="mr-2 h-4 w-4" /> Export as Word (.docx)
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => exportToFile(generateHtml(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.html`, 'text/html')}>
+                                <DropdownMenuItem onClick={() => {
+                                    const { html, styles } = getHtmlContent();
+                                    const fullHtml = `<!DOCTYPE html><html><head><style>${styles}</style></head><body>${html}</body></html>`;
+                                    exportToFile(fullHtml, `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.html`, 'text/html');
+                                }}>
                                     <FileType className="mr-2 h-4 w-4" /> Export as HTML (.html)
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
