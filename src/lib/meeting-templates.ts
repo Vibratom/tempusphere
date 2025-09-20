@@ -7,6 +7,36 @@ export interface MeetingTemplate {
 
 export const meetingTemplates: MeetingTemplate[] = [
     {
+        name: "Board Meeting",
+        description: "A formal template for board meetings, including sections for reports, old/new business, and action items.",
+        content: `### Call to Order
+A meeting of the Board of Directors was held on [Date] at [Time].
+
+### Attendees Present
+- 
+- 
+
+### Reports
+- **Financial Report:**
+  - 
+- **Marketing Report:**
+  - 
+
+### Old Business
+- **[Topic from previous meeting]:**
+  - 
+
+### New Business
+- **[New topic for discussion]:**
+  - 
+
+### Adjournment
+The meeting was adjourned at [Time].
+
+### Next Meeting
+The next meeting will be held on [Date].`
+    },
+    {
         name: "Project Kick-off",
         description: "A standard template for initiating a new project.",
         content: `### 1. Project Goals & Objectives
