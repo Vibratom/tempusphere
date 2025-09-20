@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Download, Eraser, NotebookPen, Eye } from 'lucide-react';
+import { Plus, Trash2, Download, Eraser, NotebookPen, Eye, Copy, FileText, FileJson } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { meetingTemplates, type MeetingTemplate } from '@/lib/meeting-templates';
@@ -15,7 +15,7 @@ import { AnnualMeetingTemplate } from '@/components/productivity/AnnualMeetingTe
 import { ProjectKickoffTemplate } from '@/components/productivity/ProjectKickoffTemplate';
 import { DailyScrumTemplate } from '@/components/productivity/DailyScrumTemplate';
 import { OneOnOneTemplate } from '@/components/productivity/OneOnOneTemplate';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BrainstormingTemplate } from '@/components/productivity/BrainstormingTemplate';
@@ -88,6 +88,18 @@ function DefaultMeetingMinutesTool() {
     toast({ title: "Form Cleared", description: "The meeting minutes have been reset." });
   }
   
+  const generatePlainText = () => {
+    let text = `${minutes.title || 'Meeting Minutes'}\n\n`;
+    text += `Date: ${minutes.date}\n`;
+    text += `Attendees: ${minutes.attendees}\n\n`;
+    text += `DISCUSSION NOTES\n${minutes.notes}\n\n`;
+    text += `ACTION ITEMS\n`;
+    minutes.actionItems.forEach(item => {
+      text += `- ${item.done ? '[DONE] ' : ''}${item.text}${item.owner ? ` (Owner: ${item.owner})` : ''}\n`;
+    });
+    return text;
+  }
+  
   const generateMarkdown = () => {
     let markdown = `# ${minutes.title || 'Meeting Minutes'}\n\n`;
     markdown += `**Date:** ${minutes.date}\n`;
@@ -100,19 +112,26 @@ function DefaultMeetingMinutesTool() {
     return markdown;
   }
 
-  const exportToMarkdown = () => {
-    const markdown = generateMarkdown();
-    const blob = new Blob([markdown], { type: 'text/markdown' });
+  const exportToFile = (content: string, fileName: string, contentType: string) => {
+    const blob = new Blob([content], { type: contentType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.md`;
+    link.download = fileName;
     link.href = url;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast({ title: "Exported to Markdown", description: "Your meeting minutes are downloading." });
+    toast({ title: "Export Successful", description: `Your minutes have been downloaded as ${fileName}.` });
   };
+  
+  const copyToClipboard = (content: string, formatName: string) => {
+      navigator.clipboard.writeText(content).then(() => {
+          toast({ title: "Copied to Clipboard", description: `Meeting minutes copied as ${formatName}.` });
+      }, () => {
+          toast({ variant: 'destructive', title: "Copy Failed", description: "Could not copy text to clipboard." });
+      });
+  }
 
   return (
     <>
@@ -201,7 +220,29 @@ function DefaultMeetingMinutesTool() {
           <CardFooter className="border-t pt-6 flex justify-end gap-2">
               <Button variant="outline" onClick={clearForm}><Eraser className="mr-2 h-4 w-4" /> Clear Form</Button>
               <Button variant="secondary" onClick={() => setIsPreviewOpen(true)}><Eye className="mr-2 h-4 w-4" /> Preview</Button>
-              <Button onClick={exportToMarkdown}><Download className="mr-2 h-4 w-4" /> Export to Markdown</Button>
+              <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                      <Button><Download className="mr-2 h-4 w-4" /> Export</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => exportToFile(generateMarkdown(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.md`, 'text/markdown')}>
+                          <FileText className="mr-2 h-4 w-4" /> Export as Markdown (.md)
+                      </DropdownMenuItem>
+                       <DropdownMenuItem onClick={() => exportToFile(generatePlainText(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.txt`, 'text/plain')}>
+                          <FileText className="mr-2 h-4 w-4" /> Export as Text (.txt)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportToFile(JSON.stringify(minutes, null, 2), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.json`, 'application/json')}>
+                           <FileJson className="mr-2 h-4 w-4" /> Export as JSON (.json)
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => copyToClipboard(generateMarkdown(), 'Markdown')}>
+                          <Copy className="mr-2 h-4 w-4" /> Copy as Markdown
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => copyToClipboard(generatePlainText(), 'Plain Text')}>
+                          <Copy className="mr-2 h-4 w-4" /> Copy as Plain Text
+                      </DropdownMenuItem>
+                  </DropdownMenuContent>
+              </DropdownMenu>
           </CardFooter>
       </Card>
     </>
