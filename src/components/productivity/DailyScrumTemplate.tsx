@@ -9,7 +9,7 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Plus, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 
 interface MemberUpdate {
   id: string;
@@ -29,6 +29,7 @@ const createNewMemberUpdate = (name = ''): MemberUpdate => ({
 
 export function DailyScrumTemplate() {
     const [headerTitle, setHeaderTitle] = useLocalStorage('scrum:header-title', 'Daily Stand-up / Scrum');
+    const [description, setDescription] = useLocalStorage('scrum:description', 'A quick format for daily team check-ins.');
     const [date, setDate] = useLocalStorage('scrum:date', new Date().toISOString().split('T')[0]);
     const [updates, setUpdates] = useLocalStorage<MemberUpdate[]>('scrum:updates', [createNewMemberUpdate('Team Member 1')]);
 
@@ -47,11 +48,17 @@ export function DailyScrumTemplate() {
     return (
         <div className="space-y-4">
              <Card>
-                <CardHeader>
+                <CardHeader className="items-center">
                     <Input 
                         value={headerTitle}
                         onChange={e => setHeaderTitle(e.target.value)}
                         className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0"
+                    />
+                    <Input 
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        className="text-muted-foreground text-center border-none focus-visible:ring-0 h-auto p-0"
+                        placeholder="Meeting description..."
                     />
                 </CardHeader>
                  <CardContent>
@@ -103,14 +110,16 @@ export function DailyScrumTemplate() {
 
 export function DailyScrumPreview() {
     const [headerTitle] = useLocalStorage('scrum:header-title', 'Daily Stand-up / Scrum');
+    const [description] = useLocalStorage('scrum:description', 'A quick format for daily team check-ins.');
     const [date] = useLocalStorage('scrum:date', new Date().toISOString().split('T')[0]);
     const [updates] = useLocalStorage<MemberUpdate[]>('scrum:updates', []);
 
     return (
          <div className="space-y-4">
              <Card>
-                <CardHeader>
-                    <CardTitle className="text-2xl text-center">{headerTitle}</CardTitle>
+                <CardHeader className="text-center">
+                    <CardTitle className="text-2xl">{headerTitle}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
                 </CardHeader>
                  <CardContent>
                     <div className="max-w-xs mx-auto text-center">
@@ -146,5 +155,3 @@ export function DailyScrumPreview() {
         </div>
     );
 }
-
-    

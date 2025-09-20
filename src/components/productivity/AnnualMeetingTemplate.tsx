@@ -26,6 +26,7 @@ const initialAttendees: Attendee[] = [
 
 export function AnnualMeetingTemplate() {
     const [headerTitle, setHeaderTitle] = useLocalStorage('annual-meeting:header-title', 'Annual Meeting Minutes');
+    const [description, setDescription] = useLocalStorage('annual-meeting:description', 'A formal record of an annual general meeting (AGM).');
     const [meetingTitle, setMeetingTitle] = useLocalStorage('annual-meeting:title', 'Happy Pets Animal Shelter Annual Meeting');
     const [attendees, setAttendees] = useLocalStorage<Attendee[]>('annual-meeting:attendees', initialAttendees);
     
@@ -50,6 +51,12 @@ export function AnnualMeetingTemplate() {
                     value={headerTitle}
                     onChange={e => setHeaderTitle(e.target.value)}
                     className="text-5xl font-bold text-gray-900 dark:text-white uppercase tracking-wider bg-transparent border-none focus-visible:ring-1 h-auto"
+                />
+                 <Input 
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    className="text-muted-foreground border-none focus-visible:ring-0 h-auto p-0 mt-1"
+                    placeholder="Meeting description..."
                 />
             </header>
 
@@ -145,6 +152,7 @@ export function AnnualMeetingTemplate() {
 
 export function AnnualMeetingPreview() {
     const [headerTitle] = useLocalStorage('annual-meeting:header-title', 'Annual Meeting Minutes');
+    const [description] = useLocalStorage('annual-meeting:description', 'A formal record of an annual general meeting (AGM).');
     const [meetingTitle] = useLocalStorage('annual-meeting:title', 'Happy Pets Animal Shelter Annual Meeting');
     const [attendees] = useLocalStorage<Attendee[]>('annual-meeting:attendees', initialAttendees);
     const [callToAction] = useLocalStorage('annual-meeting:callToAction', '');
@@ -160,6 +168,7 @@ export function AnnualMeetingPreview() {
             {/* Header Section */}
             <header className="mb-8 text-center md:text-left">
                 <h1 className="text-5xl font-bold text-gray-900 dark:text-white uppercase tracking-wider">{headerTitle}</h1>
+                <p className="text-muted-foreground mt-1">{description}</p>
             </header>
 
             <div className="grid md:grid-cols-2 gap-x-8 gap-y-4 mb-8">
@@ -222,5 +231,3 @@ export function AnnualMeetingPreview() {
         </div>
     );
 }
-
-    

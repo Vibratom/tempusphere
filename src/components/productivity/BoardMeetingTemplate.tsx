@@ -38,6 +38,7 @@ const createNewVote = (): Vote => ({ id: uuidv4(), name: '', voted: true });
 
 export function BoardMeetingTemplate() {
     const [headerTitle, setHeaderTitle] = useLocalStorage('board-meeting:header-title', 'CORPORATE MEETING MINUTES');
+    const [description, setDescription] = useLocalStorage('board-meeting:description', 'A formal record of a board of directors meeting.');
     const [meetingTitle, setMeetingTitle] = useLocalStorage('board-meeting:title', 'Technovation Inc. Board of Directors Meeting');
     const [attendees, setAttendees] = useLocalStorage<Attendee[]>('board-meeting:attendees', [
         { id: '1', name: 'John Smith', title: 'Chair', role: 'Chairperson of the Board', attendee: true, proxy: '' },
@@ -97,13 +98,20 @@ export function BoardMeetingTemplate() {
     return (
         <div className="bg-white dark:bg-card p-8 rounded-lg shadow-lg font-sans text-gray-800 dark:text-gray-200">
             {/* Header Section */}
-            <header className="mb-8">
+            <header className="mb-8 text-center">
                  <Input 
                     value={headerTitle}
                     onChange={(e) => setHeaderTitle(e.target.value)}
-                    className="text-4xl font-bold text-gray-900 dark:text-white mb-4 bg-transparent border-none p-0 h-auto focus-visible:ring-0"
+                    className="text-4xl font-bold text-gray-900 dark:text-white mb-2 bg-transparent border-none p-0 h-auto focus-visible:ring-0 text-center"
                  />
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                 <Input 
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    className="text-muted-foreground text-center border-none focus-visible:ring-0 h-auto p-0"
+                    placeholder="Meeting description..."
+                />
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-4 text-left">
                     <div>
                         <p className="font-semibold">DATE AND TIME</p>
                         <Input defaultValue="May 6, 2024" className="bg-purple-100/50 dark:bg-purple-900/30 border-none" />
@@ -122,7 +130,7 @@ export function BoardMeetingTemplate() {
                         <Input defaultValue="12:00 PM" className="bg-purple-100/50 dark:bg-purple-900/30 border-none" />
                     </div>
                 </div>
-                 <div className="mt-4 flex items-center gap-2 bg-purple-100/50 dark:bg-purple-900/30 p-2 rounded-md">
+                 <div className="mt-4 flex items-center gap-2 bg-purple-100/50 dark:bg-purple-900/30 p-2 rounded-md text-left">
                     <Label className="font-semibold text-sm shrink-0">MEETING TITLE:</Label>
                     <Input value={meetingTitle} onChange={e => setMeetingTitle(e.target.value)} className="bg-transparent border-none focus-visible:ring-0 text-sm" />
                 </div>
@@ -261,6 +269,7 @@ export function BoardMeetingTemplate() {
 
 export function BoardMeetingPreview() {
     const [headerTitle] = useLocalStorage('board-meeting:header-title', 'CORPORATE MEETING MINUTES');
+    const [description] = useLocalStorage('board-meeting:description', 'A formal record of a board of directors meeting.');
     const [meetingTitle] = useLocalStorage('board-meeting:title', 'Technovation Inc. Board of Directors Meeting');
     const [attendees] = useLocalStorage<Attendee[]>('board-meeting:attendees', []);
     const [votes] = useLocalStorage<Vote[]>('board-meeting:votes', []);
@@ -274,15 +283,16 @@ export function BoardMeetingPreview() {
     return (
         <div className="bg-white dark:bg-card p-8 rounded-lg shadow-lg font-sans text-gray-800 dark:text-gray-200">
             {/* Header Section */}
-            <header className="mb-8">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{headerTitle}</h1>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <header className="mb-8 text-center">
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">{headerTitle}</h1>
+                <p className="text-muted-foreground">{description}</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-4 text-left">
                     <div><p className="font-semibold">DATE AND TIME</p><p>May 6, 2024, 10:00 AM - 12:00 PM</p></div>
                     <div><p className="font-semibold">LOCATION</p><p>Technovation Inc. Headquarters</p></div>
                     <div><p className="font-semibold">DURATION</p><p>2 Hours</p></div>
                     <div><p className="font-semibold">ADJOURNMENT</p><p>12:00 PM</p></div>
                 </div>
-                <div className="mt-4 p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-md">
+                <div className="mt-4 p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-md text-left">
                     <span className="font-semibold text-sm shrink-0">MEETING TITLE:</span> {meetingTitle}
                 </div>
             </header>
@@ -325,7 +335,7 @@ export function BoardMeetingPreview() {
                 <div className="space-y-8">
                     <section><h3 className="text-lg font-bold p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">PRESENTATIONS</h3><div className="p-2 bg-purple-100/20 dark:bg-purple-900/10 rounded-b-md"><ul className="list-disc pl-5 space-y-1">{presentations.map(item => <li key={item.id}>{item.text}</li>)}</ul></div></section>
                     <section><h3 className="text-lg font-bold p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">REPORTS</h3><div className="p-2 bg-purple-100/20 dark:bg-purple-900/10 rounded-b-md"><ul className="list-disc pl-5 space-y-1">{reports.map(item => <li key={item.id}>{item.text}</li>)}</ul></div></section>
-                    <section><h3 className="text-lg font-bold p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">DISCUSSION ITEMS</h3><div className="p-2 bg-purple-100/20 dark:bg-purple-900/10 rounded-b-md"><ul className="list-disc pl-5 space-y-1">{discussionItems.map(item => <li key={item.id}>{item.text}</li>)}</ul></div></section>
+                    <section><h3 className="text-lg font-bold p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">DISCUSSION ITEMS</h3><div className="p-2 bg-purple-100/20 dark:bg-purple-900/10 rounded-b-md"><ul className="list-disc pl-5 space-y-1">{discussionItems.map(item => <li key={item.id} className="whitespace-pre-wrap">{item.text}</li>)}</ul></div></section>
                 </div>
             </div>
 
@@ -337,5 +347,3 @@ export function BoardMeetingPreview() {
         </div>
     );
 }
-
-    

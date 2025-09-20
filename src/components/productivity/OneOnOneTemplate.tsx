@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui
 
 export function OneOnOneTemplate() {
     const [headerTitle, setHeaderTitle] = useLocalStorage('1on1:header-title', 'One-on-One Meeting');
+    const [description, setDescriptionText] = useLocalStorage('1on1:description', 'A private meeting between a manager and a direct report.');
     const [manager, setManager] = useLocalStorage('1on1:manager', '');
     const [employee, setEmployee] = useLocalStorage('1on1:employee', '');
     const [date, setDate] = useLocalStorage('1on1:date', new Date().toISOString().split('T')[0]);
@@ -31,13 +32,18 @@ export function OneOnOneTemplate() {
     return (
         <div className="space-y-6">
             <Card>
-                <CardHeader>
+                <CardHeader className="items-center">
                     <Input 
                         value={headerTitle}
                         onChange={e => setHeaderTitle(e.target.value)}
                         className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0"
                     />
-                    <CardDescription className="text-center">A private meeting between a manager and a direct report.</CardDescription>
+                    <Input 
+                        value={description}
+                        onChange={e => setDescriptionText(e.target.value)}
+                        className="text-muted-foreground text-center border-none focus-visible:ring-0 h-auto p-0"
+                        placeholder="Meeting description..."
+                    />
                 </CardHeader>
                  <CardContent className="grid md:grid-cols-3 gap-4">
                     <div className="space-y-2">
@@ -75,6 +81,7 @@ export function OneOnOneTemplate() {
 
 export function OneOnOnePreview() {
     const [headerTitle] = useLocalStorage('1on1:header-title', 'One-on-One Meeting');
+    const [description] = useLocalStorage('1on1:description', 'A private meeting between a manager and a direct report.');
     const [manager] = useLocalStorage('1on1:manager', '');
     const [employee] = useLocalStorage('1on1:employee', '');
     const [date] = useLocalStorage('1on1:date', '');
@@ -95,9 +102,9 @@ export function OneOnOnePreview() {
     return (
         <div className="space-y-6">
             <Card>
-                <CardHeader>
-                    <CardTitle className="text-2xl text-center">{headerTitle}</CardTitle>
-                    <CardDescription className="text-center">A private meeting between a manager and a direct report.</CardDescription>
+                <CardHeader className="text-center">
+                    <CardTitle className="text-2xl">{headerTitle}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-3 gap-4">
                     <div className="space-y-1"><Label>Manager</Label><p className="font-semibold">{manager || 'N/A'}</p></div>
@@ -119,5 +126,3 @@ export function OneOnOnePreview() {
         </div>
     );
 }
-
-    
