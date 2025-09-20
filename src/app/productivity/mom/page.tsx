@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -108,68 +108,66 @@ function DefaultMeetingMinutesTool() {
   };
 
   return (
-    <>
-        <Card>
-            <CardHeader>
-                <CardTitle>Meeting Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="title">Meeting Title</Label>
-                        <Input id="title" value={minutes.title} onChange={e => handleInputChange('title', e.target.value)} placeholder="e.g., Q3 Project Kick-off" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="date">Date</Label>
-                        <Input id="date" type="date" value={minutes.date} onChange={e => handleInputChange('date', e.target.value)} />
-                    </div>
+    <Card>
+        <CardHeader>
+            <CardTitle>Meeting Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="title">Meeting Title</Label>
+                    <Input id="title" value={minutes.title} onChange={e => handleInputChange('title', e.target.value)} placeholder="e.g., Q3 Project Kick-off" />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="attendees">Attendees</Label>
-                    <Input id="attendees" value={minutes.attendees} onChange={e => handleInputChange('attendees', e.target.value)} placeholder="e.g., Alice, Bob, Charlie" />
+                    <Label htmlFor="date">Date</Label>
+                    <Input id="date" type="date" value={minutes.date} onChange={e => handleInputChange('date', e.target.value)} />
                 </div>
-            </CardContent>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="attendees">Attendees</Label>
+                <Input id="attendees" value={minutes.attendees} onChange={e => handleInputChange('attendees', e.target.value)} placeholder="e.g., Alice, Bob, Charlie" />
+            </div>
+        </CardContent>
 
-            <CardHeader className="border-t pt-4">
-                <CardTitle>Discussion Notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Textarea value={minutes.notes} onChange={e => handleInputChange('notes', e.target.value)} rows={10} placeholder="Key points discussed, decisions made, open questions..." />
-            </CardContent>
+        <CardHeader className="border-t pt-6">
+            <CardTitle>Discussion Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <Textarea value={minutes.notes} onChange={e => handleInputChange('notes', e.target.value)} rows={10} placeholder="Key points discussed, decisions made, open questions..." />
+        </CardContent>
 
-            <CardHeader className="border-t pt-4">
-                <CardTitle>Action Items</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-                {minutes.actionItems.map((item, index) => (
-                    <div key={item.id} className="flex flex-col md:flex-row items-center gap-2 bg-muted/50 p-3 rounded-lg">
-                        <input type="checkbox" checked={item.done} onChange={e => updateActionItem(item.id, 'done', e.target.checked)} className="h-5 w-5 rounded-sm border-primary" />
-                        <Input
-                            value={item.text}
-                            onChange={e => updateActionItem(item.id, 'text', e.target.value)}
-                            placeholder={`Action Item ${index + 1}`}
-                            className="flex-1"
-                        />
-                        <Input
-                            value={item.owner}
-                            onChange={e => updateActionItem(item.id, 'owner', e.target.value)}
-                            placeholder="Owner"
-                            className="w-full md:w-32"
-                        />
-                        <Button variant="ghost" size="icon" onClick={() => removeActionItem(item.id)}>
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </div>
-                ))}
-                <Button variant="outline" onClick={addActionItem}><Plus className="mr-2 h-4 w-4" /> Add Action Item</Button>
-            </CardContent>
+        <CardHeader className="border-t pt-6">
+            <CardTitle>Action Items</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+            {minutes.actionItems.map((item, index) => (
+                <div key={item.id} className="flex flex-col md:flex-row items-center gap-2 bg-muted/50 p-3 rounded-lg">
+                    <input type="checkbox" checked={item.done} onChange={e => updateActionItem(item.id, 'done', e.target.checked)} className="h-5 w-5 rounded-sm border-primary" />
+                    <Input
+                        value={item.text}
+                        onChange={e => updateActionItem(item.id, 'text', e.target.value)}
+                        placeholder={`Action Item ${index + 1}`}
+                        className="flex-1"
+                    />
+                    <Input
+                        value={item.owner}
+                        onChange={e => updateActionItem(item.id, 'owner', e.target.value)}
+                        placeholder="Owner"
+                        className="w-full md:w-32"
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => removeActionItem(item.id)}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            ))}
+            <Button variant="outline" onClick={addActionItem}><Plus className="mr-2 h-4 w-4" /> Add Action Item</Button>
+        </CardContent>
 
-            <CardFooter className="border-t pt-6 flex justify-end gap-2">
-                <Button variant="outline" onClick={clearForm}><Eraser className="mr-2" /> Clear Form</Button>
-                <Button onClick={exportToMarkdown}><Download className="mr-2" /> Export to Markdown</Button>
-            </CardFooter>
-        </Card>
-    </>
+        <CardFooter className="border-t pt-6 flex justify-end gap-2">
+            <Button variant="outline" onClick={clearForm}><Eraser className="mr-2 h-4 w-4" /> Clear Form</Button>
+            <Button onClick={exportToMarkdown}><Download className="mr-2 h-4 w-4" /> Export to Markdown</Button>
+        </CardFooter>
+    </Card>
   );
 }
 
