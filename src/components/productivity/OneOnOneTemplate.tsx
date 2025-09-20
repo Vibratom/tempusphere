@@ -9,6 +9,7 @@ import { Label } from '../ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 
 export function OneOnOneTemplate() {
+    const [headerTitle, setHeaderTitle] = useLocalStorage('1on1:header-title', 'One-on-One Meeting');
     const [manager, setManager] = useLocalStorage('1on1:manager', '');
     const [employee, setEmployee] = useLocalStorage('1on1:employee', '');
     const [date, setDate] = useLocalStorage('1on1:date', new Date().toISOString().split('T')[0]);
@@ -31,7 +32,11 @@ export function OneOnOneTemplate() {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl text-center">One-on-One Meeting</CardTitle>
+                    <Input 
+                        value={headerTitle}
+                        onChange={e => setHeaderTitle(e.target.value)}
+                        className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0"
+                    />
                     <CardDescription className="text-center">A private meeting between a manager and a direct report.</CardDescription>
                 </CardHeader>
                  <CardContent className="grid md:grid-cols-3 gap-4">
@@ -69,6 +74,7 @@ export function OneOnOneTemplate() {
 }
 
 export function OneOnOnePreview() {
+    const [headerTitle] = useLocalStorage('1on1:header-title', 'One-on-One Meeting');
     const [manager] = useLocalStorage('1on1:manager', '');
     const [employee] = useLocalStorage('1on1:employee', '');
     const [date] = useLocalStorage('1on1:date', '');
@@ -90,7 +96,7 @@ export function OneOnOnePreview() {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl text-center">One-on-One Meeting</CardTitle>
+                    <CardTitle className="text-2xl text-center">{headerTitle}</CardTitle>
                     <CardDescription className="text-center">A private meeting between a manager and a direct report.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-3 gap-4">

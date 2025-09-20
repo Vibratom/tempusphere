@@ -28,6 +28,7 @@ const createNewMemberUpdate = (name = ''): MemberUpdate => ({
 });
 
 export function DailyScrumTemplate() {
+    const [headerTitle, setHeaderTitle] = useLocalStorage('scrum:header-title', 'Daily Stand-up / Scrum');
     const [date, setDate] = useLocalStorage('scrum:date', new Date().toISOString().split('T')[0]);
     const [updates, setUpdates] = useLocalStorage<MemberUpdate[]>('scrum:updates', [createNewMemberUpdate('Team Member 1')]);
 
@@ -47,7 +48,11 @@ export function DailyScrumTemplate() {
         <div className="space-y-4">
              <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl text-center">Daily Stand-up / Scrum</CardTitle>
+                    <Input 
+                        value={headerTitle}
+                        onChange={e => setHeaderTitle(e.target.value)}
+                        className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0"
+                    />
                 </CardHeader>
                  <CardContent>
                     <div className="max-w-xs mx-auto">
@@ -97,6 +102,7 @@ export function DailyScrumTemplate() {
 }
 
 export function DailyScrumPreview() {
+    const [headerTitle] = useLocalStorage('scrum:header-title', 'Daily Stand-up / Scrum');
     const [date] = useLocalStorage('scrum:date', new Date().toISOString().split('T')[0]);
     const [updates] = useLocalStorage<MemberUpdate[]>('scrum:updates', []);
 
@@ -104,7 +110,7 @@ export function DailyScrumPreview() {
          <div className="space-y-4">
              <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl text-center">Daily Stand-up / Scrum</CardTitle>
+                    <CardTitle className="text-2xl text-center">{headerTitle}</CardTitle>
                 </CardHeader>
                  <CardContent>
                     <div className="max-w-xs mx-auto text-center">

@@ -37,6 +37,7 @@ const createNewVote = (): Vote => ({ id: uuidv4(), name: '', voted: true });
 
 
 export function BoardMeetingTemplate() {
+    const [headerTitle, setHeaderTitle] = useLocalStorage('board-meeting:header-title', 'CORPORATE MEETING MINUTES');
     const [meetingTitle, setMeetingTitle] = useLocalStorage('board-meeting:title', 'Technovation Inc. Board of Directors Meeting');
     const [attendees, setAttendees] = useLocalStorage<Attendee[]>('board-meeting:attendees', [
         { id: '1', name: 'John Smith', title: 'Chair', role: 'Chairperson of the Board', attendee: true, proxy: '' },
@@ -97,7 +98,11 @@ export function BoardMeetingTemplate() {
         <div className="bg-white dark:bg-card p-8 rounded-lg shadow-lg font-sans text-gray-800 dark:text-gray-200">
             {/* Header Section */}
             <header className="mb-8">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">CORPORATE MEETING MINUTES</h1>
+                 <Input 
+                    value={headerTitle}
+                    onChange={(e) => setHeaderTitle(e.target.value)}
+                    className="text-4xl font-bold text-gray-900 dark:text-white mb-4 bg-transparent border-none p-0 h-auto focus-visible:ring-0"
+                 />
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                         <p className="font-semibold">DATE AND TIME</p>
@@ -255,6 +260,7 @@ export function BoardMeetingTemplate() {
 
 
 export function BoardMeetingPreview() {
+    const [headerTitle] = useLocalStorage('board-meeting:header-title', 'CORPORATE MEETING MINUTES');
     const [meetingTitle] = useLocalStorage('board-meeting:title', 'Technovation Inc. Board of Directors Meeting');
     const [attendees] = useLocalStorage<Attendee[]>('board-meeting:attendees', []);
     const [votes] = useLocalStorage<Vote[]>('board-meeting:votes', []);
@@ -269,7 +275,7 @@ export function BoardMeetingPreview() {
         <div className="bg-white dark:bg-card p-8 rounded-lg shadow-lg font-sans text-gray-800 dark:text-gray-200">
             {/* Header Section */}
             <header className="mb-8">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">CORPORATE MEETING MINUTES</h1>
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{headerTitle}</h1>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div><p className="font-semibold">DATE AND TIME</p><p>May 6, 2024, 10:00 AM - 12:00 PM</p></div>
                     <div><p className="font-semibold">LOCATION</p><p>Technovation Inc. Headquarters</p></div>

@@ -27,6 +27,7 @@ const createNewListItem = (text = ''): ListItem => ({ id: uuidv4(), text });
 const createNewRoleItem = (role = '', name = ''): RoleItem => ({ id: uuidv4(), role, name });
 
 export function ProjectKickoffTemplate() {
+    const [headerTitle, setHeaderTitle] = useLocalStorage('kickoff:header-title', 'Project Kick-off Meeting');
     const [title, setTitle] = useLocalStorage('kickoff:title', 'New SuperWidget Launch');
     const [date, setDate] = useLocalStorage('kickoff:date', new Date().toISOString().split('T')[0]);
     const [goals, setGoals] = useLocalStorage<ListItem[]>('kickoff:goals', [createNewListItem('Launch the SuperWidget by end of Q4.')]);
@@ -77,7 +78,11 @@ export function ProjectKickoffTemplate() {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl text-center">Project Kick-off Meeting</CardTitle>
+                    <Input
+                        value={headerTitle}
+                        onChange={e => setHeaderTitle(e.target.value)}
+                        className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0"
+                    />
                 </CardHeader>
                  <CardContent className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -137,6 +142,7 @@ const ReadOnlyListSection = ({ title, items }: { title: string, items: ListItem[
 );
 
 export function ProjectKickoffPreview() {
+    const [headerTitle] = useLocalStorage('kickoff:header-title', 'Project Kick-off Meeting');
     const [title] = useLocalStorage('kickoff:title', '');
     const [date] = useLocalStorage('kickoff:date', '');
     const [goals] = useLocalStorage<ListItem[]>('kickoff:goals', []);
@@ -150,7 +156,7 @@ export function ProjectKickoffPreview() {
     return (
         <div className="space-y-6">
             <Card>
-                <CardHeader><CardTitle className="text-2xl text-center">Project Kick-off Meeting</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-2xl text-center">{headerTitle}</CardTitle></CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-4">
                     <div><Label>Project Title</Label><p className="text-lg font-semibold">{title}</p></div>
                     <div><Label>Date</Label><p>{date}</p></div>
