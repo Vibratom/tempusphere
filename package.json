@@ -43,11 +43,14 @@
     "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0",
     "date-fns": "^3.6.0",
+    "docx": "^8.5.0",
     "embla-carousel-react": "^8.6.0",
     "fast-average-color": "^9.4.0",
     "firebase": "^11.9.1",
     "framer-motion": "^11.2.10",
+    "html2canvas": "^1.4.1",
     "js-base64": "^3.7.7",
+    "jspdf": "^2.5.1",
     "lucide-react": "^0.475.0",
     "mermaid": "^10.9.1",
     "next": "15.3.3",
@@ -82,5 +85,3 @@
     "typescript": "^5"
   }
 }
-
-    

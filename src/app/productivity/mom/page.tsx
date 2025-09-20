@@ -1,13 +1,12 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Download, Eraser, NotebookPen, Eye, Copy, FileText, FileJson } from 'lucide-react';
+import { Plus, Trash2, Download, Eraser, NotebookPen, Eye, Copy, FileText, FileJson, FileType, FileImage, FileUp } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { meetingTemplates, type MeetingTemplate } from '@/lib/meeting-templates';
@@ -20,6 +19,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenu
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BrainstormingTemplate, BrainstormingPreview } from '@/components/productivity/BrainstormingTemplate';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 type TemplateType = 'default' | 'board-meeting' | 'annual-meeting' | 'project-kick-off' | 'daily-scrum' | 'one-on-one' | 'brainstorming';
@@ -156,6 +157,7 @@ export default function MoMPage() {
     const { toast } = useToast();
     const [isClient, setIsClient] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const previewRef = useRef<HTMLDivElement>(null);
 
     const [minutes] = useLocalStorage<MeetingMinutes>('productivity:meeting-minutes-v1', {
         title: '',
@@ -261,6 +263,44 @@ export default function MoMPage() {
         });
         return markdown;
     }
+    
+    const generateHtml = () => {
+      if (activeTemplate !== 'default' || !previewRef.current) {
+        toast({ variant: 'destructive', title: "Not implemented", description: "Export is only available for the Default Template for now." });
+        return '';
+      }
+      const styles = Array.from(document.styleSheets)
+        .map(styleSheet => {
+          try {
+            return Array.from(styleSheet.cssRules)
+              .map(rule => rule.cssText)
+              .join('');
+          } catch (e) {
+            return '';
+          }
+        })
+        .join('\n');
+      return `<!DOCTYPE html><html><head><style>${styles}</style></head><body>${previewRef.current.innerHTML}</body></html>`;
+    }
+    
+    const exportAsPdf = async () => {
+      if (activeTemplate !== 'default' || !previewRef.current) {
+        toast({ variant: 'destructive', title: "Not implemented", description: "Export is only available for the Default Template for now." });
+        return;
+      }
+      const canvas = await html2canvas(previewRef.current);
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'px',
+        format: 'a4'
+      });
+      const width = pdf.internal.pageSize.getWidth();
+      const height = pdf.internal.pageSize.getHeight();
+      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+      pdf.save(`${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.pdf`);
+      toast({ title: "Export Successful", description: `Your minutes have been downloaded as a PDF.` });
+    };
 
     const exportToFile = (content: string, fileName: string, contentType: string) => {
         if (!content) return;
@@ -298,7 +338,7 @@ export default function MoMPage() {
                 <DialogDescription>This is how your exported document will look.</DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[60vh] my-4 border rounded-md p-4 bg-muted/50">
-                {renderPreview()}
+                <div ref={previewRef}>{renderPreview()}</div>
             </ScrollArea>
             </DialogContent>
         </Dialog>
@@ -344,6 +384,16 @@ export default function MoMPage() {
                                 <Button><Download className="mr-2 h-4 w-4" /> Export</Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={exportAsPdf}>
+                                    <FileImage className="mr-2 h-4 w-4" /> Export as PDF (.pdf)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => toast({variant: 'destructive', title: 'Not Implemented'})}>
+                                    <FileUp className="mr-2 h-4 w-4" /> Export as Word (.docx)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => exportToFile(generateHtml(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.html`, 'text/html')}>
+                                    <FileType className="mr-2 h-4 w-4" /> Export as HTML (.html)
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => exportToFile(generateMarkdown(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.md`, 'text/markdown')}>
                                     <FileText className="mr-2 h-4 w-4" /> Export as Markdown (.md)
                                 </DropdownMenuItem>
