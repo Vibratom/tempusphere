@@ -1,7 +1,7 @@
 
 'use client';
 
-import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Landmark, BrainCircuit, DraftingCompass, KanbanSquare, FileText, Table, UtensilsCrossed, ListChecks, Target } from "lucide-react";
+import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Landmark, BrainCircuit, DraftingCompass, KanbanSquare, FileText, Table, UtensilsCrossed, ListChecks, Target, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { Footer } from "./Footer";
 import { Button } from "../ui/button";
@@ -85,9 +85,10 @@ const features = [
 
 const mainTools = [
     { name: 'Clock', category: 'Clock', icon: Clock, href: '/app', color: 'bg-orange-500 hover:bg-orange-600', description: 'The core time-keeping features of Tempusphere.'},
+    { name: 'Projects', category: 'Projects', icon: KanbanSquare, href: '/projects', color: 'bg-rose-500 hover:bg-rose-600', description: 'Manage projects with Kanban-style boards.' },
+    { name: 'Productivity', category: 'Productivity', icon: Briefcase, href: '/productivity', color: 'bg-green-500 hover:bg-green-600', description: 'Tools for business analysts.' },
     { name: 'Finance', category: 'Finance', icon: Landmark, href: '/finance', color: 'bg-indigo-500 hover:bg-indigo-600', description: 'Track expenses and manage budgets with ease.' },
     { name: 'Recipes', category: 'Recipes', icon: UtensilsCrossed, href: '/recipes', color: 'bg-yellow-500 hover:bg-yellow-600', description: 'Organize recipes and plan your meals.' },
-    { name: 'Projects', category: 'Projects', icon: KanbanSquare, href: '/projects', color: 'bg-rose-500 hover:bg-rose-600', description: 'Manage projects with Kanban-style boards.' },
 ]
 
 
