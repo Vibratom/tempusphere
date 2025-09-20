@@ -38,7 +38,9 @@ export const meetingTemplates: MeetingTemplate[] = [
     },
     {
         id: 'brainstorming',
-        name: "Brainstorming Session",
-        description: "An open format for generating new ideas.",
+        name: "Custom Template Builder",
+        description: "An open canvas to build your own template with custom sections.",
     }
 ];
+
+    
