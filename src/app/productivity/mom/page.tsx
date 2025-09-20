@@ -283,29 +283,35 @@ export default function MoMPage() {
     }
     
     const exportAsPdf = async () => {
-      if (!previewRef.current) {
-        return;
-      }
-      const canvas = await html2canvas(previewRef.current, { scale: 2 });
+      if (!previewRef.current) return;
+      
+      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true });
+      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
+      
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'px',
-        format: 'a4'
-      });
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const ratio = canvasWidth / canvasHeight;
-      let newCanvasHeight = pdfWidth / ratio;
+      
+      const ratio = imgWidth / imgHeight;
+      const pdfImgWidth = pdfWidth;
+      const pdfImgHeight = pdfWidth / ratio;
+      
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', 0, position, pdfImgWidth, pdfImgHeight);
+      heightLeft -= pdfHeight;
 
-      if(newCanvasHeight > pdfHeight) {
-        newCanvasHeight = pdfHeight;
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfImgWidth, pdfImgHeight);
+        heightLeft -= pdfHeight;
       }
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, newCanvasHeight);
-      pdf.save(`${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.pdf`);
+      pdf.save(`${'meeting_minutes'}.pdf`);
       toast({ title: "Export Successful", description: `Your minutes have been downloaded as a PDF.` });
     };
 

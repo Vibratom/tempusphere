@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const tools = [
     { value: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', href: '/projects' },
     { value: 'board', icon: KanbanSquare, label: 'Board', href: '/projects/board' },
+    { value: 'list', icon: ListChecks, label: 'List View', href: '/projects/list' },
     { value: 'calendar', icon: Calendar, label: 'Calendar', href: '/projects/calendar' },
     { value: 'gantt', icon: BarChartHorizontal, label: 'Gantt', href: '/projects/gantt' },
     { value: 'budget', icon: Banknote, label: 'Bookkeeping', href: '/projects/budget' },
