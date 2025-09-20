@@ -234,7 +234,7 @@ export default function MoMPage() {
 
     const generatePlainText = () => {
         if (activeTemplate !== 'default') {
-            toast({ variant: 'destructive', title: "Not implemented", description: "Export is only available for the Default Template for now." });
+            toast({ variant: 'destructive', title: "Not implemented", description: "This export format is only available for the Default Template for now." });
             return '';
         }
         let text = `${minutes.title || 'Meeting Minutes'}\n\n`;
@@ -250,7 +250,7 @@ export default function MoMPage() {
   
     const generateMarkdown = () => {
         if (activeTemplate !== 'default') {
-            toast({ variant: 'destructive', title: "Not implemented", description: "Export is only available for the Default Template for now." });
+            toast({ variant: 'destructive', title: "Not implemented", description: "This export format is only available for the Default Template for now." });
             return '';
         }
         let markdown = `# ${minutes.title || 'Meeting Minutes'}\n\n`;
@@ -265,8 +265,7 @@ export default function MoMPage() {
     }
     
     const generateHtml = () => {
-      if (activeTemplate !== 'default' || !previewRef.current) {
-        toast({ variant: 'destructive', title: "Not implemented", description: "Export is only available for the Default Template for now." });
+      if (!previewRef.current) {
         return '';
       }
       const styles = Array.from(document.styleSheets)
@@ -284,20 +283,28 @@ export default function MoMPage() {
     }
     
     const exportAsPdf = async () => {
-      if (activeTemplate !== 'default' || !previewRef.current) {
-        toast({ variant: 'destructive', title: "Not implemented", description: "Export is only available for the Default Template for now." });
+      if (!previewRef.current) {
         return;
       }
-      const canvas = await html2canvas(previewRef.current);
+      const canvas = await html2canvas(previewRef.current, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'px',
         format: 'a4'
       });
-      const width = pdf.internal.pageSize.getWidth();
-      const height = pdf.internal.pageSize.getHeight();
-      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const ratio = canvasWidth / canvasHeight;
+      let newCanvasHeight = pdfWidth / ratio;
+
+      if(newCanvasHeight > pdfHeight) {
+        newCanvasHeight = pdfHeight;
+      }
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, newCanvasHeight);
       pdf.save(`${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.pdf`);
       toast({ title: "Export Successful", description: `Your minutes have been downloaded as a PDF.` });
     };
@@ -394,20 +401,20 @@ export default function MoMPage() {
                                     <FileType className="mr-2 h-4 w-4" /> Export as HTML (.html)
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => exportToFile(generateMarkdown(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.md`, 'text/markdown')}>
+                                <DropdownMenuItem onClick={() => exportToFile(generateMarkdown(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.md`, 'text/markdown')} disabled={activeTemplate !== 'default'}>
                                     <FileText className="mr-2 h-4 w-4" /> Export as Markdown (.md)
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => exportToFile(generatePlainText(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.txt`, 'text/plain')}>
+                                <DropdownMenuItem onClick={() => exportToFile(generatePlainText(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.txt`, 'text/plain')} disabled={activeTemplate !== 'default'}>
                                     <FileText className="mr-2 h-4 w-4" /> Export as Text (.txt)
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => exportToFile(JSON.stringify(minutes, null, 2), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.json`, 'application/json')}>
+                                <DropdownMenuItem onClick={() => exportToFile(JSON.stringify(minutes, null, 2), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.json`, 'application/json')} disabled={activeTemplate !== 'default'}>
                                     <FileJson className="mr-2 h-4 w-4" /> Export as JSON (.json)
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => copyToClipboard(generateMarkdown(), 'Markdown')}>
+                                <DropdownMenuItem onClick={() => copyToClipboard(generateMarkdown(), 'Markdown')} disabled={activeTemplate !== 'default'}>
                                     <Copy className="mr-2 h-4 w-4" /> Copy as Markdown
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => copyToClipboard(generatePlainText(), 'Plain Text')}>
+                                <DropdownMenuItem onClick={() => copyToClipboard(generatePlainText(), 'Plain Text')} disabled={activeTemplate !== 'default'}>
                                     <Copy className="mr-2 h-4 w-4" /> Copy as Plain Text
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
