@@ -25,6 +25,7 @@ const initialAttendees: Attendee[] = [
 
 
 export function AnnualMeetingTemplate() {
+    const [headerTitle, setHeaderTitle] = useLocalStorage('annual-meeting:header-title', 'Annual Meeting Minutes');
     const [meetingTitle, setMeetingTitle] = useLocalStorage('annual-meeting:title', 'Happy Pets Animal Shelter Annual Meeting');
     const [attendees, setAttendees] = useLocalStorage<Attendee[]>('annual-meeting:attendees', initialAttendees);
     
@@ -45,8 +46,11 @@ export function AnnualMeetingTemplate() {
         <div className="bg-white dark:bg-card p-8 rounded-lg shadow-lg font-sans text-gray-800 dark:text-gray-200">
             {/* Header Section */}
             <header className="mb-8 text-center md:text-left">
-                <h1 className="text-5xl font-bold text-gray-900 dark:text-white uppercase tracking-wider">Annual Meeting</h1>
-                <h2 className="text-5xl font-bold text-gray-900 dark:text-white uppercase tracking-wider">Minutes</h2>
+                <Input 
+                    value={headerTitle}
+                    onChange={e => setHeaderTitle(e.target.value)}
+                    className="text-5xl font-bold text-gray-900 dark:text-white uppercase tracking-wider bg-transparent border-none focus-visible:ring-1 h-auto"
+                />
             </header>
 
             <div className="grid md:grid-cols-2 gap-x-8 gap-y-4 mb-8">
@@ -140,6 +144,7 @@ export function AnnualMeetingTemplate() {
 }
 
 export function AnnualMeetingPreview() {
+    const [headerTitle] = useLocalStorage('annual-meeting:header-title', 'Annual Meeting Minutes');
     const [meetingTitle] = useLocalStorage('annual-meeting:title', 'Happy Pets Animal Shelter Annual Meeting');
     const [attendees] = useLocalStorage<Attendee[]>('annual-meeting:attendees', initialAttendees);
     const [callToAction] = useLocalStorage('annual-meeting:callToAction', '');
@@ -154,8 +159,7 @@ export function AnnualMeetingPreview() {
         <div className="bg-white dark:bg-card p-8 rounded-lg shadow-lg font-sans text-gray-800 dark:text-gray-200">
             {/* Header Section */}
             <header className="mb-8 text-center md:text-left">
-                <h1 className="text-5xl font-bold text-gray-900 dark:text-white uppercase tracking-wider">Annual Meeting</h1>
-                <h2 className="text-5xl font-bold text-gray-900 dark:text-white uppercase tracking-wider">Minutes</h2>
+                <h1 className="text-5xl font-bold text-gray-900 dark:text-white uppercase tracking-wider">{headerTitle}</h1>
             </header>
 
             <div className="grid md:grid-cols-2 gap-x-8 gap-y-4 mb-8">
