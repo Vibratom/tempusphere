@@ -15,8 +15,12 @@ import { meetingTemplates, type MeetingTemplate } from '@/lib/meeting-templates'
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BoardMeetingTemplate } from '@/components/productivity/BoardMeetingTemplate';
 import { AnnualMeetingTemplate } from '@/components/productivity/AnnualMeetingTemplate';
+import { ProjectKickoffTemplate } from '@/components/productivity/ProjectKickoffTemplate';
+import { DailyScrumTemplate } from '@/components/productivity/DailyScrumTemplate';
+import { OneOnOneTemplate } from '@/components/productivity/OneOnOneTemplate';
 
-type TemplateType = 'default' | 'board-meeting' | 'annual-meeting';
+
+type TemplateType = 'default' | 'board-meeting' | 'annual-meeting' | 'project-kick-off' | 'daily-scrum' | 'one-on-one';
 
 interface ActionItem {
   id: string;
@@ -43,7 +47,7 @@ const TemplateSelector = ({ onSelect }: { onSelect: (template: MeetingTemplate) 
             <ScrollArea className="h-[60vh]">
                 <div className="space-y-2 pr-4">
                     {meetingTemplates.map(template => (
-                        <Card key={template.name} className="cursor-pointer hover:bg-muted/50" onClick={() => onSelect(template)}>
+                        <Card key={template.id} className="cursor-pointer hover:bg-muted/50" onClick={() => onSelect(template)}>
                             <CardHeader>
                                 <CardTitle className="text-base">{template.name}</CardTitle>
                                 <CardDescription>{template.description}</CardDescription>
@@ -196,21 +200,31 @@ function DefaultMeetingMinutesTool() {
 
 export default function MoMPage() {
     const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
-    const [activeTemplate, setActiveTemplate] = useState<TemplateType>('default');
+    const [activeTemplate, setActiveTemplate] = useLocalStorage<TemplateType>('productivity:active-template-v1', 'default');
     const { toast } = useToast();
 
     const handleTemplateSelect = (template: MeetingTemplate) => {
-        if (template.id === 'board-meeting') {
-            setActiveTemplate('board-meeting');
-            toast({ title: 'Template Changed', description: 'Switched to Board Meeting layout.' });
-        } else if (template.id === 'annual-meeting') {
-            setActiveTemplate('annual-meeting');
-            toast({ title: 'Template Changed', description: 'Switched to Annual Meeting layout.' });
-        } else {
-            setActiveTemplate('default');
-            toast({ title: 'Template Changed', description: 'Switched to Default layout.' });
-        }
+        setActiveTemplate(template.id as TemplateType);
+        toast({ title: 'Template Changed', description: `Switched to ${template.name}.` });
         setIsTemplateSelectorOpen(false);
+    };
+
+    const renderActiveTemplate = () => {
+        switch (activeTemplate) {
+            case 'board-meeting':
+                return <BoardMeetingTemplate />;
+            case 'annual-meeting':
+                return <AnnualMeetingTemplate />;
+            case 'project-kick-off':
+                return <ProjectKickoffTemplate />;
+            case 'daily-scrum':
+                return <DailyScrumTemplate />;
+            case 'one-on-one':
+                return <OneOnOneTemplate />;
+            case 'default':
+            default:
+                return <DefaultMeetingMinutesTool />;
+        }
     };
 
     return (
@@ -232,14 +246,9 @@ export default function MoMPage() {
                     <TemplateSelector onSelect={handleTemplateSelect} />
                 </Dialog>
              </div>
-
-            {activeTemplate === 'board-meeting' ? (
-                <BoardMeetingTemplate />
-            ) : activeTemplate === 'annual-meeting' ? (
-                <AnnualMeetingTemplate />
-            ) : (
-                <DefaultMeetingMinutesTool />
-            )}
+            
+            {renderActiveTemplate()}
         </div>
     );
 }
+
