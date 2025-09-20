@@ -10,14 +10,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Download, Eraser, NotebookPen } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { meetingTemplates, type MeetingTemplate } from '@/lib/meeting-templates';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { BoardMeetingTemplate } from '@/components/productivity/BoardMeetingTemplate';
 import { AnnualMeetingTemplate } from '@/components/productivity/AnnualMeetingTemplate';
 import { ProjectKickoffTemplate } from '@/components/productivity/ProjectKickoffTemplate';
 import { DailyScrumTemplate } from '@/components/productivity/DailyScrumTemplate';
 import { OneOnOneTemplate } from '@/components/productivity/OneOnOneTemplate';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
 type TemplateType = 'default' | 'board-meeting' | 'annual-meeting' | 'project-kick-off' | 'daily-scrum' | 'one-on-one';
@@ -36,29 +35,6 @@ interface MeetingMinutes {
   notes: string;
   actionItems: ActionItem[];
 }
-
-const TemplateSelector = ({ onSelect }: { onSelect: (template: MeetingTemplate) => void }) => {
-    return (
-        <DialogContent className="max-w-2xl">
-            <DialogHeader>
-                <DialogTitle>Choose a Template</DialogTitle>
-                <DialogDescription>Select a template to pre-fill the meeting notes with a structured format or change the layout.</DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="h-[60vh]">
-                <div className="space-y-2 pr-4">
-                    {meetingTemplates.map(template => (
-                        <Card key={template.id} className="cursor-pointer hover:bg-muted/50" onClick={() => onSelect(template)}>
-                            <CardHeader>
-                                <CardTitle className="text-base">{template.name}</CardTitle>
-                                <CardDescription>{template.description}</CardDescription>
-                            </CardHeader>
-                        </Card>
-                    ))}
-                </div>
-            </ScrollArea>
-        </DialogContent>
-    );
-};
 
 function DefaultMeetingMinutesTool() {
   const [minutes, setMinutes] = useLocalStorage<MeetingMinutes>('productivity:meeting-minutes-v1', {
@@ -199,14 +175,15 @@ function DefaultMeetingMinutesTool() {
 
 
 export default function MoMPage() {
-    const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
     const [activeTemplate, setActiveTemplate] = useLocalStorage<TemplateType>('productivity:active-template-v1', 'default');
     const { toast } = useToast();
 
-    const handleTemplateSelect = (template: MeetingTemplate) => {
-        setActiveTemplate(template.id as TemplateType);
-        toast({ title: 'Template Changed', description: `Switched to ${template.name}.` });
-        setIsTemplateSelectorOpen(false);
+    const handleTemplateSelect = (templateId: string) => {
+        const selectedTemplate = meetingTemplates.find(t => t.id === templateId);
+        if (selectedTemplate) {
+            setActiveTemplate(templateId as TemplateType);
+            toast({ title: 'Template Changed', description: `Switched to ${selectedTemplate.name}.` });
+        }
     };
 
     const renderActiveTemplate = () => {
@@ -237,14 +214,22 @@ export default function MoMPage() {
             </div>
 
              <div className="mb-4 text-center">
-                 <Dialog open={isTemplateSelectorOpen} onOpenChange={setIsTemplateSelectorOpen}>
-                    <DialogTrigger asChild>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                         <Button variant="outline">
                             <NotebookPen className="mr-2 h-4 w-4"/> Change Template
                         </Button>
-                    </DialogTrigger>
-                    <TemplateSelector onSelect={handleTemplateSelect} />
-                </Dialog>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuRadioGroup value={activeTemplate} onValueChange={handleTemplateSelect}>
+                            {meetingTemplates.map(template => (
+                                <DropdownMenuRadioItem key={template.id} value={template.id}>
+                                    {template.name}
+                                </DropdownMenuRadioItem>
+                            ))}
+                        </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                 </DropdownMenu>
              </div>
             
             {renderActiveTemplate()}
