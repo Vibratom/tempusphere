@@ -95,3 +95,24 @@ export function DailyScrumTemplate() {
         </div>
     );
 }
+
+export function DailyScrumPreview() {
+    const [date] = useLocalStorage('scrum:date', new Date().toISOString().split('T')[0]);
+    const [updates] = useLocalStorage<MemberUpdate[]>('scrum:updates', []);
+
+    return (
+        <div className="prose dark:prose-invert max-w-none">
+            <h2>Daily Scrum - {date}</h2>
+            {updates.map(update => (
+                <div key={update.id} className="mt-4">
+                    <h4>{update.name}</h4>
+                    <ul>
+                        <li><strong>Yesterday:</strong> {update.yesterday}</li>
+                        <li><strong>Today:</strong> {update.today}</li>
+                        <li><strong>Blockers:</strong> {update.blockers || 'None'}</li>
+                    </ul>
+                </div>
+            ))}
+        </div>
+    );
+}

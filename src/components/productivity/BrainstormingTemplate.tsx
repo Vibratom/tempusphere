@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -100,6 +101,22 @@ export function BrainstormingTemplate() {
                     <Plus className="mr-2 h-4 w-4" /> Add Section
                 </Button>
             </div>
+        </div>
+    );
+}
+
+
+export function BrainstormingPreview() {
+    const [blocks] = useLocalStorage<Block[]>('brainstorming:blocks-v1', []);
+
+    return (
+        <div className="prose dark:prose-invert max-w-none">
+            {blocks.map(block => (
+                <div key={block.id}>
+                    <h3>{block.title}</h3>
+                    <p>{block.content}</p>
+                </div>
+            ))}
         </div>
     );
 }

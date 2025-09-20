@@ -128,3 +128,43 @@ export function ProjectKickoffTemplate() {
         </div>
     );
 }
+
+export function ProjectKickoffPreview() {
+    const [title] = useLocalStorage('kickoff:title', '');
+    const [date] = useLocalStorage('kickoff:date', '');
+    const [goals] = useLocalStorage<ListItem[]>('kickoff:goals', []);
+    const [inScope] = useLocalStorage<ListItem[]>('kickoff:inScope', []);
+    const [outOfScope] = useLocalStorage<ListItem[]>('kickoff:outOfScope', []);
+    const [milestones] = useLocalStorage<ListItem[]>('kickoff:milestones', []);
+    const [roles] = useLocalStorage<RoleItem[]>('kickoff:roles', []);
+    const [risks] = useLocalStorage<ListItem[]>('kickoff:risks', []);
+    const [questions] = useLocalStorage<ListItem[]>('kickoff:questions', []);
+
+    return (
+        <div className="prose dark:prose-invert max-w-none">
+            <h2>Project Kick-off: {title}</h2>
+            <p><strong>Date:</strong> {date}</p>
+            
+            <h3>Project Goals</h3>
+            <ul>{goals.map(g => <li key={g.id}>{g.text}</li>)}</ul>
+
+            <h3>Scope</h3>
+            <h4>In Scope:</h4>
+            <ul>{inScope.map(i => <li key={i.id}>{i.text}</li>)}</ul>
+            <h4>Out of Scope:</h4>
+            <ul>{outOfScope.map(o => <li key={o.id}>{o.text}</li>)}</ul>
+
+            <h3>Timeline & Milestones</h3>
+            <ul>{milestones.map(m => <li key={m.id}>{m.text}</li>)}</ul>
+
+            <h3>Roles & Responsibilities</h3>
+            <ul>{roles.map(r => <li key={r.id}><strong>{r.role}:</strong> {r.name}</li>)}</ul>
+
+            <h3>Risks & Assumptions</h3>
+            <ul>{risks.map(r => <li key={r.id}>{r.text}</li>)}</ul>
+            
+            <h3>Open Questions</h3>
+            <ul>{questions.map(q => <li key={q.id}>{q.text}</li>)}</ul>
+        </div>
+    );
+}

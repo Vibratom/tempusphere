@@ -11,15 +11,15 @@ import { Plus, Trash2, Download, Eraser, NotebookPen, Eye, Copy, FileText, FileJ
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { meetingTemplates, type MeetingTemplate } from '@/lib/meeting-templates';
-import { BoardMeetingTemplate } from '@/components/productivity/BoardMeetingTemplate';
-import { AnnualMeetingTemplate } from '@/components/productivity/AnnualMeetingTemplate';
-import { ProjectKickoffTemplate } from '@/components/productivity/ProjectKickoffTemplate';
-import { DailyScrumTemplate } from '@/components/productivity/DailyScrumTemplate';
-import { OneOnOneTemplate } from '@/components/productivity/OneOnOneTemplate';
+import { BoardMeetingTemplate, BoardMeetingPreview } from '@/components/productivity/BoardMeetingTemplate';
+import { AnnualMeetingTemplate, AnnualMeetingPreview } from '@/components/productivity/AnnualMeetingTemplate';
+import { ProjectKickoffTemplate, ProjectKickoffPreview } from '@/components/productivity/ProjectKickoffTemplate';
+import { DailyScrumTemplate, DailyScrumPreview } from '@/components/productivity/DailyScrumTemplate';
+import { OneOnOneTemplate, OneOnOnePreview } from '@/components/productivity/OneOnOneTemplate';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { BrainstormingTemplate } from '@/components/productivity/BrainstormingTemplate';
+import { BrainstormingTemplate, BrainstormingPreview } from '@/components/productivity/BrainstormingTemplate';
 
 
 type TemplateType = 'default' | 'board-meeting' | 'annual-meeting' | 'project-kick-off' | 'daily-scrum' | 'one-on-one' | 'brainstorming';
@@ -157,8 +157,6 @@ export default function MoMPage() {
     const [isClient, setIsClient] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-     // This is a temporary state for the default template's data for export.
-     // A more robust solution would involve a shared context or more complex state management.
     const [minutes] = useLocalStorage<MeetingMinutes>('productivity:meeting-minutes-v1', {
         title: '',
         date: new Date().toISOString().split('T')[0],
@@ -200,8 +198,38 @@ export default function MoMPage() {
                 return <DefaultMeetingMinutesTool />;
         }
     };
+    
+    const renderPreview = () => {
+        switch (activeTemplate) {
+            case 'board-meeting': return <BoardMeetingPreview />;
+            case 'annual-meeting': return <AnnualMeetingPreview />;
+            case 'project-kick-off': return <ProjectKickoffPreview />;
+            case 'daily-scrum': return <DailyScrumPreview />;
+            case 'one-on-one': return <OneOnOnePreview />;
+            case 'brainstorming': return <BrainstormingPreview />;
+            case 'default':
+            default:
+                return (
+                    <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
+                        <h2>{minutes.title || 'Meeting Minutes'}</h2>
+                        <p><strong>Date:</strong> {minutes.date}</p>
+                        <p><strong>Attendees:</strong> {minutes.attendees}</p>
+                        <h3>Discussion Notes</h3>
+                        <p>{minutes.notes}</p>
+                        <h3>Action Items</h3>
+                        <ul>
+                            {minutes.actionItems.map(item => (
+                            <li key={item.id}>
+                                <input type="checkbox" checked={item.done} readOnly className="mr-2" />
+                                {item.text} {item.owner && `(@${item.owner})`}
+                            </li>
+                            ))}
+                        </ul>
+                    </div>
+                );
+        }
+    }
 
-    // --- Generic Export and Preview Handlers ---
     const generatePlainText = () => {
         if (activeTemplate !== 'default') {
             toast({ variant: 'destructive', title: "Not implemented", description: "Export is only available for the Default Template for now." });
@@ -258,10 +286,6 @@ export default function MoMPage() {
     }
 
     const handlePreview = () => {
-        if (activeTemplate !== 'default') {
-            toast({ variant: 'destructive', title: "Not implemented", description: "Preview is only available for the Default Template for now." });
-            return;
-        }
         setIsPreviewOpen(true);
     }
 
@@ -274,22 +298,7 @@ export default function MoMPage() {
                 <DialogDescription>This is how your exported document will look.</DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[60vh] my-4 border rounded-md p-4 bg-muted/50">
-                <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
-                <h2>{minutes.title || 'Meeting Minutes'}</h2>
-                <p><strong>Date:</strong> {minutes.date}</p>
-                <p><strong>Attendees:</strong> {minutes.attendees}</p>
-                <h3>Discussion Notes</h3>
-                <p>{minutes.notes}</p>
-                <h3>Action Items</h3>
-                <ul>
-                    {minutes.actionItems.map(item => (
-                    <li key={item.id}>
-                        <input type="checkbox" checked={item.done} readOnly className="mr-2" />
-                        {item.text} {item.owner && `(@${item.owner})`}
-                    </li>
-                    ))}
-                </ul>
-                </div>
+                {renderPreview()}
             </ScrollArea>
             </DialogContent>
         </Dialog>

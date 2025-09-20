@@ -138,3 +138,39 @@ export function AnnualMeetingTemplate() {
         </div>
     );
 }
+
+export function AnnualMeetingPreview() {
+    const [meetingTitle] = useLocalStorage('annual-meeting:title', '');
+    const [attendees] = useLocalStorage<Attendee[]>('annual-meeting:attendees', []);
+    const [callToAction] = useLocalStorage('annual-meeting:callToAction', '');
+    const [welcome] = useLocalStorage('annual-meeting:welcome', '');
+    const [approval] = useLocalStorage('annual-meeting:approval', '');
+    const [elections] = useLocalStorage('annual-meeting:elections', '');
+    const [proposals] = useLocalStorage('annual-meeting:proposals', '');
+    const [openForum] = useLocalStorage('annual-meeting:openForum', '');
+    const [reports] = useLocalStorage('annual-meeting:reports', '');
+
+    return (
+        <div className="prose dark:prose-invert max-w-none">
+            <h2>{meetingTitle}</h2>
+            <h3>Attendees</h3>
+            <ul>
+                {attendees.map(a => <li key={a.id}>{a.name} ({a.role}) - {a.attendee ? 'Present' : 'Absent'}</li>)}
+            </ul>
+            <h3>Call to Order</h3>
+            <p>{callToAction}</p>
+            <h3>Welcome and Introductions</h3>
+            <p>{welcome}</p>
+            <h3>Approval of Previous Minutes</h3>
+            <p>{approval}</p>
+            <h3>Reports</h3>
+            <p>{reports}</p>
+            <h3>Elections</h3>
+            <p>{elections}</p>
+            <h3>Proposals and Voting</h3>
+            <p>{proposals}</p>
+            <h3>Open Forum</h3>
+            <p>{openForum}</p>
+        </div>
+    );
+}

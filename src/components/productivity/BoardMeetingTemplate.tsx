@@ -252,3 +252,50 @@ export function BoardMeetingTemplate() {
         </div>
     );
 }
+
+
+export function BoardMeetingPreview() {
+    const [meetingTitle] = useLocalStorage('board-meeting:title', 'Technovation Inc. Board of Directors Meeting');
+    const [attendees] = useLocalStorage<Attendee[]>('board-meeting:attendees', []);
+    const [votes] = useLocalStorage<Vote[]>('board-meeting:votes', []);
+    const [approvalText] = useLocalStorage('board-meeting:approval', '');
+    const [actionItems] = useLocalStorage<ListItem[]>('board-meeting:action-items', []);
+    const [presentations] = useLocalStorage<ListItem[]>('board-meeting:presentations', []);
+    const [reports] = useLocalStorage<ListItem[]>('board-meeting:reports', []);
+    const [votingMotion] = useLocalStorage('board-meeting:voting-motion', "");
+    const [discussionItems] = useLocalStorage<ListItem[]>('board-meeting:discussion-items', []);
+
+    return (
+        <div className="prose dark:prose-invert max-w-none">
+            <h2>{meetingTitle}</h2>
+            
+            <h3>Attendees</h3>
+            <ul>
+                {attendees.map(a => <li key={a.id}>{a.name} ({a.role}) - {a.attendee ? 'Present' : 'Absent'}</li>)}
+            </ul>
+
+            <h3>Approval of Previous Minutes</h3>
+            <p>{approvalText}</p>
+
+            <h3>Discussion Items</h3>
+            {discussionItems.map(item => <p key={item.id}>{item.text}</p>)}
+
+            <h3>Presentations</h3>
+            {presentations.map(item => <p key={item.id}>{item.text}</p>)}
+            
+            <h3>Reports</h3>
+            {reports.map(item => <p key={item.id}>{item.text}</p>)}
+
+            <h3>Voting</h3>
+            <p><strong>Motion:</strong> {votingMotion}</p>
+            <ul>
+                {votes.map(v => <li key={v.id}>{v.name}: {v.voted ? 'Voted' : 'Did not vote'}</li>)}
+            </ul>
+            
+            <h3>Action Items</h3>
+            <ul>
+                {actionItems.map(item => <li key={item.id}>{item.text}</li>)}
+            </ul>
+        </div>
+    )
+}

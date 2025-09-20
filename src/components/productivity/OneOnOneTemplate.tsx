@@ -67,3 +67,35 @@ export function OneOnOneTemplate() {
         </div>
     );
 }
+
+export function OneOnOnePreview() {
+    const [manager] = useLocalStorage('1on1:manager', '');
+    const [employee] = useLocalStorage('1on1:employee', '');
+    const [date] = useLocalStorage('1on1:date', '');
+    const [checkIn] = useLocalStorage('1on1:checkIn', '');
+    const [priorities] = useLocalStorage('1on1:priorities', '');
+    const [challenges] = useLocalStorage('1on1:challenges', '');
+    const [growth] = useLocalStorage('1on1:growth', '');
+    const [feedback] = useLocalStorage('1on1:feedback', '');
+
+    const sections = [
+        { title: "Check-in & How are you doing?", value: checkIn },
+        { title: "Review of Priorities & Goals", value: priorities },
+        { title: "Challenges & Blockers", value: challenges },
+        { title: "Career Growth & Development", value: growth },
+        { title: "Feedback (Both Ways)", value: feedback },
+    ];
+
+    return (
+        <div className="prose dark:prose-invert max-w-none">
+            <h2>1-on-1: {manager} & {employee}</h2>
+            <p><strong>Date:</strong> {date}</p>
+            {sections.map(section => (
+                <div key={section.title}>
+                    <h3>{section.title}</h3>
+                    <p>{section.value || 'No notes for this section.'}</p>
+                </div>
+            ))}
+        </div>
+    );
+}
