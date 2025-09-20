@@ -266,36 +266,70 @@ export function BoardMeetingPreview() {
     const [discussionItems] = useLocalStorage<ListItem[]>('board-meeting:discussion-items', []);
 
     return (
-        <div className="prose dark:prose-invert max-w-none">
-            <h2>{meetingTitle}</h2>
+        <div className="bg-white dark:bg-card p-8 rounded-lg shadow-lg font-sans text-gray-800 dark:text-gray-200">
+            {/* Header Section */}
+            <header className="mb-8">
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">CORPORATE MEETING MINUTES</h1>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div><p className="font-semibold">DATE AND TIME</p><p>May 6, 2024, 10:00 AM - 12:00 PM</p></div>
+                    <div><p className="font-semibold">LOCATION</p><p>Technovation Inc. Headquarters</p></div>
+                    <div><p className="font-semibold">DURATION</p><p>2 Hours</p></div>
+                    <div><p className="font-semibold">ADJOURNMENT</p><p>12:00 PM</p></div>
+                </div>
+                <div className="mt-4 p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-md">
+                    <span className="font-semibold text-sm shrink-0">MEETING TITLE:</span> {meetingTitle}
+                </div>
+            </header>
+
+            {/* Attendees Section */}
+            <section className="mb-8">
+                <h2 className="text-xl font-bold mb-3 pb-2 border-b-2 border-purple-300 dark:border-purple-700">MEETING ATTENDEES</h2>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-purple-100/50 dark:bg-purple-900/30">
+                            <tr>{['Name', 'Title', 'Role', 'Attendee', 'Proxy For'].map(h => <th key={h} className="p-2 font-semibold">{h}</th>)}</tr>
+                        </thead>
+                        <tbody>
+                            {attendees.map(attendee => (
+                                <tr key={attendee.id} className="border-b dark:border-gray-700">
+                                    <td className="p-2">{attendee.name}</td>
+                                    <td className="p-2">{attendee.title}</td>
+                                    <td className="p-2">{attendee.role}</td>
+                                    <td className="p-2">{attendee.attendee ? '✔️' : '❌'}</td>
+                                    <td className="p-2">{attendee.proxy || 'N/A'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
             
-            <h3>Attendees</h3>
-            <ul>
-                {attendees.map(a => <li key={a.id}>{a.name} ({a.role}) - {a.attendee ? 'Present' : 'Absent'}</li>)}
-            </ul>
+            {/* Approval of Minutes */}
+            <section className="mb-8">
+                <h2 className="text-xl font-bold mb-2 pb-2 border-b-2 border-purple-300 dark:border-purple-700">APPROVAL OF PREVIOUS MINUTES</h2>
+                <p className="whitespace-pre-wrap">{approvalText}</p>
+            </section>
 
-            <h3>Approval of Previous Minutes</h3>
-            <p>{approvalText}</p>
+            {/* Main Content Grid */}
+            <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-8">
+                    <section><h3 className="text-lg font-bold p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">ACTION ITEMS</h3><div className="p-2 bg-purple-100/20 dark:bg-purple-900/10 rounded-b-md"><ul className="list-disc pl-5 space-y-1">{actionItems.map(item => <li key={item.id}>{item.text}</li>)}</ul></div></section>
+                    <section><h3 className="text-lg font-bold p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">VOTING</h3><div className="p-4 bg-purple-100/20 dark:bg-purple-900/10 rounded-b-md space-y-2"><p className="font-semibold">MOTION</p><p>{votingMotion}</p><p className="font-semibold pt-2">VOTES</p><ul className="list-disc pl-5">{votes.map(vote => <li key={vote.id}>{vote.name}: {vote.voted ? 'Voted' : 'Did not vote'}</li>)}</ul></div></section>
+                </div>
+                <div className="space-y-8">
+                    <section><h3 className="text-lg font-bold p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">PRESENTATIONS</h3><div className="p-2 bg-purple-100/20 dark:bg-purple-900/10 rounded-b-md"><ul className="list-disc pl-5 space-y-1">{presentations.map(item => <li key={item.id}>{item.text}</li>)}</ul></div></section>
+                    <section><h3 className="text-lg font-bold p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">REPORTS</h3><div className="p-2 bg-purple-100/20 dark:bg-purple-900/10 rounded-b-md"><ul className="list-disc pl-5 space-y-1">{reports.map(item => <li key={item.id}>{item.text}</li>)}</ul></div></section>
+                    <section><h3 className="text-lg font-bold p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">DISCUSSION ITEMS</h3><div className="p-2 bg-purple-100/20 dark:bg-purple-900/10 rounded-b-md"><ul className="list-disc pl-5 space-y-1">{discussionItems.map(item => <li key={item.id}>{item.text}</li>)}</ul></div></section>
+                </div>
+            </div>
 
-            <h3>Discussion Items</h3>
-            {discussionItems.map(item => <p key={item.id}>{item.text}</p>)}
-
-            <h3>Presentations</h3>
-            {presentations.map(item => <p key={item.id}>{item.text}</p>)}
-            
-            <h3>Reports</h3>
-            {reports.map(item => <p key={item.id}>{item.text}</p>)}
-
-            <h3>Voting</h3>
-            <p><strong>Motion:</strong> {votingMotion}</p>
-            <ul>
-                {votes.map(v => <li key={v.id}>{v.name}: {v.voted ? 'Voted' : 'Did not vote'}</li>)}
-            </ul>
-            
-            <h3>Action Items</h3>
-            <ul>
-                {actionItems.map(item => <li key={item.id}>{item.text}</li>)}
-            </ul>
+            {/* Footer Section */}
+            <footer className="mt-8 pt-4 border-t-2 border-purple-300 dark:border-purple-700 flex justify-between items-center">
+                <p className="font-bold">NEXT MEETING DATE</p>
+                <p>JUNE 3RD</p>
+            </footer>
         </div>
-    )
+    );
 }
+
+    

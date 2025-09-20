@@ -129,6 +129,13 @@ export function ProjectKickoffTemplate() {
     );
 }
 
+const ReadOnlyListSection = ({ title, items }: { title: string, items: ListItem[]}) => (
+    <Card>
+        <CardHeader className="py-3"><CardTitle className="text-lg">{title}</CardTitle></CardHeader>
+        <CardContent><ul className="list-disc pl-5 space-y-1">{items.map(item => <li key={item.id}>{item.text}</li>)}</ul></CardContent>
+    </Card>
+);
+
 export function ProjectKickoffPreview() {
     const [title] = useLocalStorage('kickoff:title', '');
     const [date] = useLocalStorage('kickoff:date', '');
@@ -141,30 +148,40 @@ export function ProjectKickoffPreview() {
     const [questions] = useLocalStorage<ListItem[]>('kickoff:questions', []);
 
     return (
-        <div className="prose dark:prose-invert max-w-none">
-            <h2>Project Kick-off: {title}</h2>
-            <p><strong>Date:</strong> {date}</p>
+        <div className="space-y-6">
+            <Card>
+                <CardHeader><CardTitle className="text-2xl text-center">Project Kick-off Meeting</CardTitle></CardHeader>
+                <CardContent className="grid md:grid-cols-2 gap-4">
+                    <div><Label>Project Title</Label><p className="text-lg font-semibold">{title}</p></div>
+                    <div><Label>Date</Label><p>{date}</p></div>
+                </CardContent>
+            </Card>
+
+            <ReadOnlyListSection title="Project Goals & Objectives" items={goals} />
+
+            <Accordion type="single" collapsible defaultValue="item-1">
+                <AccordionItem value="item-1">
+                    <AccordionTrigger className="text-xl font-semibold">Scope & Deliverables</AccordionTrigger>
+                    <AccordionContent className="grid md:grid-cols-2 gap-4">
+                        <ReadOnlyListSection title="In Scope" items={inScope} />
+                        <ReadOnlyListSection title="Out of Scope" items={outOfScope} />
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
             
-            <h3>Project Goals</h3>
-            <ul>{goals.map(g => <li key={g.id}>{g.text}</li>)}</ul>
-
-            <h3>Scope</h3>
-            <h4>In Scope:</h4>
-            <ul>{inScope.map(i => <li key={i.id}>{i.text}</li>)}</ul>
-            <h4>Out of Scope:</h4>
-            <ul>{outOfScope.map(o => <li key={o.id}>{o.text}</li>)}</ul>
-
-            <h3>Timeline & Milestones</h3>
-            <ul>{milestones.map(m => <li key={m.id}>{m.text}</li>)}</ul>
-
-            <h3>Roles & Responsibilities</h3>
-            <ul>{roles.map(r => <li key={r.id}><strong>{r.role}:</strong> {r.name}</li>)}</ul>
-
-            <h3>Risks & Assumptions</h3>
-            <ul>{risks.map(r => <li key={r.id}>{r.text}</li>)}</ul>
+            <ReadOnlyListSection title="Timeline & Key Milestones" items={milestones} />
             
-            <h3>Open Questions</h3>
-            <ul>{questions.map(q => <li key={q.id}>{q.text}</li>)}</ul>
+            <Card>
+                <CardHeader className="py-3"><CardTitle className="text-lg">Roles & Responsibilities</CardTitle></CardHeader>
+                <CardContent>
+                    <ul className="space-y-1">{roles.map(item => <li key={item.id}><strong>{item.role}:</strong> {item.name}</li>)}</ul>
+                </CardContent>
+            </Card>
+
+            <ReadOnlyListSection title="Risks & Assumptions" items={risks} />
+            <ReadOnlyListSection title="Open Questions" items={questions} />
         </div>
     );
 }
+
+    

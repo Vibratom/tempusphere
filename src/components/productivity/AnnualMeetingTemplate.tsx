@@ -140,8 +140,8 @@ export function AnnualMeetingTemplate() {
 }
 
 export function AnnualMeetingPreview() {
-    const [meetingTitle] = useLocalStorage('annual-meeting:title', '');
-    const [attendees] = useLocalStorage<Attendee[]>('annual-meeting:attendees', []);
+    const [meetingTitle] = useLocalStorage('annual-meeting:title', 'Happy Pets Animal Shelter Annual Meeting');
+    const [attendees] = useLocalStorage<Attendee[]>('annual-meeting:attendees', initialAttendees);
     const [callToAction] = useLocalStorage('annual-meeting:callToAction', '');
     const [welcome] = useLocalStorage('annual-meeting:welcome', '');
     const [approval] = useLocalStorage('annual-meeting:approval', '');
@@ -151,26 +151,72 @@ export function AnnualMeetingPreview() {
     const [reports] = useLocalStorage('annual-meeting:reports', '');
 
     return (
-        <div className="prose dark:prose-invert max-w-none">
-            <h2>{meetingTitle}</h2>
-            <h3>Attendees</h3>
-            <ul>
-                {attendees.map(a => <li key={a.id}>{a.name} ({a.role}) - {a.attendee ? 'Present' : 'Absent'}</li>)}
-            </ul>
-            <h3>Call to Order</h3>
-            <p>{callToAction}</p>
-            <h3>Welcome and Introductions</h3>
-            <p>{welcome}</p>
-            <h3>Approval of Previous Minutes</h3>
-            <p>{approval}</p>
-            <h3>Reports</h3>
-            <p>{reports}</p>
-            <h3>Elections</h3>
-            <p>{elections}</p>
-            <h3>Proposals and Voting</h3>
-            <p>{proposals}</p>
-            <h3>Open Forum</h3>
-            <p>{openForum}</p>
+        <div className="bg-white dark:bg-card p-8 rounded-lg shadow-lg font-sans text-gray-800 dark:text-gray-200">
+            {/* Header Section */}
+            <header className="mb-8 text-center md:text-left">
+                <h1 className="text-5xl font-bold text-gray-900 dark:text-white uppercase tracking-wider">Annual Meeting</h1>
+                <h2 className="text-5xl font-bold text-gray-900 dark:text-white uppercase tracking-wider">Minutes</h2>
+            </header>
+
+            <div className="grid md:grid-cols-2 gap-x-8 gap-y-4 mb-8">
+                <div className="p-2"><span className="font-semibold text-sm shrink-0 uppercase">Meeting Title:</span> {meetingTitle}</div>
+                <div className="grid grid-cols-2 text-sm gap-x-4 gap-y-2">
+                    <div className="font-semibold uppercase">Date and Time</div><div>May 6, 2024, 10:00 AM - 12:00 PM</div>
+                    <div className="font-semibold uppercase">Location</div><div>Happy Pets Animal Shelter Community Room</div>
+                    <div className="font-semibold uppercase">Duration</div><div>2 Hours</div>
+                    <div className="font-semibold uppercase">Adjournment</div><div>12:00 PM</div>
+                </div>
+            </div>
+
+            {/* Attendees Section */}
+            <section className="mb-8">
+                <h2 className="text-xl font-bold mb-3 pb-2 uppercase tracking-wider">Meeting Attendees</h2>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-purple-100/50 dark:bg-purple-900/30">
+                            <tr>{['Name', 'Title', 'Role', 'Attendee', 'Proxy For'].map(h => <th key={h} className="p-2 font-semibold uppercase">{h}</th>)}</tr>
+                        </thead>
+                        <tbody>
+                            {attendees.map(attendee => (
+                                <tr key={attendee.id} className="border-b dark:border-gray-700">
+                                    <td className="p-2">{attendee.name}</td>
+                                    <td className="p-2">{attendee.title}</td>
+                                    <td className="p-2">{attendee.role}</td>
+                                    <td className="p-2">{attendee.attendee ? '✔️' : '❌'}</td>
+                                    <td className="p-2">{attendee.proxy || 'N/A'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <section className="mb-8 border-t-2 border-purple-300 dark:border-purple-700 pt-4">
+                 <h2 className="text-xl font-bold mb-2 pb-2 uppercase tracking-wider">Call to Order</h2>
+                 <p className="whitespace-pre-wrap">{callToAction}</p>
+            </section>
+
+            {/* Main Content Grid */}
+            <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-8">
+                     <section><h3 className="text-lg font-bold uppercase tracking-wider p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">Welcome and Introductions</h3><p className="p-2 whitespace-pre-wrap">{welcome}</p></section>
+                     <section><h3 className="text-lg font-bold uppercase tracking-wider p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">Elections</h3><p className="p-2 whitespace-pre-wrap">{elections}</p></section>
+                     <section><h3 className="text-lg font-bold uppercase tracking-wider p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">Proposals and Voting</h3><p className="p-2 whitespace-pre-wrap">{proposals}</p></section>
+                     <section><h3 className="text-lg font-bold uppercase tracking-wider p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">Open Forum</h3><p className="p-2 whitespace-pre-wrap">{openForum}</p></section>
+                </div>
+                <div className="space-y-8">
+                    <section><h3 className="text-lg font-bold uppercase tracking-wider p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">Approval of Previous Minutes</h3><p className="p-2 whitespace-pre-wrap">{approval}</p></section>
+                    <section><h3 className="text-lg font-bold uppercase tracking-wider p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-t-md">Reports</h3><p className="p-2 whitespace-pre-wrap">{reports}</p></section>
+                </div>
+            </div>
+
+            {/* Footer Section */}
+            <footer className="mt-8 pt-4 border-t-2 border-purple-300 dark:border-purple-700 flex justify-between items-center">
+                <p className="font-bold uppercase">Next Meeting Date</p>
+                <p>June 3rd at 6:00 PM at the shelter</p>
+            </footer>
         </div>
     );
 }
+
+    

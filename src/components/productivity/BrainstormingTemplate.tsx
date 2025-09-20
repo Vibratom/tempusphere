@@ -110,11 +110,11 @@ export function BrainstormingPreview() {
     const [blocks] = useLocalStorage<Block[]>('brainstorming:blocks-v1', []);
 
     return (
-        <div className="prose dark:prose-invert max-w-none">
+        <div className="space-y-4">
             {blocks.map(block => (
-                <div key={block.id}>
-                    <h3>{block.title}</h3>
-                    <p>{block.content}</p>
+                <div key={block.id} className="p-4 border rounded-lg bg-card shadow-sm">
+                    <h3 className="text-lg font-semibold mb-2">{block.title}</h3>
+                    <p className="whitespace-pre-wrap text-muted-foreground">{block.content || 'No content'}</p>
                 </div>
             ))}
         </div>

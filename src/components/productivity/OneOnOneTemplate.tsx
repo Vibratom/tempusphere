@@ -87,15 +87,31 @@ export function OneOnOnePreview() {
     ];
 
     return (
-        <div className="prose dark:prose-invert max-w-none">
-            <h2>1-on-1: {manager} & {employee}</h2>
-            <p><strong>Date:</strong> {date}</p>
-            {sections.map(section => (
-                <div key={section.title}>
-                    <h3>{section.title}</h3>
-                    <p>{section.value || 'No notes for this section.'}</p>
-                </div>
-            ))}
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-2xl text-center">One-on-One Meeting</CardTitle>
+                    <CardDescription className="text-center">A private meeting between a manager and a direct report.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid md:grid-cols-3 gap-4">
+                    <div className="space-y-1"><Label>Manager</Label><p className="font-semibold">{manager || 'N/A'}</p></div>
+                    <div className="space-y-1"><Label>Employee</Label><p className="font-semibold">{employee || 'N/A'}</p></div>
+                    <div className="space-y-1"><Label>Date</Label><p className="font-semibold">{date || 'N/A'}</p></div>
+                </CardContent>
+            </Card>
+
+            <div className="space-y-4">
+                {sections.map(section => (
+                    <Card key={section.title}>
+                        <CardHeader><CardTitle className="text-base">{section.title}</CardTitle></CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{section.value || 'No notes for this section.'}</p>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
         </div>
     );
 }
+
+    

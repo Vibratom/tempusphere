@@ -101,18 +101,44 @@ export function DailyScrumPreview() {
     const [updates] = useLocalStorage<MemberUpdate[]>('scrum:updates', []);
 
     return (
-        <div className="prose dark:prose-invert max-w-none">
-            <h2>Daily Scrum - {date}</h2>
-            {updates.map(update => (
-                <div key={update.id} className="mt-4">
-                    <h4>{update.name}</h4>
-                    <ul>
-                        <li><strong>Yesterday:</strong> {update.yesterday}</li>
-                        <li><strong>Today:</strong> {update.today}</li>
-                        <li><strong>Blockers:</strong> {update.blockers || 'None'}</li>
-                    </ul>
-                </div>
-            ))}
+         <div className="space-y-4">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="text-2xl text-center">Daily Stand-up / Scrum</CardTitle>
+                </CardHeader>
+                 <CardContent>
+                    <div className="max-w-xs mx-auto text-center">
+                        <Label>Meeting Date</Label>
+                        <p className="font-semibold">{date}</p>
+                    </div>
+                </CardContent>
+            </Card>
+            
+            <div className="space-y-4">
+                {updates.map((update) => (
+                    <Card key={update.id}>
+                        <CardHeader className="py-3 bg-muted/50">
+                             <h3 className="text-lg font-semibold">{update.name}</h3>
+                        </CardHeader>
+                        <CardContent className="p-4 grid md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-green-600 dark:text-green-400">What did you do yesterday?</p>
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{update.yesterday || 'N/A'}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">What will you do today?</p>
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{update.today || 'N/A'}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-red-600 dark:text-red-400">Any blockers?</p>
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{update.blockers || 'None'}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
         </div>
     );
 }
+
+    
