@@ -185,6 +185,8 @@ export default function MoMPage() {
             toast({ title: 'Template Changed', description: `Switched to ${selectedTemplate.name}.` });
         }
     };
+    
+    const activeTemplateName = meetingTemplates.find(t => t.id === activeTemplate)?.name || 'Default Template';
 
     const renderActiveTemplate = () => {
         switch (activeTemplate) {
@@ -231,9 +233,12 @@ export default function MoMPage() {
                     </DropdownMenuContent>
                  </DropdownMenu>
              </div>
+             
+            <div className="text-center mb-6">
+                 <h2 className="text-2xl font-semibold text-muted-foreground">{activeTemplateName}</h2>
+            </div>
             
             {renderActiveTemplate()}
         </div>
     );
 }
-
