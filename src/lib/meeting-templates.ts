@@ -1,5 +1,6 @@
 
 export interface MeetingTemplate {
+    id: string;
     name: string;
     description: string;
     content: string;
@@ -7,6 +8,19 @@ export interface MeetingTemplate {
 
 export const meetingTemplates: MeetingTemplate[] = [
     {
+        id: 'default',
+        name: "Default Template",
+        description: "A flexible, general-purpose template for any meeting type.",
+        content: ""
+    },
+    {
+        id: 'board-meeting',
+        name: "Board Meeting",
+        description: "A formal layout for board meetings, with sections for reports, voting, and discussion items.",
+        content: "" // Content is now handled by the component layout
+    },
+    {
+        id: 'annual-meeting',
         name: "Annual Meeting",
         description: "A formal template for annual meetings, covering reports, elections, and voting.",
         content: `### 1. Call to Order
@@ -50,36 +64,7 @@ The meeting was adjourned at [Time].
 The next meeting is scheduled for [Date] at [Time].`
     },
     {
-        name: "Board Meeting",
-        description: "A formal template for board meetings, including sections for reports, old/new business, and action items.",
-        content: `### Call to Order
-A meeting of the Board of Directors was held on [Date] at [Time].
-
-### Attendees Present
-- 
-- 
-
-### Reports
-- **Financial Report:**
-  - 
-- **Marketing Report:**
-  - 
-
-### Old Business
-- **[Topic from previous meeting]:**
-  - 
-
-### New Business
-- **[New topic for discussion]:**
-  - 
-
-### Adjournment
-The meeting was adjourned at [Time].
-
-### Next Meeting
-The next meeting will be held on [Date].`
-    },
-    {
+        id: 'project-kick-off',
         name: "Project Kick-off",
         description: "A standard template for initiating a new project.",
         content: `### 1. Project Goals & Objectives
@@ -103,6 +88,7 @@ The next meeting will be held on [Date].`
 - `
     },
     {
+        id: 'daily-scrum',
         name: "Daily Stand-up / Scrum",
         description: "A quick format for daily team check-ins.",
         content: `### Updates
@@ -116,6 +102,7 @@ The next meeting will be held on [Date].`
   - Blockers: `
     },
     {
+        id: 'client-check-in',
         name: "Client Check-in",
         description: "For regular updates and feedback sessions with a client.",
         content: `### 1. Review of Previous Action Items
@@ -131,6 +118,7 @@ The next meeting will be held on [Date].`
 - `
     },
     {
+        id: 'one-on-one',
         name: "One-on-One",
         description: "A private meeting between a manager and a direct report.",
         content: `### 1. Check-in & How are you doing?
@@ -149,6 +137,7 @@ The next meeting will be held on [Date].`
 - `
     },
     {
+        id: 'brainstorming',
         name: "Brainstorming Session",
         description: "An open format for generating new ideas.",
         content: `### Problem Statement / Goal

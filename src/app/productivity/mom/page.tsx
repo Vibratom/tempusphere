@@ -13,6 +13,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { meetingTemplates, type MeetingTemplate } from '@/lib/meeting-templates';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { BoardMeetingTemplate } from '@/components/productivity/BoardMeetingTemplate';
+
+type TemplateType = 'default' | 'board-meeting';
 
 interface ActionItem {
   id: string;
@@ -34,7 +37,7 @@ const TemplateSelector = ({ onSelect }: { onSelect: (template: MeetingTemplate) 
         <DialogContent className="max-w-2xl">
             <DialogHeader>
                 <DialogTitle>Choose a Template</DialogTitle>
-                <DialogDescription>Select a template to pre-fill the meeting notes with a structured format.</DialogDescription>
+                <DialogDescription>Select a template to pre-fill the meeting notes with a structured format or change the layout.</DialogDescription>
             </DialogHeader>
             <ScrollArea className="h-[60vh]">
                 <div className="space-y-2 pr-4">
@@ -52,7 +55,7 @@ const TemplateSelector = ({ onSelect }: { onSelect: (template: MeetingTemplate) 
     );
 };
 
-function MeetingMinutesTool() {
+function DefaultMeetingMinutesTool() {
   const [minutes, setMinutes] = useLocalStorage<MeetingMinutes>('productivity:meeting-minutes-v1', {
     title: '',
     date: new Date().toISOString().split('T')[0],
@@ -60,7 +63,6 @@ function MeetingMinutesTool() {
     notes: '',
     actionItems: [],
   });
-  const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -102,16 +104,6 @@ function MeetingMinutesTool() {
     toast({ title: "Form Cleared", description: "The meeting minutes have been reset." });
   }
 
-  const applyTemplate = (template: MeetingTemplate) => {
-    setMinutes(prev => ({
-        ...prev,
-        title: prev.title || template.name,
-        notes: template.content,
-    }));
-    setIsTemplateSelectorOpen(false);
-    toast({ title: "Template Applied", description: `The "${template.name}" template has been loaded into the notes.`});
-  }
-
   const exportToMarkdown = () => {
     let markdown = `# ${minutes.title || 'Meeting Minutes'}\n\n`;
     markdown += `**Date:** ${minutes.date}\n`;
@@ -135,18 +127,7 @@ function MeetingMinutesTool() {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
-        <div className="flex flex-col items-center text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Meeting Minutes</h1>
-            <p className="text-lg text-muted-foreground mt-2 max-w-2xl">
-                A structured tool to capture notes, action items, and key decisions from your meetings. Your data is saved locally.
-            </p>
-        </div>
-
-        <Dialog open={isTemplateSelectorOpen} onOpenChange={setIsTemplateSelectorOpen}>
-            <TemplateSelector onSelect={applyTemplate} />
-        </Dialog>
-
+    <>
         <Card>
             <CardHeader>
                 <CardTitle>Meeting Details</CardTitle>
@@ -168,11 +149,8 @@ function MeetingMinutesTool() {
                 </div>
             </CardContent>
 
-            <CardHeader className="border-t pt-4 flex-row justify-between items-center">
+            <CardHeader className="border-t pt-4">
                 <CardTitle>Discussion Notes</CardTitle>
-                <Button variant="outline" onClick={() => setIsTemplateSelectorOpen(true)}>
-                    <NotebookPen className="mr-2 h-4 w-4"/> Templates
-                </Button>
             </CardHeader>
             <CardContent>
                 <Textarea value={minutes.notes} onChange={e => handleInputChange('notes', e.target.value)} rows={10} placeholder="Key points discussed, decisions made, open questions..." />
@@ -210,13 +188,52 @@ function MeetingMinutesTool() {
                 <Button onClick={exportToMarkdown}><Download className="mr-2" /> Export to Markdown</Button>
             </CardFooter>
         </Card>
-    </div>
+    </>
   );
 }
 
 
 export default function MoMPage() {
+    const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
+    const [activeTemplate, setActiveTemplate] = useState<TemplateType>('default');
+    const { toast } = useToast();
+
+    const handleTemplateSelect = (template: MeetingTemplate) => {
+        if (template.id === 'board-meeting') {
+            setActiveTemplate('board-meeting');
+            toast({ title: 'Template Changed', description: 'Switched to Board Meeting layout.' });
+        } else {
+            setActiveTemplate('default');
+            toast({ title: 'Template Changed', description: 'Switched to Default layout.' });
+        }
+        setIsTemplateSelectorOpen(false);
+    };
+
     return (
-        <MeetingMinutesTool />
+        <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
+            <div className="flex flex-col items-center text-center mb-8">
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Meeting Minutes</h1>
+                <p className="text-lg text-muted-foreground mt-2 max-w-2xl">
+                    A structured tool to capture notes, action items, and key decisions from your meetings. Your data is saved locally.
+                </p>
+            </div>
+
+             <div className="mb-4 text-center">
+                 <Dialog open={isTemplateSelectorOpen} onOpenChange={setIsTemplateSelectorOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline">
+                            <NotebookPen className="mr-2 h-4 w-4"/> Change Template
+                        </Button>
+                    </DialogTrigger>
+                    <TemplateSelector onSelect={handleTemplateSelect} />
+                </Dialog>
+             </div>
+
+            {activeTemplate === 'board-meeting' ? (
+                <BoardMeetingTemplate />
+            ) : (
+                <DefaultMeetingMinutesTool />
+            )}
+        </div>
     );
 }
