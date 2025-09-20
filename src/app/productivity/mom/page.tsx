@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -21,7 +22,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { BrainstormingTemplate, BrainstormingPreview } from '@/components/productivity/BrainstormingTemplate';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import htmlToDocx from 'html-to-docx';
 import { saveAs } from 'file-saver';
 
 
@@ -318,27 +318,7 @@ export default function MoMPage() {
     };
 
     const exportAsDocx = async () => {
-        if (!previewRef.current) return;
-        const { html, styles } = getHtmlContent();
-        const htmlString = `<!DOCTYPE html>
-        <html>
-          <head>
-            <style>${styles}</style>
-          </head>
-          <body>${html}</body>
-        </html>`;
-
-        try {
-            const fileBuffer = await htmlToDocx(htmlString, undefined, {
-                font: 'Inter',
-                fontSize: 12,
-            });
-            saveAs(fileBuffer as Blob, `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.docx`);
-            toast({ title: "Export Successful", description: `Your minutes have been downloaded as a DOCX file.` });
-        } catch (e) {
-            toast({ variant: 'destructive', title: "Export Failed", description: "Could not generate DOCX file." });
-            console.error(e);
-        }
+        toast({ variant: 'destructive', title: "Export Failed", description: "DOCX export is not supported in this environment." });
     }
 
     const exportToFile = (content: string, fileName: string, contentType: string) => {
@@ -419,7 +399,7 @@ export default function MoMPage() {
                                 <DropdownMenuItem onClick={exportAsPdf}>
                                     <FileImage className="mr-2 h-4 w-4" /> Export as PDF (.pdf)
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={exportAsDocx}>
+                                <DropdownMenuItem onClick={exportAsDocx} disabled>
                                     <FileUp className="mr-2 h-4 w-4" /> Export as Word (.docx)
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => {
