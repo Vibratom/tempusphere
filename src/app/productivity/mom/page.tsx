@@ -14,8 +14,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { meetingTemplates, type MeetingTemplate } from '@/lib/meeting-templates';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BoardMeetingTemplate } from '@/components/productivity/BoardMeetingTemplate';
+import { AnnualMeetingTemplate } from '@/components/productivity/AnnualMeetingTemplate';
 
-type TemplateType = 'default' | 'board-meeting';
+type TemplateType = 'default' | 'board-meeting' | 'annual-meeting';
 
 interface ActionItem {
   id: string;
@@ -202,6 +203,9 @@ export default function MoMPage() {
         if (template.id === 'board-meeting') {
             setActiveTemplate('board-meeting');
             toast({ title: 'Template Changed', description: 'Switched to Board Meeting layout.' });
+        } else if (template.id === 'annual-meeting') {
+            setActiveTemplate('annual-meeting');
+            toast({ title: 'Template Changed', description: 'Switched to Annual Meeting layout.' });
         } else {
             setActiveTemplate('default');
             toast({ title: 'Template Changed', description: 'Switched to Default layout.' });
@@ -231,6 +235,8 @@ export default function MoMPage() {
 
             {activeTemplate === 'board-meeting' ? (
                 <BoardMeetingTemplate />
+            ) : activeTemplate === 'annual-meeting' ? (
+                <AnnualMeetingTemplate />
             ) : (
                 <DefaultMeetingMinutesTool />
             )}
