@@ -3,13 +3,16 @@
 
 import React, { useState } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Download, Eraser } from 'lucide-react';
+import { Plus, Trash2, Download, Eraser, NotebookPen } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { meetingTemplates, type MeetingTemplate } from '@/lib/meeting-templates';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ActionItem {
   id: string;
@@ -26,6 +29,29 @@ interface MeetingMinutes {
   actionItems: ActionItem[];
 }
 
+const TemplateSelector = ({ onSelect }: { onSelect: (template: MeetingTemplate) => void }) => {
+    return (
+        <DialogContent className="max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>Choose a Template</DialogTitle>
+                <DialogDescription>Select a template to pre-fill the meeting notes with a structured format.</DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="h-[60vh]">
+                <div className="space-y-2 pr-4">
+                    {meetingTemplates.map(template => (
+                        <Card key={template.name} className="cursor-pointer hover:bg-muted/50" onClick={() => onSelect(template)}>
+                            <CardHeader>
+                                <CardTitle className="text-base">{template.name}</CardTitle>
+                                <CardDescription>{template.description}</CardDescription>
+                            </CardHeader>
+                        </Card>
+                    ))}
+                </div>
+            </ScrollArea>
+        </DialogContent>
+    );
+};
+
 function MeetingMinutesTool() {
   const [minutes, setMinutes] = useLocalStorage<MeetingMinutes>('productivity:meeting-minutes-v1', {
     title: '',
@@ -34,6 +60,7 @@ function MeetingMinutesTool() {
     notes: '',
     actionItems: [],
   });
+  const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -75,6 +102,16 @@ function MeetingMinutesTool() {
     toast({ title: "Form Cleared", description: "The meeting minutes have been reset." });
   }
 
+  const applyTemplate = (template: MeetingTemplate) => {
+    setMinutes(prev => ({
+        ...prev,
+        title: prev.title || template.name,
+        notes: template.content,
+    }));
+    setIsTemplateSelectorOpen(false);
+    toast({ title: "Template Applied", description: `The "${template.name}" template has been loaded into the notes.`});
+  }
+
   const exportToMarkdown = () => {
     let markdown = `# ${minutes.title || 'Meeting Minutes'}\n\n`;
     markdown += `**Date:** ${minutes.date}\n`;
@@ -106,6 +143,10 @@ function MeetingMinutesTool() {
             </p>
         </div>
 
+        <Dialog open={isTemplateSelectorOpen} onOpenChange={setIsTemplateSelectorOpen}>
+            <TemplateSelector onSelect={applyTemplate} />
+        </Dialog>
+
         <Card>
             <CardHeader>
                 <CardTitle>Meeting Details</CardTitle>
@@ -127,8 +168,11 @@ function MeetingMinutesTool() {
                 </div>
             </CardContent>
 
-            <CardHeader className="border-t pt-4">
+            <CardHeader className="border-t pt-4 flex-row justify-between items-center">
                 <CardTitle>Discussion Notes</CardTitle>
+                <Button variant="outline" onClick={() => setIsTemplateSelectorOpen(true)}>
+                    <NotebookPen className="mr-2 h-4 w-4"/> Templates
+                </Button>
             </CardHeader>
             <CardContent>
                 <Textarea value={minutes.notes} onChange={e => handleInputChange('notes', e.target.value)} rows={10} placeholder="Key points discussed, decisions made, open questions..." />

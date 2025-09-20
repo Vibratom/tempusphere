@@ -1,0 +1,99 @@
+
+export interface MeetingTemplate {
+    name: string;
+    description: string;
+    content: string;
+}
+
+export const meetingTemplates: MeetingTemplate[] = [
+    {
+        name: "Project Kick-off",
+        description: "A standard template for initiating a new project.",
+        content: `### 1. Project Goals & Objectives
+- 
+
+### 2. Scope & Deliverables
+- In Scope: 
+- Out of Scope: 
+
+### 3. Timeline & Key Milestones
+- Milestone 1: 
+- Milestone 2: 
+
+### 4. Roles & Responsibilities
+- 
+
+### 5. Risks & Mitigation
+- 
+
+### 6. Open Questions
+- `
+    },
+    {
+        name: "Daily Stand-up / Scrum",
+        description: "A quick format for daily team check-ins.",
+        content: `### Updates
+- **(Team Member 1):**
+  - Yesterday: 
+  - Today: 
+  - Blockers: 
+- **(Team Member 2):**
+  - Yesterday: 
+  - Today: 
+  - Blockers: `
+    },
+    {
+        name: "Client Check-in",
+        description: "For regular updates and feedback sessions with a client.",
+        content: `### 1. Review of Previous Action Items
+- 
+
+### 2. Progress Update & Demo
+- 
+
+### 3. Client Feedback
+- 
+
+### 4. Next Steps & Priorities
+- `
+    },
+    {
+        name: "One-on-One",
+        description: "A private meeting between a manager and a direct report.",
+        content: `### 1. Check-in & How are you doing?
+- 
+
+### 2. Review of Priorities & Goals
+- 
+
+### 3. Challenges & Blockers
+- 
+
+### 4. Career Growth & Development
+- 
+
+### 5. Feedback (Both ways)
+- `
+    },
+    {
+        name: "Brainstorming Session",
+        description: "An open format for generating new ideas.",
+        content: `### Problem Statement / Goal
+- 
+
+### Idea Generation (Round 1)
+- 
+
+### Idea Generation (Round 2)
+- 
+
+### Idea Grouping & Theming
+- Theme 1: 
+- Theme 2: 
+
+### Prioritized Ideas
+1. 
+2. 
+3. `
+    }
+];
