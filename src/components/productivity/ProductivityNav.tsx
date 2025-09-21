@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -8,8 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const tools = [
     { value: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', href: '/productivity' },
     { value: 'mom', icon: FileText, label: 'MoM', href: '/productivity/mom' },
-    { value: 'swot', icon: BrainCircuit, label: 'SWOT', href: '/productivity/swot' },
-    { value: 'tows', icon: Combine, label: 'TOWS', href: '/productivity/tows' },
+    { value: 'analysis', icon: BrainCircuit, label: 'Analysis', href: '/productivity/analysis' },
     { value: 'funnel', icon: Filter, label: 'Funnel', href: '/productivity/funnel' },
     { value: 'content-strategy', icon: ClipboardList, label: 'Content', href: '/productivity/content-strategy' },
     { value: 'marketing-strategy', icon: Megaphone, label: 'Marketing', href: '/productivity/marketing-strategy' },
