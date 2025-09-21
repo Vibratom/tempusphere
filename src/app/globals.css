@@ -50,8 +50,8 @@ body {
     --card-foreground: 260 10% 95%;
     --popover: 260 20% 10%;
     --popover-foreground: 260 10% 95%;
-    --primary: 130 50% 55%; /* Brighter Mint */
-    --primary-foreground: 130 50% 98%;
+    --primary: 130 45% 65%; /* Brighter Mint for Dark Mode */
+    --primary-foreground: 130 50% 15%;
     --secondary: 260 20% 18%;
     --secondary-foreground: 260 10% 95%;
     --muted: 260 15% 25%;
@@ -62,7 +62,7 @@ body {
     --destructive-foreground: 210 20% 98%;
     --border: 260 15% 25%;
     --input: 260 15% 25%;
-    --ring: 130 50% 55%;
+    --ring: 130 45% 65%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
