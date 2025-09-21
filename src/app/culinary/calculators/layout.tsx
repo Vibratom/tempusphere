@@ -35,7 +35,7 @@ export default function CalculatorsLayout({
                     ))}
                 </TabsList>
             </div>
-             <div className="px-4 md:px-8">
+             <div className="px-4 md:px-0">
                 <Card className="mb-6 bg-secondary/50">
                   <CardHeader>
                     <CardTitle>Looking for More?</CardTitle>

@@ -17,7 +17,7 @@ export default function CulinaryLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
-  const activeTool = useMemo(() => pathname.split('/')[2] || 'core-tools', [pathname]);
+  const activeTool = useMemo(() => pathname.split('/')[2] || 'dashboard', [pathname]);
 
   return (
     <SettingsProvider>
@@ -29,7 +29,7 @@ export default function CulinaryLayout({
                     <div className="w-full max-w-7xl flex flex-col flex-1 gap-4">
                     <CulinaryNav activeTool={activeTool} />
                         <Card className="flex-1">
-                        <CardContent className="p-0 md:p-0 h-full">
+                        <CardContent className="p-4 md:p-6 h-full">
                             {children}
                         </CardContent>
                     </Card>

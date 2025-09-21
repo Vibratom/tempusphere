@@ -3,10 +3,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Soup, Calculator, Workflow, Trash2 } from 'lucide-react';
+import { Soup, Calculator, Workflow, Trash2, LayoutDashboard } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
+    { value: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', href: '/culinary' },
     { value: 'core-tools', icon: Soup, label: 'Core Tools', href: '/culinary/core-tools' },
     { value: 'calculators', icon: Calculator, label: 'Calculators', href: '/culinary/calculators' },
     { value: 'waste-tracker', icon: Trash2, label: 'Waste Tracker', href: '/culinary/waste-tracker' },
@@ -23,7 +24,7 @@ const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: s
 );
 
 export function CulinaryNav({ activeTool }: { activeTool: string }) {
-    const adjustedActiveTool = activeTool === '' ? 'core-tools' : activeTool;
+    const adjustedActiveTool = activeTool === '' || activeTool === 'culinary' ? 'dashboard' : activeTool;
     return (
         <Tabs defaultValue={adjustedActiveTool} value={adjustedActiveTool} className="flex justify-center">
             <TabsList className="h-auto">

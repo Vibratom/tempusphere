@@ -392,8 +392,8 @@ export function CulinaryApp() {
             </div>
             <Button onClick={() => setEditingRecipe(null)}><Plus className="mr-2"/>Add New Recipe</Button>
         </div>
-        <ScrollArea className="flex-1 -mx-2">
-            <div className="px-2">
+        <ScrollArea className="flex-1 -mx-4">
+            <div className="px-4">
                 {filteredRecipes.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         {filteredRecipes.map(recipe => (
