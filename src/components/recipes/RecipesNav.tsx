@@ -1,14 +1,16 @@
+
 'use client';
 
 import React from 'react';
 import Link from 'next/link';
-import { BookCopy, ShoppingBag, CalendarDays } from 'lucide-react';
+import { BookCopy, ShoppingBag, CalendarDays, Beef } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
     { value: 'cookbook', icon: BookCopy, label: 'Cookbook', href: '/recipes/cookbook' },
     { value: 'shopping-list', icon: ShoppingBag, label: 'Shopping List', href: '/recipes/shopping-list' },
     { value: 'meal-planner', icon: CalendarDays, label: 'Meal Planner', href: '/recipes/meal-planner' },
+    { value: 'nutrition', icon: Beef, label: 'Nutrition', href: '/recipes/nutrition' },
 ];
 
 const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: string, href: string, icon: React.ElementType, children: React.ReactNode }) => (

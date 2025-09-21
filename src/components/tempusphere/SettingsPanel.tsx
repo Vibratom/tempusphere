@@ -110,6 +110,8 @@ export function SettingsPanel() {
     setFullscreenSettings,
     spoonacularApiKey,
     setSpoonacularApiKey,
+    usdaApiKey,
+    setUsdaApiKey,
   } = useSettings();
   const { resolvedTheme } = useTheme();
   const [extractedPalette, setExtractedPalette] = useState<string[]>([]);
@@ -219,6 +221,12 @@ export function SettingsPanel() {
                   <Input id="spoonacular-key" value={spoonacularApiKey} onChange={(e) => setSpoonacularApiKey(e.target.value)} placeholder="Enter your key"/>
               </div>
                <p className="text-xs text-muted-foreground">Get a free API key from the <a href="https://spoonacular.com/food-api" target="_blank" rel="noopener noreferrer" className="underline">Spoonacular website</a>.</p>
+               <Separator />
+               <div className="grid grid-cols-2 gap-4 items-center">
+                  <Label htmlFor="usda-key">USDA FoodData API Key</Label>
+                  <Input id="usda-key" value={usdaApiKey} onChange={(e) => setUsdaApiKey(e.target.value)} placeholder="Enter your key"/>
+              </div>
+               <p className="text-xs text-muted-foreground">Get a free API key from the <a href="https://fdc.nal.usda.gov/api-key-signup.html" target="_blank" rel="noopener noreferrer" className="underline">USDA FoodData Central website</a>.</p>
             </CardContent>
           </Card>
 

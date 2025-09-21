@@ -43,6 +43,8 @@ interface Settings {
   setFullscreenSettings: Dispatch<SetStateAction<FullscreenSettings>>;
   spoonacularApiKey: string;
   setSpoonacularApiKey: Dispatch<SetStateAction<string>>;
+  usdaApiKey: string;
+  setUsdaApiKey: Dispatch<SetStateAction<string>>;
 }
 
 const SettingsContext = createContext<Settings | undefined>(undefined);
@@ -76,6 +78,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     calendar: false,
   });
   const [spoonacularApiKey, setSpoonacularApiKey] = useLocalStorage<string>('settings:spoonacularKey', '');
+  const [usdaApiKey, setUsdaApiKey] = useLocalStorage<string>('settings:usdaKey', '');
   const { resolvedTheme } = useTheme();
 
 
@@ -135,6 +138,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setFullscreenSettings,
     spoonacularApiKey,
     setSpoonacularApiKey,
+    usdaApiKey,
+    setUsdaApiKey,
   };
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
