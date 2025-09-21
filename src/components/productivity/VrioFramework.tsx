@@ -46,7 +46,7 @@ export function VrioFramework() {
     const [title, setTitle] = useLocalStorage('vrio:title', 'My VRIO Framework');
     const [resources, setResources] = useLocalStorage<VrioResource[]>('vrio:resources', [createNewResource()]);
     const { toast } = useToast();
-    const vrioContentRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     const handleResourceChange = (id: string, field: keyof VrioResource, value: string | boolean) => {
         setResources(prev => prev.map(res => res.id === id ? { ...res, [field]: value } : res));
@@ -61,9 +61,9 @@ export function VrioFramework() {
     };
     
     const exportToImage = async (format: 'png' | 'pdf') => {
-        if (!vrioContentRef.current) return;
+        if (!contentRef.current) return;
         
-        const canvas = await html2canvas(vrioContentRef.current, {
+        const canvas = await html2canvas(contentRef.current, {
             scale: 2,
             backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
         });
@@ -86,14 +86,14 @@ export function VrioFramework() {
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-            <div ref={vrioContentRef} className="p-4 bg-background">
-                <div className="flex flex-col items-center text-center">
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">VRIO Framework</h1>
-                    <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
-                        Evaluate your organization's resources and capabilities to identify sources of sustained competitive advantage.
-                    </p>
-                </div>
-                
+            <div className="flex flex-col items-center text-center">
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">VRIO Framework</h1>
+                <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
+                    Evaluate your organization's resources and capabilities to identify sources of sustained competitive advantage.
+                </p>
+            </div>
+            
+            <div ref={contentRef} className="p-4 bg-background">
                 <Card className="my-6">
                     <CardHeader className="items-center">
                         <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>

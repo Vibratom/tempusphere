@@ -98,7 +98,7 @@ export function SwotAnalysis() {
     const [threats, setThreats] = useLocalStorage<SwotItem[]>('swot:threats', []);
     const { toast } = useToast();
 
-    const swotContentRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     const onDragEnd: OnDragEndResponder = (result) => {
         const { source, destination } = result;
@@ -129,9 +129,9 @@ export function SwotAnalysis() {
     };
     
     const exportToImage = async (format: 'png' | 'pdf') => {
-        if (!swotContentRef.current) return;
+        if (!contentRef.current) return;
         
-        const canvas = await html2canvas(swotContentRef.current, {
+        const canvas = await html2canvas(contentRef.current, {
             scale: 2,
             backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
         });
@@ -161,15 +161,14 @@ export function SwotAnalysis() {
                 </p>
             </div>
             
-            <Card>
-                <CardHeader className="items-center">
-                    <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
-                </CardHeader>
-            </Card>
-
-            <div ref={swotContentRef} className="p-4 bg-background">
+            <div ref={contentRef} className="p-4 bg-background">
+                <Card>
+                    <CardHeader className="items-center">
+                        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
+                    </CardHeader>
+                </Card>
                 <DragDropContext onDragEnd={onDragEnd}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                         <SwotColumn title="Strengths" category="strengths" items={strengths} setItems={setStrengths} placeholder="Add a strength..." className="bg-green-100/30 dark:bg-green-900/30 border-green-500" />
                         <SwotColumn title="Weaknesses" category="weaknesses" items={weaknesses} setItems={setWeaknesses} placeholder="Add a weakness..." className="bg-red-100/30 dark:bg-red-900/30 border-red-500" />
                         <SwotColumn title="Opportunities" category="opportunities" items={opportunities} setItems={setOpportunities} placeholder="Add an opportunity..." className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" />

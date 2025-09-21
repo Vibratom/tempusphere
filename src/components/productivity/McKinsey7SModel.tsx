@@ -77,14 +77,14 @@ export function McKinsey7SModel() {
     
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+            <div className="flex flex-col items-center text-center">
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">McKinsey 7-S Model</h1>
+                <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
+                    Analyze organizational effectiveness through the seven interconnected elements: Strategy, Structure, Systems, Shared Values, Style, Staff, and Skills.
+                </p>
+            </div>
+            
             <div ref={contentRef} className="p-4 bg-background">
-                <div className="flex flex-col items-center text-center">
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">McKinsey 7-S Model</h1>
-                    <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
-                        Analyze organizational effectiveness through the seven interconnected elements: Strategy, Structure, Systems, Shared Values, Style, Staff, and Skills.
-                    </p>
-                </div>
-                
                 <Card className="my-6">
                     <CardHeader className="items-center">
                         <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>

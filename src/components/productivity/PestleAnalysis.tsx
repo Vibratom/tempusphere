@@ -83,12 +83,12 @@ export function PestleAnalysis() {
     const [legal, setLegal] = useLocalStorage<PestleItem[]>('pestle:legal', []);
     const [environmental, setEnvironmental] = useLocalStorage<PestleItem[]>('pestle:environmental', []);
     const { toast } = useToast();
-    const pestleContentRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     const exportToImage = async (format: 'png' | 'pdf') => {
-        if (!pestleContentRef.current) return;
+        if (!contentRef.current) return;
         
-        const canvas = await html2canvas(pestleContentRef.current, {
+        const canvas = await html2canvas(contentRef.current, {
             scale: 2,
             backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
         });
@@ -111,14 +111,14 @@ export function PestleAnalysis() {
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-             <div ref={pestleContentRef} className="p-4 bg-background">
-                <div className="flex flex-col items-center text-center">
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">PESTLE Analysis</h1>
-                    <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
-                        Analyze the macro-environmental factors that impact your organization: Political, Economic, Social, Technological, Legal, and Environmental.
-                    </p>
-                </div>
-                
+             <div className="flex flex-col items-center text-center">
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">PESTLE Analysis</h1>
+                <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
+                    Analyze the macro-environmental factors that impact your organization: Political, Economic, Social, Technological, Legal, and Environmental.
+                </p>
+            </div>
+            
+             <div ref={contentRef} className="p-4 bg-background">
                 <Card className="my-6">
                     <CardHeader className="items-center">
                         <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
