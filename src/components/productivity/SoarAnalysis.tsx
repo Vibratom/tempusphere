@@ -20,7 +20,7 @@ interface SoarItem {
 
 const createNewItem = (text = ''): SoarItem => ({ id: uuidv4(), text });
 
-const SoarColumn = ({ title, category, items, setItems, placeholder, className, icon: Icon }: { title: string, category: SoarCategory, items: SoarItem[], setItems: React.Dispatch<React.SetStateAction<SoarItem[]>>, placeholder: string, className?: string, icon: React.ElementType }) => {
+const SoarColumn = ({ title, category, items, setItems, placeholder, className, icon: Icon, isReadonly = false }: { title: string, category: SoarCategory, items: SoarItem[], setItems: React.Dispatch<React.SetStateAction<SoarItem[]>>, placeholder: string, className?: string, icon: React.ElementType, isReadonly?: boolean }) => {
     const [newItemText, setNewItemText] = useState('');
 
     const addItem = () => {
@@ -45,7 +45,7 @@ const SoarColumn = ({ title, category, items, setItems, placeholder, className, 
                 <CardTitle>{title}</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-2">
-                <Droppable droppableId={category}>
+                <Droppable droppableId={category} isDropDisabled={isReadonly}>
                     {(provided, snapshot) => (
                         <div
                             ref={provided.innerRef}
@@ -53,16 +53,16 @@ const SoarColumn = ({ title, category, items, setItems, placeholder, className, 
                             className={cn("space-y-2 p-2 rounded-md min-h-[100px] flex-1", snapshot.isDraggingOver && "bg-muted/50")}
                         >
                             {items.map((item, index) => (
-                                <Draggable key={item.id} draggableId={item.id} index={index}>
+                                <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={isReadonly}>
                                     {(provided, snapshot) => (
                                         <div
                                             ref={provided.innerRef}
                                             {...provided.draggableProps}
                                             className={cn("flex items-center gap-2 p-2 border rounded-md bg-background", snapshot.isDragging && "shadow-lg")}
                                         >
-                                            <span {...provided.dragHandleProps} className="cursor-grab text-muted-foreground"><GripVertical className="h-5 w-5" /></span>
-                                            <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" />
-                                            <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}><Trash2 className="h-4 w-4" /></Button>
+                                            {!isReadonly && <span {...provided.dragHandleProps} className="cursor-grab text-muted-foreground"><GripVertical className="h-5 w-5" /></span>}
+                                            <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" readOnly={isReadonly} />
+                                            {!isReadonly && <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}><Trash2 className="h-4 w-4" /></Button>}
                                         </div>
                                     )}
                                 </Draggable>
@@ -72,7 +72,7 @@ const SoarColumn = ({ title, category, items, setItems, placeholder, className, 
                     )}
                 </Droppable>
 
-                <div className="flex gap-2">
+                {!isReadonly && <div className="flex gap-2">
                     <Input
                         value={newItemText}
                         onChange={e => setNewItemText(e.target.value)}
@@ -80,7 +80,7 @@ const SoarColumn = ({ title, category, items, setItems, placeholder, className, 
                         placeholder={placeholder}
                     />
                     <Button onClick={addItem}><Plus /></Button>
-                </div>
+                </div>}
             </CardContent>
         </Card>
     );
@@ -88,8 +88,8 @@ const SoarColumn = ({ title, category, items, setItems, placeholder, className, 
 
 export function SoarAnalysis() {
     const [title, setTitle] = useLocalStorage('soar:title', 'My SOAR Analysis');
-    const [strengths, setStrengths] = useLocalStorage<SoarItem[]>('soar:strengths', []);
-    const [opportunities, setOpportunities] = useLocalStorage<SoarItem[]>('soar:opportunities', []);
+    const [strengths] = useLocalStorage<SoarItem[]>('swot:strengths', []);
+    const [opportunities] = useLocalStorage<SoarItem[]>('swot:opportunities', []);
     const [aspirations, setAspirations] = useLocalStorage<SoarItem[]>('soar:aspirations', []);
     const [results, setResults] = useLocalStorage<SoarItem[]>('soar:results', []);
 
@@ -100,23 +100,29 @@ export function SoarAnalysis() {
         const sourceCategory = source.droppableId as SoarCategory;
         const destCategory = destination.droppableId as SoarCategory;
 
+        if (sourceCategory === 'strengths' || sourceCategory === 'opportunities' || destCategory === 'strengths' || destCategory === 'opportunities') return;
+
         const stateMap = {
-            strengths: { items: strengths, setItems: setStrengths },
-            opportunities: { items: opportunities, setItems: setOpportunities },
             aspirations: { items: aspirations, setItems: setAspirations },
             results: { items: results, setItems: setResults },
         };
         
+        // @ts-ignore
         const sourceList = Array.from(stateMap[sourceCategory].items);
         const [movedItem] = sourceList.splice(source.index, 1);
+        
+        // @ts-ignore
+        stateMap[sourceCategory].setItems(sourceList);
 
         if (sourceCategory === destCategory) {
             sourceList.splice(destination.index, 0, movedItem);
+             // @ts-ignore
             stateMap[sourceCategory].setItems(sourceList);
         } else {
+             // @ts-ignore
             const destList = Array.from(stateMap[destCategory].items);
             destList.splice(destination.index, 0, movedItem);
-            stateMap[sourceCategory].setItems(sourceList);
+             // @ts-ignore
             stateMap[destCategory].setItems(destList);
         }
     };
@@ -138,8 +144,8 @@ export function SoarAnalysis() {
 
             <DragDropContext onDragEnd={onDragEnd}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <SoarColumn title="Strengths" category="strengths" items={strengths} setItems={setStrengths} placeholder="Add a strength..." icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" />
-                    <SoarColumn title="Opportunities" category="opportunities" items={opportunities} setItems={setOpportunities} placeholder="Add an opportunity..." icon={Rocket} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" />
+                    <SoarColumn title="Strengths" category="strengths" items={strengths} setItems={() => {}} placeholder="" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
+                    <SoarColumn title="Opportunities" category="opportunities" items={opportunities} setItems={() => {}} placeholder="" icon={Rocket} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly />
                     <SoarColumn title="Aspirations" category="aspirations" items={aspirations} setItems={setAspirations} placeholder="Add an aspiration..." icon={Target} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" />
                     <SoarColumn title="Results" category="results" items={results} setItems={setResults} placeholder="Add a measurable result..." icon={BarChart} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" />
                 </div>

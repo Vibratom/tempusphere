@@ -21,7 +21,7 @@ interface NoiseItem {
 
 const createNewItem = (text = ''): NoiseItem => ({ id: uuidv4(), text });
 
-const NoiseColumn = ({ title, category, items, setItems, placeholder, className, icon: Icon }: { title: string, category: NoiseCategory, items: NoiseItem[], setItems: React.Dispatch<React.SetStateAction<NoiseItem[]>>, placeholder: string, className?: string, icon: React.ElementType }) => {
+const NoiseColumn = ({ title, category, items, setItems, placeholder, className, icon: Icon, isReadonly = false }: { title: string, category: NoiseCategory, items: NoiseItem[], setItems: React.Dispatch<React.SetStateAction<NoiseItem[]>>, placeholder: string, className?: string, icon: React.ElementType, isReadonly?: boolean }) => {
     const [newItemText, setNewItemText] = useState('');
 
     const addItem = () => {
@@ -47,7 +47,7 @@ const NoiseColumn = ({ title, category, items, setItems, placeholder, className,
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-2">
                 <ScrollArea className="h-48">
-                  <Droppable droppableId={category}>
+                  <Droppable droppableId={category} isDropDisabled={isReadonly}>
                       {(provided, snapshot) => (
                           <div
                               ref={provided.innerRef}
@@ -55,16 +55,16 @@ const NoiseColumn = ({ title, category, items, setItems, placeholder, className,
                               className={cn("space-y-2 p-2 rounded-md min-h-[100px] flex-1", snapshot.isDraggingOver && "bg-muted/50")}
                           >
                               {items.map((item, index) => (
-                                  <Draggable key={item.id} draggableId={item.id} index={index}>
+                                  <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={isReadonly}>
                                       {(provided, snapshot) => (
                                           <div
                                               ref={provided.innerRef}
                                               {...provided.draggableProps}
                                               className={cn("flex items-center gap-2 p-2 border rounded-md bg-background", snapshot.isDragging && "shadow-lg")}
                                           >
-                                              <span {...provided.dragHandleProps} className="cursor-grab text-muted-foreground"><GripVertical className="h-5 w-5" /></span>
-                                              <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" />
-                                              <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}><Trash2 className="h-4 w-4" /></Button>
+                                              {!isReadonly && <span {...provided.dragHandleProps} className="cursor-grab text-muted-foreground"><GripVertical className="h-5 w-5" /></span>}
+                                              <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" readOnly={isReadonly} />
+                                              {!isReadonly && <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}><Trash2 className="h-4 w-4" /></Button>}
                                           </div>
                                       )}
                                   </Draggable>
@@ -75,7 +75,7 @@ const NoiseColumn = ({ title, category, items, setItems, placeholder, className,
                   </Droppable>
                 </ScrollArea>
 
-                <div className="flex gap-2 mt-auto pt-2 border-t">
+                {!isReadonly && <div className="flex gap-2 mt-auto pt-2 border-t">
                     <Input
                         value={newItemText}
                         onChange={e => setNewItemText(e.target.value)}
@@ -83,7 +83,7 @@ const NoiseColumn = ({ title, category, items, setItems, placeholder, className,
                         placeholder={placeholder}
                     />
                     <Button onClick={addItem}><Plus /></Button>
-                </div>
+                </div>}
             </CardContent>
         </Card>
     );
@@ -92,9 +92,9 @@ const NoiseColumn = ({ title, category, items, setItems, placeholder, className,
 export function NoiseAnalysis() {
     const [title, setTitle] = useLocalStorage('noise:title', 'My NOISE Analysis');
     const [needs, setNeeds] = useLocalStorage<NoiseItem[]>('noise:needs', []);
-    const [opportunities, setOpportunities] = useLocalStorage<NoiseItem[]>('noise:opportunities', []);
+    const [opportunities, setOpportunities] = useLocalStorage<NoiseItem[]>('swot:opportunities', []);
     const [improvements, setImprovements] = useLocalStorage<NoiseItem[]>('noise:improvements', []);
-    const [strengths, setStrengths] = useLocalStorage<NoiseItem[]>('noise:strengths', []);
+    const [strengths] = useLocalStorage<NoiseItem[]>('swot:strengths', []);
     const [exceptions, setExceptions] = useLocalStorage<NoiseItem[]>('noise:exceptions', []);
 
     const onDragEnd: OnDragEndResponder = (result) => {
@@ -104,24 +104,32 @@ export function NoiseAnalysis() {
         const sourceCategory = source.droppableId as NoiseCategory;
         const destCategory = destination.droppableId as NoiseCategory;
 
+        const editableCategories: NoiseCategory[] = ['needs', 'improvements', 'exceptions'];
+        if (!editableCategories.includes(sourceCategory) || !editableCategories.includes(destCategory)) {
+            return;
+        }
+
         const stateMap = {
             needs: { items: needs, setItems: setNeeds },
-            opportunities: { items: opportunities, setItems: setOpportunities },
             improvements: { items: improvements, setItems: setImprovements },
-            strengths: { items: strengths, setItems: setStrengths },
             exceptions: { items: exceptions, setItems: setExceptions },
         };
         
+        // @ts-ignore
         const sourceList = Array.from(stateMap[sourceCategory].items);
         const [movedItem] = sourceList.splice(source.index, 1);
 
         if (sourceCategory === destCategory) {
             sourceList.splice(destination.index, 0, movedItem);
+             // @ts-ignore
             stateMap[sourceCategory].setItems(sourceList);
         } else {
+             // @ts-ignore
+            stateMap[sourceCategory].setItems(sourceList);
+             // @ts-ignore
             const destList = Array.from(stateMap[destCategory].items);
             destList.splice(destination.index, 0, movedItem);
-            stateMap[sourceCategory].setItems(sourceList);
+             // @ts-ignore
             stateMap[destCategory].setItems(destList);
         }
     };
@@ -144,9 +152,9 @@ export function NoiseAnalysis() {
             <DragDropContext onDragEnd={onDragEnd}>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <NoiseColumn title="Needs" category="needs" items={needs} setItems={setNeeds} placeholder="What are the needs?" icon={Search} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" />
-                    <NoiseColumn title="Opportunities" category="opportunities" items={opportunities} setItems={setOpportunities} placeholder="What opportunities exist?" icon={Zap} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" />
+                    <NoiseColumn title="Opportunities" category="opportunities" items={opportunities} setItems={setOpportunities} placeholder="What opportunities exist?" icon={Zap} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly />
                     <NoiseColumn title="Improvements" category="improvements" items={improvements} setItems={setImprovements} placeholder="What can be improved?" icon={Construction} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" />
-                    <NoiseColumn title="Strengths" category="strengths" items={strengths} setItems={setStrengths} placeholder="What are our core strengths?" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" />
+                    <NoiseColumn title="Strengths" category="strengths" items={strengths} setItems={setStrengths} placeholder="What are our core strengths?" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
                     <NoiseColumn title="Exceptions" category="exceptions" items={exceptions} setItems={setExceptions} placeholder="What are the constraints?" icon={ShieldAlert} className="bg-red-100/30 dark:bg-red-900/30 border-red-500 lg:col-span-1" />
                 </div>
             </DragDropContext>
