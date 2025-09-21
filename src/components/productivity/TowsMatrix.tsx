@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +13,7 @@ import { saveAs } from 'file-saver';
 import { useToast } from '@/hooks/use-toast';
 import { ImageIcon, File as FileIcon } from 'lucide-react';
 import { Input } from '../ui/input';
+import { Dialog, DialogContent } from '../ui/dialog';
 
 interface SwotItem {
   id: string;
@@ -34,7 +35,7 @@ const ReadonlySwotList = ({ title, items, className }: { title: string, items: S
     </div>
 );
 
-const StrategyQuadrant = ({ title, description, value, onChange, isReadonly = false }: { title: string, description: string, value: string, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void, isReadonly?: boolean }) => (
+const StrategyQuadrant = ({ title, description, value, onChange, isReadonly = false }: { title: string, description: string, value: string, onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void, isReadonly?: boolean }) => (
     <Card>
         <CardHeader>
             <CardTitle className="text-lg">{title}</CardTitle>
@@ -67,34 +68,51 @@ export function TowsMatrix() {
     
     const { toast } = useToast();
     const contentRef = useRef<HTMLDivElement>(null);
+    const [isExporting, setIsExporting] = useState(false);
 
-    const exportToImage = async (format: 'png' | 'pdf') => {
-        if (!contentRef.current) return;
+    const exportAnalysis = async (format: 'png' | 'pdf') => {
+        setIsExporting(true);
+
+        // Allow dialog to render
+        await new Promise(resolve => setTimeout(resolve, 50));
         
-        const canvas = await html2canvas(contentRef.current, {
-            scale: 2,
-            backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
-        });
-        
-        if (canvas.width === 0 || canvas.height === 0) {
-            toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not capture the content to export.' });
+        if (!contentRef.current) {
+            toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not find content to export.' });
+            setIsExporting(false);
             return;
         }
-
-        const fileName = `${title.replace(/ /g, '_')}_TOWS_Matrix.${format}`;
         
-        if (format === 'png') {
-            canvas.toBlob((blob) => {
-                if(blob) saveAs(blob, fileName);
+        try {
+            const canvas = await html2canvas(contentRef.current, {
+                scale: 2,
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
             });
-        } else {
-            const imgData = canvas.toDataURL('image/jpeg', 0.9);
-            const pdf = new jsPDF({ orientation: 'l', unit: 'px', format: [canvas.width, canvas.height] });
-            pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
-            pdf.save(fileName);
-        }
+            
+            if (canvas.width === 0 || canvas.height === 0) {
+                toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not capture the content to export.' });
+                return;
+            }
 
-        toast({ title: 'Export Successful', description: `Your TOWS Matrix has been downloaded as a ${format.toUpperCase()} file.` });
+            const fileName = `${title.replace(/ /g, '_')}_TOWS_Matrix.${format}`;
+            
+            if (format === 'png') {
+                canvas.toBlob((blob) => {
+                    if(blob) saveAs(blob, fileName);
+                });
+            } else {
+                const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                const pdf = new jsPDF({ orientation: 'l', unit: 'px', format: [canvas.width, canvas.height] });
+                pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+                pdf.save(fileName);
+            }
+
+            toast({ title: 'Export Successful', description: `Your TOWS Matrix has been downloaded as a ${format.toUpperCase()} file.` });
+        } catch (error) {
+            console.error("Export error:", error);
+            toast({ variant: 'destructive', title: 'Export Error', description: 'An unexpected error occurred during export.' });
+        } finally {
+            setIsExporting(false);
+        }
     };
     
     const ExportPreview = () => (
@@ -107,16 +125,21 @@ export function TowsMatrix() {
                 <ReadonlySwotList title="Threats" items={threats} className="bg-yellow-100/30 dark:bg-yellow-900/30 p-2 rounded-lg" />
             </div>
             <div className="grid grid-cols-2 gap-6">
-                 <StrategyQuadrant title="Strengths-Opportunities (SO)" description="" value={soStrategies} onChange={()=>{}} isReadonly />
-                 <StrategyQuadrant title="Strengths-Threats (ST)" description="" value={stStrategies} onChange={()=>{}} isReadonly />
-                 <StrategyQuadrant title="Weaknesses-Opportunities (WO)" description="" value={woStrategies} onChange={()=>{}} isReadonly />
-                 <StrategyQuadrant title="Weaknesses-Threats (WT)" description="" value={wtStrategies} onChange={()=>{}} isReadonly />
+                 <StrategyQuadrant title="Strengths-Opportunities (SO)" description="How can you use your strengths to take advantage of opportunities?" value={soStrategies} onChange={()=>{}} isReadonly />
+                 <StrategyQuadrant title="Strengths-Threats (ST)" description="How can you use your strengths to avoid or mitigate real and potential threats?" value={stStrategies} onChange={()=>{}} isReadonly />
+                 <StrategyQuadrant title="Weaknesses-Opportunities (WO)" description="How can you use opportunities to overcome the weaknesses you are experiencing?" value={woStrategies} onChange={()=>{}} isReadonly />
+                 <StrategyQuadrant title="Weaknesses-Threats (WT)" description="How can you minimize your weaknesses and avoid threats?" value={wtStrategies} onChange={()=>{}} isReadonly />
             </div>
         </div>
     );
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+            <Dialog open={isExporting}>
+                <DialogContent className="max-w-7xl w-auto bg-transparent border-none shadow-none" onInteractOutside={(e) => e.preventDefault()}>
+                    <ExportPreview />
+                </DialogContent>
+            </Dialog>
             <div className="flex flex-col items-center text-center">
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">TOWS Matrix</h1>
                 <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
@@ -165,13 +188,9 @@ export function TowsMatrix() {
             </div>
             
             <CardFooter className="border-t pt-6 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => exportToImage('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
-                <Button variant="outline" onClick={() => exportToImage('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
+                <Button variant="outline" onClick={() => exportAnalysis('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
+                <Button variant="outline" onClick={() => exportAnalysis('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
             </CardFooter>
-
-             <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-                <ExportPreview />
-            </div>
         </div>
     );
 }

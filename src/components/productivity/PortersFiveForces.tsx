@@ -14,6 +14,7 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent } from '../ui/dialog';
 
 interface PorterItem {
   id: string;
@@ -22,22 +23,26 @@ interface PorterItem {
 
 const createNewItem = (text = ''): PorterItem => ({ id: uuidv4(), text });
 
-const PorterColumn = ({ title, items, setItems, placeholder, className, icon: Icon, isReadonly = false }: { title: string, items: PorterItem[], setItems: React.Dispatch<React.SetStateAction<PorterItem[]>>, placeholder: string, className?: string, icon: React.ElementType, isReadonly?: boolean }) => {
+const PorterColumn = ({ title, items, setItems, placeholder, className, icon: Icon, isReadonly = false }: { title: string, items: PorterItem[], setItems?: React.Dispatch<React.SetStateAction<PorterItem[]>>, placeholder: string, className?: string, icon: React.ElementType, isReadonly?: boolean }) => {
     const [newItemText, setNewItemText] = useState('');
 
     const addItem = () => {
-        if (newItemText.trim()) {
+        if (newItemText.trim() && setItems) {
             setItems(prev => [...prev, createNewItem(newItemText)]);
             setNewItemText('');
         }
     };
 
     const updateItem = (id: string, newText: string) => {
-        setItems(prev => prev.map(item => item.id === id ? { ...item, text: newText } : item));
+        if (setItems) {
+            setItems(prev => prev.map(item => item.id === id ? { ...item, text: newText } : item));
+        }
     };
 
     const removeItem = (id: string) => {
-        setItems(prev => prev.filter(item => item.id !== id));
+        if (setItems) {
+            setItems(prev => prev.filter(item => item.id !== id));
+        }
     };
 
     return (
@@ -85,51 +90,73 @@ export function PortersFiveForces() {
     const [rivalry, setRivalry] = useLocalStorage<PorterItem[]>("porters:rivalry", []);
     const { toast } = useToast();
     const contentRef = useRef<HTMLDivElement>(null);
+    const [isExporting, setIsExporting] = useState(false);
 
-    const exportToImage = async (format: 'png' | 'pdf') => {
-        if (!contentRef.current) return;
+    const exportAnalysis = async (format: 'png' | 'pdf') => {
+        setIsExporting(true);
+
+        // Allow dialog to render
+        await new Promise(resolve => setTimeout(resolve, 50));
         
-        const canvas = await html2canvas(contentRef.current, {
-            scale: 2,
-            backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
-        });
-        
-        if (canvas.width === 0 || canvas.height === 0) {
-            toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not capture the content to export.' });
+        if (!contentRef.current) {
+            toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not find content to export.' });
+            setIsExporting(false);
             return;
         }
         
-        const fileName = `${title.replace(/ /g, '_')}_Porters5Forces.${format}`;
-        
-        if (format === 'png') {
-            canvas.toBlob((blob) => {
-                if(blob) saveAs(blob, fileName);
+        try {
+            const canvas = await html2canvas(contentRef.current, {
+                scale: 2,
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
             });
-        } else {
-            const imgData = canvas.toDataURL('image/jpeg', 0.9);
-            const pdf = new jsPDF({ orientation: 'l', unit: 'px', format: [canvas.width, canvas.height] });
-            pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
-            pdf.save(fileName);
-        }
+            
+            if (canvas.width === 0 || canvas.height === 0) {
+                toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not capture the content to export.' });
+                return;
+            }
+        
+            const fileName = `${title.replace(/ /g, '_')}_Porters5Forces.${format}`;
+            
+            if (format === 'png') {
+                canvas.toBlob((blob) => {
+                    if(blob) saveAs(blob, fileName);
+                });
+            } else {
+                const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                const pdf = new jsPDF({ orientation: 'l', unit: 'px', format: [canvas.width, canvas.height] });
+                pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+                pdf.save(fileName);
+            }
 
-        toast({ title: 'Export Successful', description: `Your analysis has been downloaded as a ${format.toUpperCase()} file.` });
+            toast({ title: 'Export Successful', description: `Your analysis has been downloaded as a ${format.toUpperCase()} file.` });
+        } catch (error) {
+            console.error("Export error:", error);
+            toast({ variant: 'destructive', title: 'Export Error', description: 'An unexpected error occurred during export.' });
+        } finally {
+            setIsExporting(false);
+        }
     };
     
     const ExportPreview = () => (
         <div ref={contentRef} className="p-8 bg-background">
             <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
             <div className="grid grid-cols-3 gap-6">
-                <PorterColumn title="Threat of New Entrants" items={newEntrants} setItems={setNewEntrants} placeholder="" icon={Briefcase} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly/>
-                <PorterColumn title="Bargaining Power of Buyers" items={buyerPower} setItems={setBuyerPower} placeholder="" icon={Users} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly/>
-                <PorterColumn title="Bargaining Power of Suppliers" items={supplierPower} setItems={setSupplierPower} placeholder="" icon={Handshake} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly/>
-                <PorterColumn title="Threat of Substitutes" items={substitutes} setItems={setSubstitutes} placeholder="" icon={Replace} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" isReadonly/>
-                <PorterColumn title="Rivalry Among Competitors" items={rivalry} setItems={setRivalry} placeholder="" icon={GitBranch} className="bg-red-100/30 dark:bg-red-900/30 border-red-500" isReadonly/>
+                <PorterColumn title="Threat of New Entrants" items={newEntrants} placeholder="" icon={Briefcase} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly/>
+                <PorterColumn title="Bargaining Power of Buyers" items={buyerPower} placeholder="" icon={Users} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly/>
+                <PorterColumn title="Bargaining Power of Suppliers" items={supplierPower} placeholder="" icon={Handshake} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly/>
+                <PorterColumn title="Threat of Substitutes" items={substitutes} placeholder="" icon={Replace} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" isReadonly/>
+                <PorterColumn title="Rivalry Among Competitors" items={rivalry} placeholder="" icon={GitBranch} className="bg-red-100/30 dark:bg-red-900/30 border-red-500" isReadonly/>
             </div>
         </div>
     );
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+            <Dialog open={isExporting}>
+                <DialogContent className="max-w-7xl w-auto bg-transparent border-none shadow-none" onInteractOutside={(e) => e.preventDefault()}>
+                    <ExportPreview />
+                </DialogContent>
+            </Dialog>
             <div className="flex flex-col items-center text-center">
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Porter's Five Forces</h1>
                 <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
@@ -152,13 +179,9 @@ export function PortersFiveForces() {
             </div>
 
             <CardFooter className="border-t pt-6 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => exportToImage('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
-                <Button variant="outline" onClick={() => exportToImage('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
+                <Button variant="outline" onClick={() => exportAnalysis('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
+                <Button variant="outline" onClick={() => exportAnalysis('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
             </CardFooter>
-            
-            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-                <ExportPreview />
-            </div>
         </div>
     );
 }

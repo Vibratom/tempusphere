@@ -15,6 +15,7 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent } from '../ui/dialog';
 
 interface VrioResource {
   id: string;
@@ -47,6 +48,7 @@ export function VrioFramework() {
     const [resources, setResources] = useLocalStorage<VrioResource[]>('vrio:resources', [createNewResource()]);
     const { toast } = useToast();
     const contentRef = useRef<HTMLDivElement>(null);
+    const [isExporting, setIsExporting] = useState(false);
 
     const handleResourceChange = (id: string, field: keyof VrioResource, value: string | boolean) => {
         setResources(prev => prev.map(res => res.id === id ? { ...res, [field]: value } : res));
@@ -60,37 +62,103 @@ export function VrioFramework() {
         setResources(prev => prev.filter(res => res.id !== id));
     };
     
-    const exportToImage = async (format: 'png' | 'pdf') => {
-        if (!contentRef.current) return;
-        
-        const canvas = await html2canvas(contentRef.current, {
-            scale: 2,
-            backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
-        });
-        
-        if (canvas.width === 0 || canvas.height === 0) {
-            toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not capture the content to export.' });
+    const exportAnalysis = async (format: 'png' | 'pdf') => {
+        setIsExporting(true);
+
+        // Allow dialog to render
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        if (!contentRef.current) {
+            toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not find content to export.' });
+            setIsExporting(false);
             return;
         }
-
-        const fileName = `${title.replace(/ /g, '_')}_VRIO.${format}`;
         
-        if (format === 'png') {
-            canvas.toBlob((blob) => {
-                if(blob) saveAs(blob, fileName);
+        try {
+            const canvas = await html2canvas(contentRef.current, {
+                scale: 2,
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
             });
-        } else {
-            const imgData = canvas.toDataURL('image/jpeg', 0.9);
-            const pdf = new jsPDF({ orientation: 'l', unit: 'px', format: [canvas.width, canvas.height] });
-            pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
-            pdf.save(fileName);
-        }
+            
+            if (canvas.width === 0 || canvas.height === 0) {
+                toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not capture the content to export.' });
+                return;
+            }
 
-        toast({ title: 'Export Successful', description: `Your VRIO analysis has been downloaded as a ${format.toUpperCase()} file.` });
+            const fileName = `${title.replace(/ /g, '_')}_VRIO.${format}`;
+            
+            if (format === 'png') {
+                canvas.toBlob((blob) => {
+                    if(blob) saveAs(blob, fileName);
+                });
+            } else {
+                const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                const pdf = new jsPDF({ orientation: 'l', unit: 'px', format: [canvas.width, canvas.height] });
+                pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+                pdf.save(fileName);
+            }
+
+            toast({ title: 'Export Successful', description: `Your VRIO analysis has been downloaded as a ${format.toUpperCase()} file.` });
+        } catch (error) {
+            console.error("Export error:", error);
+            toast({ variant: 'destructive', title: 'Export Error', description: 'An unexpected error occurred during export.' });
+        } finally {
+            setIsExporting(false);
+        }
     };
+    
+    const ExportPreview = () => (
+         <div ref={contentRef} className="p-8 bg-background">
+            <Card className="my-6">
+                <CardHeader className="items-center">
+                    <h2 className="text-2xl font-semibold text-center">{title}</h2>
+                </CardHeader>
+                <CardContent>
+                    <ScrollArea>
+                        <Table className="min-w-full">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[30%]">Resource/Capability</TableHead>
+                                    <TableHead className="text-center">Valuable?</TableHead>
+                                    <TableHead className="text-center">Rare?</TableHead>
+                                    <TableHead className="text-center">Costly to Imitate?</TableHead>
+                                    <TableHead className="text-center">Organized to Capture Value?</TableHead>
+                                    <TableHead className="w-[20%]">Competitive Implication</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {resources.map(resource => {
+                                    const implication = getCompetitiveImplication(resource);
+                                    return (
+                                        <TableRow key={resource.id}>
+                                            <TableCell className="font-medium">{resource.resource}</TableCell>
+                                            <TableCell className="text-center">{resource.value ? '✔️' : '❌'}</TableCell>
+                                            <TableCell className="text-center">{resource.rarity ? '✔️' : '❌'}</TableCell>
+                                            <TableCell className="text-center">{resource.imitability ? '✔️' : '❌'}</TableCell>
+                                            <TableCell className="text-center">{resource.organization ? '✔️' : '❌'}</TableCell>
+                                            <TableCell>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${implication.color}`}>
+                                                    {implication.text}
+                                                </span>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+        </div>
+    );
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+            <Dialog open={isExporting}>
+                <DialogContent className="max-w-7xl w-auto bg-transparent border-none shadow-none" onInteractOutside={(e) => e.preventDefault()}>
+                    <ExportPreview />
+                </DialogContent>
+            </Dialog>
             <div className="flex flex-col items-center text-center">
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">VRIO Framework</h1>
                 <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
@@ -98,69 +166,68 @@ export function VrioFramework() {
                 </p>
             </div>
             
-            <div ref={contentRef} className="p-4 bg-background">
-                <Card className="my-6">
-                    <CardHeader className="items-center">
-                        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
-                    </CardHeader>
-                    <CardContent>
-                        <ScrollArea>
-                            <Table className="min-w-full">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[30%]">Resource/Capability</TableHead>
-                                        <TableHead className="text-center">Valuable?</TableHead>
-                                        <TableHead className="text-center">Rare?</TableHead>
-                                        <TableHead className="text-center">Costly to Imitate?</TableHead>
-                                        <TableHead className="text-center">Organized to Capture Value?</TableHead>
-                                        <TableHead className="w-[20%]">Competitive Implication</TableHead>
-                                        <TableHead className="w-[50px]"></TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {resources.map(resource => {
-                                        const implication = getCompetitiveImplication(resource);
-                                        return (
-                                            <TableRow key={resource.id}>
-                                                <TableCell>
-                                                    <Input 
-                                                        value={resource.resource} 
-                                                        onChange={e => handleResourceChange(resource.id, 'resource', e.target.value)}
-                                                        placeholder="e.g., Strong brand recognition"
-                                                        className="border-none focus-visible:ring-0 p-0 h-auto"
-                                                    />
-                                                </TableCell>
-                                                <TableCell className="text-center"><Checkbox checked={resource.value} onCheckedChange={v => handleResourceChange(resource.id, 'value', v as boolean)}/></TableCell>
-                                                <TableCell className="text-center"><Checkbox checked={resource.rarity} onCheckedChange={v => handleResourceChange(resource.id, 'rarity', v as boolean)}/></TableCell>
-                                                <TableCell className="text-center"><Checkbox checked={resource.imitability} onCheckedChange={v => handleResourceChange(resource.id, 'imitability', v as boolean)}/></TableCell>
-                                                <TableCell className="text-center"><Checkbox checked={resource.organization} onCheckedChange={v => handleResourceChange(resource.id, 'organization', v as boolean)}/></TableCell>
-                                                <TableCell>
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${implication.color}`}>
-                                                        {implication.text}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Button variant="ghost" size="icon" onClick={() => removeResource(resource.id)}>
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        )
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </ScrollArea>
-                        <div className="mt-4">
-                            <Button variant="outline" onClick={addResource}>
-                                <Plus className="mr-2 h-4 w-4" /> Add Resource
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+            <Card>
+                <CardHeader className="items-center">
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
+                </CardHeader>
+                <CardContent>
+                    <ScrollArea>
+                        <Table className="min-w-full">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[30%]">Resource/Capability</TableHead>
+                                    <TableHead className="text-center">Valuable?</TableHead>
+                                    <TableHead className="text-center">Rare?</TableHead>
+                                    <TableHead className="text-center">Costly to Imitate?</TableHead>
+                                    <TableHead className="text-center">Organized to Capture Value?</TableHead>
+                                    <TableHead className="w-[20%]">Competitive Implication</TableHead>
+                                    <TableHead className="w-[50px]"></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {resources.map(resource => {
+                                    const implication = getCompetitiveImplication(resource);
+                                    return (
+                                        <TableRow key={resource.id}>
+                                            <TableCell>
+                                                <Input 
+                                                    value={resource.resource} 
+                                                    onChange={e => handleResourceChange(resource.id, 'resource', e.target.value)}
+                                                    placeholder="e.g., Strong brand recognition"
+                                                    className="border-none focus-visible:ring-0 p-0 h-auto"
+                                                />
+                                            </TableCell>
+                                            <TableCell className="text-center"><Checkbox checked={resource.value} onCheckedChange={v => handleResourceChange(resource.id, 'value', v as boolean)}/></TableCell>
+                                            <TableCell className="text-center"><Checkbox checked={resource.rarity} onCheckedChange={v => handleResourceChange(resource.id, 'rarity', v as boolean)}/></TableCell>
+                                            <TableCell className="text-center"><Checkbox checked={resource.imitability} onCheckedChange={v => handleResourceChange(resource.id, 'imitability', v as boolean)}/></TableCell>
+                                            <TableCell className="text-center"><Checkbox checked={resource.organization} onCheckedChange={v => handleResourceChange(resource.id, 'organization', v as boolean)}/></TableCell>
+                                            <TableCell>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${implication.color}`}>
+                                                    {implication.text}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button variant="ghost" size="icon" onClick={() => removeResource(resource.id)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                    <div className="mt-4">
+                        <Button variant="outline" onClick={addResource}>
+                            <Plus className="mr-2 h-4 w-4" /> Add Resource
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+            
              <CardFooter className="border-t pt-6 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => exportToImage('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
-                <Button variant="outline" onClick={() => exportToImage('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
+                <Button variant="outline" onClick={() => exportAnalysis('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
+                <Button variant="outline" onClick={() => exportAnalysis('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
             </CardFooter>
         </div>
     );
