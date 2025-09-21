@@ -500,7 +500,7 @@ export function RecipesApp() {
             </DialogContent>
           </Dialog>
 
-          <ResizablePanelGroup direction="vertical" className="flex-1 border rounded-lg">
+          <ResizablePanelGroup direction="vertical" className="flex-1 border rounded-lg min-h-[80vh]">
             <ResizablePanel defaultSize={50}>
                 <div className="p-4 h-full flex flex-col">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
