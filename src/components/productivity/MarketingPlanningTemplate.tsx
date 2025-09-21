@@ -163,4 +163,111 @@ export function MarketingPlanningTemplate() {
                              <tr className="bg-muted/30"><td colSpan={personas.length + 2} className="p-2 font-semibold text-muted-foreground">Actions you'd like them to take:</td></tr>
                              <tr>
                                 <RowHeader title="" subtitle="Purchase" />
-                                {personas.map(p => <TextareaCell key={p.id} value={p.data.actionPurchase} onChange={e => handleDataChange(p
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.actionPurchase} onChange={e => handleDataChange(p.id, 'actionPurchase', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                             <tr>
+                                <RowHeader title="" subtitle="Enquire" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.actionEnquire} onChange={e => handleDataChange(p.id, 'actionEnquire', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <RowHeader title="" subtitle="Connect" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.actionConnect} onChange={e => handleDataChange(p.id, 'actionConnect', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <RowHeader title="" subtitle="Free Download" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.actionDownload} onChange={e => handleDataChange(p.id, 'actionDownload', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                            <tr className="bg-muted/30"><td colSpan={personas.length + 2} className="p-2 font-semibold text-muted-foreground">HOW</td></tr>
+                             <tr>
+                                <RowHeader title="Remarkable" subtitle="What's remarkable about your brand?" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.remarkable} onChange={e => handleDataChange(p.id, 'remarkable', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                             <tr>
+                                <RowHeader title="Proof" subtitle="How can you prove you're remarkable?" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.proof} onChange={e => handleDataChange(p.id, 'proof', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                             <tr className="bg-muted/30"><td colSpan={personas.length + 2} className="p-2 font-semibold text-muted-foreground">WHERE</td></tr>
+                             <tr>
+                                <RowHeader title="Channels" subtitle="Where can we find them?" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.whereAreThey} onChange={e => handleDataChange(p.id, 'whereAreThey', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                             <tr className="bg-muted/30"><td colSpan={personas.length + 2} className="p-2 font-semibold text-muted-foreground">WHO</td></tr>
+                             <tr>
+                                <RowHeader title="Influencers" subtitle="Who do they trust?" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.whoTrust} onChange={e => handleDataChange(p.id, 'whoTrust', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                            <tr className="bg-muted/30"><td colSpan={personas.length + 2} className="p-2 font-semibold text-muted-foreground">CONTENT STRATEGY</td></tr>
+                             <tr>
+                                <RowHeader title="Content Ideas" subtitle="What content will you create?" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.contentStrategy} onChange={e => handleDataChange(p.id, 'contentStrategy', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                             <tr>
+                                <RowHeader title="Keywords" subtitle="Buyer Keywords" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.buyerKeywords} onChange={e => handleDataChange(p.id, 'buyerKeywords', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                            <tr className="bg-muted/30"><td colSpan={personas.length + 2} className="p-2 font-semibold text-muted-foreground">MARKETING TACTICS</td></tr>
+                             <tr>
+                                <RowHeader title="Tactics" subtitle="What marketing tactics will you use?" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.marketingTactics} onChange={e => handleDataChange(p.id, 'marketingTactics', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                            <tr className="bg-muted/30"><td colSpan={personas.length + 2} className="p-2 font-semibold text-muted-foreground">To-Do List</td></tr>
+                             <tr>
+                                <RowHeader title="" subtitle="This Week" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.todoWeek} onChange={e => handleDataChange(p.id, 'todoWeek', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                             <tr>
+                                <RowHeader title="" subtitle="This Month" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.todoMonth} onChange={e => handleDataChange(p.id, 'todoMonth', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                             <tr>
+                                <RowHeader title="" subtitle="This Quarter" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.todoQuarter} onChange={e => handleDataChange(p.id, 'todoQuarter', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                             <tr>
+                                <RowHeader title="" subtitle="This Year" />
+                                {personas.map(p => <TextareaCell key={p.id} value={p.data.todoYear} onChange={e => handleDataChange(p.id, 'todoYear', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                            <tr className="bg-muted/30"><td colSpan={personas.length + 2} className="p-2 font-semibold text-muted-foreground">SCORECARD</td></tr>
+                             <tr>
+                                <RowHeader title="Purchases" />
+                                {personas.map(p => <ScorecardCell key={p.id} goal={p.data.scorecardPurchasesGoal} onGoalChange={e => handleDataChange(p.id, 'scorecardPurchasesGoal', e.target.value)} result={p.data.scorecardPurchasesResult} onResultChange={e => handleDataChange(p.id, 'scorecardPurchasesResult', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                             <tr>
+                                <RowHeader title="Enquiries" />
+                                {personas.map(p => <ScorecardCell key={p.id} goal={p.data.scorecardEnquiriesGoal} onGoalChange={e => handleDataChange(p.id, 'scorecardEnquiriesGoal', e.target.value)} result={p.data.scorecardEnquiriesResult} onResultChange={e => handleDataChange(p.id, 'scorecardEnquiriesResult', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <RowHeader title="Connections" />
+                                {personas.map(p => <ScorecardCell key={p.id} goal={p.data.scorecardConnectionsGoal} onGoalChange={e => handleDataChange(p.id, 'scorecardConnectionsGoal', e.target.value)} result={p.data.scorecardConnectionsResult} onResultChange={e => handleDataChange(p.id, 'scorecardConnectionsResult', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                             <tr>
+                                <RowHeader title="Downloads" />
+                                {personas.map(p => <ScorecardCell key={p.id} goal={p.data.scorecardDownloadsGoal} onGoalChange={e => handleDataChange(p.id, 'scorecardDownloadsGoal', e.target.value)} result={p.data.scorecardDownloadsResult} onResultChange={e => handleDataChange(p.id, 'scorecardDownloadsResult', e.target.value)} />)}
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <ScrollBar orientation="horizontal"/>
+                </ScrollArea>
+            </div>
+        </div>
+    );
+}
