@@ -2,7 +2,7 @@
 import { Header } from '@/components/tempusphere/Header';
 import { Footer } from '@/components/tempusphere/Footer';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Clock, Globe, AlarmClock, Hourglass, Timer, Users, Scale, CalendarDays, ListChecks, KanbanSquare, Briefcase, Landmark, UtensilsCrossed, TrendingUp, BrainCircuit, IterationCw, Megaphone, FileText, GanttChart, List, Brain, DraftingCompass, Table, BarChartHorizontal, Calculator, Percent, BookOpen, Inbox, Workflow } from 'lucide-react';
+import { Clock, Globe, AlarmClock, Hourglass, Timer, Users, Scale, CalendarDays, ListChecks, KanbanSquare, Briefcase, Landmark, UtensilsCrossed, TrendingUp, BrainCircuit, IterationCw, Megaphone, FileText, GanttChart, List, Brain, DraftingCompass, Table, BarChartHorizontal, Calculator, Percent, BookOpen, Inbox, Workflow, Trash2 } from 'lucide-react';
 
 const timeFeatures = [
     { icon: Clock, title: 'Customizable Primary Clock', description: 'Choose between a classic analog or modern digital display. Supports local time, UTC, and extensive theme customization to match your style.' },
@@ -25,6 +25,7 @@ const culinaryFeatures = [
     { icon: Calculator, title: 'Food Cost Calculator', description: 'A tool where you can input the price of each ingredient in a recipe to automatically calculate the total cost of the dish and the cost per serving.' },
     { icon: Percent, title: 'Yield Percentage Converter', description: 'This app helps you scale a recipe up or down. You can enter the original yield and the new desired yield, and the app will calculate the new ingredient quantities for you.' },
     { icon: Scale, title: 'Unit Conversion Tool', description: 'A simple but vital app that converts measurements (e.g., grams to ounces, teaspoons to milliliters). This is perfect for learning about basic forms and calculations.' },
+    { icon: Trash2, title: 'Waste Tracker', description: 'An app to track discarded food. Log what was wasted, how much, and why (e.g., expired, overcooked) to help reduce food waste in the kitchen.' },
 ];
 
 const culinaryWorkflowFeatures = [
