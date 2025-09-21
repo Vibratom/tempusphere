@@ -62,7 +62,7 @@ const FeatureSection = ({ title, features }: { title: string, features: {icon: R
                 <Card key={feature.title} className="flex flex-col">
                   <CardHeader>
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="flex-shrink-0 p-2 bg-muted rounded-full">
+                      <div className="flex-shrink-0 p-2 bg-primary/10 rounded-full">
                         <feature.icon className="h-6 w-6 text-primary" />
                       </div>
                       <CardTitle className="text-lg">{feature.title}</CardTitle>
