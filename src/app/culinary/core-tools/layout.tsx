@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -8,7 +9,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const coreTools = [
     { value: 'book', label: 'Recipe Book', href: '/culinary/core-tools/book' },
     { value: 'inventory', label: 'Inventory', href: '/culinary/core-tools/inventory' },
-    { value: 'search', label: 'Recipe Search', href: '/culinary/core-tools/search' },
+    { value: 'recipe-search', label: 'Recipe Search', href: '/culinary/core-tools/recipe-search' },
+    { value: 'search', label: 'Product Search', href: '/culinary/core-tools/search' },
 ];
 
 export default function CoreToolsLayout({

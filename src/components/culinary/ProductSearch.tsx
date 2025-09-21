@@ -9,43 +9,34 @@ import { Search, ChefHat, Loader2, AlertCircle } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { searchMeals, type MealSearchOutput } from '@/ai/flows/meal-db-flow';
+import { searchRecipes, type RecipeSearchOutput } from '@/ai/flows/recipe-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 
-const MealDetailDialog = ({ meal, onOpenChange }: { meal: any, onOpenChange: (open: boolean) => void }) => {
-    const ingredients = [];
-    for (let i = 1; i <= 20; i++) {
-        if (meal[`strIngredient${i}`]) {
-            ingredients.push(`${meal[`strMeasure${i}`]} ${meal[`strIngredient${i}`]}`);
-        }
-    }
-
+// This is a simplified detail view for the search results
+const ProductDetailDialog = ({ product, onOpenChange }: { product: any, onOpenChange: (open: boolean) => void }) => {
     return (
         <Dialog open={true} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{meal.strMeal}</DialogTitle>
-                    <DialogDescription>{meal.strCategory} | {meal.strArea}</DialogDescription>
+                    <DialogTitle>{product.product_name}</DialogTitle>
+                    <DialogDescription>{product.generic_name_en}</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[60vh]">
                     <div className="pr-4 space-y-4">
-                        {meal.strMealThumb && <Image src={meal.strMealThumb} alt={meal.strMeal} width={400} height={300} className="rounded-md mx-auto" />}
+                        {product.image_url && <Image src={product.image_url} alt={product.product_name} width={400} height={300} className="rounded-md mx-auto" unoptimized />}
                         
                         <div>
                             <h3 className="font-semibold mb-2">Ingredients</h3>
-                            <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                                {ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
-                            </ul>
+                            <p className="text-sm text-muted-foreground">{product.ingredients_text || 'Not available.'}</p>
                         </div>
-                         <div>
-                            <h3 className="font-semibold mb-2">Instructions</h3>
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{meal.strInstructions || 'Not available.'}</p>
+                        <div>
+                            <h3 className="font-semibold mb-2">Allergens</h3>
+                            <p className="text-sm text-muted-foreground">{product.allergens || 'Not specified.'}</p>
                         </div>
                     </div>
                 </ScrollArea>
                 <DialogFooter>
-                    {meal.strSource && <Button asChild variant="secondary"><a href={meal.strSource} target="_blank" rel="noopener noreferrer">View Source</a></Button>}
-                    {meal.strYoutube && <Button asChild variant="destructive"><a href={meal.strYoutube} target="_blank" rel="noopener noreferrer">Watch on YouTube</a></Button>}
+                    <Button asChild variant="secondary"><a href={`https://world.openfoodfacts.org/product/${product.id}`} target="_blank" rel="noopener noreferrer">View on Open Food Facts</a></Button>
                     <Button onClick={() => onOpenChange(false)}>Close</Button>
                 </DialogFooter>
             </DialogContent>
@@ -53,12 +44,12 @@ const MealDetailDialog = ({ meal, onOpenChange }: { meal: any, onOpenChange: (op
     )
 }
 
-export function RecipeSearch() {
+export function ProductSearch() {
     const [query, setQuery] = useState('');
-    const [results, setResults] = useState<MealSearchOutput>([]);
+    const [results, setResults] = useState<RecipeSearchOutput>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [selectedMeal, setSelectedMeal] = useState<any | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
     
     const { toast } = useToast();
 
@@ -71,29 +62,41 @@ export function RecipeSearch() {
         setIsLoading(true);
         setError(null);
         try {
-            const searchResult = await searchMeals({ query });
-            if (searchResult) {
-                setResults(searchResult);
-                toast({ title: 'Search Complete', description: `Found ${searchResult.length} recipes.` });
-            } else {
-                setResults([]);
-                toast({ title: 'No Results', description: 'No recipes found for your query.' });
-            }
+            const searchResult = await searchRecipes({ query });
+            setResults(searchResult);
+            toast({ title: 'Search Complete', description: `Found ${searchResult.length} products.` });
         } catch (e) {
             console.error(e);
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-            setError(`Failed to fetch recipes. ${errorMessage}`);
+            setError(`Failed to fetch products. ${errorMessage}`);
             toast({ variant: 'destructive', title: 'Search Failed', description: errorMessage });
         } finally {
             setIsLoading(false);
         }
     };
     
+    const handleViewProduct = async (productId: string) => {
+        const url = `https://world.openfoodfacts.org/api/v0/product/${productId}.json`;
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to fetch product details.');
+            const data = await response.json();
+            if(data.product) {
+                setSelectedProduct(data.product);
+            } else {
+                throw new Error('Product not found in API response.');
+            }
+        } catch(e) {
+            toast({variant: 'destructive', title: 'Error', description: 'Could not fetch product details.'});
+        }
+    }
+
     return (
         <div className="w-full flex flex-col h-full gap-4">
             <div className="flex gap-2">
                 <Input
-                    placeholder="Search for recipes (e.g., 'Arrabiata')..."
+                    placeholder="Search for food products..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -117,16 +120,16 @@ export function RecipeSearch() {
                                 </div>
                             ) : results.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {results.map(meal => (
-                                        <Card key={meal.idMeal} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setSelectedMeal(meal)}>
+                                    {results.map(product => (
+                                        <Card key={product.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleViewProduct(product.id)}>
                                             <CardHeader className="p-0">
-                                                {meal.strMealThumb ? <div className="aspect-video relative">
-                                                    <Image src={meal.strMealThumb} alt={meal.strMeal} layout="fill" objectFit="cover" className="rounded-t-lg" unoptimized/>
+                                                {product.thumbnail_url ? <div className="aspect-video relative">
+                                                    <Image src={product.thumbnail_url} alt={product.name} layout="fill" objectFit="cover" className="rounded-t-lg" unoptimized/>
                                                 </div> : <div className="aspect-video bg-muted rounded-t-lg flex items-center justify-center"><ChefHat className="h-10 w-10 text-muted-foreground"/></div>}
                                             </CardHeader>
                                             <CardContent className="p-3">
-                                                <p className="font-semibold truncate">{meal.strMeal}</p>
-                                                <p className="text-xs text-muted-foreground">{meal.strCategory} | {meal.strArea}</p>
+                                                <p className="font-semibold truncate">{product.name}</p>
+                                                <p className="text-xs text-muted-foreground line-clamp-2">{product.description || 'No description available.'}</p>
                                             </CardContent>
                                         </Card>
                                     ))}
@@ -134,15 +137,15 @@ export function RecipeSearch() {
                             ) : (
                                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                                     <ChefHat className="h-16 w-16 mb-4"/>
-                                    <h3 className="font-semibold text-lg">Search for Recipes</h3>
-                                    <p className="text-sm">Use the search bar above to find recipes from TheMealDB.</p>
+                                    <h3 className="font-semibold text-lg">Search Open Food Facts</h3>
+                                    <p className="text-sm">Use the search bar above to find products from a global database.</p>
                                 </div>
                             )}
                          </div>
                     </ScrollArea>
                 </CardContent>
             </Card>
-            {selectedMeal && <MealDetailDialog meal={selectedMeal} onOpenChange={() => setSelectedMeal(null)} />}
+            {selectedProduct && <ProductDetailDialog product={selectedProduct} onOpenChange={() => setSelectedProduct(null)} />}
         </div>
     );
 }

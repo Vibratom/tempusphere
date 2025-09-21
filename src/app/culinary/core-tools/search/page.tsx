@@ -1,7 +1,8 @@
+
 'use client';
 
-import { RecipeSearch } from '@/components/culinary/RecipeSearch';
+import { ProductSearch } from '@/components/culinary/ProductSearch';
 
-export default function RecipeSearchPage() {
-    return <RecipeSearch />;
+export default function ProductSearchPage() {
+    return <ProductSearch />;
 }
