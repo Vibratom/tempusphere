@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -32,6 +33,7 @@ import { Calendar } from '../ui/calendar';
 import { format } from 'date-fns';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { useSettings } from '@/contexts/SettingsContext';
 
 
 interface Recipe {
@@ -328,6 +330,7 @@ export function RecipesApp() {
   const [isSearchingOnline, setIsSearchingOnline] = useState(false);
   
   const { toast } = useToast();
+  const { spoonacularApiKey } = useSettings();
 
   useEffect(() => {
     setIsClient(true);
@@ -371,49 +374,87 @@ export function RecipesApp() {
     setViewingRecipe(null); // Go back to the main list
   }
   
-  const handleOnlineSearch = async () => {
-      if (!onlineSearchQuery.trim()) return;
-      setIsSearchingOnline(true);
-      setOnlineSearchResults(null);
-      try {
-            const response = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${onlineSearchQuery}`);
-            if (!response.ok) {
-                throw new Error("TheMealDB API request failed");
-            }
-            const data = await response.json();
-            
-            if (!data.meals) {
-                setOnlineSearchResults({ recipes: [] });
-                return;
-            }
+  const handleMealDbSearch = async () => {
+    if (!onlineSearchQuery.trim()) return;
+    setIsSearchingOnline(true);
+    setOnlineSearchResults(null);
+    try {
+          const response = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${onlineSearchQuery}`);
+          if (!response.ok) throw new Error("TheMealDB API request failed");
+          const data = await response.json();
+          
+          if (!data.meals) {
+              setOnlineSearchResults({ recipes: [] });
+              return;
+          }
 
-            const foundRecipes = data.meals.map((meal: any): FoundRecipe => {
-                const ingredients: string[] = [];
-                for (let i = 1; i <= 20; i++) {
-                    const ingredient = meal[`strIngredient${i}`];
-                    const measure = meal[`strMeasure${i}`];
-                    if (ingredient && ingredient.trim()) {
-                        ingredients.push(`${measure ? measure.trim() : ''} ${ingredient.trim()}`.trim());
-                    }
-                }
+          const foundRecipes = data.meals.map((meal: any): FoundRecipe => {
+              const ingredients: string[] = [];
+              for (let i = 1; i <= 20; i++) {
+                  const ingredient = meal[`strIngredient${i}`];
+                  const measure = meal[`strMeasure${i}`];
+                  if (ingredient && ingredient.trim()) {
+                      ingredients.push(`${measure ? measure.trim() : ''} ${ingredient.trim()}`.trim());
+                  }
+              }
+              return {
+                  id: meal.idMeal,
+                  title: meal.strMeal,
+                  description: meal.strInstructions.substring(0, 150) + (meal.strInstructions.length > 150 ? '...' : ''),
+                  ingredients: ingredients.join('\n'),
+                  instructions: meal.strInstructions,
+                  imageUrl: meal.strMealThumb,
+              };
+          });
+          setOnlineSearchResults({ recipes: foundRecipes });
+    } catch (error) {
+        console.error("Online recipe search failed:", error);
+        toast({ variant: 'destructive', title: 'Search Failed', description: 'Could not fetch recipes from TheMealDB.'});
+    } finally {
+        setIsSearchingOnline(false);
+    }
+  }
 
-                return {
-                    id: meal.idMeal,
-                    title: meal.strMeal,
-                    description: meal.strInstructions.substring(0, 150) + (meal.strInstructions.length > 150 ? '...' : ''),
-                    ingredients: ingredients.join('\n'),
-                    instructions: meal.strInstructions,
-                    imageUrl: meal.strMealThumb,
-                };
-            });
-            
-            setOnlineSearchResults({ recipes: foundRecipes });
-      } catch (error) {
-          console.error("Online recipe search failed:", error);
-          toast({ variant: 'destructive', title: 'Search Failed', description: 'Could not fetch recipes from the online database.'});
-      } finally {
-          setIsSearchingOnline(false);
+  const handleSpoonacularSearch = async () => {
+    if (!onlineSearchQuery.trim()) return;
+    if (!spoonacularApiKey) {
+        toast({ variant: 'destructive', title: 'API Key Required', description: 'Please add your Spoonacular API key in the Appearance settings tab.'});
+        return;
+    }
+    setIsSearchingOnline(true);
+    setOnlineSearchResults(null);
+    try {
+      const searchResponse = await fetch(`https://api.spoonacular.com/recipes/complexSearch?query=${onlineSearchQuery}&apiKey=${spoonacularApiKey}&number=12`);
+      if(!searchResponse.ok) throw new Error('Spoonacular search request failed');
+      const searchData = await searchResponse.json();
+      
+      if(!searchData.results || searchData.results.length === 0) {
+        setOnlineSearchResults({ recipes: [] });
+        return;
       }
+
+      const recipeIds = searchData.results.map((r: any) => r.id).join(',');
+      const bulkResponse = await fetch(`https://api.spoonacular.com/recipes/informationBulk?ids=${recipeIds}&apiKey=${spoonacularApiKey}`);
+      if(!bulkResponse.ok) throw new Error('Spoonacular bulk information request failed');
+      const bulkData = await bulkResponse.json();
+
+      const foundRecipes = bulkData.map((meal: any): FoundRecipe => ({
+          id: meal.id.toString(),
+          title: meal.title,
+          description: meal.summary.replace(/<[^>]*>?/gm, '').substring(0, 150) + (meal.summary.length > 150 ? '...' : ''),
+          ingredients: meal.extendedIngredients.map((i: any) => i.original).join('\n'),
+          instructions: meal.instructions || 'No instructions provided.',
+          imageUrl: meal.image,
+      }));
+
+      setOnlineSearchResults({ recipes: foundRecipes });
+
+    } catch (error) {
+        console.error("Spoonacular search failed:", error);
+        toast({ variant: 'destructive', title: 'Search Failed', description: 'Could not fetch recipes from Spoonacular.'});
+    } finally {
+        setIsSearchingOnline(false);
+    }
   }
 
   const handleImportRecipe = (recipeToImport: FoundRecipe) => {
@@ -446,49 +487,27 @@ export function RecipesApp() {
 
   const DiscoveryView = () => (
     <div className="h-full w-full flex flex-col p-4">
-        <Tabs defaultValue="online" className="w-full flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="online">Online Search</TabsTrigger>
+        <Tabs defaultValue="spoonacular" className="w-full flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="spoonacular">Spoonacular</TabsTrigger>
+                <TabsTrigger value="mealdb">TheMealDB</TabsTrigger>
                 <TabsTrigger value="starter">Starter Cookbook</TabsTrigger>
             </TabsList>
-            <TabsContent value="online" className="flex-1 flex flex-col">
-                <div className="w-full flex flex-col sm:flex-row gap-2 my-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Search TheMealDB..." className="pl-8" value={onlineSearchQuery} onChange={(e) => setOnlineSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleOnlineSearch()}/>
-                    </div>
-                    <Button onClick={handleOnlineSearch} disabled={isSearchingOnline}>
-                        {isSearchingOnline ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
-                        Search
-                    </Button>
+            <div className="w-full flex flex-col sm:flex-row gap-2 my-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Search for a recipe..." className="pl-8" value={onlineSearchQuery} onChange={(e) => setOnlineSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget.closest('[data-state="active"]')?.getAttribute('data-value') === 'spoonacular' ? handleSpoonacularSearch() : handleMealDbSearch())}/>
                 </div>
-                 <ScrollArea className="flex-1 -mx-4">
-                    <div className="px-4">
-                        {isSearchingOnline ? (
-                            <div className="flex justify-center items-center h-full pt-16"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>
-                        ) : onlineSearchResults?.recipes && onlineSearchResults.recipes.length > 0 ? (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                                {onlineSearchResults.recipes.map(recipe => (
-                                    <Card key={recipe.id} className="flex flex-col hover:shadow-lg transition-shadow">
-                                        <CardHeader>
-                                            {recipe.imageUrl && (<div className="aspect-video relative w-full overflow-hidden rounded-md mb-4"><Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized/></div>)}
-                                            <CardTitle className="text-lg">{recipe.title}</CardTitle>
-                                        </CardHeader>
-                                        <CardFooter className="mt-auto flex justify-end gap-2">
-                                            <Button variant="secondary" size="sm" onClick={() => handleImportRecipe(recipe)}><Plus className="mr-2 h-4 w-4"/>Import</Button>
-                                        </CardFooter>
-                                    </Card>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
-                                <Sparkles className="w-16 h-16 mb-4" />
-                                <h3 className="text-xl font-semibold">Find Your Next Meal</h3>
-                                <p className="text-sm max-w-xs">{onlineSearchResults ? 'No results found. Try a different search term.' : 'Search for recipes from a massive online database.'}</p>
-                            </div>
-                        )}
-                    </div>
-                </ScrollArea>
+                <Button onClick={() => document.querySelector('[data-radix-collection-item][data-state="active"]')?.getAttribute('data-value') === 'spoonacular' ? handleSpoonacularSearch() : handleMealDbSearch()} disabled={isSearchingOnline}>
+                    {isSearchingOnline ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
+                    Search
+                </Button>
+            </div>
+            <TabsContent value="spoonacular" className="flex-1 -mx-4">
+                <OnlineResultsView sourceName="Spoonacular" />
+            </TabsContent>
+            <TabsContent value="mealdb" className="flex-1 -mx-4">
+                <OnlineResultsView sourceName="TheMealDB" />
             </TabsContent>
             <TabsContent value="starter" className="flex-1">
                  <ScrollArea className="h-full -mx-4">
@@ -509,6 +528,36 @@ export function RecipesApp() {
             </TabsContent>
         </Tabs>
     </div>
+  );
+  
+  const OnlineResultsView = ({ sourceName }: { sourceName: string }) => (
+       <ScrollArea className="h-full">
+            <div className="px-4">
+                {isSearchingOnline ? (
+                    <div className="flex justify-center items-center h-full pt-16"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>
+                ) : onlineSearchResults?.recipes && onlineSearchResults.recipes.length > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {onlineSearchResults.recipes.map(recipe => (
+                            <Card key={recipe.id} className="flex flex-col hover:shadow-lg transition-shadow">
+                                <CardHeader>
+                                    {recipe.imageUrl && (<div className="aspect-video relative w-full overflow-hidden rounded-md mb-4"><Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized/></div>)}
+                                    <CardTitle className="text-lg">{recipe.title}</CardTitle>
+                                </CardHeader>
+                                <CardFooter className="mt-auto flex justify-end gap-2">
+                                    <Button variant="secondary" size="sm" onClick={() => handleImportRecipe(recipe)}><Plus className="mr-2 h-4 w-4"/>Import</Button>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
+                        <Sparkles className="w-16 h-16 mb-4" />
+                        <h3 className="text-xl font-semibold">Find Your Next Meal</h3>
+                        <p className="text-sm max-w-xs">{onlineSearchResults ? `No results found on ${sourceName}. Try a different search term.` : `Search for recipes from a massive online database.`}</p>
+                    </div>
+                )}
+            </div>
+        </ScrollArea>
   );
 
   return (

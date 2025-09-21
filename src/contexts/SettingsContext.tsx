@@ -41,6 +41,8 @@ interface Settings {
   setClockSize: Dispatch<SetStateAction<number>>;
   fullscreenSettings: FullscreenSettings;
   setFullscreenSettings: Dispatch<SetStateAction<FullscreenSettings>>;
+  spoonacularApiKey: string;
+  setSpoonacularApiKey: Dispatch<SetStateAction<string>>;
 }
 
 const SettingsContext = createContext<Settings | undefined>(undefined);
@@ -73,6 +75,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     planner: false,
     calendar: false,
   });
+  const [spoonacularApiKey, setSpoonacularApiKey] = useLocalStorage<string>('settings:spoonacularKey', '');
   const { resolvedTheme } = useTheme();
 
 
@@ -130,6 +133,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setClockSize,
     fullscreenSettings,
     setFullscreenSettings,
+    spoonacularApiKey,
+    setSpoonacularApiKey,
   };
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

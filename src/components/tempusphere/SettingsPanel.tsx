@@ -108,6 +108,8 @@ export function SettingsPanel() {
     setBackgroundImage,
     fullscreenSettings,
     setFullscreenSettings,
+    spoonacularApiKey,
+    setSpoonacularApiKey,
   } = useSettings();
   const { resolvedTheme } = useTheme();
   const [extractedPalette, setExtractedPalette] = useState<string[]>([]);
@@ -206,6 +208,17 @@ export function SettingsPanel() {
                     />
                   </div>
               </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 items-center">
+                  <Label htmlFor="spoonacular-key">Spoonacular API Key</Label>
+                  <Input id="spoonacular-key" value={spoonacularApiKey} onChange={(e) => setSpoonacularApiKey(e.target.value)} placeholder="Enter your key"/>
+              </div>
+               <p className="text-xs text-muted-foreground">Get a free API key from the <a href="https://spoonacular.com/food-api" target="_blank" rel="noopener noreferrer" className="underline">Spoonacular website</a>.</p>
             </CardContent>
           </Card>
 
