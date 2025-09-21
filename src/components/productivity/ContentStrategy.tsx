@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 
 interface ContentIdea {
     id: string;
