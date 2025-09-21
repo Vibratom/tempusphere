@@ -1,7 +1,8 @@
+
 'use client';
 
-import { MarketingStrategy } from '@/components/productivity/MarketingStrategy';
+import { ContentStrategy } from '@/components/productivity/ContentStrategy';
 
 export default function MarketingStrategyPage() {
-    return <MarketingStrategy />;
+    return <ContentStrategy />;
 }

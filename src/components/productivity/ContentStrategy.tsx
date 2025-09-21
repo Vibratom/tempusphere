@@ -32,6 +32,7 @@ interface ContentIdea {
 interface Column {
     id: string;
     title: string;
+    description: string;
     ideaIds: string[];
 }
 
@@ -43,19 +44,20 @@ interface Board {
 
 const initialBoard: Board = {
     ideas: {
-        'idea-1': { id: 'idea-1', title: 'Q3 Earnings Report Analysis', type: 'Blog Post', notes: 'Focus on year-over-year growth.', publishDate: new Date().toISOString() },
+        'idea-1': { id: 'idea-1', title: 'Q3 Product Launch Video', type: 'Video', notes: 'High-production value video to announce the new product line.', publishDate: new Date().toISOString() },
+        'idea-2': { id: 'idea-2', title: 'Weekly "How-To" Blog Post', type: 'Blog Post', notes: 'A series of tutorials related to our products.', publishDate: undefined },
+        'idea-3': { id: 'idea-3', title: 'FAQ Section for Website', type: 'Other', notes: 'Create a comprehensive FAQ page to address common customer questions.', publishDate: undefined },
     },
     columns: {
-        'column-1': { id: 'column-1', title: 'Ideas', ideaIds: ['idea-1'] },
-        'column-2': { id: 'column-2', title: 'In Progress', ideaIds: [] },
-        'column-3': { id: 'column-3', title: 'In Review', ideaIds: [] },
-        'column-4': { id: 'column-4', title: 'Published', ideaIds: [] },
+        'column-1': { id: 'column-1', title: 'Hero', description: 'Big, attention-grabbing content (e.g., viral campaigns, major reports).', ideaIds: ['idea-1'] },
+        'column-2': { id: 'column-2', title: 'Hub', description: 'Regularly scheduled content to engage your audience (e.g., weekly blogs, podcasts).', ideaIds: ['idea-2'] },
+        'column-3': { id: 'column-3', title: 'Help', description: 'Evergreen content that answers customer questions (e.g., tutorials, FAQs).', ideaIds: ['idea-3'] },
     },
-    columnOrder: ['column-1', 'column-2', 'column-3', 'column-4'],
+    columnOrder: ['column-1', 'column-2', 'column-3'],
 };
 
 export function ContentStrategy() {
-    const [board, setBoard] = useLocalStorage<Board>('content-strategy:board-v1', initialBoard);
+    const [board, setBoard] = useLocalStorage<Board>('content-strategy:board-v2', initialBoard);
     const [isClient, setIsClient] = useState(false);
     const [editingIdea, setEditingIdea] = useState<ContentIdea | null>(null);
     const { toast } = useToast();
@@ -158,8 +160,8 @@ export function ContentStrategy() {
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
             <div className="flex flex-col items-center text-center">
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Content Strategy</h1>
-                <p className="text-lg text-muted-foreground mt-2 max-w-2xl">
-                    Plan, track, and manage your content pipeline from idea to publication.
+                <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
+                    Plan your content using the Hero, Hub, Help framework.
                 </p>
             </div>
             <DragDropContext onDragEnd={onDragEnd}>
@@ -192,9 +194,9 @@ const ColumnComponent = ({ column, ideas, index, addIdea, removeIdea, setEditing
             {(provided) => (
                 <div {...provided.draggableProps} ref={provided.innerRef} className="w-80 flex-shrink-0">
                     <Card className="flex flex-col h-full bg-muted/30">
-                        <CardHeader {...provided.dragHandleProps} className="flex-row items-center justify-between p-3 cursor-grab">
+                        <CardHeader {...provided.dragHandleProps} className="p-3 cursor-grab">
                             <CardTitle className="text-base font-semibold">{column.title}</CardTitle>
-                            <Badge variant="secondary">{ideas.length}</Badge>
+                            <p className="text-xs text-muted-foreground">{column.description}</p>
                         </CardHeader>
                         <Droppable droppableId={column.id} type="IDEA">
                             {(provided, snapshot) => (
