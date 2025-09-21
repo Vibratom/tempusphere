@@ -2,9 +2,9 @@
 import { Header } from '@/components/tempusphere/Header';
 import { Footer } from '@/components/tempusphere/Footer';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Clock, Globe, AlarmClock, Hourglass, Timer, Users, Scale, CalendarDays, ListChecks } from 'lucide-react';
+import { Clock, Globe, AlarmClock, Hourglass, Timer, Users, Scale, CalendarDays, ListChecks, KanbanSquare, Briefcase, Landmark, UtensilsCrossed, TrendingUp, BrainCircuit, IterationCw, Megaphone, FileText } from 'lucide-react';
 
-const features = [
+const timeFeatures = [
     { icon: Clock, title: 'Customizable Primary Clock' },
     { icon: Globe, title: 'World Clock Dashboard' },
     { icon: AlarmClock, title: 'Alarm System' },
@@ -12,9 +12,42 @@ const features = [
     { icon: Timer, title: 'Countdown Timer' },
     { icon: Scale, title: 'Timezone Converter' },
     { icon: Users, title: 'Conference Planner' },
+];
+
+const organizationFeatures = [
     { icon: CalendarDays, title: 'Personal Calendar' },
     { icon: ListChecks, title: 'Advanced Checklist' },
+    { icon: UtensilsCrossed, title: 'Recipe Cookbook' },
+]
+
+const projectFeatures = [
+    { icon: KanbanSquare, title: 'Project Management Suite' },
+    { icon: Landmark, title: 'Project Bookkeeping' },
 ];
+
+const productivityFeatures = [
+    { icon: Briefcase, title: 'Productivity Suite' },
+    { icon: TrendingUp, title: 'Win/Loss Analysis' },
+    { icon: BrainCircuit, title: 'Strategic Analysis Tools' },
+    { icon: IterationCw, title: 'Customer Lifecycle Management' },
+    { icon: Megaphone, title: 'Marketing Strategy Planners' },
+    { icon: FileText, title: 'Meeting Minutes Generator' },
+];
+
+const FeatureSection = ({ title, features }: { title: string, features: {icon: React.ElementType, title: string}[]}) => (
+    <>
+        <h3 className="text-2xl font-semibold">{title}</h3>
+        <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 list-none p-0">
+            {features.map((feature) => (
+                <li key={feature.title} className="flex items-center gap-3 bg-muted/50 p-3 rounded-lg">
+                    <feature.icon className="h-6 w-6 text-primary flex-shrink-0" />
+                    <span className="font-medium">{feature.title}</span>
+                </li>
+            ))}
+        </ul>
+    </>
+);
+
 
 export default function AboutPage() {
   return (
@@ -28,24 +61,16 @@ export default function AboutPage() {
             </CardHeader>
             <CardContent className="prose dark:prose-invert max-w-none text-lg space-y-6">
               <p>
-                Welcome to Tempusphere, your all-in-one solution for mastering time. In today's fast-paced world, managing your time effectively across different zones, tasks, and appointments is more crucial than ever. Tempusphere was born from a simple idea: to create a single, beautifully designed, and highly functional dashboard that brings all your time-related tools into one place.
+                Welcome to Tempusphere, your all-in-one solution for mastering time and productivity. In today's fast-paced world, managing your time, projects, and strategies effectively is more crucial than ever. Tempusphere was born from a simple idea: to create a single, beautifully designed, and highly functional dashboard that brings all your essential tools into one place.
               </p>
               <p>
-                Whether you're a remote worker coordinating with a global team, a student juggling deadlines, or simply someone who loves to stay organized, Tempusphere is designed for you. Our goal is to provide a seamless and intuitive experience that helps you stay productive, punctual, and prepared.
+                Whether you're a remote worker coordinating with a global team, a business analyst driving strategy, a project manager juggling deadlines, or simply someone who loves to stay organized, Tempusphere is designed for you. Our goal is to provide a seamless and intuitive experience that helps you stay productive, punctual, and prepared.
               </p>
               
-              <h3 className="text-2xl font-semibold">Our Core Features</h3>
-              <p>
-                We've packed Tempusphere with a suite of powerful tools to cover every aspect of your time management needs:
-              </p>
-              <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 list-none p-0">
-                {features.map((feature) => (
-                    <li key={feature.title} className="flex items-center gap-3 bg-muted/50 p-3 rounded-lg">
-                        <feature.icon className="h-6 w-6 text-primary flex-shrink-0" />
-                        <span className="font-medium">{feature.title}</span>
-                    </li>
-                ))}
-              </ul>
+              <FeatureSection title="Core Time Management" features={timeFeatures} />
+              <FeatureSection title="Personal Organization" features={organizationFeatures} />
+              <FeatureSection title="Project Management" features={projectFeatures} />
+              <FeatureSection title="Productivity & Strategy" features={productivityFeatures} />
 
               <h3 className="text-2xl font-semibold">Our Philosophy</h3>
               <p>
