@@ -2,74 +2,84 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Search, ChefHat, Loader2, AlertCircle } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { searchMeals, type MealSearchOutput } from '@/ai/flows/meal-db-flow';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
+import { searchMeals, type MealSearchOutput, type MealSchema } from '@/ai/flows/meal-db-flow';
 
-const MealDetailDialog = ({ meal, onOpenChange }: { meal: any, onOpenChange: (open: boolean) => void }) => {
+const MealDetails = ({ meal }: { meal: MealSchema }) => {
     const ingredients = [];
     for (let i = 1; i <= 20; i++) {
-        if (meal[`strIngredient${i}`]) {
-            ingredients.push(`${meal[`strMeasure${i}`]} ${meal[`strIngredient${i}`]}`);
+        const ingredient = meal[`strIngredient${i}` as keyof MealSchema];
+        const measure = meal[`strMeasure${i}` as keyof MealSchema];
+        if (ingredient && typeof ingredient === 'string' && ingredient.trim()) {
+            ingredients.push(`${measure || ''} ${ingredient}`.trim());
         }
     }
+    
+    const instructions = meal.strInstructions?.split('\n').filter(line => line.trim()) || [];
 
     return (
-        <Dialog open={true} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>{meal.strMeal}</DialogTitle>
-                    <DialogDescription>{meal.strCategory} | {meal.strArea}</DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="max-h-[60vh]">
-                    <div className="pr-4 space-y-4">
-                        {meal.strMealThumb && <Image src={meal.strMealThumb} alt={meal.strMeal} width={400} height={300} className="rounded-md mx-auto" />}
+        <Card className="flex-1">
+            <CardContent className="p-0">
+                <ScrollArea className="h-[70vh]">
+                    <div className="p-6">
+                        {meal.strMealThumb && <div className="aspect-video relative mb-4"><Image src={meal.strMealThumb} alt={meal.strMeal} layout="fill" objectFit="cover" className="rounded-lg" unoptimized /></div>}
+                        <CardHeader className="p-0 mb-4">
+                            <CardTitle className="text-3xl">{meal.strMeal}</CardTitle>
+                            <CardDescription>{meal.strCategory} | {meal.strArea}</CardDescription>
+                        </CardHeader>
                         
-                        <div>
-                            <h3 className="font-semibold mb-2">Ingredients</h3>
-                            <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                                {ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
-                            </ul>
+                        <div className="grid md:grid-cols-3 gap-6">
+                            <div className="md:col-span-1 space-y-2">
+                                <h3 className="font-semibold text-lg border-b pb-1">Ingredients</h3>
+                                <ul className="list-disc pl-5 text-sm space-y-1 text-muted-foreground">
+                                    {ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
+                                </ul>
+                            </div>
+                            <div className="md:col-span-2 space-y-2">
+                                <h3 className="font-semibold text-lg border-b pb-1">Instructions</h3>
+                                <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
+                                    {instructions.map((step, i) => <li key={i}>{step}</li>)}
+                                </ol>
+                            </div>
                         </div>
-                         <div>
-                            <h3 className="font-semibold mb-2">Instructions</h3>
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{meal.strInstructions || 'Not available.'}</p>
+
+                         <div className="mt-6 flex gap-2">
+                            {meal.strSource && <Button asChild variant="secondary"><a href={meal.strSource} target="_blank" rel="noopener noreferrer">View Source</a></Button>}
+                            {meal.strYoutube && <Button asChild variant="destructive"><a href={meal.strYoutube} target="_blank" rel="noopener noreferrer">Watch on YouTube</a></Button>}
                         </div>
                     </div>
                 </ScrollArea>
-                <DialogFooter>
-                    {meal.strSource && <Button asChild variant="secondary"><a href={meal.strSource} target="_blank" rel="noopener noreferrer">View Source</a></Button>}
-                    {meal.strYoutube && <Button asChild variant="destructive"><a href={meal.strYoutube} target="_blank" rel="noopener noreferrer">Watch on YouTube</a></Button>}
-                    <Button onClick={() => onOpenChange(false)}>Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
+            </CardContent>
+        </Card>
+    );
+};
+
 
 export function RecipeSearch() {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<MealSearchOutput>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [selectedMeal, setSelectedMeal] = useState<any | null>(null);
+    const [selectedMeal, setSelectedMeal] = useState<MealSchema | null>(null);
     
     const { toast } = useToast();
 
     const handleSearch = async () => {
         if (!query.trim()) {
             setResults([]);
+            setSelectedMeal(null);
             return;
         }
 
         setIsLoading(true);
         setError(null);
+        setSelectedMeal(null);
         try {
             const searchResult = await searchMeals({ query });
             if (searchResult) {
@@ -103,46 +113,56 @@ export function RecipeSearch() {
                     Search
                 </Button>
             </div>
-            <Card className="flex-1">
-                <CardContent className="p-4 h-full">
-                    <ScrollArea className="h-full">
-                         <div className="pr-4">
-                            {isLoading ? (
-                                <div className="flex items-center justify-center h-full text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin"/></div>
-                            ) : error ? (
-                                <div className="flex flex-col items-center justify-center h-full text-center text-destructive">
-                                    <AlertCircle className="h-16 w-16 mb-4"/>
-                                    <h3 className="font-semibold text-lg">An Error Occurred</h3>
-                                    <p className="text-sm">{error}</p>
-                                </div>
-                            ) : results.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {results.map(meal => (
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
+                <Card className="lg:col-span-1">
+                    <CardContent className="p-2 h-full">
+                        <ScrollArea className="h-full">
+                            <div className="p-2 space-y-2">
+                                {isLoading ? (
+                                    <div className="flex items-center justify-center h-full text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin"/></div>
+                                ) : error ? (
+                                    <div className="flex flex-col items-center justify-center h-full text-center text-destructive p-4">
+                                        <AlertCircle className="h-12 w-12 mb-4"/>
+                                        <h3 className="font-semibold text-lg">An Error Occurred</h3>
+                                        <p className="text-sm">{error}</p>
+                                    </div>
+                                ) : results.length > 0 ? (
+                                    results.map(meal => (
                                         <Card key={meal.idMeal} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setSelectedMeal(meal)}>
-                                            <CardHeader className="p-0">
-                                                {meal.strMealThumb ? <div className="aspect-video relative">
-                                                    <Image src={meal.strMealThumb} alt={meal.strMeal} layout="fill" objectFit="cover" className="rounded-t-lg" unoptimized/>
-                                                </div> : <div className="aspect-video bg-muted rounded-t-lg flex items-center justify-center"><ChefHat className="h-10 w-10 text-muted-foreground"/></div>}
+                                            <CardHeader className="flex-row gap-4 items-center p-3">
+                                                {meal.strMealThumb ? <div className="w-16 h-16 relative flex-shrink-0">
+                                                    <Image src={meal.strMealThumb} alt={meal.strMeal} layout="fill" objectFit="cover" className="rounded-md" unoptimized/>
+                                                </div> : <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center"><ChefHat className="h-8 w-8 text-muted-foreground"/></div>}
+                                                <div>
+                                                  <p className="font-semibold">{meal.strMeal}</p>
+                                                  <p className="text-xs text-muted-foreground">{meal.strCategory} | {meal.strArea}</p>
+                                                </div>
                                             </CardHeader>
-                                            <CardContent className="p-3">
-                                                <p className="font-semibold truncate">{meal.strMeal}</p>
-                                                <p className="text-xs text-muted-foreground">{meal.strCategory} | {meal.strArea}</p>
-                                            </CardContent>
                                         </Card>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                                    <ChefHat className="h-16 w-16 mb-4"/>
-                                    <h3 className="font-semibold text-lg">Search for Recipes</h3>
-                                    <p className="text-sm">Use the search bar above to find recipes from TheMealDB.</p>
-                                </div>
-                            )}
-                         </div>
-                    </ScrollArea>
-                </CardContent>
-            </Card>
-            {selectedMeal && <MealDetailDialog meal={selectedMeal} onOpenChange={() => setSelectedMeal(null)} />}
+                                    ))
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
+                                        <ChefHat className="h-16 w-16 mb-4"/>
+                                        <h3 className="font-semibold text-lg">Search for Recipes</h3>
+                                        <p className="text-sm">Use the search bar above to find recipes from TheMealDB.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+                <div className="lg:col-span-2">
+                    {selectedMeal ? (
+                        <MealDetails meal={selectedMeal} />
+                    ) : (
+                        <Card className="h-full flex items-center justify-center bg-muted/30 border-dashed">
+                           <div className="text-center text-muted-foreground">
+                               <p>Select a recipe to see the details.</p>
+                           </div>
+                        </Card>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
