@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -20,8 +21,8 @@ export default function CulinaryLayout({
 
   return (
     <SettingsProvider>
-      <ChecklistProvider>
-        <CalendarProvider>
+      <CalendarProvider>
+        <ChecklistProvider>
             <div className="min-h-screen w-full bg-background flex flex-col">
                 <Header />
                 <main className="flex-1 flex flex-col items-center p-4 md:p-8">
@@ -36,8 +37,8 @@ export default function CulinaryLayout({
                 </main>
                 <Footer />
             </div>
-        </CalendarProvider>
-      </ChecklistProvider>
+        </ChecklistProvider>
+      </CalendarProvider>
     </SettingsProvider>
   )
 }
