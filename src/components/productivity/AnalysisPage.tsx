@@ -11,6 +11,7 @@ import { PestleAnalysis } from "./PestleAnalysis";
 import { PortersFiveForces } from "./PortersFiveForces";
 import { VrioFramework } from "./VrioFramework";
 import { McKinsey7SModel } from "./McKinsey7SModel";
+import { GapAnalysis } from "./GapAnalysis";
 
 export function AnalysisPage() {
 
@@ -18,7 +19,7 @@ export function AnalysisPage() {
         <div className="w-full h-full flex flex-col">
             <Tabs defaultValue="swot" className="w-full flex-1 flex flex-col">
                 <div className="text-center mb-6">
-                    <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 h-auto">
+                    <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 h-auto">
                         <TabsTrigger value="swot">SWOT Analysis</TabsTrigger>
                         <TabsTrigger value="tows">TOWS Matrix</TabsTrigger>
                         <TabsTrigger value="soar">SOAR Analysis</TabsTrigger>
@@ -28,6 +29,7 @@ export function AnalysisPage() {
                         <TabsTrigger value="porters">Porter's 5 Forces</TabsTrigger>
                         <TabsTrigger value="vrio">VRIO Framework</TabsTrigger>
                         <TabsTrigger value="mckinsey">McKinsey 7-S</TabsTrigger>
+                        <TabsTrigger value="gap">Gap Analysis</TabsTrigger>
                     </TabsList>
                 </div>
                 <TabsContent value="swot" className="flex-1">
@@ -56,6 +58,9 @@ export function AnalysisPage() {
                 </TabsContent>
                  <TabsContent value="mckinsey" className="flex-1">
                     <McKinsey7SModel />
+                </TabsContent>
+                 <TabsContent value="gap" className="flex-1">
+                    <GapAnalysis />
                 </TabsContent>
             </Tabs>
         </div>
