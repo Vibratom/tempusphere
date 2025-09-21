@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -435,7 +434,7 @@ export function RecipesApp() {
 
   if (!isClient) {
       return (
-         <div className="w-full max-w-7xl mx-auto">
+         <div className="w-full max-w-7xl mx-auto p-4 md:p-6">
             <div className="flex flex-col items-center text-center mb-8">
                 <UtensilsCrossed className="w-16 h-16 mb-4 text-primary" />
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Recipe Remix</h1>
@@ -514,14 +513,14 @@ export function RecipesApp() {
 
   return (
     <RecipesContext.Provider value={{ recipes, setRecipes }}>
-        <div className="w-full flex flex-col h-full gap-4">
+        <div className="w-full flex flex-col h-full gap-4 p-4 md:p-6">
             <div className="flex flex-col items-center text-center">
                 <UtensilsCrossed className="w-16 h-16 mb-4 text-primary" />
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Recipe Remix</h1>
                 <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Your personal culinary journal. Create, remix, and discover new recipes.</p>
             </div>
             
-            <ResizablePanelGroup direction="horizontal" className="flex-1 border rounded-lg h-full">
+            <ResizablePanelGroup direction="horizontal" className="flex-1 border rounded-lg h-full min-h-[600px]">
                 <ResizablePanel defaultSize={30} minSize={20}>
                    <div className="p-4 h-full flex flex-col">
                         <div className="flex items-center justify-between gap-4 mb-4">
@@ -576,4 +575,3 @@ export function RecipesApp() {
     </RecipesContext.Provider>
   );
 }
-
