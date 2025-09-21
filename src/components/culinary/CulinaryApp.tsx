@@ -26,8 +26,7 @@ import { Separator } from '../ui/separator';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { ChecklistApp } from '../checklist/ChecklistApp';
-import { useChecklist } from '@/contexts/ChecklistContext';
-import { ChecklistProvider } from '@/contexts/ChecklistContext';
+import { useChecklist, Checklist } from '@/contexts/ChecklistContext';
 import { Checkbox } from '../ui/checkbox';
 
 interface Recipe {
@@ -173,6 +172,33 @@ const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => 
     )
 }
 
+const RecipeChecklist = ({ recipe }: { recipe: Recipe }) => {
+    const { lists, addList } = useChecklist();
+    const [recipeList, setRecipeList] = useState<Checklist | null>(null);
+
+    useEffect(() => {
+        if (recipe.checklistId) {
+            const foundList = lists.find(l => l.id === recipe.checklistId);
+            if (foundList) {
+                setRecipeList(foundList);
+            } else {
+                // The ID exists but the list doesn't, maybe it was deleted. We could recreate it.
+                const newList = { id: recipe.checklistId, title: `${recipe.title} - Prep List`, tasks: [] };
+                addList(newList);
+                setRecipeList(newList);
+            }
+        }
+    }, [recipe, lists, addList]);
+
+    if (!recipe.checklistId || !recipeList) {
+        return <p>Loading checklist...</p>;
+    }
+    
+    // This is a bit of a trick to render just one checklist
+    return <ChecklistApp variant="project" />;
+};
+
+
 const RecipeDetailView = ({ recipe, recipes, onViewRecipe, onEdit, onRemix, onDelete, onUpdate }: { recipe: Recipe, recipes: Recipe[], onViewRecipe: (recipe: Recipe) => void, onEdit: (recipe: Recipe) => void, onRemix: (recipe: Recipe) => void, onDelete: (id: string) => void, onUpdate: (recipe: Recipe) => void }) => {
     const parentRecipe = recipe.remixedFrom ? recipes.find(r => r.id === recipe.remixedFrom) : null;
     const childRecipes = recipes.filter(r => r.remixedFrom === recipe.id);
@@ -187,7 +213,9 @@ const RecipeDetailView = ({ recipe, recipes, onViewRecipe, onEdit, onRemix, onDe
     useEffect(() => {
         if (recipe && !recipe.checklistId) {
             const checklistId = `recipe-${recipe.id}`;
-            if (!lists.some(l => l.id === checklistId)) {
+            const existingList = lists.find(l => l.id === checklistId);
+            
+            if (!existingList) {
                 addList({
                     id: checklistId,
                     title: `${recipe.title} - Prep List`,
@@ -273,7 +301,7 @@ const RecipeDetailView = ({ recipe, recipes, onViewRecipe, onEdit, onRemix, onDe
                                             {section.title !== 'main' && <h4 className="font-semibold uppercase text-sm tracking-wider text-muted-foreground">{section.title}</h4>}
                                             {section.items.map((item, itemIdx) => (
                                                 <div key={itemIdx} className="flex items-center gap-3">
-                                                    <Checkbox id={`${idx}-${itemIdx}`} checked={checkedIngredients[item]} onCheckedChange={() => toggleIngredient(item)} />
+                                                    <Checkbox id={`${idx}-${itemIdx}`} checked={!!checkedIngredients[item]} onCheckedChange={() => toggleIngredient(item)} />
                                                     <label htmlFor={`${idx}-${itemIdx}`} className="text-base cursor-pointer">{item}</label>
                                                 </div>
                                             ))}
@@ -296,11 +324,7 @@ const RecipeDetailView = ({ recipe, recipes, onViewRecipe, onEdit, onRemix, onDe
                             </div>
                         </TabsContent>
                         <TabsContent value="checklist">
-                            {recipe.checklistId ? (
-                                <ChecklistProvider>
-                                    <ChecklistApp variant="project" />
-                                </ChecklistProvider>
-                            ) : <p>Loading checklist...</p>}
+                           {recipe.checklistId && <RecipeChecklist recipe={recipe} />}
                         </TabsContent>
                     </Tabs>
 
@@ -426,3 +450,4 @@ export function CulinaryApp() {
     </div>
   );
 }
+

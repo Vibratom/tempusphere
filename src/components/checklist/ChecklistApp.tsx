@@ -77,7 +77,7 @@ const otherPlatforms = [
     { name: 'Finance', category: 'Finance', icon: Landmark, href: '/finance', color: 'bg-indigo-500 hover:bg-indigo-600', description: 'Track expenses and manage budgets with ease.' },
     { name: 'Canvas', category: 'Whiteboard', icon: DraftingCompass, href: '/projects/canvas', color: 'bg-sky-500 hover:bg-sky-600', description: 'Collaborate visually with a digital whiteboard.' },
     { name: 'Spreadsheets', category: 'Spreadsheets', icon: Table, href: '/projects/spreadsheet', color: 'bg-emerald-500 hover:bg-emerald-600', description: 'Organize and analyze data in spreadsheets.' },
-    { name: 'Recipes', category: 'Recipes', icon: UtensilsCrossed, href: '/recipes', color: 'bg-yellow-500 hover:bg-yellow-600', description: 'Organize recipes and plan your meals.' },
+    { name: 'Recipes', category: 'Recipes', icon: UtensilsCrossed, href: '/culinary/core-tools/book', color: 'bg-yellow-500 hover:bg-yellow-600', description: 'Organize recipes and plan your meals.' },
     { name: 'Projects', category: 'Projects', icon: KanbanSquare, href: '/projects', color: 'bg-rose-500 hover:bg-rose-600', description: 'Manage projects with Kanban-style boards.' },
 ]
 
@@ -716,6 +716,10 @@ export function ChecklistApp({ variant = 'standalone' }: { variant?: 'standalone
   
   if (!isClient) return null;
 
+  const relevantLists = variant === 'project'
+    ? sortedLists.filter(list => list.id.startsWith('recipe-'))
+    : sortedLists;
+
   const mainContent = (
     <div className="w-full max-w-7xl mx-auto">
         {variant === 'standalone' && (
@@ -736,7 +740,7 @@ export function ChecklistApp({ variant = 'standalone' }: { variant?: 'standalone
           </>
         )}
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+      {variant === 'standalone' && <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <Card>
             <CardHeader>
             <CardTitle>Create a New List</CardTitle>
@@ -790,12 +794,12 @@ export function ChecklistApp({ variant = 'standalone' }: { variant?: 'standalone
                 </Button>
             </CardContent>
         </Card>
-      </div>
+      </div>}
 
       <DragDropContext onDragEnd={onDragEnd}>
-        {lists.length > 0 ? (
-          <div className={cn("grid gap-6 items-start", variant === 'project' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' )}>
-            {sortedLists.map((list) => {
+        {relevantLists.length > 0 ? (
+          <div className={cn("grid gap-6 items-start", variant === 'project' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' )}>
+            {relevantLists.map((list) => {
                 const { completed: completedTasks, total: totalTasks } = calculateProgress(list.tasks);
                 const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
                 const isAllComplete = totalTasks > 0 && completedTasks === totalTasks;
@@ -964,8 +968,8 @@ export function ChecklistApp({ variant = 'standalone' }: { variant?: 'standalone
         ) : (
             <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
                 <ListChecks className="w-16 h-16 mb-4" />
-                <h3 className="text-xl font-semibold">No Lists Yet</h3>
-                <p className="text-sm">Create your first list to get started.</p>
+                <h3 className="text-xl font-semibold">{variant === 'project' ? 'No Prep List' : 'No Lists Yet'}</h3>
+                <p className="text-sm">{variant === 'project' ? 'This recipe does not have a prep list yet.' : 'Create your first list to get started.'}</p>
             </div>
         )}
       </DragDropContext>
@@ -1014,3 +1018,4 @@ export function ChecklistApp({ variant = 'standalone' }: { variant?: 'standalone
   
   return <div className="h-full w-full">{mainContent}</div>;
 }
+
