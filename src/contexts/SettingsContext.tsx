@@ -41,8 +41,6 @@ interface Settings {
   setClockSize: Dispatch<SetStateAction<number>>;
   fullscreenSettings: FullscreenSettings;
   setFullscreenSettings: Dispatch<SetStateAction<FullscreenSettings>>;
-  tastyApiKey: string;
-  setTastyApiKey: Dispatch<SetStateAction<string>>;
 }
 
 const SettingsContext = createContext<Settings | undefined>(undefined);
@@ -75,7 +73,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     planner: false,
     calendar: false,
   });
-  const [tastyApiKey, setTastyApiKey] = useLocalStorage<string>('settings:tastyApiKey_v1', '');
   const { resolvedTheme } = useTheme();
 
 
@@ -133,8 +130,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setClockSize,
     fullscreenSettings,
     setFullscreenSettings,
-    tastyApiKey,
-    setTastyApiKey,
   };
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
