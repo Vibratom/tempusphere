@@ -6,6 +6,7 @@ import { SwotAnalysis } from "./SwotAnalysis";
 import { TowsMatrix } from "./TowsMatrix";
 import { SoarAnalysis } from "./SoarAnalysis";
 import { ScoreAnalysis } from "./ScoreAnalysis";
+import { NoiseAnalysis } from "./NoiseAnalysis";
 
 export function AnalysisPage() {
 
@@ -18,6 +19,7 @@ export function AnalysisPage() {
                         <TabsTrigger value="tows">TOWS Matrix</TabsTrigger>
                         <TabsTrigger value="soar">SOAR Analysis</TabsTrigger>
                         <TabsTrigger value="score">SCORE Analysis</TabsTrigger>
+                        <TabsTrigger value="noise">NOISE Analysis</TabsTrigger>
                     </TabsList>
                 </div>
                 <TabsContent value="swot" className="flex-1">
@@ -31,6 +33,9 @@ export function AnalysisPage() {
                 </TabsContent>
                  <TabsContent value="score" className="flex-1">
                     <ScoreAnalysis />
+                </TabsContent>
+                 <TabsContent value="noise" className="flex-1">
+                    <NoiseAnalysis />
                 </TabsContent>
             </Tabs>
         </div>
