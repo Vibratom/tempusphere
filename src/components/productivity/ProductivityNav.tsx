@@ -3,7 +3,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, FileText, BrainCircuit, Filter, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, FileText, BrainCircuit, Filter, ClipboardList, Megaphone } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
@@ -12,6 +12,7 @@ const tools = [
     { value: 'swot', icon: BrainCircuit, label: 'SWOT', href: '/productivity/swot' },
     { value: 'funnel', icon: Filter, label: 'Funnel', href: '/productivity/funnel' },
     { value: 'content-strategy', icon: ClipboardList, label: 'Content', href: '/productivity/content-strategy' },
+    { value: 'marketing-strategy', icon: Megaphone, label: 'Marketing', href: '/productivity/marketing-strategy' },
 ];
 
 const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: string, href: string, icon: React.ElementType, children: React.ReactNode }) => (
