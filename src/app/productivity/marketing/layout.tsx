@@ -31,3 +31,8 @@ export default function MarketingLayout({
                     ))}
                 </TabsList>
             </div>
+            {children}
+        </Tabs>
+    </div>
+  );
+}
