@@ -11,8 +11,8 @@ import { playSound } from '@/lib/sounds';
 import { v4 as uuidv4 } from 'uuid';
 import { Progress } from '../ui/progress';
 import { cn } from '@/lib/utils';
-import { AnalogTimer } from './AnalogTimer';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { AnalogTimer } from '@/components/tempusphere/AnalogTimer';
 
 
 type TimerViewMode = 'digital' | 'analog';
