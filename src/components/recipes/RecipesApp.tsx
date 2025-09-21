@@ -13,8 +13,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
@@ -34,6 +32,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { format } from 'date-fns';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../ui/resizable';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+
 
 interface Recipe {
   id: string;
@@ -139,7 +139,7 @@ const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => 
     )
 }
 
-const RecipeDetailView = ({ recipe, onBack, onViewRecipe, onEdit, onRemix, onDelete }: { recipe: Recipe, onBack: () => void, onViewRecipe: (recipe: Recipe) => void, onEdit: (recipe: Recipe) => void, onRemix: (recipe: Recipe) => void, onDelete: (id: string) => void }) => {
+const RecipeDetailView = ({ recipe, onViewRecipe, onEdit, onRemix, onDelete }: { recipe: Recipe, onViewRecipe: (recipe: Recipe) => void, onEdit: (recipe: Recipe) => void, onRemix: (recipe: Recipe) => void, onDelete: (id: string) => void }) => {
     const { recipes } = useRecipesContext();
     const { addList, addTask, lists } = useChecklist();
     const { addEvent, addEventType } = useCalendar();
@@ -202,10 +202,9 @@ const RecipeDetailView = ({ recipe, onBack, onViewRecipe, onEdit, onRemix, onDel
     }
     
     return (
-        <Card className="w-full">
+        <Card className="w-full h-full flex flex-col border-0 shadow-none rounded-none">
             <CardHeader>
-                <div className="flex justify-between items-center">
-                    <Button variant="ghost" onClick={onBack}><ArrowLeft className="mr-2 h-4 w-4" /> Back to Cookbook</Button>
+                <div className="flex justify-end items-center">
                     <div className="flex flex-wrap gap-2">
                         <Popover>
                             <PopoverTrigger asChild>
@@ -245,7 +244,7 @@ const RecipeDetailView = ({ recipe, onBack, onViewRecipe, onEdit, onRemix, onDel
                 <CardTitle className="text-3xl font-bold">{recipe.title}</CardTitle>
                 {recipe.description && <CardDescription className="text-lg pt-2">{recipe.description}</CardDescription>}
             </CardHeader>
-            <CardContent className="grid md:grid-cols-2 gap-8">
+            <CardContent className="flex-1 grid md:grid-cols-2 gap-8 overflow-y-auto">
                 <div className="space-y-4">
                     <div className="aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground overflow-hidden relative">
                          {recipe.imageUrl ? (
@@ -324,7 +323,6 @@ export function RecipesApp() {
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null | undefined>(undefined);
   const [viewingRecipe, setViewingRecipe] = useState<Recipe | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const [showStarterCookbook, setShowStarterCookbook] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [onlineSearchQuery, setOnlineSearchQuery] = useState('');
   const [onlineSearchResults, setOnlineSearchResults] = useState<RecipeSearchOutput | null>(null);
@@ -446,147 +444,130 @@ export function RecipesApp() {
         </div>
       )
   }
-  
-  if(viewingRecipe) {
-      return (
-        <RecipesContext.Provider value={{ recipes, setRecipes }}>
-          <div className="w-full max-w-5xl mx-auto">
-              <RecipeDetailView 
-                  recipe={viewingRecipe}
-                  onBack={() => setViewingRecipe(null)}
-                  onViewRecipe={setViewingRecipe}
-                  onEdit={(recipe) => {
-                      setEditingRecipe(recipe);
-                  }}
-                  onRemix={handleRemixRecipe}
-                  onDelete={handleDeleteRecipe}
-              />
-               {editingRecipe !== undefined && <RecipeForm onSave={handleSaveRecipe} recipe={editingRecipe} onCancel={() => setEditingRecipe(undefined)}/>}
-          </div>
-        </RecipesContext.Provider>
-      )
-  }
+
+  const DiscoveryView = () => (
+    <div className="h-full w-full flex flex-col p-4">
+        <Tabs defaultValue="online" className="w-full flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="online">Online Search</TabsTrigger>
+                <TabsTrigger value="starter">Starter Cookbook</TabsTrigger>
+            </TabsList>
+            <TabsContent value="online" className="flex-1 flex flex-col">
+                <div className="w-full flex flex-col sm:flex-row gap-2 my-4">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="Search TheMealDB..." className="pl-8" value={onlineSearchQuery} onChange={(e) => setOnlineSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleOnlineSearch()}/>
+                    </div>
+                    <Button onClick={handleOnlineSearch} disabled={isSearchingOnline}>
+                        {isSearchingOnline ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
+                        Search
+                    </Button>
+                </div>
+                 <ScrollArea className="flex-1 -mx-4">
+                    <div className="px-4">
+                        {isSearchingOnline ? (
+                            <div className="flex justify-center items-center h-full pt-16"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>
+                        ) : onlineSearchResults?.recipes && onlineSearchResults.recipes.length > 0 ? (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {onlineSearchResults.recipes.map(recipe => (
+                                    <Card key={recipe.id} className="flex flex-col hover:shadow-lg transition-shadow">
+                                        <CardHeader>
+                                            {recipe.imageUrl && (<div className="aspect-video relative w-full overflow-hidden rounded-md mb-4"><Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized/></div>)}
+                                            <CardTitle className="text-lg">{recipe.title}</CardTitle>
+                                        </CardHeader>
+                                        <CardFooter className="mt-auto flex justify-end gap-2">
+                                            <Button variant="secondary" size="sm" onClick={() => handleImportRecipe(recipe)}><Plus className="mr-2 h-4 w-4"/>Import</Button>
+                                        </CardFooter>
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
+                                <Sparkles className="w-16 h-16 mb-4" />
+                                <h3 className="text-xl font-semibold">Find Your Next Meal</h3>
+                                <p className="text-sm max-w-xs">{onlineSearchResults ? 'No results found. Try a different search term.' : 'Search for recipes from a massive online database.'}</p>
+                            </div>
+                        )}
+                    </div>
+                </ScrollArea>
+            </TabsContent>
+            <TabsContent value="starter" className="flex-1">
+                 <ScrollArea className="h-full -mx-4">
+                    <div className="space-y-4 px-4">
+                        {starterRecipes.map(recipe => (
+                            <Card key={recipe.title} className="flex flex-col">
+                                <CardHeader>
+                                    <CardTitle className="text-lg">{recipe.title}</CardTitle>
+                                    <CardDescription>{recipe.description}</CardDescription>
+                                </CardHeader>
+                                <CardFooter className="mt-auto flex justify-end gap-2">
+                                    <Button variant="secondary" size="sm" onClick={() => addStarterToCookbook(recipe)}><Plus className="mr-2 h-4 w-4"/>Add to My Cookbook</Button>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </TabsContent>
+        </Tabs>
+    </div>
+  );
 
   return (
     <RecipesContext.Provider value={{ recipes, setRecipes }}>
-        <div className="w-full max-w-7xl mx-auto flex flex-col h-full gap-4">
-          <div className="flex flex-col items-center text-center">
-            <UtensilsCrossed className="w-16 h-16 mb-4 text-primary" />
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Recipe Remix</h1>
-            <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Your personal culinary journal. Create base recipes, "remix" them to track variations, or get inspired by our starter cookbook.</p>
-          </div>
+        <div className="w-full flex flex-col h-full gap-4">
+            <div className="flex flex-col items-center text-center">
+                <UtensilsCrossed className="w-16 h-16 mb-4 text-primary" />
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Recipe Remix</h1>
+                <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Your personal culinary journal. Create, remix, and discover new recipes.</p>
+            </div>
             
-          <Dialog open={showStarterCookbook} onOpenChange={setShowStarterCookbook}>
-            <DialogContent className="max-w-4xl">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2"><ChefHat className="text-accent" />Starter Cookbook</DialogTitle>
-                <DialogDescription>New to cooking? Browse these simple recipes and add them to your collection to get started.</DialogDescription>
-              </DialogHeader>
-              <ScrollArea className="h-[60vh] -mx-6">
-                <div className="space-y-4 px-6">
-                    {starterRecipes.map(recipe => (
-                        <Card key={recipe.title} className="flex flex-col">
-                            <CardHeader>
-                                <CardTitle className="text-lg">{recipe.title}</CardTitle>
-                                <CardDescription>{recipe.description}</CardDescription>
-                            </CardHeader>
-                            <CardFooter className="mt-auto flex justify-end gap-2">
-                                <Button variant="secondary" size="sm" onClick={() => addStarterToCookbook(recipe)}><Plus className="mr-2 h-4 w-4"/>Add to My Cookbook</Button>
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </div>
-              </ScrollArea>
-            </DialogContent>
-          </Dialog>
-
-          <ResizablePanelGroup direction="vertical" className="flex-1 border rounded-lg min-h-[80vh]">
-            <ResizablePanel defaultSize={50}>
-                <div className="p-4 h-full flex flex-col">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-                        <h2 className="text-2xl font-bold">My Cookbook</h2>
-                        <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
-                        <div className="relative flex-1">
+            <ResizablePanelGroup direction="horizontal" className="flex-1 border rounded-lg h-full">
+                <ResizablePanel defaultSize={30} minSize={20}>
+                   <div className="p-4 h-full flex flex-col">
+                        <div className="flex items-center justify-between gap-4 mb-4">
+                            <h2 className="text-2xl font-bold">My Cookbook</h2>
+                            <Button size="icon" onClick={() => setEditingRecipe(null)}><Plus/></Button>
+                        </div>
+                        <div className="relative flex-1 mb-4">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search my recipes..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                            <Input placeholder="Search recipes..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                         </div>
-                        <Button onClick={() => setEditingRecipe(null)}><Plus className="mr-2"/>Add New</Button>
-                        </div>
-                    </div>
-                    <ScrollArea className="flex-1 -mx-4">
-                        <div className="px-4">
-                            {filteredRecipes.length > 0 ? (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                                    {filteredRecipes.map(recipe => (
-                                        <Card key={recipe.id} className="flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setViewingRecipe(recipe)}>
-                                            <CardHeader>
-                                                {recipe.imageUrl && (<div className="aspect-video relative w-full overflow-hidden rounded-md mb-4"><Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized/></div>)}
-                                                <CardTitle className="text-lg">{recipe.title}</CardTitle>
-                                                <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
-                                            </CardHeader>
-                                            <CardFooter className="mt-auto pt-2">
-                                                <p className="text-xs text-muted-foreground">Created: {format(new Date(recipe.createdAt), 'PP')}</p>
-                                            </CardFooter>
-                                        </Card>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
-                                    <BookOpen className="w-16 h-16 mb-4" />
-                                    <h3 className="text-xl font-semibold">{recipes.length > 0 ? 'No Recipes Found' : 'Your Cookbook is Empty'}</h3>
-                                    <p className="text-sm">{recipes.length > 0 ? 'Try a different search term.' : 'Add a recipe or search online.'}</p>
-                                </div>
-                            )}
-                        </div>
-                    </ScrollArea>
-                </div>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={50}>
-                <div className="p-4 h-full flex flex-col">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-                        <h2 className="text-2xl font-bold">Online Search &amp; Discovery</h2>
-                        <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Search TheMealDB..." className="pl-8" value={onlineSearchQuery} onChange={(e) => setOnlineSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleOnlineSearch()}/>
-                            </div>
-                            <Button onClick={handleOnlineSearch} disabled={isSearchingOnline}>
-                                {isSearchingOnline ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
-                                Search
-                            </Button>
-                        </div>
-                    </div>
-                     <ScrollArea className="flex-1 -mx-4">
-                        <div className="px-4">
-                            {isSearchingOnline ? (
-                                <div className="flex justify-center items-center h-full pt-16"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>
-                            ) : onlineSearchResults?.recipes && onlineSearchResults.recipes.length > 0 ? (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                                    {onlineSearchResults.recipes.map(recipe => (
-                                        <Card key={recipe.id} className="flex flex-col hover:shadow-lg transition-shadow">
-                                            <CardHeader>
-                                                {recipe.imageUrl && (<div className="aspect-video relative w-full overflow-hidden rounded-md mb-4"><Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized/></div>)}
-                                                <CardTitle className="text-lg">{recipe.title}</CardTitle>
-                                            </CardHeader>
-                                            <CardFooter className="mt-auto flex justify-end gap-2">
-                                                <Button variant="secondary" size="sm" onClick={() => handleImportRecipe(recipe)}><Plus className="mr-2 h-4 w-4"/>Import</Button>
-                                            </CardFooter>
-                                        </Card>
-                                    ))}
-                                </div>
-                            ) : (
+                        <ScrollArea className="flex-1 -mx-4">
+                             <div className="px-4">
+                                {filteredRecipes.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {filteredRecipes.map(recipe => (
+                                            <button key={recipe.id} className={cn("w-full text-left p-3 rounded-md hover:bg-muted", viewingRecipe?.id === recipe.id && "bg-muted")} onClick={() => setViewingRecipe(recipe)}>
+                                                <p className="font-semibold truncate">{recipe.title}</p>
+                                                <p className="text-xs text-muted-foreground truncate">{recipe.description}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
                                     <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
-                                    <Sparkles className="w-16 h-16 mb-4" />
-                                    <h3 className="text-xl font-semibold">Find Your Next Meal</h3>
-                                    <p className="text-sm max-w-xs">{onlineSearchResults ? 'No results found. Try a different search term.' : 'Search for recipes from a massive online database.'}</p>
-                                </div>
-                            )}
-                        </div>
-                    </ScrollArea>
-                </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+                                        <BookOpen className="w-12 h-12 mb-4" />
+                                        <p className="text-sm">{recipes.length > 0 ? 'No recipes found.' : 'Your cookbook is empty.'}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </ScrollArea>
+                   </div>
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={70} minSize={30}>
+                   {viewingRecipe ? (
+                        <RecipeDetailView 
+                            recipe={viewingRecipe}
+                            onViewRecipe={setViewingRecipe}
+                            onEdit={(recipe) => setEditingRecipe(recipe)}
+                            onRemix={handleRemixRecipe}
+                            onDelete={handleDeleteRecipe}
+                        />
+                   ) : (
+                       <DiscoveryView />
+                   )}
+                </ResizablePanel>
+            </ResizablePanelGroup>
           
           <Dialog open={editingRecipe !== undefined} onOpenChange={(isOpen) => !isOpen && setEditingRecipe(undefined)}>
             {editingRecipe !== undefined && <RecipeForm onSave={handleSaveRecipe} recipe={editingRecipe} onCancel={() => setEditingRecipe(undefined)}/>}
@@ -595,3 +576,4 @@ export function RecipesApp() {
     </RecipesContext.Provider>
   );
 }
+
