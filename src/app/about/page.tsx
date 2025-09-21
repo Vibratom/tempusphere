@@ -61,10 +61,10 @@ export default function AboutPage() {
             </CardHeader>
             <CardContent className="prose dark:prose-invert max-w-none text-lg space-y-6">
               <p>
-                Welcome to Tempusphere, your all-in-one solution for mastering time and productivity. In today's fast-paced world, managing your time, projects, and strategies effectively is more crucial than ever. Tempusphere was born from a simple idea: to create a single, beautifully designed, and highly functional dashboard that brings all your essential tools into one place.
+                Tempusphere is more than just a collection of tools; it's a unified dashboard designed to bring clarity and control to your daily life. In a world that constantly demands more of your time and attention, we provide a single, elegant space to manage everything from your schedule and projects to your finances and creative ideas. Our philosophy is simple: empower you with robust, intuitive tools that work for you, not against you.
               </p>
               <p>
-                Whether you're a remote worker coordinating with a global team, a business analyst driving strategy, a project manager juggling deadlines, or simply someone who loves to stay organized, Tempusphere is designed for you. Our goal is to provide a seamless and intuitive experience that helps you stay productive, punctual, and prepared.
+                From the individual professional managing global meetings to the business analyst steering corporate strategy, Tempusphere adapts to your needs. It’s for the project manager orchestrating complex timelines, the home cook organizing a personal cookbook, and anyone who believes that well-designed software can create more time for what truly matters. Welcome to your new center of productivity.
               </p>
               
               <FeatureSection title="Core Time Management" features={timeFeatures} />
