@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Search, ChefHat, Loader2, AlertCircle, BookPlus } from 'lucide-react';
+import { Search, ChefHat, Loader2, AlertCircle, BookPlus, Calculator, ListChecks } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -12,19 +12,52 @@ import { searchMeals, type MealSearchOutput, type MealSchema } from '@/ai/flows/
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { type Recipe } from '@/components/culinary/CulinaryApp';
 import { v4 as uuidv4 } from 'uuid';
+import { useRouter } from 'next/navigation';
+import { useChecklist, type Checklist } from '@/contexts/ChecklistContext';
+
+interface Ingredient {
+    id: string;
+    name: string;
+    quantity: number;
+    cost: number;
+}
 
 const MealDetails = ({ meal }: { meal: MealSchema }) => {
     const { toast } = useToast();
+    const router = useRouter();
     const [recipes, setRecipes] = useLocalStorage<Recipe[]>('recipes:listV5', []);
+    const { addList } = useChecklist();
+    const [, setPrimaryIngredients] = useLocalStorage<Ingredient[]>('foodcost:primary', []);
+    const [, setDishName] = useLocalStorage('foodcost:dishName', 'My New Dish');
     
-    const ingredients = [];
-    for (let i = 1; i <= 20; i++) {
-        const ingredient = meal[`strIngredient${i}` as keyof MealSchema];
-        const measure = meal[`strMeasure${i}` as keyof MealSchema];
-        if (ingredient && typeof ingredient === 'string' && ingredient.trim()) {
-            ingredients.push(`${measure || ''} ${ingredient}`.trim());
+    const { ingredients, ingredientNames } = React.useMemo(() => {
+        const ingredientsList: string[] = [];
+        const ingredientNamesList: {name: string, quantity: number, unit: string}[] = [];
+
+        for (let i = 1; i <= 20; i++) {
+            const ingredient = meal[`strIngredient${i}` as keyof MealSchema] as string;
+            const measure = meal[`strMeasure${i}` as keyof MealSchema] as string;
+            if (ingredient && ingredient.trim()) {
+                ingredientsList.push(`${measure || ''} ${ingredient}`.trim());
+
+                // Simple parsing of quantity and unit
+                const measureParts = (measure || '').trim().split(' ');
+                let quantity = 1;
+                let unit = '';
+                if(measureParts.length > 0) {
+                    const firstPartNum = parseFloat(measureParts[0]);
+                    if (!isNaN(firstPartNum)) {
+                        quantity = firstPartNum;
+                        unit = measureParts.slice(1).join(' ');
+                    } else {
+                        unit = measure.trim();
+                    }
+                }
+                ingredientNamesList.push({ name: ingredient.trim(), quantity, unit });
+            }
         }
-    }
+        return { ingredients: ingredientsList, ingredientNames: ingredientNamesList };
+    }, [meal]);
     
     const instructions = meal.strInstructions?.split('\n').filter(line => line.trim()) || [];
 
@@ -46,6 +79,43 @@ const MealDetails = ({ meal }: { meal: MealSchema }) => {
         });
     };
     
+    const handleSendToFoodCost = () => {
+        const foodCostIngredients: Ingredient[] = ingredientNames.map(ing => ({
+            id: uuidv4(),
+            name: `${ing.name} (${ing.unit})`,
+            quantity: ing.quantity || 1,
+            cost: 0,
+        }));
+        setDishName(meal.strMeal);
+        setPrimaryIngredients(foodCostIngredients);
+        toast({
+            title: "Ingredients Sent!",
+            description: "Navigating to Food Cost Calculator...",
+        });
+        router.push('/culinary/calculators/food-cost');
+    };
+
+    const handleSendToPrepChecklist = () => {
+        const newChecklist: Checklist = {
+            id: `recipe-prep-${uuidv4()}`,
+            title: `${meal.strMeal} - Prep List`,
+            tasks: ingredients.map(ing => ({
+                id: uuidv4(),
+                text: ing,
+                completed: false,
+                createdAt: Date.now(),
+                priority: 'none',
+                subtasks: [],
+            }))
+        };
+        addList(newChecklist);
+        toast({
+            title: "Checklist Created!",
+            description: "Navigating to Recipe Preparation Checklist...",
+        });
+        router.push('/culinary/workflow/checklist');
+    };
+
     const isAlreadySaved = recipes.some(r => r.title.toLowerCase() === meal.strMeal.toLowerCase());
 
     return (
@@ -74,10 +144,18 @@ const MealDetails = ({ meal }: { meal: MealSchema }) => {
                             </div>
                         </div>
 
-                         <div className="mt-6 flex gap-2">
+                         <div className="mt-6 flex flex-wrap gap-2">
                             <Button onClick={handleSaveToCookbook} disabled={isAlreadySaved}>
                                 <BookPlus className="mr-2 h-4 w-4" />
                                 {isAlreadySaved ? 'Saved to Cookbook' : 'Save to Cookbook'}
+                            </Button>
+                            <Button onClick={handleSendToFoodCost} variant="outline">
+                                <Calculator className="mr-2 h-4 w-4" />
+                                Send to Food Cost
+                            </Button>
+                             <Button onClick={handleSendToPrepChecklist} variant="outline">
+                                <ListChecks className="mr-2 h-4 w-4" />
+                                Send to Prep Checklist
                             </Button>
                             {meal.strSource && <Button asChild variant="secondary"><a href={meal.strSource} target="_blank" rel="noopener noreferrer">View Source</a></Button>}
                             {meal.strYoutube && <Button asChild variant="destructive"><a href={meal.strYoutube} target="_blank" rel="noopener noreferrer">Watch on YouTube</a></Button>}
