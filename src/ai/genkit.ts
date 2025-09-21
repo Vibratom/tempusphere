@@ -5,13 +5,9 @@
  */
 
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+// The Google AI plugin has been removed as per user request.
 
 // Initialize the AI singleton.
 export const ai = genkit({
-  plugins: [
-    googleAI({
-      apiVersion: ['v1', 'v1beta'],
-    }),
-  ],
+  plugins: [],
 });

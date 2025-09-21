@@ -33,7 +33,6 @@ import { useCalendar } from '@/contexts/CalendarContext';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { format } from 'date-fns';
-import { searchRecipes, RecipeSearchOutput } from '@/ai/flows/recipe-flow';
 
 interface Recipe {
   id: string;
@@ -45,6 +44,19 @@ interface Recipe {
   createdAt: string;
   remixedFrom?: string; // ID of the parent recipe
 }
+
+interface FoundRecipe {
+  id: string;
+  title: string;
+  description: string;
+  ingredients: string;
+  instructions: string;
+  imageUrl?: string;
+};
+
+interface RecipeSearchOutput {
+  recipes: FoundRecipe[];
+};
 
 const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => void, recipe?: Recipe | null, onCancel: () => void }) => {
     const [title, setTitle] = useState(recipe?.title || '');
@@ -366,8 +378,38 @@ export function RecipesApp() {
       setIsSearchingOnline(true);
       setOnlineSearchResults(null);
       try {
-          const results = await searchRecipes({ query: onlineSearchQuery });
-          setOnlineSearchResults(results);
+            const response = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${onlineSearchQuery}`);
+            if (!response.ok) {
+                throw new Error("TheMealDB API request failed");
+            }
+            const data = await response.json();
+            
+            if (!data.meals) {
+                setOnlineSearchResults({ recipes: [] });
+                return;
+            }
+
+            const foundRecipes = data.meals.map((meal: any): FoundRecipe => {
+                const ingredients: string[] = [];
+                for (let i = 1; i <= 20; i++) {
+                    const ingredient = meal[`strIngredient${i}`];
+                    const measure = meal[`strMeasure${i}`];
+                    if (ingredient && ingredient.trim()) {
+                        ingredients.push(`${measure ? measure.trim() : ''} ${ingredient.trim()}`.trim());
+                    }
+                }
+
+                return {
+                    id: meal.idMeal,
+                    title: meal.strMeal,
+                    description: meal.strInstructions.substring(0, 150) + (meal.strInstructions.length > 150 ? '...' : ''),
+                    ingredients: ingredients.join('\n'),
+                    instructions: meal.strInstructions,
+                    imageUrl: meal.strMealThumb,
+                };
+            });
+            
+            setOnlineSearchResults({ recipes: foundRecipes });
       } catch (error) {
           console.error("Online recipe search failed:", error);
           toast({ variant: 'destructive', title: 'Search Failed', description: 'Could not fetch recipes from the online database.'});
@@ -376,7 +418,7 @@ export function RecipesApp() {
       }
   }
 
-  const handleImportRecipe = (recipeToImport: Omit<Recipe, 'id' | 'createdAt'>) => {
+  const handleImportRecipe = (recipeToImport: FoundRecipe) => {
       const newRecipe: Recipe = {
           ...recipeToImport,
           id: uuidv4(),
@@ -551,4 +593,3 @@ export function RecipesApp() {
     </RecipesContext.Provider>
   );
 }
-
