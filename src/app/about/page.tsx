@@ -2,7 +2,7 @@
 import { Header } from '@/components/tempusphere/Header';
 import { Footer } from '@/components/tempusphere/Footer';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Clock, Globe, AlarmClock, Hourglass, Timer, Users, Scale, CalendarDays, ListChecks, KanbanSquare, Briefcase, Landmark, UtensilsCrossed, TrendingUp, BrainCircuit, IterationCw, Megaphone, FileText, GanttChart, List, Mindmap, DraftingCompass, Table, BarChartHorizontal } from 'lucide-react';
+import { Clock, Globe, AlarmClock, Hourglass, Timer, Users, Scale, CalendarDays, ListChecks, KanbanSquare, Briefcase, Landmark, UtensilsCrossed, TrendingUp, BrainCircuit, IterationCw, Megaphone, FileText, GanttChart, List, Brain, DraftingCompass, Table, BarChartHorizontal } from 'lucide-react';
 
 const timeFeatures = [
     { icon: Clock, title: 'Customizable Primary Clock', description: 'Choose between a classic analog or modern digital display. Supports local time, UTC, and extensive theme customization to match your style.' },
@@ -26,7 +26,7 @@ const projectFeatures = [
     { icon: GanttChart, title: 'Gantt Chart', description: 'Visualize your project timeline with an interactive Gantt chart. See task dependencies and durations to manage your schedule effectively.'},
     { icon: Landmark, title: 'Project Bookkeeping', description: 'Track project-specific income and expenses. Link financial transactions directly to tasks to monitor the financial health of your projects.' },
     { icon: Table, title: 'Spreadsheet', description: 'A lightweight, integrated spreadsheet tool for project data management, calculations, and quick tabular notes.'},
-    { icon: Mindmap, title: 'Mind Map Creator', description: 'Organize your ideas visually with a simple, text-based mind mapping tool. Perfect for brainstorming sessions and structuring complex thoughts.'},
+    { icon: Brain, title: 'Mind Map Creator', description: 'Organize your ideas visually with a simple, text-based mind mapping tool. Perfect for brainstorming sessions and structuring complex thoughts.'},
     { icon: DraftingCompass, title: 'Canvas', description: 'A freeform design canvas for creating diagrams, mockups, or any visual aid your project requires. Supports text, drawing, and image uploads.'},
     { icon: BarChartHorizontal, title: 'Chart Editor', description: 'Create and customize various types of charts and diagrams using a simple visual editor or by writing Mermaid syntax for more complex visualizations.'},
 ];
