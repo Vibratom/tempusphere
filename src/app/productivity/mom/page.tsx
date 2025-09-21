@@ -23,6 +23,7 @@ import { BrainstormingTemplate, BrainstormingPreview } from '@/components/produc
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
+import htmlToDocx from 'html-to-docx';
 
 
 type TemplateType = 'default' | 'board-meeting' | 'annual-meeting' | 'project-kick-off' | 'daily-scrum' | 'one-on-one' | 'brainstorming';
@@ -282,48 +283,77 @@ export default function MoMPage() {
     }
     
     const exportAsPdf = async () => {
-      if (!previewRef.current) return;
-      
-      const canvas = await html2canvas(previewRef.current, { 
-        scale: 2, 
-        useCORS: true,
-        backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff' 
-      });
+        if (!previewRef.current) return;
+    
+        const canvas = await html2canvas(previewRef.current, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
+            scrollX: -window.scrollX,
+            scrollY: -window.scrollY,
+            windowWidth: previewRef.current.scrollWidth,
+            windowHeight: previewRef.current.scrollHeight,
+        });
+    
+        const imgData = canvas.toDataURL('image/jpeg', 0.9);
+        const pdf = new jsPDF({
+            orientation: 'p',
+            unit: 'px',
+            format: 'a4',
+        });
+    
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = imgWidth / imgHeight;
+    
+        let canvasPageHeight = pdfWidth / ratio;
+        let totalRenderedHeight = 0;
+    
+        while (totalRenderedHeight < imgHeight) {
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = imgWidth;
+            pageCanvas.height = Math.min(canvasPageHeight * (imgWidth/pdfWidth), imgHeight - totalRenderedHeight);
+            
+            const pageCtx = pageCanvas.getContext('2d');
+            if (!pageCtx) return;
 
-      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgProps= pdf.getImageProperties(imgData);
-      const imgWidth = imgProps.width;
-      const imgHeight = imgProps.height;
-      
-      const ratio = imgWidth / imgHeight;
-      let widthInPdf = pdfWidth;
-      let heightInPdf = widthInPdf / ratio;
+            pageCtx.drawImage(canvas, 0, totalRenderedHeight, imgWidth, pageCanvas.height, 0, 0, imgWidth, pageCanvas.height);
+            
+            const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.9);
+            
+            if (totalRenderedHeight > 0) {
+                pdf.addPage();
+            }
 
-      if(heightInPdf > pdfHeight) {
-          heightInPdf = pdfHeight;
-          widthInPdf = heightInPdf * ratio;
-      }
-      
-      let position = 0;
-      let heightLeft = imgHeight;
+            const finalPageHeight = pageCanvas.height * (pdfWidth / imgWidth);
+            pdf.addImage(pageImgData, 'JPEG', 0, 0, pdfWidth, finalPageHeight);
+            
+            totalRenderedHeight += pageCanvas.height;
+        }
+    
+        pdf.save(`${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.pdf`);
+        toast({ title: "Export Successful", description: `Your minutes have been downloaded as a PDF.` });
+    };
 
-      pdf.addImage(imgData, 'PNG', 0, position, widthInPdf, heightInPdf);
-      heightLeft -= pdfHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, widthInPdf, heightInPdf);
-        heightLeft -= pdfHeight;
-      }
-      
-      pdf.save(`${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.pdf`);
-      toast({ title: "Export Successful", description: `Your minutes have been downloaded as a PDF.` });
+    const exportAsDocx = async () => {
+        if (!previewRef.current) return;
+    
+        try {
+            const { html, styles } = getHtmlContent();
+            const fullHtml = `<!DOCTYPE html><html><head><style>${styles}</style></head><body>${html}</body></html>`;
+            const fileBuffer = await htmlToDocx(fullHtml, undefined, {
+                font: 'Arial',
+                fontSize: 12,
+            });
+    
+            saveAs(fileBuffer as Blob, `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.docx`);
+            toast({ title: "Export Successful", description: `Your minutes have been downloaded as a DOCX file.` });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: "Export Failed", description: "Could not generate DOCX file." });
+        }
     };
 
     const exportToFile = (content: string, fileName: string, contentType: string) => {
@@ -365,6 +395,9 @@ export default function MoMPage() {
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={exportAsPdf}>
                             <FileImage className="mr-2 h-4 w-4" /> Export as PDF (.pdf)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={exportAsDocx}>
+                            <FileImage className="mr-2 h-4 w-4" /> Export as Word (.docx)
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                             const { html, styles } = getHtmlContent();
