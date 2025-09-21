@@ -2,6 +2,6 @@
 
 import { MarketingStrategy } from '@/components/productivity/MarketingStrategy';
 
-export default function MarketingStrategyPage() {
+export default function MarketingChannelsPage() {
     return <MarketingStrategy />;
 }

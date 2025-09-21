@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -11,8 +10,7 @@ const tools = [
     { value: 'mom', icon: FileText, label: 'MoM', href: '/productivity/mom' },
     { value: 'analysis', icon: BrainCircuit, label: 'Analysis', href: '/productivity/analysis' },
     { value: 'clm', icon: IterationCw, label: 'CLM', href: '/productivity/clm' },
-    { value: 'content-strategy', icon: ClipboardList, label: 'Content', href: '/productivity/content-strategy' },
-    { value: 'marketing-strategy', icon: Megaphone, label: 'Marketing', href: '/productivity/marketing-strategy' },
+    { value: 'marketing', icon: Megaphone, label: 'Marketing', href: '/productivity/marketing' },
     { value: 'win-loss', icon: TrendingUp, label: 'Win/Loss', href: '/productivity/win-loss' },
 ];
 
