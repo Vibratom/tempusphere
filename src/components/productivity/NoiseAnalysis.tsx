@@ -218,7 +218,7 @@ export function NoiseAnalysis() {
                 <Button variant="outline" onClick={() => exportToImage('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
             </CardFooter>
             
-            <div className="hidden">
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
                 <ExportPreview />
             </div>
         </div>
