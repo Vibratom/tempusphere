@@ -14,10 +14,10 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-  AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -221,6 +221,7 @@ const RecipeDetailView = ({ recipe, recipes, onViewRecipe, onEdit, onRemix, onDe
                     id: checklistId,
                     title: `${recipe.title} - Prep List`,
                     tasks: [],
+                    color: 'hsl(var(--primary))'
                 });
             }
             onUpdate({ ...recipe, checklistId });
@@ -401,7 +402,7 @@ export function CulinaryApp() {
   
   const filteredRecipes = recipes.filter(recipe => 
       recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      recipe.description.toLowerCase().includes(searchQuery.toLowerCase())
+      (recipe.description && recipe.description.toLowerCase().includes(searchQuery.toLowerCase()))
   ).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
 
