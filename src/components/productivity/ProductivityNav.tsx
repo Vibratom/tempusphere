@@ -3,12 +3,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, FileText } from 'lucide-react';
+import { LayoutDashboard, FileText, BrainCircuit } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
     { value: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', href: '/productivity' },
     { value: 'mom', icon: FileText, label: 'MoM', href: '/productivity/mom' },
+    { value: 'swot', icon: BrainCircuit, label: 'SWOT', href: '/productivity/swot' },
 ];
 
 const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: string, href: string, icon: React.ElementType, children: React.ReactNode }) => (
