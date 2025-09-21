@@ -6,7 +6,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, GripVertical, Download, Image as ImageIcon, File as FileIcon } from 'lucide-react';
+import { Plus, Trash2, GripVertical, ImageIcon, File as FileIcon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 import { jsPDF } from 'jspdf';
@@ -167,15 +167,17 @@ export function SwotAnalysis() {
     };
     
     const ExportPreview = () => (
-        <div ref={contentRef} className="p-8 bg-background">
-            <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
-            <div className="grid grid-cols-2 gap-6">
-                <SwotColumn title="Strengths" category="strengths" items={strengths} setItems={setStrengths} placeholder="" className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly={true} />
-                <SwotColumn title="Weaknesses" category="weaknesses" items={weaknesses} setItems={setWeaknesses} placeholder="" className="bg-red-100/30 dark:bg-red-900/30 border-red-500" isReadonly={true} />
-                <SwotColumn title="Opportunities" category="opportunities" items={opportunities} setItems={setOpportunities} placeholder="" className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly={true} />
-                <SwotColumn title="Threats" category="threats" items={threats} setItems={setThreats} placeholder="" className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly={true} />
+        <DragDropContext onDragEnd={() => {}}>
+            <div ref={contentRef} className="p-8 bg-background">
+                <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
+                <div className="grid grid-cols-2 gap-6">
+                    <SwotColumn title="Strengths" category="strengths" items={strengths} setItems={setStrengths} placeholder="" className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly={true} />
+                    <SwotColumn title="Weaknesses" category="weaknesses" items={weaknesses} setItems={setWeaknesses} placeholder="" className="bg-red-100/30 dark:bg-red-900/30 border-red-500" isReadonly={true} />
+                    <SwotColumn title="Opportunities" category="opportunities" items={opportunities} setItems={setOpportunities} placeholder="" className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly={true} />
+                    <SwotColumn title="Threats" category="threats" items={threats} setItems={setThreats} placeholder="" className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly={true} />
+                </div>
             </div>
-        </div>
+        </DragDropContext>
     );
 
     return (

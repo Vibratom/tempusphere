@@ -169,16 +169,18 @@ export function NoiseAnalysis() {
     };
     
     const ExportPreview = () => (
-        <div ref={contentRef} className="p-8 bg-background">
-            <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
-            <div className="grid grid-cols-3 gap-6">
-                <NoiseColumn title="Needs" category="needs" items={needs} setItems={setNeeds} placeholder="" icon={Search} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly/>
-                <NoiseColumn title="Opportunities" category="opportunities" items={opportunities} setItems={() => {}} placeholder="" icon={Zap} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly />
-                <NoiseColumn title="Improvements" category="improvements" items={improvements} setItems={setImprovements} placeholder="" icon={Construction} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" isReadonly/>
-                <NoiseColumn title="Strengths" category="strengths" items={strengths} setItems={() => {}} placeholder="" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
-                <NoiseColumn title="Exceptions" category="exceptions" items={exceptions} setItems={setExceptions} placeholder="" icon={ShieldAlert} className="bg-red-100/30 dark:bg-red-900/30 border-red-500" isReadonly/>
+        <DragDropContext onDragEnd={() => {}}>
+            <div ref={contentRef} className="p-8 bg-background">
+                <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
+                <div className="grid grid-cols-3 gap-6">
+                    <NoiseColumn title="Needs" category="needs" items={needs} setItems={setNeeds} placeholder="" icon={Search} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly/>
+                    <NoiseColumn title="Opportunities" category="opportunities" items={opportunities} setItems={() => {}} placeholder="" icon={Zap} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly />
+                    <NoiseColumn title="Improvements" category="improvements" items={improvements} setItems={setImprovements} placeholder="" icon={Construction} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" isReadonly/>
+                    <NoiseColumn title="Strengths" category="strengths" items={strengths} setItems={() => {}} placeholder="" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
+                    <NoiseColumn title="Exceptions" category="exceptions" items={exceptions} setItems={setExceptions} placeholder="" icon={ShieldAlert} className="bg-red-100/30 dark:bg-red-900/30 border-red-500" isReadonly/>
+                </div>
             </div>
-        </div>
+        </DragDropContext>
     );
 
     return (

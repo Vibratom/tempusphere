@@ -166,15 +166,17 @@ export function SoarAnalysis() {
     };
     
     const ExportPreview = () => (
-        <div ref={contentRef} className="p-8 bg-background">
-            <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
-            <div className="grid grid-cols-2 gap-6">
-                <SoarColumn title="Strengths" category="strengths" items={strengths} setItems={() => {}} placeholder="" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
-                <SoarColumn title="Opportunities" category="opportunities" items={opportunities} setItems={() => {}} placeholder="" icon={Rocket} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly />
-                <SoarColumn title="Aspirations" category="aspirations" items={aspirations} setItems={setAspirations} placeholder="" icon={Target} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" isReadonly />
-                <SoarColumn title="Results" category="results" items={results} setItems={setResults} placeholder="" icon={BarChart} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly />
+        <DragDropContext onDragEnd={() => {}}>
+            <div ref={contentRef} className="p-8 bg-background">
+                <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
+                <div className="grid grid-cols-2 gap-6">
+                    <SoarColumn title="Strengths" category="strengths" items={strengths} setItems={() => {}} placeholder="" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
+                    <SoarColumn title="Opportunities" category="opportunities" items={opportunities} setItems={() => {}} placeholder="" icon={Rocket} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly />
+                    <SoarColumn title="Aspirations" category="aspirations" items={aspirations} setItems={setAspirations} placeholder="" icon={Target} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" isReadonly />
+                    <SoarColumn title="Results" category="results" items={results} setItems={setResults} placeholder="" icon={BarChart} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly />
+                </div>
             </div>
-        </div>
+        </DragDropContext>
     );
 
     return (

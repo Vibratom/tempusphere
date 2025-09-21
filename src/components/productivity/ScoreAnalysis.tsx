@@ -167,16 +167,18 @@ export function ScoreAnalysis() {
     };
     
     const ExportPreview = () => (
-        <div ref={contentRef} className="p-8 bg-background">
-            <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
-            <div className="grid grid-cols-3 gap-6">
-                <ScoreColumn title="Strengths" category="strengths" items={strengths} setItems={setChallenges} placeholder="" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
-                <ScoreColumn title="Challenges" category="challenges" items={challenges} setItems={setChallenges} placeholder="" icon={AlertTriangle} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly/>
-                <ScoreColumn title="Options" category="options" items={options} setItems={setOptions} placeholder="" icon={GitFork} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly/>
-                <ScoreColumn title="Responses" category="responses" items={responses} setItems={setResponses} placeholder="" icon={MessageSquareReply} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" isReadonly/>
-                <ScoreColumn title="Effectiveness" category="effectiveness" items={effectiveness} setItems={setEffectiveness} placeholder="" icon={CheckCircle2} className="bg-sky-100/30 dark:bg-sky-900/30 border-sky-500" isReadonly/>
+        <DragDropContext onDragEnd={() => {}}>
+            <div ref={contentRef} className="p-8 bg-background">
+                <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
+                <div className="grid grid-cols-3 gap-6">
+                    <ScoreColumn title="Strengths" category="strengths" items={strengths} setItems={setChallenges} placeholder="" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
+                    <ScoreColumn title="Challenges" category="challenges" items={challenges} setItems={setChallenges} placeholder="" icon={AlertTriangle} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly/>
+                    <ScoreColumn title="Options" category="options" items={options} setItems={setOptions} placeholder="" icon={GitFork} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly/>
+                    <ScoreColumn title="Responses" category="responses" items={responses} setItems={setResponses} placeholder="" icon={MessageSquareReply} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" isReadonly/>
+                    <ScoreColumn title="Effectiveness" category="effectiveness" items={effectiveness} setItems={setEffectiveness} placeholder="" icon={CheckCircle2} className="bg-sky-100/30 dark:bg-sky-900/30 border-sky-500" isReadonly/>
+                </div>
             </div>
-        </div>
+        </DragDropContext>
     );
 
     return (
