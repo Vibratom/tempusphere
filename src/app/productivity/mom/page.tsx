@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Download, Eraser, NotebookPen, Eye, Copy, FileText, FileJson, FileType, FileImage, FileUp } from 'lucide-react';
+import { Plus, Trash2, Download, Eraser, NotebookPen, Eye, Copy, FileText, FileJson, FileType, FileImage } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { meetingTemplates, type MeetingTemplate } from '@/lib/meeting-templates';
@@ -17,7 +17,7 @@ import { ProjectKickoffTemplate, ProjectKickoffPreview } from '@/components/prod
 import { DailyScrumTemplate, DailyScrumPreview } from '@/components/productivity/DailyScrumTemplate';
 import { OneOnOneTemplate, OneOnOnePreview } from '@/components/productivity/OneOnOneTemplate';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BrainstormingTemplate, BrainstormingPreview } from '@/components/productivity/BrainstormingTemplate';
 import jsPDF from 'jspdf';
@@ -214,7 +214,7 @@ export default function MoMPage() {
             case 'default':
             default:
                 return (
-                    <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
+                    <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap p-4">
                         <h2>{minutes.title || 'Meeting Minutes'}</h2>
                         <p><strong>Date:</strong> {minutes.date}</p>
                         <p><strong>Attendees:</strong> {minutes.attendees}</p>
@@ -296,30 +296,35 @@ export default function MoMPage() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
+      const imgProps= pdf.getImageProperties(imgData);
+      const imgWidth = imgProps.width;
+      const imgHeight = imgProps.height;
       
       const ratio = imgWidth / imgHeight;
-      const widthInPdf = pdfWidth;
-      const heightInPdf = widthInPdf / ratio;
+      let widthInPdf = pdfWidth;
+      let heightInPdf = widthInPdf / ratio;
+
+      if(heightInPdf > pdfHeight) {
+          heightInPdf = pdfHeight;
+          widthInPdf = heightInPdf * ratio;
+      }
       
-      let heightLeft = imgHeight;
       let position = 0;
+      let heightLeft = imgHeight;
 
-      // Use jsPDF's internal width/height
-      pdf.addImage(imgData, 'PNG', 0, 0, widthInPdf, heightInPdf);
-      heightLeft -= imgHeight * (pdfHeight/heightInPdf);
+      pdf.addImage(imgData, 'PNG', 0, position, widthInPdf, heightInPdf);
+      heightLeft -= pdfHeight;
 
-      // This logic is simplified as multi-page for canvas is tricky.
-      // For most standard meeting minutes, one page should suffice.
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, widthInPdf, heightInPdf);
+        heightLeft -= pdfHeight;
+      }
       
       pdf.save(`${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.pdf`);
       toast({ title: "Export Successful", description: `Your minutes have been downloaded as a PDF.` });
     };
-
-    const exportAsDocx = async () => {
-        toast({ variant: 'destructive', title: "Export Failed", description: "DOCX export is not supported in this environment." });
-    }
 
     const exportToFile = (content: string, fileName: string, contentType: string) => {
         if (!content) return;
@@ -344,14 +349,50 @@ export default function MoMPage() {
     return (
         <>
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-            <DialogContent className="max-w-3xl">
+            <DialogContent className="max-w-4xl">
             <DialogHeader>
                 <DialogTitle>Meeting Minutes Preview</DialogTitle>
                 <DialogDescription>This is how your exported document will look.</DialogDescription>
             </DialogHeader>
-            <ScrollArea className="max-h-[60vh] my-4 border rounded-md p-4 bg-muted/50">
+            <ScrollArea className="max-h-[70vh] my-4 border rounded-md bg-muted/20">
                 <div ref={previewRef}>{renderPreview()}</div>
             </ScrollArea>
+            <DialogFooter>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button><Download className="mr-2 h-4 w-4" /> Export</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={exportAsPdf}>
+                            <FileImage className="mr-2 h-4 w-4" /> Export as PDF (.pdf)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                            const { html, styles } = getHtmlContent();
+                            const fullHtml = `<!DOCTYPE html><html><head><style>${styles}</style></head><body>${html}</body></html>`;
+                            exportToFile(fullHtml, `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.html`, 'text/html');
+                        }}>
+                            <FileType className="mr-2 h-4 w-4" /> Export as HTML (.html)
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => exportToFile(generateMarkdown(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.md`, 'text/markdown')} disabled={activeTemplate !== 'default'}>
+                            <FileText className="mr-2 h-4 w-4" /> Export as Markdown (.md)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => exportToFile(generatePlainText(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.txt`, 'text/plain')} disabled={activeTemplate !== 'default'}>
+                            <FileText className="mr-2 h-4 w-4" /> Export as Text (.txt)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => exportToFile(JSON.stringify(minutes, null, 2), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.json`, 'application/json')} disabled={activeTemplate !== 'default'}>
+                            <FileJson className="mr-2 h-4 w-4" /> Export as JSON (.json)
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => copyToClipboard(generateMarkdown(), 'Markdown')} disabled={activeTemplate !== 'default'}>
+                            <Copy className="mr-2 h-4 w-4" /> Copy as Markdown
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => copyToClipboard(generatePlainText(), 'Plain Text')} disabled={activeTemplate !== 'default'}>
+                            <Copy className="mr-2 h-4 w-4" /> Copy as Plain Text
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </DialogFooter>
             </DialogContent>
         </Dialog>
 
@@ -390,44 +431,7 @@ export default function MoMPage() {
                     {renderActiveTemplate()}
 
                     <CardFooter className="border-t pt-6 flex justify-end gap-2">
-                        <Button variant="secondary" onClick={handlePreview}><Eye className="mr-2 h-4 w-4" /> Preview</Button>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button><Download className="mr-2 h-4 w-4" /> Export</Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={exportAsPdf}>
-                                    <FileImage className="mr-2 h-4 w-4" /> Export as PDF (.pdf)
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={exportAsDocx} disabled>
-                                    <FileUp className="mr-2 h-4 w-4" /> Export as Word (.docx)
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => {
-                                    const { html, styles } = getHtmlContent();
-                                    const fullHtml = `<!DOCTYPE html><html><head><style>${styles}</style></head><body>${html}</body></html>`;
-                                    exportToFile(fullHtml, `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.html`, 'text/html');
-                                }}>
-                                    <FileType className="mr-2 h-4 w-4" /> Export as HTML (.html)
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => exportToFile(generateMarkdown(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.md`, 'text/markdown')} disabled={activeTemplate !== 'default'}>
-                                    <FileText className="mr-2 h-4 w-4" /> Export as Markdown (.md)
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => exportToFile(generatePlainText(), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.txt`, 'text/plain')} disabled={activeTemplate !== 'default'}>
-                                    <FileText className="mr-2 h-4 w-4" /> Export as Text (.txt)
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => exportToFile(JSON.stringify(minutes, null, 2), `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.json`, 'application/json')} disabled={activeTemplate !== 'default'}>
-                                    <FileJson className="mr-2 h-4 w-4" /> Export as JSON (.json)
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => copyToClipboard(generateMarkdown(), 'Markdown')} disabled={activeTemplate !== 'default'}>
-                                    <Copy className="mr-2 h-4 w-4" /> Copy as Markdown
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => copyToClipboard(generatePlainText(), 'Plain Text')} disabled={activeTemplate !== 'default'}>
-                                    <Copy className="mr-2 h-4 w-4" /> Copy as Plain Text
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button onClick={handlePreview}><Eye className="mr-2 h-4 w-4" /> Preview and Export</Button>
                     </CardFooter>
                 </>
             ) : null}
