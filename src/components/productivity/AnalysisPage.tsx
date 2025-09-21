@@ -10,6 +10,7 @@ import { NoiseAnalysis } from "./NoiseAnalysis";
 import { PestleAnalysis } from "./PestleAnalysis";
 import { PortersFiveForces } from "./PortersFiveForces";
 import { VrioFramework } from "./VrioFramework";
+import { McKinsey7SModel } from "./McKinsey7SModel";
 
 export function AnalysisPage() {
 
@@ -17,7 +18,7 @@ export function AnalysisPage() {
         <div className="w-full h-full flex flex-col">
             <Tabs defaultValue="swot" className="w-full flex-1 flex flex-col">
                 <div className="text-center mb-6">
-                    <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 h-auto">
+                    <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 h-auto">
                         <TabsTrigger value="swot">SWOT Analysis</TabsTrigger>
                         <TabsTrigger value="tows">TOWS Matrix</TabsTrigger>
                         <TabsTrigger value="soar">SOAR Analysis</TabsTrigger>
@@ -26,6 +27,7 @@ export function AnalysisPage() {
                         <TabsTrigger value="pestle">PESTLE Analysis</TabsTrigger>
                         <TabsTrigger value="porters">Porter's 5 Forces</TabsTrigger>
                         <TabsTrigger value="vrio">VRIO Framework</TabsTrigger>
+                        <TabsTrigger value="mckinsey">McKinsey 7-S</TabsTrigger>
                     </TabsList>
                 </div>
                 <TabsContent value="swot" className="flex-1">
@@ -51,6 +53,9 @@ export function AnalysisPage() {
                 </TabsContent>
                 <TabsContent value="vrio" className="flex-1">
                     <VrioFramework />
+                </TabsContent>
+                 <TabsContent value="mckinsey" className="flex-1">
+                    <McKinsey7SModel />
                 </TabsContent>
             </Tabs>
         </div>
