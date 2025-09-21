@@ -76,6 +76,11 @@ export function TowsMatrix() {
             backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
         });
         
+        if (canvas.width === 0 || canvas.height === 0) {
+            toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not capture the content to export.' });
+            return;
+        }
+
         const fileName = `${title.replace(/ /g, '_')}_TOWS_Matrix.${format}`;
         
         if (format === 'png') {
