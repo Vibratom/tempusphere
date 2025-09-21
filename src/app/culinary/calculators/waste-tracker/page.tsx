@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,7 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-  AlertDialogDescription
+  AlertDialogDescription,
+  AlertDialogFooter
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 
