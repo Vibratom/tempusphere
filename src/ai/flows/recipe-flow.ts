@@ -1,11 +1,10 @@
 
 'use server';
 /**
- * @fileOverview A Genkit flow for searching recipes using the Tasty API.
+ * @fileOverview A function for searching recipes using the Tasty API.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 export const RecipeSearchInputSchema = z.object({
   query: z.string().describe('The search query for recipes.'),
@@ -28,16 +27,6 @@ export type RecipeSearchOutput = z.infer<typeof RecipeSearchOutputSchema>;
 export async function searchRecipes(
   input: RecipeSearchInput
 ): Promise<RecipeSearchOutput> {
-  return await searchRecipesFlow(input);
-}
-
-const searchRecipesFlow = ai.defineFlow(
-  {
-    name: 'searchRecipesFlow',
-    inputSchema: RecipeSearchInputSchema,
-    outputSchema: RecipeSearchOutputSchema,
-  },
-  async (input) => {
     const url = `https://tasty.p.rapidapi.com/recipes/list?from=0&size=20&q=${encodeURIComponent(input.query)}`;
     
     const options = {
@@ -57,7 +46,6 @@ const searchRecipesFlow = ai.defineFlow(
         }
         const result = await response.json();
         
-        // Assuming the API returns an object with a 'results' array
         if (result && Array.isArray(result.results)) {
             return result.results.map((recipe: any) => ({
                 id: recipe.id,
@@ -75,5 +63,4 @@ const searchRecipesFlow = ai.defineFlow(
         console.error('Failed to fetch from Tasty API:', error);
         throw new Error('Failed to fetch recipes from the Tasty API.');
     }
-  }
-);
+}
