@@ -17,7 +17,7 @@ const timeFeatures = [
 const organizationFeatures = [
     { icon: CalendarDays, title: 'Personal Calendar', description: 'A comprehensive event management tool. Keep track of your appointments, deadlines, and important dates with a clear and intuitive interface.' },
     { icon: ListChecks, title: 'Advanced Checklist', description: 'A powerful to-do list manager with support for sub-tasks, recurring tasks, due dates, priorities, and seamless calendar integration.' },
-    { icon: UtensilsCrossed, title: 'Recipe Remix Cookbook', description: 'Your personal culinary journal. Save, organize, and create variations of your favorite recipes. "Remix" a recipe to track changes and perfect your creations.' },
+    { icon: UtensilsCrossed, title: 'Culinary Cookbook', description: 'Your personal culinary journal. Save, organize, and create variations of your favorite recipes. "Remix" a recipe to track changes and perfect your creations.' },
 ]
 
 const projectFeatures = [

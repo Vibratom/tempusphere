@@ -68,7 +68,7 @@ const features = [
     },
     {
         icon: <UtensilsCrossed className="w-5 h-5 text-primary" />,
-        title: 'Recipe Remix',
+        title: 'Culinary Cookbook',
         description: 'A personal cookbook where you can save, edit, and "remix" recipes to track variations.',
     },
     {
@@ -88,7 +88,7 @@ const mainTools = [
     { name: 'Projects', category: 'Projects', icon: KanbanSquare, href: '/projects', color: 'bg-rose-500 hover:bg-rose-600', description: 'Manage projects with Kanban-style boards.' },
     { name: 'Productivity', category: 'Productivity', icon: Briefcase, href: '/productivity', color: 'bg-green-500 hover:bg-green-600', description: 'Tools for business analysts.' },
     { name: 'Finance', category: 'Finance', icon: Landmark, href: '/finance', color: 'bg-indigo-500 hover:bg-indigo-600', description: 'Track expenses and manage budgets with ease.' },
-    { name: 'Recipes', category: 'Recipes', icon: UtensilsCrossed, href: '/recipes', color: 'bg-yellow-500 hover:bg-yellow-600', description: 'Organize recipes and plan your meals.' },
+    { name: 'Culinary', category: 'Culinary', icon: UtensilsCrossed, href: '/culinary', color: 'bg-yellow-500 hover:bg-yellow-600', description: 'Organize recipes and plan your meals.' },
 ]
 
 
