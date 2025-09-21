@@ -108,6 +108,8 @@ export function SettingsPanel() {
     setBackgroundImage,
     fullscreenSettings,
     setFullscreenSettings,
+    tastyApiKey,
+    setTastyApiKey,
   } = useSettings();
   const { resolvedTheme } = useTheme();
   const [extractedPalette, setExtractedPalette] = useState<string[]>([]);
@@ -212,7 +214,11 @@ export function SettingsPanel() {
           <Card>
             <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">No API keys are required for this application.</p>
+              <div className="grid grid-cols-1 gap-4 items-center">
+                <Label htmlFor="tasty-api-key">Tasty API Key</Label>
+                <Input id="tasty-api-key" type="password" value={tastyApiKey} onChange={(e) => setTastyApiKey(e.target.value)} placeholder="Enter your API key"/>
+                <p className="text-xs text-muted-foreground">Required for external recipe search. Your key is stored locally in your browser.</p>
+              </div>
             </CardContent>
           </Card>
 
