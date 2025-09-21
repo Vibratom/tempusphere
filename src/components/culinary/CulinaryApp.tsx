@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { v4 as uuidv4 } from 'uuid';
-import { UtensilsCrossed, Plus, BookOpen, Trash2, Edit, GitBranch, Search } from 'lucide-react';
+import { UtensilsCrossed, Plus, BookOpen, Trash2, Edit, GitBranch, Search, ListChecks } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../ui/sheet';
 import {
@@ -23,6 +23,10 @@ import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 import Image from 'next/image';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { ChecklistApp } from '../checklist/ChecklistApp';
+import { useChecklist } from '@/contexts/ChecklistContext';
+import { ChecklistProvider } from '@/contexts/ChecklistContext';
 
 interface Recipe {
   id: string;
@@ -32,7 +36,8 @@ interface Recipe {
   instructions: string;
   imageUrl?: string;
   createdAt: string;
-  remixedFrom?: string; // ID of the parent recipe
+  remixedFrom?: string;
+  checklistId?: string;
 }
 
 const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => void, recipe?: Recipe | null, onCancel: () => void }) => {
@@ -68,7 +73,8 @@ const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => 
             instructions,
             imageUrl,
             createdAt: recipe?.createdAt || new Date().toISOString(),
-            remixedFrom: recipe?.remixedFrom
+            remixedFrom: recipe?.remixedFrom,
+            checklistId: recipe?.checklistId,
         };
         onSave(newRecipe);
     };
@@ -78,7 +84,7 @@ const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => 
             <DialogHeader>
                 <DialogTitle>{recipe?.id ? 'Edit Recipe' : 'Add a New Recipe'}</DialogTitle>
                 <DialogDescription>
-                    {recipe?.remixedFrom ? 'You are editing a remix. Your changes will be saved to this version.' : 'Add the details of your recipe below. You can always "remix" it later to create new versions.'}
+                    {recipe?.remixedFrom ? 'You are editing a remix. Your changes will be saved to this version.' : 'Add the details of your recipe below.'}
                 </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
@@ -115,93 +121,124 @@ const RecipeForm = ({ onSave, recipe, onCancel }: { onSave: (recipe: Recipe) => 
     )
 }
 
-const RecipeDetailView = ({ recipe, recipes, onViewRecipe, onEdit, onRemix, onDelete }: { recipe: Recipe, recipes: Recipe[], onViewRecipe: (recipe: Recipe) => void, onEdit: (recipe: Recipe) => void, onRemix: (recipe: Recipe) => void, onDelete: (id: string) => void }) => {
+const RecipeDetailView = ({ recipe, recipes, onViewRecipe, onEdit, onRemix, onDelete, onUpdate }: { recipe: Recipe, recipes: Recipe[], onViewRecipe: (recipe: Recipe) => void, onEdit: (recipe: Recipe) => void, onRemix: (recipe: Recipe) => void, onDelete: (id: string) => void, onUpdate: (recipe: Recipe) => void }) => {
     const parentRecipe = recipe.remixedFrom ? recipes.find(r => r.id === recipe.remixedFrom) : null;
     const childRecipes = recipes.filter(r => r.remixedFrom === recipe.id);
-    
-    return (
-        <SheetContent className="w-full sm:max-w-2xl p-0">
-          <ScrollArea className="h-full">
-            <div className="p-6">
-                <SheetHeader className="mb-4">
-                    <SheetTitle className="text-3xl font-bold">{recipe.title}</SheetTitle>
-                    {recipe.description && <SheetDescription className="text-base pt-2">{recipe.description}</SheetDescription>}
-                </SheetHeader>
-                 <div className="my-4 flex flex-wrap gap-2">
-                    <Button variant="outline" onClick={() => onEdit(recipe)}><Edit className="mr-2 h-4 w-4"/>Edit</Button>
-                    <Button onClick={() => onRemix(recipe)}><GitBranch className="mr-2 h-4 w-4"/>Remix</Button>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild><Button variant="destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete</Button></AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the "{recipe.title}" recipe. Any remixes of this recipe will be orphaned.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDelete(recipe.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-                 <Separator className="my-6" />
-                <div className="grid md:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                        <div className="aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground overflow-hidden relative">
-                            {recipe.imageUrl ? (
-                                <Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized />
-                            ) : (
-                                <UtensilsCrossed className="w-12 h-12" />
-                            )}
-                        </div>
-                        <div className="space-y-4">
-                            <h3 className="text-xl font-semibold border-b pb-2">Ingredients</h3>
-                            <p className="whitespace-pre-wrap text-muted-foreground">{recipe.ingredients}</p>
-                        </div>
-                    </div>
-                    <div className="space-y-4">
-                        <h3 className="text-xl font-semibold border-b pb-2">Instructions</h3>
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                            <p className="whitespace-pre-wrap leading-relaxed">{recipe.instructions}</p>
-                        </div>
-                    </div>
-                </div>
+    const { addList, lists } = useChecklist();
 
-                {(parentRecipe || childRecipes.length > 0) && (
-                    <div className="mt-8 pt-6 border-t">
-                        <h3 className="text-2xl font-semibold mb-4">Recipe Lineage</h3>
-                        {parentRecipe && (
-                            <div className="space-y-2 mb-4">
-                                <h4 className="font-medium">Remixed From</h4>
-                                <Card className="w-full cursor-pointer hover:bg-muted" onClick={() => onViewRecipe(parentRecipe)}>
-                                    <CardHeader><CardTitle className="text-lg">{parentRecipe.title}</CardTitle></CardHeader>
-                                </Card>
-                            </div>
-                        )}
-                        {childRecipes.length > 0 && (
-                            <div className="w-full space-y-2">
-                                <h4 className="font-medium">Remixed Into</h4>
-                                <div className="grid gap-4 md:grid-cols-2">
-                                {childRecipes.map(child => (
-                                    <Card key={child.id} className="cursor-pointer hover:bg-muted" onClick={() => onViewRecipe(child)}>
-                                        <CardHeader><CardTitle className="text-lg">{child.title}</CardTitle></CardHeader>
-                                    </Card>
-                                ))}
+    useEffect(() => {
+        if (recipe && !recipe.checklistId) {
+            const checklistId = `recipe-${recipe.id}`;
+            if (!lists.some(l => l.id === checklistId)) {
+                addList({
+                    id: checklistId,
+                    title: `${recipe.title} - Prep List`,
+                    tasks: [],
+                });
+            }
+            onUpdate({ ...recipe, checklistId });
+        }
+    }, [recipe, addList, lists, onUpdate]);
+
+    return (
+        <SheetContent className="w-full sm:max-w-3xl p-0 flex flex-col">
+            <ScrollArea className="flex-1">
+                <div className="p-6">
+                    <SheetHeader className="mb-4">
+                        <SheetTitle className="text-3xl font-bold">{recipe.title}</SheetTitle>
+                        {recipe.description && <SheetDescription className="text-base pt-2">{recipe.description}</SheetDescription>}
+                    </SheetHeader>
+                    <div className="my-4 flex flex-wrap gap-2">
+                        <Button variant="outline" onClick={() => onEdit(recipe)}><Edit className="mr-2 h-4 w-4"/>Edit</Button>
+                        <Button onClick={() => onRemix(recipe)}><GitBranch className="mr-2 h-4 w-4"/>Remix</Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete</Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the "{recipe.title}" recipe.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDelete(recipe.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                    <Separator className="my-6" />
+
+                    <Tabs defaultValue="details">
+                        <TabsList className="mb-4">
+                            <TabsTrigger value="details"><BookOpen className="mr-2 h-4 w-4"/>Details</TabsTrigger>
+                            <TabsTrigger value="checklist"><ListChecks className="mr-2 h-4 w-4"/>Prep Checklist</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="details">
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground overflow-hidden relative">
+                                        {recipe.imageUrl ? (
+                                            <Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized />
+                                        ) : (
+                                            <UtensilsCrossed className="w-12 h-12" />
+                                        )}
+                                    </div>
+                                    <div className="space-y-4">
+                                        <h3 className="text-xl font-semibold border-b pb-2">Ingredients</h3>
+                                        <p className="whitespace-pre-wrap text-muted-foreground">{recipe.ingredients}</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <h3 className="text-xl font-semibold border-b pb-2">Instructions</h3>
+                                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                                        <p className="whitespace-pre-wrap leading-relaxed">{recipe.instructions}</p>
+                                    </div>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                )}
-            </div>
-           </ScrollArea>
+                        </TabsContent>
+                        <TabsContent value="checklist">
+                            {recipe.checklistId ? (
+                                <ChecklistProvider>
+                                    <ChecklistApp variant="project" />
+                                </ChecklistProvider>
+                            ) : <p>Loading checklist...</p>}
+                        </TabsContent>
+                    </Tabs>
+
+                    {(parentRecipe || childRecipes.length > 0) && (
+                        <div className="mt-8 pt-6 border-t">
+                            <h3 className="text-2xl font-semibold mb-4">Recipe Lineage</h3>
+                            {parentRecipe && (
+                                <div className="space-y-2 mb-4">
+                                    <h4 className="font-medium">Remixed From</h4>
+                                    <Card className="w-full cursor-pointer hover:bg-muted" onClick={() => onViewRecipe(parentRecipe)}>
+                                        <CardHeader><CardTitle className="text-lg">{parentRecipe.title}</CardTitle></CardHeader>
+                                    </Card>
+                                </div>
+                            )}
+                            {childRecipes.length > 0 && (
+                                <div className="w-full space-y-2">
+                                    <h4 className="font-medium">Remixed Into</h4>
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                    {childRecipes.map(child => (
+                                        <Card key={child.id} className="cursor-pointer hover:bg-muted" onClick={() => onViewRecipe(child)}>
+                                            <CardHeader><CardTitle className="text-lg">{child.title}</CardTitle></CardHeader>
+                                        </Card>
+                                    ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </ScrollArea>
         </SheetContent>
     );
 };
 
 export function CulinaryApp() {
-  const [recipes, setRecipes] = useLocalStorage<Recipe[]>('recipes:listV3', []);
+  const [recipes, setRecipes] = useLocalStorage<Recipe[]>('recipes:listV4', []);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null | undefined>(undefined);
   const [viewingRecipe, setViewingRecipe] = useState<Recipe | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -214,11 +251,9 @@ export function CulinaryApp() {
   const handleSaveRecipe = (recipe: Recipe) => {
     const existingIndex = recipes.findIndex(r => r.id === recipe.id);
     if (existingIndex > -1) {
-        const newRecipes = [...recipes];
-        newRecipes[existingIndex] = recipe;
-        setRecipes(newRecipes);
+        setRecipes(prev => prev.map(r => r.id === recipe.id ? recipe : r));
     } else {
-        setRecipes([...recipes, recipe]);
+        setRecipes(prev => [...prev, recipe]);
     }
     setEditingRecipe(undefined);
   }
@@ -230,6 +265,7 @@ export function CulinaryApp() {
       title: `${originalRecipe.title} (Remix)`,
       createdAt: new Date().toISOString(),
       remixedFrom: originalRecipe.id,
+      checklistId: undefined, // Needs a new checklist
     };
     setRecipes(prev => [...prev, remixedRecipe]);
     setViewingRecipe(remixedRecipe);
@@ -282,10 +318,8 @@ export function CulinaryApp() {
             </div>
         </ScrollArea>
         
-
-        {/* Dialogs and Sheets */}
         <Sheet open={viewingRecipe !== null} onOpenChange={(open) => !open && setViewingRecipe(null)}>
-            {viewingRecipe && <RecipeDetailView recipe={viewingRecipe} recipes={recipes} onViewRecipe={setViewingRecipe} onEdit={setEditingRecipe} onRemix={handleRemixRecipe} onDelete={handleDeleteRecipe} />}
+            {viewingRecipe && <RecipeDetailView recipe={viewingRecipe} recipes={recipes} onViewRecipe={setViewingRecipe} onEdit={setEditingRecipe} onRemix={handleRemixRecipe} onDelete={handleDeleteRecipe} onUpdate={handleSaveRecipe} />}
         </Sheet>
         
         <Dialog open={editingRecipe !== undefined} onOpenChange={(isOpen) => !isOpen && setEditingRecipe(undefined)}>

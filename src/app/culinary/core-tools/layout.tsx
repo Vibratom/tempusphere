@@ -8,7 +8,6 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const coreTools = [
     { value: 'book', label: 'Recipe Book', href: '/culinary/core-tools/book' },
     { value: 'inventory', label: 'Inventory', href: '/culinary/core-tools/inventory' },
-    { value: 'shopping-list', label: 'Shopping List', href: '/culinary/core-tools/shopping-list' },
 ];
 
 export default function CoreToolsLayout({
