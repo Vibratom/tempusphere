@@ -1,5 +1,3 @@
-
-'use server';
 /**
  * @fileOverview A function for searching recipes using the Tasty API.
  */
