@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -12,7 +13,6 @@ const calculatorTools = [
     { value: 'unit-converter', label: 'Unit Converter', href: '/culinary/calculators/unit-converter' },
     { value: 'food-cost', label: 'Food Cost', href: '/culinary/calculators/food-cost' },
     { value: 'yield-percentage', label: 'Yield Percentage', href: '/culinary/calculators/yield-percentage' },
-    { value: 'waste-tracker', label: 'Waste Tracker', href: '/culinary/calculators/waste-tracker' },
 ];
 
 export default function CalculatorsLayout({

@@ -1,14 +1,16 @@
+
 'use client';
 
 import React from 'react';
 import Link from 'next/link';
-import { Soup, Calculator, Workflow } from 'lucide-react';
+import { Soup, Calculator, Workflow, Trash2 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
-    { value: 'core-tools', icon: Soup, label: 'Core Kitchen Management', href: '/culinary/core-tools' },
-    { value: 'calculators', icon: Calculator, label: 'Specialized Calculators', href: '/culinary/calculators' },
-    { value: 'workflow', icon: Workflow, label: 'Workflow & Communication', href: '/culinary/workflow' },
+    { value: 'core-tools', icon: Soup, label: 'Core Tools', href: '/culinary/core-tools' },
+    { value: 'calculators', icon: Calculator, label: 'Calculators', href: '/culinary/calculators' },
+    { value: 'waste-tracker', icon: Trash2, label: 'Waste Tracker', href: '/culinary/waste-tracker' },
+    { value: 'workflow', icon: Workflow, label: 'Workflow', href: '/culinary/workflow' },
 ];
 
 const ResponsiveTabsTrigger = ({ value, href, icon: Icon, children }: { value: string, href: string, icon: React.ElementType, children: React.ReactNode }) => (
