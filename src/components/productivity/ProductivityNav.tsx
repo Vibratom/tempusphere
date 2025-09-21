@@ -3,14 +3,14 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, FileText, BrainCircuit, Filter, ClipboardList, Megaphone, TrendingUp, Combine } from 'lucide-react';
+import { LayoutDashboard, FileText, BrainCircuit, Filter, ClipboardList, Megaphone, TrendingUp, Combine, IterationCw } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const tools = [
     { value: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', href: '/productivity' },
     { value: 'mom', icon: FileText, label: 'MoM', href: '/productivity/mom' },
     { value: 'analysis', icon: BrainCircuit, label: 'Analysis', href: '/productivity/analysis' },
-    { value: 'funnel', icon: Filter, label: 'Funnel', href: '/productivity/funnel' },
+    { value: 'clm', icon: IterationCw, label: 'CLM', href: '/productivity/clm' },
     { value: 'content-strategy', icon: ClipboardList, label: 'Content', href: '/productivity/content-strategy' },
     { value: 'marketing-strategy', icon: Megaphone, label: 'Marketing', href: '/productivity/marketing-strategy' },
     { value: 'win-loss', icon: TrendingUp, label: 'Win/Loss', href: '/productivity/win-loss' },
