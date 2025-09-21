@@ -120,7 +120,7 @@ export function LandingPage() {
                                 <AccordionItem key={index} value={`item-${index}`}>
                                     <AccordionTrigger className="text-md font-semibold hover:no-underline py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="flex-shrink-0 p-1.5 bg-background rounded-full border shadow-sm">
+                                            <div className="flex-shrink-0 p-1.5 bg-primary/10 rounded-full">
                                                 {feature.icon}
                                             </div>
                                             <span>{feature.title}</span>
