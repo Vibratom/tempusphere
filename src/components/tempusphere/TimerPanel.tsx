@@ -33,29 +33,37 @@ interface TimerPanelProps {
 type TimerViewMode = 'digital' | 'analog';
 
 function TimerPanelInternal({ fullscreen = false, glass = false }: TimerPanelProps, ref: any) {
-    const [duration, setDuration] = useState(300); // 5 minutes in seconds
+    const [duration, setDuration] = useLocalStorage('timer:duration', 300); // 5 minutes in seconds
     const [timeLeft, setTimeLeft] = useState(duration);
     const [isRunning, setIsRunning] = useState(false);
     const timerRef = useRef<NodeJS.Timeout>();
     const [viewMode, setViewMode] = useLocalStorage<TimerViewMode>('timer:view', 'digital');
 
+     const handleSetDuration = (newDuration: number) => {
+        const d = Math.max(0, newDuration);
+        setDuration(d);
+        if (!isRunning) {
+            setTimeLeft(d);
+        }
+    }
+
     const handleHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const h = parseInt(e.target.value) || 0;
         const currentMinutes = Math.floor((duration % 3600) / 60);
         const currentSeconds = duration % 60;
-        setDuration(h * 3600 + currentMinutes * 60 + currentSeconds);
+        handleSetDuration(h * 3600 + currentMinutes * 60 + currentSeconds);
     };
     const handleMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const m = parseInt(e.target.value) || 0;
         const currentHours = Math.floor(duration / 3600);
         const currentSeconds = duration % 60;
-        setDuration(currentHours * 3600 + m * 60 + currentSeconds);
+        handleSetDuration(currentHours * 3600 + m * 60 + currentSeconds);
     };
     const handleSecondsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const s = parseInt(e.target.value) || 0;
         const currentHours = Math.floor(duration / 3600);
         const currentMinutes = Math.floor((duration % 3600) / 60);
-        setDuration(currentHours * 3600 + currentMinutes * 60 + s);
+        handleSetDuration(currentHours * 3600 + currentMinutes * 60 + s);
     };
 
     useEffect(() => {
@@ -146,7 +154,7 @@ function TimerPanelInternal({ fullscreen = false, glass = false }: TimerPanelPro
                         {hours}:{minutes}:{seconds}
                     </p>
                 ) : (
-                    <AnalogTimer duration={duration} timeLeft={timeLeft} isEditing={isEditing} setDuration={setDuration} />
+                    <AnalogTimer duration={duration} timeLeft={timeLeft} isEditing={isEditing} setDuration={handleSetDuration} />
                 )}
                 <Progress value={isRunning ? progress : 100} className="w-full max-w-md"/>
             </CardContent>

@@ -5,14 +5,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, Pause, Square, Trash2, Plus, BellRing } from 'lucide-react';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Play, Pause, Square, Trash2, Plus, BellRing, Watch, Clock } from 'lucide-react';
 import { playSound } from '@/lib/sounds';
 import { v4 as uuidv4 } from 'uuid';
 import { Progress } from '../ui/progress';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '../ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
+import { AnalogTimer } from './AnalogTimer';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+
+
+type TimerViewMode = 'digital' | 'analog';
 
 interface Timer {
     id: string;
@@ -20,6 +23,7 @@ interface Timer {
     duration: number; // in seconds
     timeLeft: number; // in seconds
     isRunning: boolean;
+    viewMode: TimerViewMode;
 }
 
 const createNewTimer = (): Timer => ({
@@ -28,6 +32,7 @@ const createNewTimer = (): Timer => ({
     duration: 300,
     timeLeft: 300,
     isRunning: false,
+    viewMode: 'digital',
 });
 
 const formatTime = (totalSeconds: number) => {
@@ -38,7 +43,7 @@ const formatTime = (totalSeconds: number) => {
 };
 
 function TimerCard({ timer, onUpdate, onRemove }: { timer: Timer; onUpdate: (timer: Timer) => void; onRemove: (id: string) => void; }) {
-    const { id, name, duration, timeLeft, isRunning } = timer;
+    const { id, name, duration, timeLeft, isRunning, viewMode } = timer;
     const intervalRef = useRef<NodeJS.Timeout>();
 
     useEffect(() => {
@@ -65,15 +70,13 @@ function TimerCard({ timer, onUpdate, onRemove }: { timer: Timer; onUpdate: (tim
         onUpdate({ ...timer, isRunning: false, timeLeft: duration });
     };
     
-    const handleDurationChange = (part: 'h' | 'm' | 's', value: string) => {
-        const numValue = parseInt(value) || 0;
-        const current = formatTime(duration);
-        let newDuration;
-        if (part === 'h') newDuration = numValue * 3600 + parseInt(current.minutes) * 60 + parseInt(current.seconds);
-        else if (part === 'm') newDuration = parseInt(current.hours) * 3600 + numValue * 60 + parseInt(current.seconds);
-        else newDuration = parseInt(current.hours) * 3600 + parseInt(current.minutes) * 60 + numValue;
+    const setDuration = (newDuration: number) => {
         onUpdate({ ...timer, duration: newDuration, timeLeft: newDuration });
     };
+
+    const toggleViewMode = () => {
+        onUpdate({ ...timer, viewMode: viewMode === 'digital' ? 'analog' : 'digital' });
+    }
 
     const { hours, minutes, seconds } = formatTime(timeLeft);
     const progress = duration > 0 ? (timeLeft / duration) * 100 : 0;
@@ -86,21 +89,35 @@ function TimerCard({ timer, onUpdate, onRemove }: { timer: Timer; onUpdate: (tim
         <Card className={cn("flex flex-col", isFinished && "border-primary ring-2 ring-primary animate-pulse")}>
             <CardHeader className="flex-row items-center justify-between py-2">
                 <Input value={name} onChange={e => onUpdate({ ...timer, name: e.target.value })} className="text-lg font-semibold border-none focus-visible:ring-0 p-0 h-auto"/>
-                <Button variant="ghost" size="icon" onClick={() => onRemove(id)}><Trash2 className="h-4 w-4"/></Button>
+                 <div className="flex">
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={toggleViewMode}>
+                                    {viewMode === 'digital' ? <Watch className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Toggle View</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <Button variant="ghost" size="icon" onClick={() => onRemove(id)}><Trash2 className="h-4 w-4"/></Button>
+                </div>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col items-center justify-center gap-2">
-                 {isEditing ? (
+                 {viewMode === 'digital' && isEditing ? (
                     <div className="flex items-center justify-center font-mono font-bold tracking-tighter">
-                        <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={(e) => handleDurationChange('h', e.target.value)} className={inputClasses}/>
+                        <Input type="number" min="0" max="99" value={formatTime(duration).hours} onChange={(e) => setDuration(parseInt(e.target.value) * 3600 + (duration % 3600))} className={inputClasses.replace('w-10', 'w-12')}/>
                         <span className="text-xl">:</span>
-                        <Input type="number" min="0" max="59" value={formatTime(duration).minutes} onChange={(e) => handleDurationChange('m', e.target.value)} className={inputClasses}/>
+                        <Input type="number" min="0" max="59" value={formatTime(duration).minutes} onChange={(e) => setDuration(Math.floor(duration/3600)*3600 + parseInt(e.target.value) * 60 + (duration % 60))} className={inputClasses.replace('w-10', 'w-12')}/>
                         <span className="text-xl">:</span>
-                        <Input type="number" min="0" max="59" value={formatTime(duration).seconds} onChange={(e) => handleDurationChange('s', e.target.value)} className={inputClasses}/>
+                        <Input type="number" min="0" max="59" value={formatTime(duration).seconds} onChange={(e) => setDuration(Math.floor(duration/60)*60 + parseInt(e.target.value))} className={inputClasses.replace('w-10', 'w-12')}/>
                     </div>
-                ) : (
+                ) : viewMode === 'digital' && !isEditing ? (
                     <p className="text-5xl font-mono font-bold tracking-tighter tabular-nums text-center">
                         {hours}:{minutes}:{seconds}
                     </p>
+                ) : (
+                   <AnalogTimer duration={duration} timeLeft={timeLeft} isEditing={isEditing} setDuration={setDuration} />
                 )}
                 <Progress value={isRunning ? progress : 100} className="w-full max-w-xs"/>
             </CardContent>
@@ -119,7 +136,7 @@ function TimerCard({ timer, onUpdate, onRemove }: { timer: Timer; onUpdate: (tim
 
 
 export function KitchenTimerStation() {
-    const [timers, setTimers] = useLocalStorage<Timer[]>('culinary:timers-v1', [createNewTimer()]);
+    const [timers, setTimers] = useLocalStorage<Timer[]>('culinary:timers-v2', [createNewTimer()]);
     
     const addTimer = () => {
         setTimers(prev => [...prev, createNewTimer()]);
