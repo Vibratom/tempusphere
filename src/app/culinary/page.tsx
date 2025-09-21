@@ -1,18 +1,21 @@
+
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BookOpen, Archive, Trash2, Timer, AlertCircle, ShoppingCart } from 'lucide-react';
+import { BookOpen, Archive, Trash2, Timer } from 'lucide-react';
 import Link from 'next/link';
+import { Bar, BarChart, CartesianGrid, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 // --- Data types from other components for context ---
 interface Recipe { id: string; }
 interface InventoryItem { id: string; quantity: number; lowStockThreshold: number; }
-interface WasteEntry { id: string; cost: number; }
+interface WasteEntry { id: string; cost: number; metric: 'Overproduction' | 'Spoilage' | 'Preparation Waste' | 'Other'; }
 interface KitchenTimer { id: string; isRunning: boolean; }
 
-const StatCard = ({ title, value, icon: Icon, href, description, color }: { title: string, value: string | number, icon: React.ElementType, href: string, description: string, color?: string }) => (
+const StatCard = ({ title, value, icon: Icon, href, description }: { title: string, value: string | number, icon: React.ElementType, href: string, description: string }) => (
     <Link href={href}>
         <Card className="hover:shadow-lg transition-shadow hover:border-primary/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -39,17 +42,38 @@ export default function CulinaryDashboardPage() {
     setIsClient(true);
   }, []);
 
-  const stats = useMemo(() => {
+  const { stats, wasteChartData, inventoryChartData } = useMemo(() => {
     const lowStockItems = inventory.filter(item => item.quantity > 0 && item.quantity <= item.lowStockThreshold).length;
     const outOfStockItems = inventory.filter(item => item.quantity <= 0).length;
+    const inStockItems = inventory.length - lowStockItems - outOfStockItems;
     const totalWasteCost = waste.reduce((sum, entry) => sum + entry.cost, 0);
     const activeTimers = timers.filter(timer => timer.isRunning).length;
 
+    const wasteByMetric = waste.reduce((acc, entry) => {
+        if (!acc[entry.metric]) {
+            acc[entry.metric] = 0;
+        }
+        acc[entry.metric] += entry.cost;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const wasteChart = Object.entries(wasteByMetric).map(([name, cost]) => ({ name, cost }));
+
+    const inventoryChart = [
+        { name: 'In Stock', value: inStockItems, fill: 'hsl(var(--chart-2))' },
+        { name: 'Running Low', value: lowStockItems, fill: 'hsl(var(--chart-4))' },
+        { name: 'Out of Stock', value: outOfStockItems, fill: 'hsl(var(--chart-5))' },
+    ].filter(item => item.value > 0);
+    
     return {
-        recipeCount: recipes.length,
-        lowStockCount: lowStockItems + outOfStockItems,
-        totalWaste: totalWasteCost,
-        activeTimers: activeTimers,
+        stats: {
+            recipeCount: recipes.length,
+            lowStockCount: lowStockItems + outOfStockItems,
+            totalWaste: totalWasteCost,
+            activeTimers: activeTimers,
+        },
+        wasteChartData: wasteChart,
+        inventoryChartData: inventoryChart
     }
   }, [recipes, inventory, waste, timers]);
   
@@ -97,7 +121,48 @@ export default function CulinaryDashboardPage() {
             />
         </div>
         
-        {/* We can add more detailed cards or charts here in the future */}
+        <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Waste Analysis</CardTitle>
+                    <CardDescription>Total cost of waste by category.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={{}} className="h-64 w-full">
+                        <ResponsiveContainer>
+                            <BarChart data={wasteChartData} layout="vertical" margin={{ left: 20 }}>
+                                <CartesianGrid horizontal={false} />
+                                <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} />
+                                <XAxis type="number" hide />
+                                <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
+                                <Bar dataKey="cost" name="Cost" fill="hsl(var(--chart-5))" radius={[0, 4, 4, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Inventory Overview</CardTitle>
+                    <CardDescription>Current stock levels at a glance.</CardDescription>
+                </CardHeader>
+                 <CardContent>
+                    <ChartContainer config={{}} className="h-64 w-full">
+                        <ResponsiveContainer>
+                            <PieChart>
+                                <Tooltip content={<ChartTooltipContent hideLabel />} />
+                                <Pie data={inventoryChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                    {inventoryChartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                    ))}
+                                </Pie>
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+        </div>
     </div>
   );
 }
