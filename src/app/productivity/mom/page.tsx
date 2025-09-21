@@ -23,7 +23,6 @@ import { BrainstormingTemplate, BrainstormingPreview } from '@/components/produc
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
-import htmlToDocx from 'html-to-docx';
 
 
 type TemplateType = 'default' | 'board-meeting' | 'annual-meeting' | 'project-kick-off' | 'daily-scrum' | 'one-on-one' | 'brainstorming';
@@ -338,22 +337,7 @@ export default function MoMPage() {
     };
 
     const exportAsDocx = async () => {
-        if (!previewRef.current) return;
-    
-        try {
-            const { html, styles } = getHtmlContent();
-            const fullHtml = `<!DOCTYPE html><html><head><style>${styles}</style></head><body>${html}</body></html>`;
-            const fileBuffer = await htmlToDocx(fullHtml, undefined, {
-                font: 'Arial',
-                fontSize: 12,
-            });
-    
-            saveAs(fileBuffer as Blob, `${(minutes.title || 'meeting_minutes').replace(/ /g, '_')}.docx`);
-            toast({ title: "Export Successful", description: `Your minutes have been downloaded as a DOCX file.` });
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: "Export Failed", description: "Could not generate DOCX file." });
-        }
+        toast({ variant: 'destructive', title: "Not Implemented", description: "DOCX export is currently unavailable." });
     };
 
     const exportToFile = (content: string, fileName: string, contentType: string) => {
@@ -396,7 +380,7 @@ export default function MoMPage() {
                         <DropdownMenuItem onClick={exportAsPdf}>
                             <FileImage className="mr-2 h-4 w-4" /> Export as PDF (.pdf)
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={exportAsDocx}>
+                        <DropdownMenuItem onClick={exportAsDocx} disabled>
                             <FileImage className="mr-2 h-4 w-4" /> Export as Word (.docx)
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
