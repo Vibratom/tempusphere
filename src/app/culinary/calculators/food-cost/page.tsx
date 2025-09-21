@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -13,6 +14,7 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Pie, PieChart, ResponsiveContainer, Tooltip, Cell } from 'recharts';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Ingredient {
     id: string;
