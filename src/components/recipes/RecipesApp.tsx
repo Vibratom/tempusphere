@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { v4 as uuidv4 } from 'uuid';
-import { UtensilsCrossed, Plus, BookOpen, Trash2, Edit, GitBranch, ArrowLeft, Search, Sparkles, ChefHat, ShoppingBag, CalendarPlus } from 'lucide-react';
+import { UtensilsCrossed, Plus, BookOpen, Trash2, Edit, GitBranch, ArrowLeft, Search, Sparkles, ChefHat, ShoppingBag, CalendarPlus, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../ui/dialog';
@@ -33,6 +33,7 @@ import { useCalendar } from '@/contexts/CalendarContext';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { format } from 'date-fns';
+import { searchRecipes, RecipeSearchOutput } from '@/ai/flows/recipe-flow';
 
 interface Recipe {
   id: string;
@@ -312,7 +313,12 @@ export function RecipesApp() {
   const [isClient, setIsClient] = useState(false);
   const [showStarterCookbook, setShowStarterCookbook] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [onlineSearchQuery, setOnlineSearchQuery] = useState('');
+  const [onlineSearchResults, setOnlineSearchResults] = useState<RecipeSearchOutput | null>(null);
+  const [isSearchingOnline, setIsSearchingOnline] = useState(false);
   
+  const { toast } = useToast();
+
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -353,6 +359,31 @@ export function RecipesApp() {
   const handleDeleteRecipe = (recipeId: string) => {
     setRecipes(recipes.filter(r => r.id !== recipeId));
     setViewingRecipe(null); // Go back to the main list
+  }
+  
+  const handleOnlineSearch = async () => {
+      if (!onlineSearchQuery.trim()) return;
+      setIsSearchingOnline(true);
+      setOnlineSearchResults(null);
+      try {
+          const results = await searchRecipes({ query: onlineSearchQuery });
+          setOnlineSearchResults(results);
+      } catch (error) {
+          console.error("Online recipe search failed:", error);
+          toast({ variant: 'destructive', title: 'Search Failed', description: 'Could not fetch recipes from the online database.'});
+      } finally {
+          setIsSearchingOnline(false);
+      }
+  }
+
+  const handleImportRecipe = (recipeToImport: Omit<Recipe, 'id' | 'createdAt'>) => {
+      const newRecipe: Recipe = {
+          ...recipeToImport,
+          id: uuidv4(),
+          createdAt: new Date().toISOString(),
+      };
+      setRecipes(prev => [...prev, newRecipe]);
+      toast({ title: 'Recipe Imported!', description: `"${newRecipe.title}" has been added to your cookbook.`});
   }
   
   const filteredRecipes = recipes.filter(recipe => 
@@ -426,52 +457,92 @@ export function RecipesApp() {
             </DialogContent>
           </Dialog>
 
-          <Card>
-              <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <CardTitle>My Cookbook</CardTitle>
-                <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
-                  <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                          placeholder="Search recipes..." 
-                          className="pl-8"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                  </div>
-                  <Button variant="outline" onClick={() => setShowStarterCookbook(true)}><ChefHat className="mr-2"/>Get Inspired</Button>
-                  <Button onClick={() => setEditingRecipe(null)}><Plus className="mr-2"/>Add New Recipe</Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                  {filteredRecipes.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {filteredRecipes.map(recipe => (
-                              <Card key={recipe.id} className="flex flex-col hover:shadow-lg transition-shadow">
-                                  <CardHeader>
-                                      {recipe.imageUrl && (
-                                        <div className="aspect-video relative w-full overflow-hidden rounded-md mb-4">
-                                            <Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized/>
-                                        </div>
-                                      )}
-                                      <CardTitle className="text-lg">{recipe.title}</CardTitle>
-                                      <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
-                                  </CardHeader>
-                                  <CardFooter className="mt-auto flex justify-end gap-2">
-                                      <Button variant="secondary" size="sm" onClick={() => setViewingRecipe(recipe)}><BookOpen className="mr-2 h-4 w-4"/>View</Button>
-                                  </CardFooter>
-                              </Card>
-                          ))}
-                      </div>
-                  ) : (
-                      <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
-                          <BookOpen className="w-16 h-16 mb-4" />
-                          <h3 className="text-xl font-semibold">{recipes.length > 0 ? 'No Recipes Found' : 'Your Cookbook is Empty'}</h3>
-                          <p className="text-sm">{recipes.length > 0 ? 'Try a different search term.' : 'Add a new recipe or choose one from the starters.'}</p>
-                      </div>
-                  )}
-              </CardContent>
-          </Card>
+            <div className="grid md:grid-cols-2 gap-8">
+                <Card>
+                    <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <CardTitle>My Cookbook</CardTitle>
+                        <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Search my recipes..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                        </div>
+                        <Button onClick={() => setEditingRecipe(null)}><Plus className="mr-2"/>Add New</Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <ScrollArea className="h-[60vh]">
+                            <div className="pr-4">
+                                {filteredRecipes.length > 0 ? (
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        {filteredRecipes.map(recipe => (
+                                            <Card key={recipe.id} className="flex flex-col hover:shadow-lg transition-shadow">
+                                                <CardHeader>
+                                                    {recipe.imageUrl && (<div className="aspect-video relative w-full overflow-hidden rounded-md mb-4"><Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized/></div>)}
+                                                    <CardTitle className="text-lg">{recipe.title}</CardTitle>
+                                                    <CardDescription>{recipe.description.substring(0, 100)}{recipe.description.length > 100 ? '...' : ''}</CardDescription>
+                                                </CardHeader>
+                                                <CardFooter className="mt-auto flex justify-end gap-2">
+                                                    <Button variant="secondary" size="sm" onClick={() => setViewingRecipe(recipe)}><BookOpen className="mr-2 h-4 w-4"/>View</Button>
+                                                </CardFooter>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
+                                        <BookOpen className="w-16 h-16 mb-4" />
+                                        <h3 className="text-xl font-semibold">{recipes.length > 0 ? 'No Recipes Found' : 'Your Cookbook is Empty'}</h3>
+                                        <p className="text-sm">{recipes.length > 0 ? 'Try a different search term.' : 'Add a recipe or search online.'}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <CardTitle>Online Search</CardTitle>
+                        <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input placeholder="Search TheMealDB..." className="pl-8" value={onlineSearchQuery} onChange={(e) => setOnlineSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleOnlineSearch()}/>
+                            </div>
+                            <Button onClick={handleOnlineSearch} disabled={isSearchingOnline}>
+                                {isSearchingOnline ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
+                                Search
+                            </Button>
+                        </div>
+                    </CardHeader>
+                     <CardContent>
+                        <ScrollArea className="h-[60vh]">
+                            <div className="pr-4">
+                               {isSearchingOnline ? (
+                                    <div className="flex justify-center items-center h-full pt-16"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>
+                               ) : onlineSearchResults?.recipes && onlineSearchResults.recipes.length > 0 ? (
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        {onlineSearchResults.recipes.map(recipe => (
+                                            <Card key={recipe.id} className="flex flex-col hover:shadow-lg transition-shadow">
+                                                <CardHeader>
+                                                    {recipe.imageUrl && (<div className="aspect-video relative w-full overflow-hidden rounded-md mb-4"><Image src={recipe.imageUrl} alt={recipe.title} layout="fill" objectFit="cover" unoptimized/></div>)}
+                                                    <CardTitle className="text-lg">{recipe.title}</CardTitle>
+                                                </CardHeader>
+                                                <CardFooter className="mt-auto flex justify-end gap-2">
+                                                    <Button variant="secondary" size="sm" onClick={() => handleImportRecipe(recipe)}><Plus className="mr-2 h-4 w-4"/>Import</Button>
+                                                </CardFooter>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                ) : (
+                                     <div className="text-center text-muted-foreground py-16 flex flex-col items-center">
+                                        <Sparkles className="w-16 h-16 mb-4" />
+                                        <h3 className="text-xl font-semibold">Find Your Next Meal</h3>
+                                        <p className="text-sm max-w-xs">{onlineSearchResults ? 'No results found. Try a different search term.' : 'Search for recipes from a massive online database.'}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+            </div>
           
           <Dialog open={editingRecipe !== undefined} onOpenChange={(isOpen) => !isOpen && setEditingRecipe(undefined)}>
             {editingRecipe !== undefined && <RecipeForm onSave={handleSaveRecipe} recipe={editingRecipe} onCancel={() => setEditingRecipe(undefined)}/>}
@@ -480,3 +551,4 @@ export function RecipesApp() {
     </RecipesContext.Provider>
   );
 }
+
