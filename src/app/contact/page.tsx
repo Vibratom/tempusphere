@@ -49,15 +49,14 @@ export default function ContactPage() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">
-          <section className="py-20 md:py-24 bg-muted/50">
-              <div className="container max-w-7xl text-center">
-                  <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4">Let's Connect</h1>
-                  <p className="max-w-3xl mx-auto text-lg md:text-xl text-muted-foreground">We’d love to hear from you. Whether you have a question, a proposal, or just want to say hello, feel free to reach out.</p>
-              </div>
+        <div className="container mx-auto px-4">
+          <section className="py-20 md:py-24 text-center">
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4">Let's Connect</h1>
+              <p className="max-w-3xl mx-auto text-lg md:text-xl text-muted-foreground">We’d love to hear from you. Whether you have a question, a proposal, or just want to say hello, feel free to reach out.</p>
           </section>
 
-          <section className="py-16 md:py-24">
-              <div className="container max-w-7xl">
+          <section className="pb-16 md:pb-24">
+              <div className="max-w-7xl mx-auto">
                   <div className="grid md:grid-cols-2 gap-16">
                       
                       <Card>
@@ -148,6 +147,7 @@ export default function ContactPage() {
                   </div>
               </div>
           </section>
+        </div>
       </main>
       <Footer />
     </div>
