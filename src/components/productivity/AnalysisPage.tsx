@@ -4,6 +4,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SwotAnalysis } from "./SwotAnalysis";
 import { TowsMatrix } from "./TowsMatrix";
+import { SoarAnalysis } from "./SoarAnalysis";
 
 export function AnalysisPage() {
 
@@ -14,6 +15,7 @@ export function AnalysisPage() {
                     <TabsList>
                         <TabsTrigger value="swot">SWOT Analysis</TabsTrigger>
                         <TabsTrigger value="tows">TOWS Matrix</TabsTrigger>
+                        <TabsTrigger value="soar">SOAR Analysis</TabsTrigger>
                     </TabsList>
                 </div>
                 <TabsContent value="swot" className="flex-1">
@@ -21,6 +23,9 @@ export function AnalysisPage() {
                 </TabsContent>
                 <TabsContent value="tows" className="flex-1">
                     <TowsMatrix />
+                </TabsContent>
+                <TabsContent value="soar" className="flex-1">
+                    <SoarAnalysis />
                 </TabsContent>
             </Tabs>
         </div>
