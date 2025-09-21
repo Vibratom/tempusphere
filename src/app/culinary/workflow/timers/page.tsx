@@ -1,3 +1,4 @@
+
 'use client';
 
 import { KitchenTimerStation } from '@/components/culinary/KitchenTimerStation';
