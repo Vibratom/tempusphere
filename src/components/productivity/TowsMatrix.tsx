@@ -34,7 +34,7 @@ const ReadonlySwotList = ({ title, items, className }: { title: string, items: S
     </div>
 );
 
-const StrategyQuadrant = ({ title, description, value, onChange }: { title: string, description: string, value: string, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void }) => (
+const StrategyQuadrant = ({ title, description, value, onChange, isReadonly = false }: { title: string, description: string, value: string, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void, isReadonly?: boolean }) => (
     <Card>
         <CardHeader>
             <CardTitle className="text-lg">{title}</CardTitle>
@@ -46,6 +46,8 @@ const StrategyQuadrant = ({ title, description, value, onChange }: { title: stri
                 onChange={onChange}
                 rows={6}
                 placeholder={`List your "${title}" strategies here...`}
+                readOnly={isReadonly}
+                className={isReadonly ? 'bg-muted/50 border-none' : ''}
             />
         </CardContent>
     </Card>
@@ -74,7 +76,7 @@ export function TowsMatrix() {
             backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
         });
         
-        const fileName = `TOWS_Matrix.${format}`;
+        const fileName = `${title.replace(/ /g, '_')}_TOWS_Matrix.${format}`;
         
         if (format === 'png') {
             canvas.toBlob((blob) => {
@@ -89,6 +91,24 @@ export function TowsMatrix() {
 
         toast({ title: 'Export Successful', description: `Your TOWS Matrix has been downloaded as a ${format.toUpperCase()} file.` });
     };
+    
+    const ExportPreview = () => (
+         <div ref={contentRef} className="p-8 bg-background">
+            <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
+            <div className="grid grid-cols-4 gap-4 mb-8">
+                <ReadonlySwotList title="Strengths" items={strengths} className="bg-green-100/30 dark:bg-green-900/30 p-2 rounded-lg" />
+                <ReadonlySwotList title="Weaknesses" items={weaknesses} className="bg-red-100/30 dark:bg-red-900/30 p-2 rounded-lg" />
+                <ReadonlySwotList title="Opportunities" items={opportunities} className="bg-blue-100/30 dark:bg-blue-900/30 p-2 rounded-lg" />
+                <ReadonlySwotList title="Threats" items={threats} className="bg-yellow-100/30 dark:bg-yellow-900/30 p-2 rounded-lg" />
+            </div>
+            <div className="grid grid-cols-2 gap-6">
+                 <StrategyQuadrant title="Strengths-Opportunities (SO)" description="" value={soStrategies} onChange={()=>{}} isReadonly />
+                 <StrategyQuadrant title="Strengths-Threats (ST)" description="" value={stStrategies} onChange={()=>{}} isReadonly />
+                 <StrategyQuadrant title="Weaknesses-Opportunities (WO)" description="" value={woStrategies} onChange={()=>{}} isReadonly />
+                 <StrategyQuadrant title="Weaknesses-Threats (WT)" description="" value={wtStrategies} onChange={()=>{}} isReadonly />
+            </div>
+        </div>
+    );
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -99,51 +119,54 @@ export function TowsMatrix() {
                 </p>
             </div>
             
-            <div ref={contentRef} className="p-4 bg-background">
-                <Card>
-                    <CardHeader className="items-center">
-                        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
-                    </CardHeader>
-                </Card>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 my-8">
-                    <ReadonlySwotList title="Strengths" items={strengths} className="bg-green-100/30 dark:bg-green-900/30 p-2 rounded-lg" />
-                    <ReadonlySwotList title="Weaknesses" items={weaknesses} className="bg-red-100/30 dark:bg-red-900/30 p-2 rounded-lg" />
-                    <ReadonlySwotList title="Opportunities" items={opportunities} className="bg-blue-100/30 dark:bg-blue-900/30 p-2 rounded-lg" />
-                    <ReadonlySwotList title="Threats" items={threats} className="bg-yellow-100/30 dark:bg-yellow-900/30 p-2 rounded-lg" />
-                </div>
+            <Card>
+                <CardHeader className="items-center">
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
+                </CardHeader>
+            </Card>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <StrategyQuadrant
-                        title="Strengths-Opportunities (SO)"
-                        description="How can you use your strengths to take advantage of opportunities?"
-                        value={soStrategies}
-                        onChange={(e) => setSoStrategies(e.target.value)}
-                    />
-                    <StrategyQuadrant
-                        title="Strengths-Threats (ST)"
-                        description="How can you use your strengths to avoid or mitigate real and potential threats?"
-                        value={stStrategies}
-                        onChange={(e) => setStStrategies(e.target.value)}
-                    />
-                    <StrategyQuadrant
-                        title="Weaknesses-Opportunities (WO)"
-                        description="How can you use opportunities to overcome the weaknesses you are experiencing?"
-                        value={woStrategies}
-                        onChange={(e) => setWoStrategies(e.target.value)}
-                    />
-                     <StrategyQuadrant
-                        title="Weaknesses-Threats (WT)"
-                        description="How can you minimize your weaknesses and avoid threats?"
-                        value={wtStrategies}
-                        onChange={(e) => setWtStrategies(e.target.value)}
-                    />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 my-8">
+                <ReadonlySwotList title="Strengths" items={strengths} className="bg-green-100/30 dark:bg-green-900/30 p-2 rounded-lg" />
+                <ReadonlySwotList title="Weaknesses" items={weaknesses} className="bg-red-100/30 dark:bg-red-900/30 p-2 rounded-lg" />
+                <ReadonlySwotList title="Opportunities" items={opportunities} className="bg-blue-100/30 dark:bg-blue-900/30 p-2 rounded-lg" />
+                <ReadonlySwotList title="Threats" items={threats} className="bg-yellow-100/30 dark:bg-yellow-900/30 p-2 rounded-lg" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <StrategyQuadrant
+                    title="Strengths-Opportunities (SO)"
+                    description="How can you use your strengths to take advantage of opportunities?"
+                    value={soStrategies}
+                    onChange={(e) => setSoStrategies(e.target.value)}
+                />
+                <StrategyQuadrant
+                    title="Strengths-Threats (ST)"
+                    description="How can you use your strengths to avoid or mitigate real and potential threats?"
+                    value={stStrategies}
+                    onChange={(e) => setStStrategies(e.target.value)}
+                />
+                <StrategyQuadrant
+                    title="Weaknesses-Opportunities (WO)"
+                    description="How can you use opportunities to overcome the weaknesses you are experiencing?"
+                    value={woStrategies}
+                    onChange={(e) => setWoStrategies(e.target.value)}
+                />
+                 <StrategyQuadrant
+                    title="Weaknesses-Threats (WT)"
+                    description="How can you minimize your weaknesses and avoid threats?"
+                    value={wtStrategies}
+                    onChange={(e) => setWtStrategies(e.target.value)}
+                />
             </div>
             
             <CardFooter className="border-t pt-6 flex justify-end gap-2">
                 <Button variant="outline" onClick={() => exportToImage('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
                 <Button variant="outline" onClick={() => exportToImage('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
             </CardFooter>
+
+             <div className="hidden">
+                <ExportPreview />
+            </div>
         </div>
     );
 }

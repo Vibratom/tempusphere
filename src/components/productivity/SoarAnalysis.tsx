@@ -14,6 +14,7 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '../ui/scroll-area';
 
 type SoarCategory = 'strengths' | 'opportunities' | 'aspirations' | 'results';
 
@@ -49,42 +50,50 @@ const SoarColumn = ({ title, category, items, setItems, placeholder, className, 
                 <CardTitle>{title}</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-2">
-                <Droppable droppableId={category} isDropDisabled={isReadonly}>
-                    {(provided, snapshot) => (
-                        <div
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            className={cn("space-y-2 p-2 rounded-md min-h-[100px] flex-1", snapshot.isDraggingOver && "bg-muted/50")}
-                        >
-                            {items.map((item, index) => (
-                                <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={isReadonly}>
-                                    {(provided, snapshot) => (
-                                        <div
-                                            ref={provided.innerRef}
-                                            {...provided.draggableProps}
-                                            className={cn("flex items-center gap-2 p-2 border rounded-md bg-background", snapshot.isDragging && "shadow-lg")}
-                                        >
-                                            {!isReadonly && <span {...provided.dragHandleProps} className="cursor-grab text-muted-foreground"><GripVertical className="h-5 w-5" /></span>}
-                                            <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" readOnly={isReadonly} />
-                                            {!isReadonly && <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}><Trash2 className="h-4 w-4" /></Button>}
-                                        </div>
-                                    )}
-                                </Draggable>
-                            ))}
-                            {provided.placeholder}
-                        </div>
-                    )}
-                </Droppable>
+                <ScrollArea className={cn(isReadonly ? "h-full" : "h-48")}>
+                    <Droppable droppableId={category} isDropDisabled={isReadonly}>
+                        {(provided, snapshot) => (
+                            <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className={cn("space-y-2 p-2 rounded-md min-h-[100px] flex-1", snapshot.isDraggingOver && "bg-muted/50")}
+                            >
+                                {items.map((item, index) => (
+                                    <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={isReadonly}>
+                                        {(provided, snapshot) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                className={cn("flex items-center gap-2 p-2 border rounded-md bg-background", snapshot.isDragging && "shadow-lg")}
+                                            >
+                                                {!isReadonly && <span {...provided.dragHandleProps} className="cursor-grab text-muted-foreground"><GripVertical className="h-5 w-5" /></span>}
+                                                {isReadonly ? (
+                                                    <p className="flex-1 text-sm p-2">{item.text}</p>
+                                                ) : (
+                                                    <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" />
+                                                )}
+                                                {!isReadonly && <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}><Trash2 className="h-4 w-4" /></Button>}
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))}
+                                {provided.placeholder}
+                            </div>
+                        )}
+                    </Droppable>
+                </ScrollArea>
 
-                {!isReadonly && <div className="flex gap-2">
-                    <Input
-                        value={newItemText}
-                        onChange={e => setNewItemText(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && addItem()}
-                        placeholder={placeholder}
-                    />
-                    <Button onClick={addItem}><Plus /></Button>
-                </div>}
+                {!isReadonly && 
+                    <div className="flex gap-2 mt-auto pt-2 border-t">
+                        <Input
+                            value={newItemText}
+                            onChange={e => setNewItemText(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && addItem()}
+                            placeholder={placeholder}
+                        />
+                        <Button onClick={addItem}><Plus /></Button>
+                    </div>
+                }
             </CardContent>
         </Card>
     );
@@ -155,6 +164,18 @@ export function SoarAnalysis() {
 
         toast({ title: 'Export Successful', description: `Your SOAR analysis has been downloaded as a ${format.toUpperCase()} file.` });
     };
+    
+    const ExportPreview = () => (
+        <div ref={contentRef} className="p-8 bg-background">
+            <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
+            <div className="grid grid-cols-2 gap-6">
+                <SoarColumn title="Strengths" category="strengths" items={strengths} setItems={() => {}} placeholder="" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
+                <SoarColumn title="Opportunities" category="opportunities" items={opportunities} setItems={() => {}} placeholder="" icon={Rocket} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly />
+                <SoarColumn title="Aspirations" category="aspirations" items={aspirations} setItems={setAspirations} placeholder="" icon={Target} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" isReadonly />
+                <SoarColumn title="Results" category="results" items={results} setItems={setResults} placeholder="" icon={BarChart} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly />
+            </div>
+        </div>
+    );
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -165,27 +186,29 @@ export function SoarAnalysis() {
                 </p>
             </div>
             
-            <div ref={contentRef} className="p-4 bg-background">
-                <Card className="my-6">
-                    <CardHeader className="items-center">
-                        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
-                    </CardHeader>
-                </Card>
+            <Card>
+                <CardHeader className="items-center">
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
+                </CardHeader>
+            </Card>
 
-                <DragDropContext onDragEnd={onDragEnd}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <SoarColumn title="Strengths" category="strengths" items={strengths} setItems={() => {}} placeholder="" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
-                        <SoarColumn title="Opportunities" category="opportunities" items={opportunities} setItems={() => {}} placeholder="" icon={Rocket} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly />
-                        <SoarColumn title="Aspirations" category="aspirations" items={aspirations} setItems={setAspirations} placeholder="Add an aspiration..." icon={Target} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" />
-                        <SoarColumn title="Results" category="results" items={results} setItems={setResults} placeholder="Add a measurable result..." icon={BarChart} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" />
-                    </div>
-                </DragDropContext>
-            </div>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <SoarColumn title="Strengths" category="strengths" items={strengths} setItems={() => {}} placeholder="" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
+                    <SoarColumn title="Opportunities" category="opportunities" items={opportunities} setItems={() => {}} placeholder="" icon={Rocket} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly />
+                    <SoarColumn title="Aspirations" category="aspirations" items={aspirations} setItems={setAspirations} placeholder="Add an aspiration..." icon={Target} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" />
+                    <SoarColumn title="Results" category="results" items={results} setItems={setResults} placeholder="Add a measurable result..." icon={BarChart} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" />
+                </div>
+            </DragDropContext>
             
             <CardFooter className="border-t pt-6 flex justify-end gap-2">
                 <Button variant="outline" onClick={() => exportToImage('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
                 <Button variant="outline" onClick={() => exportToImage('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
             </CardFooter>
+            
+            <div className="hidden">
+                <ExportPreview />
+            </div>
         </div>
     );
 }

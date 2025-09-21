@@ -22,7 +22,7 @@ interface GapItem {
 
 const createNewItem = (text = ''): GapItem => ({ id: uuidv4(), text });
 
-const GapColumn = ({ title, items, setItems, placeholder, className, icon: Icon }: { title: string, items: GapItem[], setItems: React.Dispatch<React.SetStateAction<GapItem[]>>, placeholder: string, className?: string, icon: React.ElementType }) => {
+const GapColumn = ({ title, items, setItems, placeholder, className, icon: Icon, isReadonly = false }: { title: string, items: GapItem[], setItems: React.Dispatch<React.SetStateAction<GapItem[]>>, placeholder: string, className?: string, icon: React.ElementType, isReadonly?: boolean }) => {
     const [newItemText, setNewItemText] = useState('');
 
     const addItem = () => {
@@ -47,18 +47,22 @@ const GapColumn = ({ title, items, setItems, placeholder, className, icon: Icon 
                 <CardTitle>{title}</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-2">
-                <ScrollArea className="h-48">
+                <ScrollArea className={cn(isReadonly ? "h-full" : "h-48")}>
                     <div className="space-y-2 p-2 rounded-md min-h-[100px] flex-1">
                         {items.map((item) => (
                             <div key={item.id} className="flex items-center gap-2 p-2 border rounded-md bg-background">
-                                <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" />
-                                <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}><Trash2 className="h-4 w-4" /></Button>
+                                 {isReadonly ? (
+                                    <p className="flex-1 text-sm p-2">{item.text}</p>
+                                ) : (
+                                    <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" />
+                                )}
+                                {!isReadonly && <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}><Trash2 className="h-4 w-4" /></Button>}
                             </div>
                         ))}
                     </div>
                 </ScrollArea>
 
-                <div className="flex gap-2 mt-auto pt-2 border-t">
+                {!isReadonly && <div className="flex gap-2 mt-auto pt-2 border-t">
                     <Input
                         value={newItemText}
                         onChange={e => setNewItemText(e.target.value)}
@@ -66,7 +70,7 @@ const GapColumn = ({ title, items, setItems, placeholder, className, icon: Icon 
                         placeholder={placeholder}
                     />
                     <Button onClick={addItem}><Plus /></Button>
-                </div>
+                </div>}
             </CardContent>
         </Card>
     );
@@ -104,6 +108,18 @@ export function GapAnalysis() {
 
         toast({ title: 'Export Successful', description: `Your Gap analysis has been downloaded as a ${format.toUpperCase()} file.` });
     };
+    
+    const ExportPreview = () => (
+        <div ref={contentRef} className="p-8 bg-background">
+            <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
+            <div className="grid grid-cols-2 gap-6">
+                <GapColumn title="Current State" items={currentState} setItems={setCurrentState} placeholder="" icon={Activity} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly/>
+                <GapColumn title="Future State" items={futureState} setItems={setFutureState} placeholder="" icon={Target} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly/>
+                <GapColumn title="Gap Description" items={gapDescription} setItems={setGapDescription} placeholder="" icon={HelpCircle} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly/>
+                <GapColumn title="Actions to Close Gap" items={actions} setItems={setActions} placeholder="" icon={Zap} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" isReadonly/>
+            </div>
+        </div>
+    );
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -114,24 +130,27 @@ export function GapAnalysis() {
                 </p>
             </div>
             
-            <div ref={contentRef} className="p-4 bg-background">
-                <Card className="my-6">
-                    <CardHeader className="items-center">
-                        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
-                    </CardHeader>
-                </Card>
+            <Card>
+                <CardHeader className="items-center">
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
+                </CardHeader>
+            </Card>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <GapColumn title="Current State" items={currentState} setItems={setCurrentState} placeholder="e.g., Manual data entry..." icon={Activity} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" />
-                    <GapColumn title="Future State" items={futureState} setItems={setFutureState} placeholder="e.g., Automated data workflow..." icon={Target} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" />
-                    <GapColumn title="Gap Description" items={gapDescription} setItems={setGapDescription} placeholder="e.g., Lack of integration tools..." icon={HelpCircle} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" />
-                    <GapColumn title="Actions to Close Gap" items={actions} setItems={setActions} placeholder="e.g., Implement Zapier..." icon={Zap} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <GapColumn title="Current State" items={currentState} setItems={setCurrentState} placeholder="e.g., Manual data entry..." icon={Activity} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" />
+                <GapColumn title="Future State" items={futureState} setItems={setFutureState} placeholder="e.g., Automated data workflow..." icon={Target} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" />
+                <GapColumn title="Gap Description" items={gapDescription} setItems={setGapDescription} placeholder="e.g., Lack of integration tools..." icon={HelpCircle} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" />
+                <GapColumn title="Actions to Close Gap" items={actions} setItems={setActions} placeholder="e.g., Implement Zapier..." icon={Zap} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" />
             </div>
+
             <CardFooter className="border-t pt-6 flex justify-end gap-2">
                 <Button variant="outline" onClick={() => exportToImage('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
                 <Button variant="outline" onClick={() => exportToImage('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
             </CardFooter>
+            
+            <div className="hidden">
+                <ExportPreview />
+            </div>
         </div>
     );
 }

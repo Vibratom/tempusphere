@@ -50,7 +50,7 @@ const NoiseColumn = ({ title, category, items, setItems, placeholder, className,
                 <CardTitle>{title}</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-2">
-                <ScrollArea className="h-48">
+                <ScrollArea className={cn(isReadonly ? "h-full" : "h-48")}>
                   <Droppable droppableId={category} isDropDisabled={isReadonly}>
                       {(provided, snapshot) => (
                           <div
@@ -67,7 +67,11 @@ const NoiseColumn = ({ title, category, items, setItems, placeholder, className,
                                               className={cn("flex items-center gap-2 p-2 border rounded-md bg-background", snapshot.isDragging && "shadow-lg")}
                                           >
                                               {!isReadonly && <span {...provided.dragHandleProps} className="cursor-grab text-muted-foreground"><GripVertical className="h-5 w-5" /></span>}
-                                              <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" readOnly={isReadonly} />
+                                              {isReadonly ? (
+                                                     <p className="flex-1 text-sm p-2">{item.text}</p>
+                                                ) : (
+                                                    <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" />
+                                                )}
                                               {!isReadonly && <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}><Trash2 className="h-4 w-4" /></Button>}
                                           </div>
                                       )}
@@ -163,6 +167,19 @@ export function NoiseAnalysis() {
 
         toast({ title: 'Export Successful', description: `Your NOISE analysis has been downloaded as a ${format.toUpperCase()} file.` });
     };
+    
+    const ExportPreview = () => (
+        <div ref={contentRef} className="p-8 bg-background">
+            <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
+            <div className="grid grid-cols-3 gap-6">
+                <NoiseColumn title="Needs" category="needs" items={needs} setItems={setNeeds} placeholder="" icon={Search} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly/>
+                <NoiseColumn title="Opportunities" category="opportunities" items={opportunities} setItems={() => {}} placeholder="" icon={Zap} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly />
+                <NoiseColumn title="Improvements" category="improvements" items={improvements} setItems={setImprovements} placeholder="" icon={Construction} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" isReadonly/>
+                <NoiseColumn title="Strengths" category="strengths" items={strengths} setItems={() => {}} placeholder="" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
+                <NoiseColumn title="Exceptions" category="exceptions" items={exceptions} setItems={setExceptions} placeholder="" icon={ShieldAlert} className="bg-red-100/30 dark:bg-red-900/30 border-red-500" isReadonly/>
+            </div>
+        </div>
+    );
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -173,27 +190,30 @@ export function NoiseAnalysis() {
                 </p>
             </div>
             
-            <div ref={contentRef} className="p-4 bg-background">
-                <Card className="my-6">
-                    <CardHeader className="items-center">
-                        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
-                    </CardHeader>
-                </Card>
+            <Card>
+                <CardHeader className="items-center">
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
+                </CardHeader>
+            </Card>
 
-                <DragDropContext onDragEnd={onDragEnd}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <NoiseColumn title="Needs" category="needs" items={needs} setItems={setNeeds} placeholder="What are the needs?" icon={Search} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" />
-                        <NoiseColumn title="Opportunities" category="opportunities" items={opportunities} setItems={() => {}} placeholder="What opportunities exist?" icon={Zap} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly />
-                        <NoiseColumn title="Improvements" category="improvements" items={improvements} setItems={setImprovements} placeholder="What can be improved?" icon={Construction} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" />
-                        <NoiseColumn title="Strengths" category="strengths" items={strengths} setItems={() => {}} placeholder="What are our core strengths?" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
-                        <NoiseColumn title="Exceptions" category="exceptions" items={exceptions} setItems={setExceptions} placeholder="What are the constraints?" icon={ShieldAlert} className="bg-red-100/30 dark:bg-red-900/30 border-red-500 lg:col-span-1" />
-                    </div>
-                </DragDropContext>
-            </div>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <NoiseColumn title="Needs" category="needs" items={needs} setItems={setNeeds} placeholder="What are the needs?" icon={Search} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" />
+                    <NoiseColumn title="Opportunities" category="opportunities" items={opportunities} setItems={() => {}} placeholder="What opportunities exist?" icon={Zap} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly />
+                    <NoiseColumn title="Improvements" category="improvements" items={improvements} setItems={setImprovements} placeholder="What can be improved?" icon={Construction} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" />
+                    <NoiseColumn title="Strengths" category="strengths" items={strengths} setItems={() => {}} placeholder="What are our core strengths?" icon={Lightbulb} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly />
+                    <NoiseColumn title="Exceptions" category="exceptions" items={exceptions} setItems={setExceptions} placeholder="What are the constraints?" icon={ShieldAlert} className="bg-red-100/30 dark:bg-red-900/30 border-red-500 lg:col-span-1" />
+                </div>
+            </DragDropContext>
+            
             <CardFooter className="border-t pt-6 flex justify-end gap-2">
                 <Button variant="outline" onClick={() => exportToImage('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
                 <Button variant="outline" onClick={() => exportToImage('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
             </CardFooter>
+            
+            <div className="hidden">
+                <ExportPreview />
+            </div>
         </div>
     );
 }

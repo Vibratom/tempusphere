@@ -22,7 +22,7 @@ interface PorterItem {
 
 const createNewItem = (text = ''): PorterItem => ({ id: uuidv4(), text });
 
-const PorterColumn = ({ title, items, setItems, placeholder, className, icon: Icon }: { title: string, items: PorterItem[], setItems: React.Dispatch<React.SetStateAction<PorterItem[]>>, placeholder: string, className?: string, icon: React.ElementType }) => {
+const PorterColumn = ({ title, items, setItems, placeholder, className, icon: Icon, isReadonly = false }: { title: string, items: PorterItem[], setItems: React.Dispatch<React.SetStateAction<PorterItem[]>>, placeholder: string, className?: string, icon: React.ElementType, isReadonly?: boolean }) => {
     const [newItemText, setNewItemText] = useState('');
 
     const addItem = () => {
@@ -47,18 +47,22 @@ const PorterColumn = ({ title, items, setItems, placeholder, className, icon: Ic
                 <CardTitle>{title}</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-2">
-                <ScrollArea className="h-48">
+                <ScrollArea className={cn(isReadonly ? "h-full" : "h-48")}>
                     <div className="space-y-2 p-2 rounded-md min-h-[100px] flex-1">
                         {items.map((item) => (
                             <div key={item.id} className="flex items-center gap-2 p-2 border rounded-md bg-background">
-                                <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" />
-                                <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}><Trash2 className="h-4 w-4" /></Button>
+                                {isReadonly ? (
+                                    <p className="flex-1 text-sm p-2">{item.text}</p>
+                                ) : (
+                                    <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" />
+                                )}
+                                {!isReadonly && <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}><Trash2 className="h-4 w-4" /></Button>}
                             </div>
                         ))}
                     </div>
                 </ScrollArea>
 
-                <div className="flex gap-2 mt-auto pt-2 border-t">
+                {!isReadonly && <div className="flex gap-2 mt-auto pt-2 border-t">
                     <Input
                         value={newItemText}
                         onChange={e => setNewItemText(e.target.value)}
@@ -66,7 +70,7 @@ const PorterColumn = ({ title, items, setItems, placeholder, className, icon: Ic
                         placeholder={placeholder}
                     />
                     <Button onClick={addItem}><Plus /></Button>
-                </div>
+                </div>}
             </CardContent>
         </Card>
     );
@@ -105,6 +109,19 @@ export function PortersFiveForces() {
 
         toast({ title: 'Export Successful', description: `Your analysis has been downloaded as a ${format.toUpperCase()} file.` });
     };
+    
+    const ExportPreview = () => (
+        <div ref={contentRef} className="p-8 bg-background">
+            <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
+            <div className="grid grid-cols-3 gap-6">
+                <PorterColumn title="Threat of New Entrants" items={newEntrants} setItems={setNewEntrants} placeholder="" icon={Briefcase} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly/>
+                <PorterColumn title="Bargaining Power of Buyers" items={buyerPower} setItems={setBuyerPower} placeholder="" icon={Users} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly/>
+                <PorterColumn title="Bargaining Power of Suppliers" items={supplierPower} setItems={setSupplierPower} placeholder="" icon={Handshake} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly/>
+                <PorterColumn title="Threat of Substitutes" items={substitutes} setItems={setSubstitutes} placeholder="" icon={Replace} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" isReadonly/>
+                <PorterColumn title="Rivalry Among Competitors" items={rivalry} setItems={setRivalry} placeholder="" icon={GitBranch} className="bg-red-100/30 dark:bg-red-900/30 border-red-500" isReadonly/>
+            </div>
+        </div>
+    );
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -115,25 +132,28 @@ export function PortersFiveForces() {
                 </p>
             </div>
             
-            <div ref={contentRef} className="p-4 bg-background">
-                <Card className="my-6">
-                    <CardHeader className="items-center">
-                        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
-                    </CardHeader>
-                </Card>
+            <Card>
+                <CardHeader className="items-center">
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
+                </CardHeader>
+            </Card>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <PorterColumn title="Threat of New Entrants" items={newEntrants} setItems={setNewEntrants} placeholder="e.g., Barriers to entry..." icon={Briefcase} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" />
-                    <PorterColumn title="Bargaining Power of Buyers" items={buyerPower} setItems={setBuyerPower} placeholder="e.g., Number of customers..." icon={Users} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" />
-                    <PorterColumn title="Bargaining Power of Suppliers" items={supplierPower} setItems={setSupplierPower} placeholder="e.g., Number of suppliers..." icon={Handshake} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" />
-                    <PorterColumn title="Threat of Substitutes" items={substitutes} setItems={setSubstitutes} placeholder="e.g., Substitute performance..." icon={Replace} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" />
-                    <PorterColumn title="Rivalry Among Competitors" items={rivalry} setItems={setRivalry} placeholder="e.g., Number of competitors..." icon={GitBranch} className="bg-red-100/30 dark:bg-red-900/30 border-red-500 lg:col-span-1" />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <PorterColumn title="Threat of New Entrants" items={newEntrants} setItems={setNewEntrants} placeholder="e.g., Barriers to entry..." icon={Briefcase} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" />
+                <PorterColumn title="Bargaining Power of Buyers" items={buyerPower} setItems={setBuyerPower} placeholder="e.g., Number of customers..." icon={Users} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" />
+                <PorterColumn title="Bargaining Power of Suppliers" items={supplierPower} setItems={setSupplierPower} placeholder="e.g., Number of suppliers..." icon={Handshake} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" />
+                <PorterColumn title="Threat of Substitutes" items={substitutes} setItems={setSubstitutes} placeholder="e.g., Substitute performance..." icon={Replace} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" />
+                <PorterColumn title="Rivalry Among Competitors" items={rivalry} setItems={setRivalry} placeholder="e.g., Number of competitors..." icon={GitBranch} className="bg-red-100/30 dark:bg-red-900/30 border-red-500 lg:col-span-1" />
             </div>
+
             <CardFooter className="border-t pt-6 flex justify-end gap-2">
                 <Button variant="outline" onClick={() => exportToImage('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
                 <Button variant="outline" onClick={() => exportToImage('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
             </CardFooter>
+            
+            <div className="hidden">
+                <ExportPreview />
+            </div>
         </div>
     );
 }

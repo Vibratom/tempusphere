@@ -14,7 +14,7 @@ import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
 import { useToast } from '@/hooks/use-toast';
 
-const ElementCard = ({ title, description, value, onChange, icon: Icon, className, isCenter = false }: { title: string, description: string, value: string, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void, icon: React.ElementType, className?: string, isCenter?: boolean }) => {
+const ElementCard = ({ title, description, value, onChange, icon: Icon, className, isCenter = false, isReadonly = false }: { title: string, description: string, value: string, onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void, icon: React.ElementType, className?: string, isCenter?: boolean, isReadonly?: boolean }) => {
     return (
         <Card className={cn("flex flex-col", className, isCenter ? "border-primary border-2 shadow-lg" : "")}>
             <CardHeader className="items-center text-center">
@@ -25,13 +25,17 @@ const ElementCard = ({ title, description, value, onChange, icon: Icon, classNam
                 <CardDescription className="text-xs">{description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1">
-                <Textarea
-                    value={value}
-                    onChange={onChange}
-                    rows={isCenter ? 8 : 6}
-                    placeholder={`Notes on ${title}...`}
-                    className="w-full h-full resize-none"
-                />
+                 {isReadonly ? (
+                    <p className="whitespace-pre-wrap text-sm text-muted-foreground p-2">{value || `Notes on ${title}...`}</p>
+                 ) : (
+                    <Textarea
+                        value={value}
+                        onChange={onChange}
+                        rows={isCenter ? 8 : 6}
+                        placeholder={`Notes on ${title}...`}
+                        className="w-full h-full resize-none"
+                    />
+                 )}
             </CardContent>
         </Card>
     );
@@ -74,6 +78,21 @@ export function McKinsey7SModel() {
         toast({ title: 'Export Successful', description: `Your 7-S Model has been downloaded as a ${format.toUpperCase()} file.` });
     };
 
+    const ExportPreview = () => (
+        <div ref={contentRef} className="p-8 bg-background">
+             <h2 className="text-3xl font-bold text-center mb-6">{title}</h2>
+             <div className="grid grid-cols-3 gap-6 items-center">
+                <ElementCard title="Strategy" description="" value={strategy} icon={Target} className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500" isReadonly/>
+                <ElementCard title="Structure" description="" value={structure} icon={Network} className="bg-green-100/30 dark:bg-green-900/30 border-green-500" isReadonly/>
+                <ElementCard title="Systems" description="" value={systems} icon={Cog} className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500" isReadonly/>
+                <ElementCard title="Style" description="" value={style} icon={User} className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500" isReadonly/>
+                <ElementCard title="Shared Values" description="" value={sharedValues} icon={Gem} isCenter={true} isReadonly/>
+                <ElementCard title="Staff" description="" value={staff} icon={Users} className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500" isReadonly/>
+                <div className="md:col-start-2"><ElementCard title="Skills" description="" value={skills} icon={Brain} className="bg-red-100/30 dark:bg-red-900/30 border-red-500" isReadonly/></div>
+            </div>
+        </div>
+    );
+
     
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -84,81 +103,84 @@ export function McKinsey7SModel() {
                 </p>
             </div>
             
-            <div ref={contentRef} className="p-4 bg-background">
-                <Card className="my-6">
-                    <CardHeader className="items-center">
-                        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
-                    </CardHeader>
-                </Card>
+            <Card>
+                <CardHeader className="items-center">
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-2xl font-semibold text-center border-none focus-visible:ring-0 h-auto p-0 max-w-md"/>
+                </CardHeader>
+            </Card>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                    <ElementCard 
-                        title="Strategy" 
-                        description="The plan to build competitive advantage."
-                        value={strategy}
-                        onChange={(e) => setStrategy(e.target.value)}
-                        icon={Target}
-                        className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500"
-                    />
-                    <ElementCard 
-                        title="Structure" 
-                        description="How the company is organized."
-                        value={structure}
-                        onChange={(e) => setStructure(e.target.value)}
-                        icon={Network}
-                        className="bg-green-100/30 dark:bg-green-900/30 border-green-500"
-                    />
-                     <ElementCard 
-                        title="Systems" 
-                        description="The daily procedures and processes."
-                        value={systems}
-                        onChange={(e) => setSystems(e.target.value)}
-                        icon={Cog}
-                        className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500"
-                    />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                <ElementCard 
+                    title="Strategy" 
+                    description="The plan to build competitive advantage."
+                    value={strategy}
+                    onChange={(e) => setStrategy(e.target.value)}
+                    icon={Target}
+                    className="bg-blue-100/30 dark:bg-blue-900/30 border-blue-500"
+                />
+                <ElementCard 
+                    title="Structure" 
+                    description="How the company is organized."
+                    value={structure}
+                    onChange={(e) => setStructure(e.target.value)}
+                    icon={Network}
+                    className="bg-green-100/30 dark:bg-green-900/30 border-green-500"
+                />
+                 <ElementCard 
+                    title="Systems" 
+                    description="The daily procedures and processes."
+                    value={systems}
+                    onChange={(e) => setSystems(e.target.value)}
+                    icon={Cog}
+                    className="bg-yellow-100/30 dark:bg-yellow-900/30 border-yellow-500"
+                />
 
-                    <ElementCard 
-                        title="Style" 
-                        description="The leadership style."
-                        value={style}
-                        onChange={(e) => setStyle(e.target.value)}
-                        icon={User}
-                        className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500"
-                    />
+                <ElementCard 
+                    title="Style" 
+                    description="The leadership style."
+                    value={style}
+                    onChange={(e) => setStyle(e.target.value)}
+                    icon={User}
+                    className="bg-purple-100/30 dark:bg-purple-900/30 border-purple-500"
+                />
 
+                <ElementCard 
+                    title="Shared Values" 
+                    description="The core values of the company."
+                    value={sharedValues}
+                    onChange={(e) => setSharedValues(e.target.value)}
+                    icon={Gem}
+                    isCenter={true}
+                />
+                <ElementCard 
+                    title="Staff" 
+                    description="The employees and their capabilities."
+                    value={staff}
+                    onChange={(e) => setStaff(e.target.value)}
+                    icon={Users}
+                     className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500"
+                />
+                
+                <div className="md:col-start-2">
                     <ElementCard 
-                        title="Shared Values" 
-                        description="The core values of the company."
-                        value={sharedValues}
-                        onChange={(e) => setSharedValues(e.target.value)}
-                        icon={Gem}
-                        isCenter={true}
+                        title="Skills" 
+                        description="The actual skills and competencies."
+                        value={skills}
+                        onChange={(e) => setSkills(e.target.value)}
+                        icon={Brain}
+                        className="bg-red-100/30 dark:bg-red-900/30 border-red-500"
                     />
-                    <ElementCard 
-                        title="Staff" 
-                        description="The employees and their capabilities."
-                        value={staff}
-                        onChange={(e) => setStaff(e.target.value)}
-                        icon={Users}
-                         className="bg-orange-100/30 dark:bg-orange-900/30 border-orange-500"
-                    />
-                    
-                    <div className="md:col-start-2">
-                        <ElementCard 
-                            title="Skills" 
-                            description="The actual skills and competencies."
-                            value={skills}
-                            onChange={(e) => setSkills(e.target.value)}
-                            icon={Brain}
-                            className="bg-red-100/30 dark:bg-red-900/30 border-red-500"
-                        />
-                    </div>
                 </div>
             </div>
+
             <CardFooter className="border-t pt-6 flex justify-end gap-2">
                 <Button variant="outline" onClick={() => exportToImage('png')}><ImageIcon className="mr-2 h-4 w-4" /> Export as PNG</Button>
                 <Button variant="outline" onClick={() => exportToImage('pdf')}><FileIcon className="mr-2 h-4 w-4" /> Export as PDF</Button>
             </CardFooter>
+            
+            <div className="hidden">
+                <ExportPreview />
+            </div>
         </div>
     );
 }
