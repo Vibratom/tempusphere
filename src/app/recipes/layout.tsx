@@ -1,10 +1,11 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
 import { Header } from '@/components/tempusphere/Header';
 import { Footer } from '@/components/tempusphere/Footer';
 import { SettingsProvider } from '@/contexts/SettingsContext';
-import { CalendarProvider } from '@/contexts/CalendarProvider';
+import { CalendarProvider } from '@/contexts/CalendarContext';
 import { ChecklistProvider } from '@/contexts/ChecklistContext';
 import { usePathname } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
