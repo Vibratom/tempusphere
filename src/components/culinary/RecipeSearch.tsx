@@ -1,17 +1,22 @@
-
 'use client';
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Search, ChefHat, Loader2, AlertCircle } from 'lucide-react';
+import { Search, ChefHat, Loader2, AlertCircle, BookPlus } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { searchMeals, type MealSearchOutput, type MealSchema } from '@/ai/flows/meal-db-flow';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { type Recipe } from '@/components/culinary/CulinaryApp';
+import { v4 as uuidv4 } from 'uuid';
 
 const MealDetails = ({ meal }: { meal: MealSchema }) => {
+    const { toast } = useToast();
+    const [recipes, setRecipes] = useLocalStorage<Recipe[]>('recipes:listV5', []);
+    
     const ingredients = [];
     for (let i = 1; i <= 20; i++) {
         const ingredient = meal[`strIngredient${i}` as keyof MealSchema];
@@ -22,6 +27,26 @@ const MealDetails = ({ meal }: { meal: MealSchema }) => {
     }
     
     const instructions = meal.strInstructions?.split('\n').filter(line => line.trim()) || [];
+
+    const handleSaveToCookbook = () => {
+        const newRecipe: Recipe = {
+            id: uuidv4(),
+            title: meal.strMeal,
+            category: meal.strCategory || '',
+            description: `A recipe for ${meal.strMeal} from TheMealDB.`,
+            ingredients: ingredients.join('\n'),
+            instructions: instructions.join('\n'),
+            imageUrl: meal.strMealThumb || undefined,
+            createdAt: new Date().toISOString(),
+        };
+        setRecipes(prev => [newRecipe, ...prev]);
+        toast({
+            title: "Recipe Saved!",
+            description: `"${meal.strMeal}" has been added to your cookbook.`,
+        });
+    };
+    
+    const isAlreadySaved = recipes.some(r => r.title.toLowerCase() === meal.strMeal.toLowerCase());
 
     return (
         <Card className="flex-1">
@@ -50,6 +75,10 @@ const MealDetails = ({ meal }: { meal: MealSchema }) => {
                         </div>
 
                          <div className="mt-6 flex gap-2">
+                            <Button onClick={handleSaveToCookbook} disabled={isAlreadySaved}>
+                                <BookPlus className="mr-2 h-4 w-4" />
+                                {isAlreadySaved ? 'Saved to Cookbook' : 'Save to Cookbook'}
+                            </Button>
                             {meal.strSource && <Button asChild variant="secondary"><a href={meal.strSource} target="_blank" rel="noopener noreferrer">View Source</a></Button>}
                             {meal.strYoutube && <Button asChild variant="destructive"><a href={meal.strYoutube} target="_blank" rel="noopener noreferrer">Watch on YouTube</a></Button>}
                         </div>

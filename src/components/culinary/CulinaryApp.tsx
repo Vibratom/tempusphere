@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -29,7 +28,7 @@ import { ChecklistApp } from '../checklist/ChecklistApp';
 import { useChecklist, Checklist } from '@/contexts/ChecklistContext';
 import { Checkbox } from '../ui/checkbox';
 
-interface Recipe {
+export interface Recipe {
   id: string;
   title: string;
   category?: string;
@@ -450,4 +449,3 @@ export function CulinaryApp() {
     </div>
   );
 }
-
