@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -253,12 +252,6 @@ export function CulinaryApp() {
   
   return (
     <div className="w-full flex flex-col h-full gap-4">
-        <div className="flex flex-col items-center text-center">
-            <UtensilsCrossed className="w-16 h-16 mb-4 text-primary" />
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">Culinary</h1>
-            <p className="text-lg text-muted-foreground mt-2 max-w-3xl">Your personal culinary journal. Create, remix, and perfect your favorite recipes.</p>
-        </div>
-
         <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -301,4 +294,3 @@ export function CulinaryApp() {
     </div>
   );
 }
-

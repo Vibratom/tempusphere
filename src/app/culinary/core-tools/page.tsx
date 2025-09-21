@@ -3,9 +3,9 @@
 import { useEffect } from 'react';
 import { redirect } from 'next/navigation';
 
-export default function CulinaryRedirectPage() {
+export default function CoreToolsRedirectPage() {
   useEffect(() => {
-    redirect('/culinary/core-tools');
+    redirect('/culinary/core-tools/book');
   }, []);
 
   return null;
