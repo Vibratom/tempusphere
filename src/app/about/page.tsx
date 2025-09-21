@@ -2,7 +2,7 @@
 import { Header } from '@/components/tempusphere/Header';
 import { Footer } from '@/components/tempusphere/Footer';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Clock, Globe, AlarmClock, Hourglass, Timer, Users, Scale, CalendarDays, ListChecks, KanbanSquare, Briefcase, Landmark, UtensilsCrossed, TrendingUp, BrainCircuit, IterationCw, Megaphone, FileText, GanttChart, List, Brain, DraftingCompass, Table, BarChartHorizontal } from 'lucide-react';
+import { Clock, Globe, AlarmClock, Hourglass, Timer, Users, Scale, CalendarDays, ListChecks, KanbanSquare, Briefcase, Landmark, UtensilsCrossed, TrendingUp, BrainCircuit, IterationCw, Megaphone, FileText, GanttChart, List, Brain, DraftingCompass, Table, BarChartHorizontal, Calculator, Percent, BookOpen, Inbox } from 'lucide-react';
 
 const timeFeatures = [
     { icon: Clock, title: 'Customizable Primary Clock', description: 'Choose between a classic analog or modern digital display. Supports local time, UTC, and extensive theme customization to match your style.' },
@@ -17,8 +17,15 @@ const timeFeatures = [
 const organizationFeatures = [
     { icon: CalendarDays, title: 'Personal Calendar', description: 'A comprehensive event management tool. Keep track of your appointments, deadlines, and important dates with a clear and intuitive interface.' },
     { icon: ListChecks, title: 'Advanced Checklist', description: 'A powerful to-do list manager with support for sub-tasks, recurring tasks, due dates, priorities, and seamless calendar integration.' },
-    { icon: UtensilsCrossed, title: 'Culinary Cookbook', description: 'Your personal culinary journal. Save, organize, and create variations of your favorite recipes. "Remix" a recipe to track changes and perfect your creations.' },
-]
+    { icon: BookOpen, title: 'Digital Recipe Book', description: 'A personal or shared app to store, organize, and search for recipes. This is a great starter project to learn how to handle data (adding, viewing, editing, deleting recipes).' },
+    { icon: Inbox, title: 'Inventory Manager', description: 'A tool to keep track of all your ingredients. You can add items, update quantities as you use them, and set alerts for when an ingredient is running low.' },
+];
+
+const culinaryFeatures = [
+    { icon: Calculator, title: 'Food Cost Calculator', description: 'A tool where you can input the price of each ingredient in a recipe to automatically calculate the total cost of the dish and the cost per serving.' },
+    { icon: Percent, title: 'Yield Percentage Converter', description: 'This app helps you scale a recipe up or down. You can enter the original yield and the new desired yield, and the app will calculate the new ingredient quantities for you.' },
+    { icon: Scale, title: 'Unit Conversion Tool', description: 'A simple but vital app that converts measurements (e.g., grams to ounces, teaspoons to milliliters). This is perfect for learning about basic forms and calculations.' },
+];
 
 const projectFeatures = [
     { icon: KanbanSquare, title: 'Kanban Board', description: 'Visualize your project workflow with a flexible Kanban board. Drag and drop tasks between columns to track progress from "To Do" to "Done".' },
@@ -88,6 +95,7 @@ export default function AboutPage() {
               
               <FeatureSection title="Core Time Management" features={timeFeatures} />
               <FeatureSection title="Personal Organization" features={organizationFeatures} />
+              <FeatureSection title="Culinary Tools" features={culinaryFeatures} />
               <FeatureSection title="Project Management" features={projectFeatures} />
               <FeatureSection title="Productivity & Strategy" features={productivityFeatures} />
 
