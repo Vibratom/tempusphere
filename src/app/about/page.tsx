@@ -2,7 +2,7 @@
 import { Header } from '@/components/tempusphere/Header';
 import { Footer } from '@/components/tempusphere/Footer';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Clock, Globe, AlarmClock, Hourglass, Timer, Users, Scale, CalendarDays, ListChecks, KanbanSquare, Briefcase, Landmark, UtensilsCrossed, TrendingUp, BrainCircuit, IterationCw, Megaphone, FileText, GanttChart, List, Brain, DraftingCompass, Table, BarChartHorizontal, Calculator, Percent, BookOpen, Inbox } from 'lucide-react';
+import { Clock, Globe, AlarmClock, Hourglass, Timer, Users, Scale, CalendarDays, ListChecks, KanbanSquare, Briefcase, Landmark, UtensilsCrossed, TrendingUp, BrainCircuit, IterationCw, Megaphone, FileText, GanttChart, List, Brain, DraftingCompass, Table, BarChartHorizontal, Calculator, Percent, BookOpen, Inbox, Workflow } from 'lucide-react';
 
 const timeFeatures = [
     { icon: Clock, title: 'Customizable Primary Clock', description: 'Choose between a classic analog or modern digital display. Supports local time, UTC, and extensive theme customization to match your style.' },
@@ -26,6 +26,13 @@ const culinaryFeatures = [
     { icon: Percent, title: 'Yield Percentage Converter', description: 'This app helps you scale a recipe up or down. You can enter the original yield and the new desired yield, and the app will calculate the new ingredient quantities for you.' },
     { icon: Scale, title: 'Unit Conversion Tool', description: 'A simple but vital app that converts measurements (e.g., grams to ounces, teaspoons to milliliters). This is perfect for learning about basic forms and calculations.' },
 ];
+
+const culinaryWorkflowFeatures = [
+    { icon: Timer, title: 'Kitchen Timer Station', description: 'A single-page app with multiple independent timers. A chef can start a timer for their pasta, another for their sauce, and a third for the bread, all on one screen.' },
+    { icon: ListChecks, title: 'Recipe Preparation Checklist', description: 'An interactive checklist for a specific recipe. As you complete a step (e.g., "chop onions"), you can check it off, helping you stay on track and ensure you don\'t miss anything.' },
+    { icon: KanbanSquare, title: 'Kitchen Display System (KDS) Light', description: 'A simplified version of a KDS. It would show incoming orders from a text field and use color coding (e.g., green for new, yellow for in progress, red for delayed) to help prioritize.' },
+];
+
 
 const projectFeatures = [
     { icon: KanbanSquare, title: 'Kanban Board', description: 'Visualize your project workflow with a flexible Kanban board. Drag and drop tasks between columns to track progress from "To Do" to "Done".' },
@@ -95,7 +102,8 @@ export default function AboutPage() {
               
               <FeatureSection title="Core Time Management" features={timeFeatures} />
               <FeatureSection title="Personal Organization" features={organizationFeatures} />
-              <FeatureSection title="Culinary Tools" features={culinaryFeatures} />
+              <FeatureSection title="Culinary Calculators" features={culinaryFeatures} />
+              <FeatureSection title="Culinary Workflow & Communication" features={culinaryWorkflowFeatures} />
               <FeatureSection title="Project Management" features={projectFeatures} />
               <FeatureSection title="Productivity & Strategy" features={productivityFeatures} />
 
