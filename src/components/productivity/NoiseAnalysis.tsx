@@ -72,8 +72,8 @@ const NoiseColumn = ({ title, category, items, setItems, placeholder, className,
                                               className={cn("flex items-center gap-2 p-2 border rounded-md bg-background", snapshot.isDragging && "shadow-lg")}
                                           >
                                               {!isReadonly && <span {...provided.dragHandleProps} className="cursor-grab text-muted-foreground"><GripVertical className="h-5 w-5" /></span>}
-                                              {isReadonly ? (
-                                                     <p className="flex-1 text-sm p-2">{item.text}</p>
+                                               {isReadonly ? (
+                                                    <p className="flex-1 text-sm p-2">{item.text || <span className="text-muted-foreground">No content</span>}</p>
                                                 ) : (
                                                     <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" />
                                                 )}
@@ -152,8 +152,6 @@ export function NoiseAnalysis() {
     
     const exportAnalysis = async (format: 'png' | 'pdf') => {
         setIsExporting(true);
-
-        // Allow dialog to render
         await new Promise(resolve => setTimeout(resolve, 50));
         
         if (!contentRef.current) {
@@ -170,6 +168,7 @@ export function NoiseAnalysis() {
             
             if (canvas.width === 0 || canvas.height === 0) {
                 toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not capture the content to export.' });
+                setIsExporting(false);
                 return;
             }
 
@@ -181,8 +180,27 @@ export function NoiseAnalysis() {
                 });
             } else {
                 const imgData = canvas.toDataURL('image/jpeg', 0.9);
-                const pdf = new jsPDF({ orientation: 'l', unit: 'px', format: [canvas.width, canvas.height] });
-                pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+                const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
+                
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const ratio = canvasWidth / canvasHeight;
+
+                let pageHeight = pdfWidth / ratio;
+                let heightLeft = canvasHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pageHeight);
+                heightLeft -= canvasHeight;
+
+                while (heightLeft > 0) {
+                    position = heightLeft - canvasHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pageHeight);
+                    heightLeft -= canvasHeight;
+                }
                 pdf.save(fileName);
             }
 
@@ -212,12 +230,12 @@ export function NoiseAnalysis() {
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-            <Dialog open={isExporting}>
-                <DialogContent className="max-w-7xl w-auto bg-transparent border-none shadow-none" onInteractOutside={(e) => e.preventDefault()}>
+            <Dialog open={isExporting} onOpenChange={setIsExporting}>
+                <DialogContent className="max-w-7xl w-auto bg-transparent border-none shadow-none p-0" onInteractOutside={(e) => e.preventDefault()}>
                     <ExportPreview />
                 </DialogContent>
             </Dialog>
-            <div className="flex flex-col items-center text-center">
+             <div className="flex flex-col items-center text-center">
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">NOISE Analysis</h1>
                 <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
                     A user-centric framework focusing on Needs, Opportunities, Improvements, Strengths, and Exceptions.

@@ -59,7 +59,7 @@ const PestleColumn = ({ title, items, setItems, placeholder, className, icon: Ic
                         {items.map((item) => (
                             <div key={item.id} className="flex items-center gap-2 p-2 border rounded-md bg-background">
                                 {isReadonly ? (
-                                    <p className="flex-1 text-sm p-2">{item.text}</p>
+                                    <p className="flex-1 text-sm p-2">{item.text || <span className="text-muted-foreground">No content</span>}</p>
                                 ) : (
                                     <Input value={item.text} onChange={e => updateItem(item.id, e.target.value)} className="border-none focus-visible:ring-0" />
                                 )}
@@ -97,8 +97,6 @@ export function PestleAnalysis() {
 
     const exportAnalysis = async (format: 'png' | 'pdf') => {
         setIsExporting(true);
-
-        // Allow dialog to render
         await new Promise(resolve => setTimeout(resolve, 50));
         
         if (!contentRef.current) {
@@ -115,6 +113,7 @@ export function PestleAnalysis() {
             
             if (canvas.width === 0 || canvas.height === 0) {
                 toast({ variant: 'destructive', title: 'Export Failed', description: 'Could not capture the content to export.' });
+                setIsExporting(false);
                 return;
             }
 
@@ -126,8 +125,27 @@ export function PestleAnalysis() {
                 });
             } else {
                 const imgData = canvas.toDataURL('image/jpeg', 0.9);
-                const pdf = new jsPDF({ orientation: 'l', unit: 'px', format: [canvas.width, canvas.height] });
-                pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+                const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
+                
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const ratio = canvasWidth / canvasHeight;
+
+                let pageHeight = pdfWidth / ratio;
+                let heightLeft = canvasHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pageHeight);
+                heightLeft -= canvasHeight;
+
+                while (heightLeft > 0) {
+                    position = heightLeft - canvasHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pageHeight);
+                    heightLeft -= canvasHeight;
+                }
                 pdf.save(fileName);
             }
 
@@ -156,8 +174,8 @@ export function PestleAnalysis() {
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-            <Dialog open={isExporting}>
-                <DialogContent className="max-w-7xl w-auto bg-transparent border-none shadow-none" onInteractOutside={(e) => e.preventDefault()}>
+            <Dialog open={isExporting} onOpenChange={setIsExporting}>
+                <DialogContent className="max-w-7xl w-auto bg-transparent border-none shadow-none p-0" onInteractOutside={(e) => e.preventDefault()}>
                     <ExportPreview />
                 </DialogContent>
             </Dialog>
