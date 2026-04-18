@@ -142,13 +142,15 @@ export function WorldClocks({ fullscreen = false, glass = false }: WorldClocksPr
         </CardHeader>}
         <CardContent className={cn("flex-1 flex flex-col p-0", !fullscreen && "p-4 pt-0", fullscreen && "gap-4")}>
             {!fullscreen && <div className="flex gap-2 mb-4">
-                <Combobox
-                    options={timezoneOptions}
-                    value={newTimezone}
-                    onChange={setNewTimezone}
-                    placeholder="Search for a timezone..."
-                />
-                <Button onClick={addClock} disabled={!newTimezone}><Plus className="mr-2 h-4 w-4"/>Add</Button>
+                <div data-spotlight="add-timezone-combobox" className="flex-1">
+                    <Combobox
+                        options={timezoneOptions}
+                        value={newTimezone}
+                        onChange={setNewTimezone}
+                        placeholder="Search for a timezone..."
+                    />
+                </div>
+                <Button onClick={addClock} disabled={!newTimezone} data-spotlight="add-timezone-button"><Plus className="mr-2 h-4 w-4"/>Add</Button>
             </div>}
             <ScrollArea className="flex-1 -mr-4">
             <div className="space-y-4 pr-4 h-full">
