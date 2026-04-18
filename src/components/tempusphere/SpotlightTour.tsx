@@ -180,15 +180,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
             <div className="absolute transition-all duration-500" style={popoverStyle}>
                 <Card className="w-72 shadow-2xl animation-fade-in">
                     <CardHeader>
-                        <div className="flex justify-between items-start">
-                            <CardTitle>{tourSteps[currentStep].title}</CardTitle>
-                            <div className="flex gap-1 -mt-2 -mr-2">
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPosition('top')}><ArrowUp className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPosition('bottom')}><ArrowDown className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPosition('left')}><ArrowLeft className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPosition('right')}><ArrowRight className="h-4 w-4" /></Button>
-                            </div>
-                        </div>
+                         <CardTitle>{tourSteps[currentStep].title}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p>{tourSteps[currentStep].content}</p>
