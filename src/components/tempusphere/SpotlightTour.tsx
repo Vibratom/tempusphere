@@ -1,9 +1,10 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../ui/card';
-import { ArrowLeft, ArrowRight, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X, ArrowUp, ArrowDown } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -32,14 +33,16 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
 
     const [currentStep, setCurrentStep] = useState(0);
     const [highlightedElement, setHighlightedElement] = useState<HTMLElement | null>(null);
-    const [style, setStyle] = useState({});
-    const [popoverStyle, setPopoverStyle] = useState({});
+    const [style, setStyle] = useState<React.CSSProperties>({});
+    const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
+    const [currentPosition, setCurrentPosition] = useState<'top' | 'bottom' | 'left' | 'right'>('bottom');
     
     useEffect(() => {
         if (tourSteps.length > 0) {
             const step = tourSteps[currentStep];
             const element = document.querySelector(step.selector) as HTMLElement;
             setHighlightedElement(element);
+            setCurrentPosition(step.position || 'bottom');
         } else {
             setHighlightedElement(null);
         }
@@ -59,7 +62,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 left: `${rect.left - padding}px`,
             });
             
-            const position = tourSteps[currentStep].position || 'bottom';
+            const position = currentPosition;
             let popoverTop = 0, popoverLeft = 0;
             
             switch (position) {
@@ -92,7 +95,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
             });
 
         }
-    }, [highlightedElement, currentStep, tourSteps]);
+    }, [highlightedElement, currentPosition]);
 
     const handleNext = () => {
         if (currentStep < tourSteps.length - 1) {
@@ -133,7 +136,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 <defs>
                     <mask id="spotlight-mask">
                         <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                        <rect x={style.left} y={style.top} width={style.width} height={style.height} rx="12" fill="black" />
+                        <rect x={style.left as number} y={style.top as number} width={style.width} height={style.height} rx="12" fill="black" />
                     </mask>
                 </defs>
                 <rect x="0" y="0" width="100%" height="100%" fill="black" opacity="0.8" mask="url(#spotlight-mask)" />
@@ -149,7 +152,15 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
             <div className="absolute transition-all duration-500" style={popoverStyle}>
                 <Card className="w-72 shadow-2xl animation-fade-in">
                     <CardHeader>
-                        <CardTitle>{tourSteps[currentStep].title}</CardTitle>
+                        <div className="flex justify-between items-start">
+                            <CardTitle>{tourSteps[currentStep].title}</CardTitle>
+                            <div className="flex gap-1 -mt-2 -mr-2">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPosition('top')}><ArrowUp className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPosition('bottom')}><ArrowDown className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPosition('left')}><ArrowLeft className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPosition('right')}><ArrowRight className="h-4 w-4" /></Button>
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <p>{tourSteps[currentStep].content}</p>
