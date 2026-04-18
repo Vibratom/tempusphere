@@ -43,8 +43,10 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     const popoverRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const dragInfoRef = useRef<{ startX: number; startY: number; initialTop: number; initialLeft: number; } | null>(null);
+    const [isCentered, setIsCentered] = useState(true);
 
     const handleNext = () => {
+        setIsCentered(true);
         if (currentStep < tourSteps.length - 1) {
             setCurrentStep(currentStep + 1);
         } else {
@@ -53,6 +55,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     };
 
     const handlePrev = () => {
+        setIsCentered(true);
         if (currentStep > 0) {
             setCurrentStep(currentStep - 1);
         }
@@ -77,7 +80,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     }, [currentStep, tourSteps, onExit]);
 
     useLayoutEffect(() => {
-        if (highlightedElement && !isDragging) {
+        if (highlightedElement) {
             highlightedElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
             
             const rect = highlightedElement.getBoundingClientRect();
@@ -91,70 +94,28 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 transition: 'all 0.3s ease-in-out',
             });
             
-            if (popoverRef.current) {
-                let preferredPosition = tourSteps[currentStep]?.position || 'bottom';
-                const popoverWidth = popoverRef.current.offsetWidth;
-                const popoverHeight = popoverRef.current.offsetHeight;
-                const margin = 16;
-                const viewportW = window.innerWidth;
-                const viewportH = window.innerHeight;
-
-                const fits = {
-                    bottom: rect.bottom + padding + margin + popoverHeight < viewportH,
-                    top: rect.top - padding - margin - popoverHeight > 0,
-                    right: rect.right + padding + margin + popoverWidth < viewportW,
-                    left: rect.left - padding - margin - popoverWidth > 0,
-                };
-
-                if (!fits[preferredPosition]) {
-                    const fallbackOrder: ('bottom' | 'top' | 'right' | 'left')[] = ['bottom', 'top', 'right', 'left'];
-                    const bestFit = fallbackOrder.find(pos => fits[pos]);
-                    if (bestFit) preferredPosition = bestFit;
-                }
-
-                let popoverTop = 0, popoverLeft = 0;
-                let transform = '';
-                
-                switch (preferredPosition) {
-                    case 'top':
-                        popoverTop = rect.top - padding - margin;
-                        popoverLeft = rect.left + rect.width / 2;
-                        transform = 'translate(-50%, -100%)';
-                        break;
-                    case 'right':
-                        popoverTop = rect.top + rect.height / 2;
-                        popoverLeft = rect.right + padding + margin;
-                        transform = 'translate(0, -50%)';
-                        break;
-                    case 'left':
-                        popoverTop = rect.top + rect.height / 2;
-                        popoverLeft = rect.left - padding - margin;
-                        transform = 'translate(-100%, -50%)';
-                        break;
-                    default: // bottom
-                        popoverTop = rect.bottom + padding + margin;
-                        popoverLeft = rect.left + rect.width / 2;
-                        transform = 'translate(-50%, 0)';
-                        break;
-                }
-
+            if (isCentered && !isDragging) {
                 setPopoverStyle({
-                    top: `${popoverTop}px`,
-                    left: `${popoverLeft}px`,
-                    transform: transform,
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
                     opacity: 1,
-                    transition: 'all 0.3s ease-in-out, opacity 0.3s ease-in-out'
+                    transition: 'opacity 0.3s ease-in-out',
                 });
+            } else if (!isDragging) {
+                // This part is for when it's not centered and not dragging (e.g., after a drag)
+                // We keep its last dragged position.
             }
         }
-    }, [highlightedElement, tourSteps, currentStep, isDragging]);
+    }, [highlightedElement, isCentered, isDragging]);
     
     const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         if (popoverRef.current) {
             e.preventDefault();
             const { top, left } = popoverRef.current.getBoundingClientRect();
-            dragInfoRef.current = { startX: e.clientX, startY: e.clientY, initialTop: top, initialLeft: left, };
+            dragInfoRef.current = { startX: e.clientX, startY: e.clientY, initialTop: top, initialLeft: left };
             setIsDragging(true);
+            setIsCentered(false);
             setPopoverStyle(prev => ({ ...prev, transition: 'none' }));
         }
     }, []);
@@ -164,14 +125,25 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
         const dx = e.clientX - dragInfoRef.current.startX;
         const dy = e.clientY - dragInfoRef.current.startY;
         const popoverRect = popoverRef.current.getBoundingClientRect();
+        
         const newLeft = dragInfoRef.current.initialLeft + dx;
         const newTop = dragInfoRef.current.initialTop + dy;
+        
         const constrainedLeft = Math.max(0, Math.min(newLeft, window.innerWidth - popoverRect.width));
         const constrainedTop = Math.max(0, Math.min(newTop, window.innerHeight - popoverRect.height));
-        setPopoverStyle({ top: `${constrainedTop}px`, left: `${constrainedLeft}px`, transform: 'none', opacity: 1 });
+        
+        setPopoverStyle({
+            top: `${constrainedTop}px`,
+            left: `${constrainedLeft}px`,
+            transform: 'none',
+            opacity: 1,
+            transition: 'none',
+        });
     }, [isDragging]);
 
-    const handleMouseUp = useCallback(() => setIsDragging(false), []);
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+    }, []);
 
     useEffect(() => {
         if (isDragging) {
