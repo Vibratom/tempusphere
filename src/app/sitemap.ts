@@ -49,7 +49,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return staticPages.map((page) => ({
     url: `${baseUrl}${page}`,
-    lastModified: new Date(),
+    lastModified: new Date().toISOString().split('T')[0],
     changeFrequency: 'weekly',
     priority: page === '/' ? 1.0 : 0.8,
   }));
