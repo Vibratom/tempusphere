@@ -282,6 +282,43 @@ export function Tutorial() {
         setActiveTour('none');
     };
 
+    const tourOptions = [
+        {
+            category: 'STATIC',
+            items: [
+                {
+                    title: 'Static Guide',
+                    description: 'Read a simple text-based guide.',
+                    icon: Book,
+                    action: () => {},
+                    disabled: true,
+                    comingSoon: true,
+                }
+            ]
+        },
+        {
+            category: 'ANIMATED',
+            items: [
+                {
+                    title: 'Spotlight Tour',
+                    description: 'A guided tour that highlights features one by one.',
+                    icon: Map,
+                    action: () => startTour('spotlight'),
+                    disabled: false,
+                    comingSoon: false,
+                },
+                {
+                    title: 'Interactive Walkthrough',
+                    description: 'An interactive guide where you perform actions.',
+                    icon: HelpCircle,
+                    action: () => {},
+                    disabled: true,
+                    comingSoon: true,
+                }
+            ]
+        }
+    ];
+
     return (
         <>
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -297,34 +334,38 @@ export function Tutorial() {
                             Choose a method below to get a tour of the current page's features.
                         </SheetDescription>
                     </SheetHeader>
-                    <div className="py-4 space-y-6">
-                        <div>
-                            <h3 className="mb-2 text-sm font-semibold text-muted-foreground tracking-wider">STATIC</h3>
-                            <Button disabled className="w-full h-auto justify-start gap-4 p-4 text-left" variant="outline">
-                                <Book className="h-8 w-8 text-muted-foreground flex-shrink-0"/>
-                                <div>
-                                    <p className="font-semibold text-base">Static Guide</p>
-                                    <p className="text-xs text-muted-foreground">Read a simple text-based guide. (Coming Soon)</p>
+                    <div className="py-6 space-y-6">
+                        {tourOptions.map(section => (
+                            <div key={section.category}>
+                                <h3 className="mb-3 text-sm font-semibold text-muted-foreground tracking-wider uppercase">{section.category}</h3>
+                                <div className="space-y-3">
+                                    {section.items.map(item => (
+                                        <button
+                                            key={item.title}
+                                            onClick={item.action}
+                                            disabled={item.disabled}
+                                            className="w-full text-left p-0 rounded-lg border bg-card hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <div className="flex items-start gap-4 p-4">
+                                                <div className={cn(
+                                                    "p-2 rounded-lg mt-1",
+                                                    item.disabled ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+                                                )}>
+                                                    <item.icon className="h-6 w-6 flex-shrink-0"/>
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-base">
+                                                        {item.title} 
+                                                        {item.comingSoon && <span className="text-xs text-muted-foreground font-normal ml-2">(Coming Soon)</span>}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
                                 </div>
-                            </Button>
-                        </div>
-                         <div className="space-y-2">
-                             <h3 className="mb-2 text-sm font-semibold text-muted-foreground tracking-wider">ANIMATED</h3>
-                            <Button onClick={() => startTour('spotlight')} className="w-full h-auto justify-start gap-4 p-4 text-left" variant="outline">
-                                <Map className="h-8 w-8 text-primary flex-shrink-0"/>
-                                <div>
-                                    <p className="font-semibold text-base">Spotlight Tour</p>
-                                    <p className="text-xs text-muted-foreground">A guided tour that highlights features one by one.</p>
-                                </div>
-                            </Button>
-                             <Button disabled className="w-full h-auto justify-start gap-4 p-4 text-left" variant="outline">
-                                <HelpCircle className="h-8 w-8 text-muted-foreground flex-shrink-0"/>
-                                 <div>
-                                    <p className="font-semibold text-base">Interactive Walkthrough</p>
-                                    <p className="text-xs text-muted-foreground">An interactive guide where you perform actions. (Coming Soon)</p>
-                                </div>
-                            </Button>
-                        </div>
+                            </div>
+                        ))}
                     </div>
                 </SheetContent>
             </Sheet>
