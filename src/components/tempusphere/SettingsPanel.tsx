@@ -5,7 +5,6 @@ import { useSettings, FullscreenSettings } from '@/contexts/SettingsContext';
 import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Input } from '../ui/input';
@@ -15,12 +14,14 @@ import { useState, useEffect } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { FastAverageColor } from 'fast-average-color';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Slider } from '../ui/slider';
 
-const backgroundPresets = Array.from({ length: 100 }, (_, i) => ({
-    name: `Image ${i + 1}`,
-    url: `/${i + 1}.webp`,
-    hint: 'abstract pattern'
-}));
+// Helper function to get luminance from HSL string
+function getLuminance(hsl: string): number {
+    const [h, s, l] = hsl.match(/\d+/g)!.map(Number);
+    return l;
+}
 
 
 function hexToHsl(hex: string): string {
@@ -72,6 +73,13 @@ function hslToHex(hsl: string): string {
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
+const backgroundPresets = Array.from({ length: 100 }, (_, i) => ({
+    name: `Image ${i + 1}`,
+    url: `/${i + 1}.webp`,
+    hint: 'abstract pattern'
+}));
+
+
 const ImageColorExtractor = ({ onPaletteChange }: { onPaletteChange: (palette: string[]) => void }) => {
     const { backgroundImage } = useSettings();
 
@@ -96,22 +104,23 @@ const ImageColorExtractor = ({ onPaletteChange }: { onPaletteChange: (palette: s
 
 export function SettingsPanel() {
   const {
-    primaryColor,
-    setPrimaryColor,
-    accentColor,
-    setAccentColor,
-    lightBackgroundColor,
-    setLightBackgroundColor,
-    darkBackgroundColor,
-    setDarkBackgroundColor,
-    backgroundImage,
-    setBackgroundImage,
-    fullscreenSettings,
-    setFullscreenSettings,
+    hourFormat, setHourFormat,
+    showSeconds, setShowSeconds,
+    primaryClockMode, setPrimaryClockMode,
+    primaryClockTimezone, setPrimaryClockTimezone,
+    clockSize, setClockSize,
+    primaryColor, setPrimaryColor,
+    accentColor, setAccentColor,
+    lightBackgroundColor, setLightBackgroundColor,
+    darkBackgroundColor, setDarkBackgroundColor,
+    backgroundImage, setBackgroundImage,
+    fullscreenSettings, setFullscreenSettings,
   } = useSettings();
   const { resolvedTheme } = useTheme();
   const [extractedPalette, setExtractedPalette] = useState<string[]>([]);
   
+  const isDark = resolvedTheme === 'dark';
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -127,12 +136,48 @@ export function SettingsPanel() {
     setFullscreenSettings(prev => ({...prev, [key]: value}));
   }
   
-  const isDark = resolvedTheme === 'dark';
 
   return (
       <ScrollArea className="h-full flex-1">
         {backgroundImage && <ImageColorExtractor onPaletteChange={setExtractedPalette} />}
         <div className="p-4 space-y-4">
+          <Card>
+            <CardHeader><CardTitle>Clock Settings</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 items-center">
+                  <Label>Time Format</Label>
+                  <RadioGroup value={hourFormat} onValueChange={(value) => setHourFormat(value as '12h' | '24h')} className="flex items-center">
+                  <div className="flex items-center space-x-2"><RadioGroupItem value="12h" id="h12" /><Label htmlFor="h12">12-Hour</Label></div>
+                  <div className="flex items-center space-x-2"><RadioGroupItem value="24h" id="h24" /><Label htmlFor="h24">24-Hour</Label></div>
+                  </RadioGroup>
+              </div>
+              <div className="grid grid-cols-2 gap-4 items-center">
+                  <Label htmlFor="show-seconds">Show Seconds Hand</Label>
+                  <Switch id="show-seconds" checked={showSeconds} onCheckedChange={setShowSeconds} />
+              </div>
+               <div className="grid grid-cols-2 gap-4 items-center">
+                  <Label>Primary Clock Mode</Label>
+                  <RadioGroup value={primaryClockMode} onValueChange={(value) => setPrimaryClockMode(value as 'digital' | 'analog')} className="flex items-center">
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="digital" id="digital" /><Label htmlFor="digital">Digital</Label></div>
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="analog" id="analog" /><Label htmlFor="analog">Analog</Label></div>
+                  </RadioGroup>
+              </div>
+               <div className="grid grid-cols-2 gap-4 items-center">
+                  <Label>Primary Clock Timezone</Label>
+                  <RadioGroup value={primaryClockTimezone} onValueChange={(value) => setPrimaryClockTimezone(value as 'local' | 'utc')} className="flex items-center">
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="local" id="local" /><Label htmlFor="local">Local</Label></div>
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="utc" id="utc" /><Label htmlFor="utc">UTC</Label></div>
+                  </RadioGroup>
+              </div>
+              <div className="grid grid-cols-2 gap-4 items-center">
+                  <Label>Primary Clock Size</Label>
+                  <div className="flex items-center gap-2">
+                    <Slider value={[clockSize]} onValueChange={(value) => setClockSize(value[0])} min={50} max={150} step={10} />
+                    <span>{clockSize}%</span>
+                  </div>
+              </div>
+            </CardContent>
+          </Card>
           
           <Card>
             <CardHeader><CardTitle>Appearance</CardTitle></CardHeader>
@@ -212,38 +257,12 @@ export function SettingsPanel() {
           <Card>
             <CardHeader><CardTitle>Fullscreen Mode Layout</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor="fs-primary-clock">Show Primary Clock</Label>
-                <Switch id="fs-primary-clock" checked={fullscreenSettings.primaryClock} onCheckedChange={(c) => handleFullscreenSettingChange('primaryClock', c)} />
-              </div>
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor="fs-world-clocks">Show World Clocks</Label>
-                <Switch id="fs-world-clocks" checked={fullscreenSettings.worldClocks} onCheckedChange={(c) => handleFullscreenSettingChange('worldClocks', c)} />
-              </div>
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor="fs-alarms">Show Alarms</Label>
-                <Switch id="fs-alarms" checked={fullscreenSettings.alarms} onCheckedChange={(c) => handleFullscreenSettingChange('alarms', c)} />
-              </div>
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor="fs-stopwatch">Show Stopwatch</Label>
-                <Switch id="fs-stopwatch" checked={fullscreenSettings.stopwatch} onCheckedChange={(c) => handleFullscreenSettingChange('stopwatch', c)} />
-              </div>
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor="fs-timer">Show Timer</Label>
-                <Switch id="fs-timer" checked={fullscreenSettings.timer} onCheckedChange={(c) => handleFullscreenSettingChange('timer', c)} />
-              </div>
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor="fs-converter">Show Converter</Label>
-                <Switch id="fs-converter" checked={fullscreenSettings.converter} onCheckedChange={(c) => handleFullscreenSettingChange('converter', c)} />
-              </div>
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor="fs-planner">Show Planner</Label>
-                <Switch id="fs-planner" checked={fullscreenSettings.planner} onCheckedChange={(c) => handleFullscreenSettingChange('planner', c)} />
-              </div>
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor="fs-calendar">Show Calendar</Label>
-                <Switch id="fs-calendar" checked={fullscreenSettings.calendar} onCheckedChange={(c) => handleFullscreenSettingChange('calendar', c)} />
-              </div>
+              {Object.keys(fullscreenSettings).map((key) => (
+                <div key={key} className="grid grid-cols-2 gap-4 items-center">
+                    <Label htmlFor={`fs-${key}`}>Show {key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}</Label>
+                    <Switch id={`fs-${key}`} checked={fullscreenSettings[key as keyof FullscreenSettings]} onCheckedChange={(c) => handleFullscreenSettingChange(key as keyof FullscreenSettings, c)} />
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>

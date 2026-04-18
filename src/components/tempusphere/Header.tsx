@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, type ReactNode } from 'react';
@@ -9,7 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose, 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { useHotkeys } from '@/hooks/use-hotkeys';
 import { useTheme } from 'next-themes';
-import { ClockSettingsPanel } from './ClockSettingsPanel';
+import { SettingsPanel } from './SettingsPanel';
 import { cn } from '@/lib/utils';
 import { Tutorial } from './Tutorial';
 
@@ -47,9 +48,9 @@ export function Header({ tabs, className, centerContent }: { tabs?: ReactNode, c
             </SheetTrigger>
             <SheetContent className="p-0 flex flex-col">
                 <SheetHeader className="p-4 border-b">
-                    <SheetTitle>Clock Settings</SheetTitle>
+                    <SheetTitle>Settings</SheetTitle>
                 </SheetHeader>
-                <ClockSettingsPanel />
+                <SettingsPanel />
                 <SheetFooter className="p-4 border-t mt-auto">
                     <SheetClose asChild>
                         <Button>Done</Button>
@@ -109,7 +110,7 @@ export function Header({ tabs, className, centerContent }: { tabs?: ReactNode, c
                             <SettingsSheet />
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Clock Settings</p>
+                            <p>Settings</p>
                         </TooltipContent>
                     </Tooltip>
                     <Tooltip>
