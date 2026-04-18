@@ -80,35 +80,38 @@ export const InteractiveTour = ({ onExit }: { onExit: () => void }) => {
             return;
         };
 
+        const actionType = step.action.type === 'type' ? 'input' : 'click';
+
+        const actionHandler = (e: Event) => {
+            if (step.action.type === 'type') {
+                const input = e.target as HTMLInputElement;
+                if (input.value && input.value.length > 2) {
+                    handleNext();
+                }
+            } else { // click
+                 handleNext();
+            }
+        };
+
+        let element: HTMLElement | null = null;
         const intervalId = setInterval(() => {
-            const element = document.querySelector(step.selector) as HTMLElement;
-            if (element) {
+            const foundElement = document.querySelector(step.selector) as HTMLElement;
+            if (foundElement) {
                 clearInterval(intervalId);
-                setHighlightedElement(element);
+                setHighlightedElement(foundElement);
+                element = foundElement;
 
-                const actionType = step.action.type === 'type' ? 'input' : 'click';
-
-                const handleAction = (e: Event) => {
-                    if (step.action.type === 'type') {
-                        const input = e.target as HTMLInputElement;
-                        if (input.value && input.value.length > 2) {
-                            handleNext();
-                        }
-                    } else { // click
-                         handleNext();
-                    }
-                };
-                
-                element.addEventListener(actionType, handleAction, { once: true });
-                
-                // Cleanup
-                return () => {
-                    element.removeEventListener(actionType, handleAction);
-                };
+                const listenerOptions = step.action.type === 'click' ? { once: true } : undefined;
+                element.addEventListener(actionType, actionHandler, listenerOptions);
             }
         }, 100); 
 
-        return () => clearInterval(intervalId);
+        return () => {
+            clearInterval(intervalId);
+            if (element) {
+                element.removeEventListener(actionType, actionHandler);
+            }
+        };
     }, [currentStep, tourSteps, onExit, handleNext]);
 
     useEffect(() => {

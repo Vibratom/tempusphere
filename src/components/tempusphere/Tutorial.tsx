@@ -32,7 +32,10 @@ export function Tutorial() {
                     title: 'Static Guide',
                     description: 'Read a simple text-based guide.',
                     icon: Book,
-                    action: () => {},
+                    action: () => {
+                        // This option is present but currently has no action.
+                        // A future implementation could open a modal with static text.
+                    },
                     disabled: true,
                     comingSoon: true,
                 }
@@ -69,7 +72,7 @@ export function Tutorial() {
                         <BookOpen className="h-5 w-5" />
                     </Button>
                 </SheetTrigger>
-                <SheetContent className="flex flex-col">
+                <SheetContent className="flex flex-col p-0">
                     <SheetHeader className="p-6">
                         <SheetTitle>How would you like to learn?</SheetTitle>
                         <SheetDescription>

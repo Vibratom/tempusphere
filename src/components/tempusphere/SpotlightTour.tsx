@@ -1,12 +1,20 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel"
 
 interface TourStep {
     selector: string;
@@ -29,7 +37,6 @@ const pageTours: Record<string, TourStep[]> = {
         { selector: '[data-spotlight="settings-button"]', title: 'Settings', content: 'Click here to change the color theme, background image, and customize which panels appear in fullscreen mode.', position: 'left' },
         { selector: '[data-spotlight="fullscreen-button"]', title: 'Fullscreen Mode', content: 'Enter a distraction-free fullscreen view. You can choose which panels are visible in the settings. Press (F) to toggle.', position: 'left' },
     ],
-    // Add more tours for other pages here
 };
 
 
@@ -40,11 +47,21 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [highlightedElement, setHighlightedElement] = useState<HTMLElement | null>(null);
     const [style, setStyle] = useState<React.CSSProperties>({});
-    const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
+    const [api, setApi] = React.useState<CarouselApi>()
     
-    const [isDragging, setIsDragging] = useState(false);
-    const dragInfoRef = useRef<{ startX: number; startY: number; initialTop: number; initialLeft: number; } | null>(null);
-    const popoverRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!api) return;
+
+        const onSelect = () => {
+            setCurrentStep(api.selectedScrollSnap());
+        };
+
+        api.on("select", onSelect);
+
+        return () => {
+            api.off("select", onSelect);
+        };
+    }, [api]);
     
     useEffect(() => {
         if (tourSteps.length > 0) {
@@ -57,7 +74,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     }, [currentStep, tourSteps]);
 
     useEffect(() => {
-        if (highlightedElement && !isDragging) {
+        if (highlightedElement) {
             highlightedElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
             
             const rect = highlightedElement.getBoundingClientRect();
@@ -69,119 +86,16 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 top: `${rect.top - padding}px`,
                 left: `${rect.left - padding}px`,
             });
-            
-            let preferredPosition = tourSteps[currentStep]?.position || 'bottom';
-            const popoverWidth = 288; // w-72 from Card
-            const popoverHeight = 250; // Estimated height
-            const margin = 16;
-            const viewportW = window.innerWidth;
-            const viewportH = window.innerHeight;
-
-            const fits = {
-                bottom: rect.bottom + padding + margin + popoverHeight < viewportH,
-                top: rect.top - padding - margin - popoverHeight > 0,
-                right: rect.right + padding + margin + popoverWidth < viewportW,
-                left: rect.left - padding - margin - popoverWidth > 0,
-            };
-
-            if (!fits[preferredPosition]) {
-                const fallbackOrder: ('bottom' | 'top' | 'right' | 'left')[] = ['bottom', 'top', 'right', 'left'];
-                const bestFit = fallbackOrder.find(pos => fits[pos]);
-                if (bestFit) {
-                    preferredPosition = bestFit;
-                }
-            }
-
-            let popoverTop = 0, popoverLeft = 0;
-            
-            switch (preferredPosition) {
-                case 'top':
-                    popoverTop = rect.top - padding - margin;
-                    popoverLeft = rect.left + rect.width / 2;
-                    break;
-                case 'right':
-                    popoverTop = rect.top + rect.height / 2;
-                    popoverLeft = rect.right + padding + margin;
-                    break;
-                case 'left':
-                    popoverTop = rect.top + rect.height / 2;
-                    popoverLeft = rect.left - padding - margin;
-                    break;
-                case 'bottom':
-                default:
-                    popoverTop = rect.bottom + padding + margin;
-                    popoverLeft = rect.left + rect.width / 2;
-                    break;
-            }
-
-             setPopoverStyle({
-                top: `${popoverTop}px`,
-                left: `${popoverLeft}px`,
-                transform: preferredPosition === 'top' ? 'translate(-50%, -100%)' :
-                           preferredPosition === 'right' ? 'translate(0, -50%)' :
-                           preferredPosition === 'left' ? 'translate(-100%, -50%)' :
-                           'translate(-50%, 0)',
-            });
-
         }
-    }, [highlightedElement, tourSteps, currentStep, isDragging]);
+    }, [highlightedElement]);
     
-    const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-        if (popoverRef.current) {
-            e.preventDefault();
-            const { top, left } = popoverRef.current.getBoundingClientRect();
-            dragInfoRef.current = {
-                startX: e.clientX,
-                startY: e.clientY,
-                initialTop: top,
-                initialLeft: left,
-            };
-            setIsDragging(true);
-        }
-    }, []);
-
-    const handleMouseMove = useCallback((e: MouseEvent) => {
-        if (!isDragging || !dragInfoRef.current) return;
-        const dx = e.clientX - dragInfoRef.current.startX;
-        const dy = e.clientY - dragInfoRef.current.startY;
-        setPopoverStyle({
-            top: `${dragInfoRef.current.initialTop + dy}px`,
-            left: `${dragInfoRef.current.initialLeft + dx}px`,
-            transform: 'none', // Use absolute positioning when dragging
-        });
-    }, [isDragging]);
-
-    const handleMouseUp = useCallback(() => {
-        setIsDragging(false);
-    }, []);
-
-    useEffect(() => {
-        if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        } else {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isDragging, handleMouseMove, handleMouseUp]);
-
-
     const handleNext = () => {
-        if (currentStep < tourSteps.length - 1) {
-            setCurrentStep(currentStep + 1);
-        } else {
-            onExit();
-        }
+        if (api?.canScrollNext()) api.scrollNext();
+        else onExit();
     };
 
     const handlePrev = () => {
-        if (currentStep > 0) {
-            setCurrentStep(currentStep - 1);
-        }
+        api?.scrollPrev();
     };
 
     if (tourSteps.length === 0) {
@@ -204,7 +118,6 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
 
     return (
         <div className="fixed inset-0 z-50">
-            {/* Overlay */}
             <svg className="absolute inset-0 w-full h-full">
                 <defs>
                     <mask id="spotlight-mask">
@@ -215,40 +128,33 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 <rect x="0" y="0" width="100%" height="100%" fill="black" opacity="0.8" mask="url(#spotlight-mask)" />
             </svg>
             
-            {/* Highlight Box */}
             <div
                 className="absolute border-2 border-primary border-dashed rounded-xl transition-all duration-500 pointer-events-none"
                 style={style}
             />
 
-            {/* Popover */}
-            <div 
-              ref={popoverRef}
-              className={cn("absolute", !isDragging && "transition-all duration-500")}
-              style={popoverStyle}
-            >
-                <Card className="w-72 shadow-2xl animation-fade-in">
-                    <CardHeader 
-                        className="cursor-grab active:cursor-grabbing"
-                        onMouseDown={handleMouseDown}
-                    >
-                         <CardTitle>{tourSteps[currentStep].title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p>{tourSteps[currentStep].content}</p>
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">{currentStep + 1} / {tourSteps.length}</span>
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-lg z-10 p-4">
+                <Carousel setApi={setApi} className="w-full">
+                    <CarouselContent>
+                        {tourSteps.map((step, index) => (
+                            <CarouselItem key={index}>
+                                <Card>
+                                    <CardHeader><CardTitle>{step.title}</CardTitle></CardHeader>
+                                    <CardContent><p>{step.content}</p></CardContent>
+                                </Card>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                    <div className="mt-4 flex justify-between items-center px-2">
+                        <span className="text-sm text-white">{currentStep + 1} / {tourSteps.length}</span>
                         <div className="flex gap-2">
-                           <Button size="sm" variant="ghost" onClick={handlePrev} disabled={currentStep === 0}>
-                               <ArrowLeft />
-                           </Button>
+                           <CarouselPrevious variant="secondary" className="static translate-y-0" />
                            <Button size="sm" onClick={handleNext}>
-                               {currentStep === tourSteps.length - 1 ? 'Finish' : 'Next'} <ArrowRight className="ml-2"/>
+                               {currentStep === tourSteps.length - 1 ? 'Finish' : 'Next'} <ArrowRight className="ml-2 h-4 w-4"/>
                            </Button>
                         </div>
-                    </CardFooter>
-                </Card>
+                    </div>
+                </Carousel>
             </div>
             
              <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white" onClick={onExit}>
