@@ -92,7 +92,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
             
             // Center the popover
             setPopoverStyle({
-                top: `50%`,
+                top: `40%`,
                 left: `50%`,
                 transform: 'translate(-50%, -50%)',
                 opacity: 1,
