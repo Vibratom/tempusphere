@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from 'react';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '../ui/card';
 import { ArrowLeft, ArrowRight, X, Loader2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -90,65 +90,16 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 transition: 'all 0.3s ease-in-out',
             });
             
-            const popoverEl = popoverRef.current;
-            if (!popoverEl || popoverEl.offsetHeight === 0) {
-              return; // Wait for the popover to render with its content
-            }
-            
-            const popoverHeight = popoverEl.offsetHeight;
-            const popoverWidth = popoverEl.offsetWidth;
-
-            let preferredPosition = tourSteps[currentStep]?.position || 'bottom';
-            const margin = 16;
-            const viewportW = window.innerWidth;
-            const viewportH = window.innerHeight;
-
-            const fits = {
-                bottom: rect.bottom + padding + margin + popoverHeight < viewportH,
-                top: rect.top - padding - margin - popoverHeight > 0,
-                right: rect.right + padding + margin + popoverWidth < viewportW,
-                left: rect.left - padding - margin - popoverWidth > 0,
-            };
-
-            if (!fits[preferredPosition]) {
-                const fallbackOrder: ('bottom' | 'top' | 'right' | 'left')[] = ['bottom', 'top', 'right', 'left'];
-                const bestFit = fallbackOrder.find(pos => fits[pos]);
-                if (bestFit) preferredPosition = bestFit;
-            }
-
-            let popoverTop = 0, popoverLeft = 0;
-            let transform = '';
-            switch (preferredPosition) {
-                case 'top': 
-                    popoverTop = rect.top - padding - margin; 
-                    popoverLeft = rect.left + rect.width / 2;
-                    transform = 'translate(-50%, -100%)';
-                    break;
-                case 'right': 
-                    popoverTop = rect.top + rect.height / 2; 
-                    popoverLeft = rect.right + padding + margin; 
-                    transform = 'translate(0, -50%)';
-                    break;
-                case 'left': 
-                    popoverTop = rect.top + rect.height / 2; 
-                    popoverLeft = rect.left - padding - margin; 
-                    transform = 'translate(-100%, -50%)';
-                    break;
-                default: // bottom
-                    popoverTop = rect.bottom + padding + margin; 
-                    popoverLeft = rect.left + rect.width / 2; 
-                    transform = 'translate(-50%, 0)';
-                    break;
-            }
-             setPopoverStyle({
-                top: `${popoverTop}px`,
-                left: `${popoverLeft}px`,
-                transform,
+            // Center the popover
+            setPopoverStyle({
+                top: `50%`,
+                left: `50%`,
+                transform: 'translate(-50%, -50%)',
                 opacity: 1,
-                transition: 'top 0.3s ease-in-out, left 0.3s ease-in-out, opacity 0.3s ease-in-out'
+                transition: 'opacity 0.3s ease-in-out'
             });
         }
-    }, [highlightedElement, tourSteps, currentStep, isDragging]);
+    }, [highlightedElement, isDragging]);
     
     const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         if (popoverRef.current) {
