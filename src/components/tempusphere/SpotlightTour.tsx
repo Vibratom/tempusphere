@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -67,25 +68,47 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 left: `${rect.left - padding}px`,
             });
             
-            const position = currentPosition;
+            let preferredPosition = currentPosition;
+            const popoverWidth = 288; // w-72 from Card
+            const popoverHeight = 250; // Estimated height
+            const margin = 16;
+            const viewportW = window.innerWidth;
+            const viewportH = window.innerHeight;
+
+            const fits = {
+                bottom: rect.bottom + padding + margin + popoverHeight < viewportH,
+                top: rect.top - padding - margin - popoverHeight > 0,
+                right: rect.right + padding + margin + popoverWidth < viewportW,
+                left: rect.left - padding - margin - popoverWidth > 0,
+            };
+
+            // If the user's preferred position doesn't fit, find a fallback.
+            if (!fits[preferredPosition]) {
+                const fallbackOrder: ('bottom' | 'top' | 'right' | 'left')[] = ['bottom', 'top', 'right', 'left'];
+                const bestFit = fallbackOrder.find(pos => fits[pos]);
+                if (bestFit) {
+                    preferredPosition = bestFit;
+                }
+            }
+
             let popoverTop = 0, popoverLeft = 0;
             
-            switch (position) {
+            switch (preferredPosition) {
                 case 'top':
-                    popoverTop = rect.top - padding - 16;
+                    popoverTop = rect.top - padding - margin;
                     popoverLeft = rect.left + rect.width / 2;
                     break;
                 case 'right':
                     popoverTop = rect.top + rect.height / 2;
-                    popoverLeft = rect.right + padding + 16;
+                    popoverLeft = rect.right + padding + margin;
                     break;
                 case 'left':
                     popoverTop = rect.top + rect.height / 2;
-                    popoverLeft = rect.left - padding - 16;
+                    popoverLeft = rect.left - padding - margin;
                     break;
                 case 'bottom':
                 default:
-                    popoverTop = rect.bottom + padding + 16;
+                    popoverTop = rect.bottom + padding + margin;
                     popoverLeft = rect.left + rect.width / 2;
                     break;
             }
@@ -93,9 +116,9 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
              setPopoverStyle({
                 top: `${popoverTop}px`,
                 left: `${popoverLeft}px`,
-                transform: position === 'top' ? 'translate(-50%, -100%)' :
-                           position === 'right' ? 'translate(0, -50%)' :
-                           position === 'left' ? 'translate(-100%, -50%)' :
+                transform: preferredPosition === 'top' ? 'translate(-50%, -100%)' :
+                           preferredPosition === 'right' ? 'translate(0, -50%)' :
+                           preferredPosition === 'left' ? 'translate(-100%, -50%)' :
                            'translate(-50%, 0)',
             });
 
