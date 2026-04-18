@@ -1,20 +1,12 @@
 
-'use client';
+"use client"
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { ArrowLeft, ArrowRight, X } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '../ui/card';
+import { ArrowLeft, ArrowRight, X, Loader2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from "@/components/ui/carousel"
 
 interface TourStep {
     selector: string;
@@ -47,31 +39,20 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [highlightedElement, setHighlightedElement] = useState<HTMLElement | null>(null);
     const [style, setStyle] = useState<React.CSSProperties>({});
-    const [api, setApi] = React.useState<CarouselApi>()
-    
-    useEffect(() => {
-        if (!api) return;
-
-        const onSelect = () => {
-            setCurrentStep(api.selectedScrollSnap());
-        };
-
-        api.on("select", onSelect);
-
-        return () => {
-            api.off("select", onSelect);
-        };
-    }, [api]);
     
     useEffect(() => {
         if (tourSteps.length > 0) {
             const step = tourSteps[currentStep];
+            if (!step) {
+                onExit();
+                return;
+            }
             const element = document.querySelector(step.selector) as HTMLElement;
             setHighlightedElement(element);
         } else {
             setHighlightedElement(null);
         }
-    }, [currentStep, tourSteps]);
+    }, [currentStep, tourSteps, onExit]);
 
     useEffect(() => {
         if (highlightedElement) {
@@ -90,12 +71,17 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     }, [highlightedElement]);
     
     const handleNext = () => {
-        if (api?.canScrollNext()) api.scrollNext();
-        else onExit();
+        if (currentStep < tourSteps.length - 1) {
+            setCurrentStep(currentStep + 1);
+        } else {
+            onExit();
+        }
     };
-
+    
     const handlePrev = () => {
-        api?.scrollPrev();
+        if (currentStep > 0) {
+            setCurrentStep(currentStep - 1);
+        }
     };
 
     if (tourSteps.length === 0) {
@@ -114,7 +100,12 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
         );
     }
     
-    if (!highlightedElement) return null;
+    if (!highlightedElement) return (
+        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center text-white">
+            <Loader2 className="w-8 h-8 animate-spin mb-4" />
+            <p>Loading tour...</p>
+        </div>
+    );
 
     return (
         <div className="fixed inset-0 z-50">
@@ -133,31 +124,25 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 style={style}
             />
 
-            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-lg z-10 p-4">
-                <Carousel setApi={setApi} className="w-full">
-                    <CarouselContent>
-                        {tourSteps.map((step, index) => (
-                            <CarouselItem key={index}>
-                                <Card>
-                                    <CardHeader><CardTitle>{step.title}</CardTitle></CardHeader>
-                                    <CardContent><p>{step.content}</p></CardContent>
-                                </Card>
-                            </CarouselItem>
-                        ))}
-                    </CarouselContent>
-                    <div className="mt-4 flex justify-between items-center px-2">
-                        <span className="text-sm text-white">{currentStep + 1} / {tourSteps.length}</span>
-                        <div className="flex gap-2">
-                           <CarouselPrevious variant="secondary" className="static translate-y-0" />
-                           <Button size="sm" onClick={handleNext}>
-                               {currentStep === tourSteps.length - 1 ? 'Finish' : 'Next'} <ArrowRight className="ml-2 h-4 w-4"/>
-                           </Button>
-                        </div>
+            <Card className="fixed top-1/2 right-4 -translate-y-1/2 w-full max-w-sm z-[51] shadow-2xl animate-in slide-in-from-right-8 duration-500">
+                <CardHeader>
+                    <CardTitle>{tourSteps[currentStep].title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p>{tourSteps[currentStep].content}</p>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">{currentStep + 1} / {tourSteps.length}</span>
+                    <div className="flex gap-2">
+                       <Button size="sm" variant="outline" onClick={handlePrev} disabled={currentStep === 0}><ArrowLeft /></Button>
+                       <Button size="sm" onClick={handleNext}>
+                           {currentStep === tourSteps.length - 1 ? 'Finish' : 'Next'} <ArrowRight className="ml-2 h-4 w-4"/>
+                       </Button>
                     </div>
-                </Carousel>
-            </div>
+                </CardFooter>
+            </Card>
             
-             <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white" onClick={onExit}>
+             <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white z-[52]" onClick={onExit}>
                 <X />
             </Button>
         </div>
