@@ -1,7 +1,6 @@
-
 "use client"
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../ui/card';
 import { ArrowLeft, ArrowRight, X, Loader2 } from 'lucide-react';
@@ -39,7 +38,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [highlightedElement, setHighlightedElement] = useState<HTMLElement | null>(null);
     const [style, setStyle] = useState<React.CSSProperties>({});
-    const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
+    const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({ opacity: 0 });
     const popoverRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const dragInfoRef = useRef<{ startX: number; startY: number; initialTop: number; initialLeft: number; } | null>(null);
@@ -76,7 +75,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
         return () => clearInterval(intervalId);
     }, [currentStep, tourSteps, onExit]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (highlightedElement && !isDragging) {
             highlightedElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
             
@@ -88,11 +87,18 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 height: `${rect.height + padding * 2}px`,
                 top: `${rect.top - padding}px`,
                 left: `${rect.left - padding}px`,
+                transition: 'all 0.3s ease-in-out',
             });
             
+            const popoverEl = popoverRef.current;
+            if (!popoverEl || popoverEl.offsetHeight === 0) {
+              return; // Wait for the popover to render with its content
+            }
+            
+            const popoverHeight = popoverEl.offsetHeight;
+            const popoverWidth = popoverEl.offsetWidth;
+
             let preferredPosition = tourSteps[currentStep]?.position || 'bottom';
-            const popoverWidth = 288; // w-72
-            const popoverHeight = 250; // estimate
             const margin = 16;
             const viewportW = window.innerWidth;
             const viewportH = window.innerHeight;
@@ -138,6 +144,8 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 top: `${popoverTop}px`,
                 left: `${popoverLeft}px`,
                 transform,
+                opacity: 1,
+                transition: 'top 0.3s ease-in-out, left 0.3s ease-in-out, opacity 0.3s ease-in-out'
             });
         }
     }, [highlightedElement, tourSteps, currentStep, isDragging]);
@@ -148,6 +156,9 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
             const { top, left } = popoverRef.current.getBoundingClientRect();
             dragInfoRef.current = { startX: e.clientX, startY: e.clientY, initialTop: top, initialLeft: left, };
             setIsDragging(true);
+            
+            // Remove transitions during drag
+             setPopoverStyle(prev => ({ ...prev, transition: 'none' }));
         }
     }, []);
 
@@ -160,7 +171,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
         const newTop = dragInfoRef.current.initialTop + dy;
         const constrainedLeft = Math.max(0, Math.min(newLeft, window.innerWidth - popoverRect.width));
         const constrainedTop = Math.max(0, Math.min(newTop, window.innerHeight - popoverRect.height));
-        setPopoverStyle({ top: `${constrainedTop}px`, left: `${constrainedLeft}px`, transform: 'none' });
+        setPopoverStyle({ top: `${constrainedTop}px`, left: `${constrainedLeft}px`, transform: 'none', opacity: 1 });
     }, [isDragging]);
 
     const handleMouseUp = useCallback(() => setIsDragging(false), []);
@@ -205,9 +216,9 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 <rect x="0" y="0" width="100%" height="100%" fill="black" opacity="0.8" mask="url(#spotlight-mask)" />
             </svg>
             
-            <div className="absolute border-2 border-primary border-dashed rounded-xl transition-all duration-500 pointer-events-none" style={style} />
+            <div className="absolute border-2 border-primary border-dashed rounded-xl pointer-events-none" style={style} />
 
-            <div ref={popoverRef} className={cn("absolute", !isDragging && "transition-all duration-500")} style={popoverStyle}>
+            <div ref={popoverRef} className={cn("absolute")} style={popoverStyle}>
                 <Card className="w-72 shadow-2xl animation-fade-in">
                     <CardHeader className="cursor-grab active:cursor-grabbing" onMouseDown={handleMouseDown}>
                         <CardTitle>{tourSteps[currentStep].title}</CardTitle>
