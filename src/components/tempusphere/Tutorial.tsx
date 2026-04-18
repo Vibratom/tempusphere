@@ -16,7 +16,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Moon, Sun, Atom, Briefcase, ListChecks, KanbanSquare, LayoutDashboard, BarChartHorizontal, DraftingCompass, Table, Calendar, GitCommit, Brain, Banknote, FileText, BrainCircuit, IterationCw, Megaphone, TrendingUp, BookCopy } from 'lucide-react';
+import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Moon, Sun, Atom, Briefcase, ListChecks, KanbanSquare, LayoutDashboard, BarChartHorizontal, DraftingCompass, Table, Calendar, GitCommit, Brain, Banknote, FileText, BrainCircuit, IterationCw, Megaphone, TrendingUp, BookCopy, UtensilsCrossed, Calculator, Trash2, Workflow } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { usePathname } from 'next/navigation';
 
@@ -401,17 +401,91 @@ const financeGuide = [
     }
 ];
 
+const culinaryGuide = [
+    {
+        title: "Culinary Navigation",
+        icon: <UtensilsCrossed />,
+        content: (
+            <div className="space-y-2">
+                <p>The navigation bar allows you to switch between different tools within the Culinary section.</p>
+            </div>
+        )
+    },
+    {
+        title: "Dashboard",
+        icon: <LayoutDashboard />,
+        content: (
+            <p>The dashboard provides a quick overview of your kitchen operations, including recipe count, inventory status, total waste, and active timers.</p>
+        )
+    },
+    {
+        title: "Core Tools",
+        icon: <UtensilsCrossed />,
+        content: (
+            <div className="space-y-2">
+                <p>A set of essential tools for managing your kitchen's data.</p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li><strong>Recipe Book</strong>: A personal cookbook to save, edit, and "remix" recipes. You can add ingredients, instructions, and even create prep checklists for each recipe.</li>
+                    <li><strong>Inventory</strong>: Manage your food stock. Add items, track quantities, and get warnings for low-stock items.</li>
+                    <li><strong>Recipe Search</strong>: Search TheMealDB for recipes from around the world and save them directly to your cookbook or send ingredients to other tools.</li>
+                    <li><strong>Product Search</strong>: Look up food products using the Open Food Facts database to get detailed ingredient and allergen information.</li>
+                </ul>
+            </div>
+        )
+    },
+    {
+        title: "Calculators",
+        icon: <Calculator />,
+        content: (
+             <div className="space-y-2">
+                <p>A suite of calculators for culinary professionals and home cooks.</p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li><strong>Unit Converter</strong>: Convert between various units of weight, volume, and temperature.</li>
+                    <li><strong>Food Cost</strong>: Calculate the total cost of a recipe and the cost per serving by inputting ingredient prices.</li>
+                    <li><strong>Yield Percentage</strong>: Determine the true cost of an ingredient after trimming and waste, helping you price dishes accurately.</li>
+                </ul>
+            </div>
+        )
+    },
+    {
+        title: "Waste Tracker",
+        icon: <Trash2 />,
+        content: (
+            <p>Log and monitor discarded food. Track items by date, metric (e.g., spoilage, overproduction), quantity, and cost to identify areas for improvement and reduce waste.</p>
+        )
+    },
+    {
+        title: "Workflow",
+        icon: <Workflow />,
+        content: (
+            <div className="space-y-2">
+                <p>Tools designed to streamline kitchen operations.</p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li><strong>Kitchen Timer Station</strong>: Manage multiple independent timers on a single screen, perfect for complex meal preparations.</li>
+                    <li><strong>Recipe Preparation Checklist</strong>: An interactive prep list for your station. Create categories and items with daily pars.</li>
+                    <li><strong>Kitchen Display System (KDS) Light</strong>: A simplified version of a professional KDS to display and manage incoming orders.</li>
+                </ul>
+            </div>
+        )
+    }
+];
+
 const pageGuides: Record<string, any[]> = {
     '/': landingPageGuide,
     '/app': appGuideSections,
     '/projects': projectsGuide,
     '/productivity': productivityGuide,
     '/finance': financeGuide,
+    '/culinary': culinaryGuide,
 };
 
 export function Tutorial() {
     const pathname = usePathname();
-    const guideKey = pathname.startsWith('/projects') ? '/projects' : pathname.startsWith('/productivity') ? '/productivity' : pathname.startsWith('/finance') ? '/finance' : pathname;
+    const guideKey = pathname.startsWith('/projects') ? '/projects' 
+        : pathname.startsWith('/productivity') ? '/productivity' 
+        : pathname.startsWith('/finance') ? '/finance'
+        : pathname.startsWith('/culinary') ? '/culinary'
+        : pathname;
     const guideSections = pageGuides[guideKey];
 
     const content = guideSections ? (
