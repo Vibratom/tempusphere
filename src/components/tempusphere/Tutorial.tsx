@@ -327,14 +327,14 @@ export function Tutorial() {
                         <BookOpen className="h-5 w-5" />
                     </Button>
                 </SheetTrigger>
-                <SheetContent>
-                    <SheetHeader>
+                <SheetContent className="flex flex-col">
+                    <SheetHeader className="p-6">
                         <SheetTitle>How would you like to learn?</SheetTitle>
                         <SheetDescription>
                             Choose a method below to get a tour of the current page's features.
                         </SheetDescription>
                     </SheetHeader>
-                    <div className="py-6 space-y-6">
+                    <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-6">
                         {tourOptions.map(section => (
                             <div key={section.category}>
                                 <h3 className="mb-3 text-sm font-semibold text-muted-foreground tracking-wider uppercase">{section.category}</h3>
@@ -344,11 +344,11 @@ export function Tutorial() {
                                             key={item.title}
                                             onClick={item.action}
                                             disabled={item.disabled}
-                                            className="w-full text-left p-0 rounded-lg border bg-card hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                                            className="w-full text-left rounded-lg border bg-card hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                                         >
-                                            <div className="flex items-start gap-4 p-4">
+                                            <div className="flex items-center gap-4 p-4">
                                                 <div className={cn(
-                                                    "p-2 rounded-lg mt-1",
+                                                    "p-3 rounded-lg",
                                                     item.disabled ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
                                                 )}>
                                                     <item.icon className="h-6 w-6 flex-shrink-0"/>
