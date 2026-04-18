@@ -1,12 +1,13 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../ui/card';
-import { ArrowLeft, ArrowRight, X, BookOpen, Map, HelpCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X, BookOpen, Map, HelpCircle, Book } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '../ui/sheet';
 
 interface TourStep {
     selector: string;
@@ -268,18 +269,6 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     );
 };
 
-
-const StaticGuide = () => {
-    return (
-        <div className="space-y-2">
-            <h3 className="font-semibold">Static Guide</h3>
-            <p className="text-sm text-muted-foreground">
-                Read a simple text-based guide for the current page. (Coming Soon)
-            </p>
-        </div>
-    );
-};
-
 export function Tutorial() {
     const [sheetOpen, setSheetOpen] = useState(false);
     const [activeTour, setActiveTour] = useState<'none' | 'spotlight' | 'interactive'>('none');
@@ -304,23 +293,35 @@ export function Tutorial() {
                 <SheetContent>
                     <SheetHeader>
                         <SheetTitle>How would you like to learn?</SheetTitle>
+                        <SheetDescription>
+                            Choose a method below to get a tour of the current page's features.
+                        </SheetDescription>
                     </SheetHeader>
-                    <div className="py-4 space-y-4">
-                        <StaticGuide />
-                         <div className="space-y-2 pt-4 border-t">
-                             <h3 className="font-semibold">Animated Tours</h3>
-                            <Button onClick={() => startTour('spotlight')} className="w-full justify-start gap-3" variant="outline">
-                                <Map className="h-5 w-5 text-primary"/>
+                    <div className="py-4 space-y-6">
+                        <div>
+                            <h3 className="mb-2 text-sm font-semibold text-muted-foreground tracking-wider">STATIC</h3>
+                            <Button disabled className="w-full h-auto justify-start gap-4 p-4 text-left" variant="outline">
+                                <Book className="h-8 w-8 text-muted-foreground flex-shrink-0"/>
                                 <div>
-                                    <p className="font-semibold">Spotlight Tour</p>
-                                    <p className="text-xs text-muted-foreground text-left">A guided tour that highlights features one by one.</p>
+                                    <p className="font-semibold text-base">Static Guide</p>
+                                    <p className="text-xs text-muted-foreground">Read a simple text-based guide. (Coming Soon)</p>
                                 </div>
                             </Button>
-                             <Button disabled className="w-full justify-start gap-3" variant="outline">
-                                <HelpCircle className="h-5 w-5 text-muted-foreground"/>
+                        </div>
+                         <div className="space-y-2">
+                             <h3 className="mb-2 text-sm font-semibold text-muted-foreground tracking-wider">ANIMATED</h3>
+                            <Button onClick={() => startTour('spotlight')} className="w-full h-auto justify-start gap-4 p-4 text-left" variant="outline">
+                                <Map className="h-8 w-8 text-primary flex-shrink-0"/>
+                                <div>
+                                    <p className="font-semibold text-base">Spotlight Tour</p>
+                                    <p className="text-xs text-muted-foreground">A guided tour that highlights features one by one.</p>
+                                </div>
+                            </Button>
+                             <Button disabled className="w-full h-auto justify-start gap-4 p-4 text-left" variant="outline">
+                                <HelpCircle className="h-8 w-8 text-muted-foreground flex-shrink-0"/>
                                  <div>
-                                    <p className="font-semibold">Interactive Walkthrough</p>
-                                    <p className="text-xs text-muted-foreground text-left">Coming Soon: An interactive guide that has you perform actions.</p>
+                                    <p className="font-semibold text-base">Interactive Walkthrough</p>
+                                    <p className="text-xs text-muted-foreground">An interactive guide where you perform actions. (Coming Soon)</p>
                                 </div>
                             </Button>
                         </div>
