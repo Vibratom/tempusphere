@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -17,7 +16,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Moon, Sun, Atom, Briefcase, ListChecks, KanbanSquare, LayoutDashboard, BarChartHorizontal, DraftingCompass, Table, Calendar, GitCommit, Brain, Banknote, FileText, BrainCircuit, IterationCw, Megaphone, TrendingUp } from 'lucide-react';
+import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Moon, Sun, Atom, Briefcase, ListChecks, KanbanSquare, LayoutDashboard, BarChartHorizontal, DraftingCompass, Table, Calendar, GitCommit, Brain, Banknote, FileText, BrainCircuit, IterationCw, Megaphone, TrendingUp, BookCopy } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { usePathname } from 'next/navigation';
 
@@ -362,16 +361,57 @@ const productivityGuide = [
     }
 ];
 
+const financeGuide = [
+    {
+        title: "Finance Navigation",
+        icon: <div className="w-5 h-5" />,
+        content: (
+            <div className="space-y-2">
+                <p>The top navigation bar allows you to switch between different tools within the Finance section.</p>
+            </div>
+        )
+    },
+    {
+        title: "Dashboard",
+        icon: <LayoutDashboard />,
+        content: (
+            <p>The dashboard provides a high-level overview of your finances, including total income, expenses, net balance, and accounts receivable/payable. It also features charts for your Income Statement, Balance Sheet, Cash Flow, and a dynamic report builder.</p>
+        )
+    },
+    {
+        title: "Journal & Ledger",
+        icon: <BookCopy />,
+        content: (
+            <p>Record financial transactions using double-entry bookkeeping. You can select from pre-defined templates (e.g., "Cash sale of goods") or create custom entries. All transactions are compiled into a comprehensive Ledger. This section also tracks unpaid invoices in Accounts Receivable and upcoming bills in Accounts Payable.</p>
+        )
+    },
+    {
+        title: "Budget",
+        icon: <Banknote />,
+        content: (
+            <p>Set monthly or yearly spending limits for your transaction categories to monitor your financial health. The Budget Health summary on the Dashboard will track your progress against these limits.</p>
+        )
+    },
+    {
+        title: "Reports",
+        icon: <FileText />,
+        content: (
+            <p>Generate standard financial statements including the Income Statement, Balance Sheet, and Statement of Cash Flows. You can adjust the reporting period and switch between different accounting standards (GAAP, IFRS, HGB).</p>
+        )
+    }
+];
+
 const pageGuides: Record<string, any[]> = {
     '/': landingPageGuide,
     '/app': appGuideSections,
     '/projects': projectsGuide,
     '/productivity': productivityGuide,
+    '/finance': financeGuide,
 };
 
 export function Tutorial() {
     const pathname = usePathname();
-    const guideKey = pathname.startsWith('/projects') ? '/projects' : pathname.startsWith('/productivity') ? '/productivity' : pathname;
+    const guideKey = pathname.startsWith('/projects') ? '/projects' : pathname.startsWith('/productivity') ? '/productivity' : pathname.startsWith('/finance') ? '/finance' : pathname;
     const guideSections = pageGuides[guideKey];
 
     const content = guideSections ? (
