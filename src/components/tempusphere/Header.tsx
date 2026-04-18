@@ -12,6 +12,7 @@ import { useHotkeys } from '@/hooks/use-hotkeys';
 import { useTheme } from 'next-themes';
 import { ClockSettingsPanel } from './ClockSettingsPanel';
 import { cn } from '@/lib/utils';
+import { Tutorial } from './Tutorial';
 
 export function Header({ tabs, className, centerContent }: { tabs?: ReactNode, className?: string, centerContent?: ReactNode }) {
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -74,6 +75,14 @@ export function Header({ tabs, className, centerContent }: { tabs?: ReactNode, c
 
             <div className="flex items-center gap-2 ml-auto">
                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Tutorial />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Page Tutorial</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <Tooltip>
                         <TooltipTrigger asChild>
                              <Button asChild variant="outline" size="icon">
