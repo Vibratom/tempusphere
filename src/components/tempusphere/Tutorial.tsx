@@ -1,19 +1,20 @@
-
 'use client';
 
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Pointer, Presentation } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '../ui/sheet';
 import { usePathname } from 'next/navigation';
 import { ScrollArea } from '../ui/scroll-area';
+import { useState } from 'react';
+import { Card, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
 
-const TutorialContent = () => {
+const StaticGuide = ({ onBack }: { onBack: () => void }) => {
     const pathname = usePathname();
 
     let title = "How to use this page";
     let content: JSX.Element | null = null;
 
-    // A helper component for consistent styling
     const HelpSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
         <div className="mb-4">
             <h4 className="font-semibold text-lg mb-1">{title}</h4>
@@ -104,8 +105,9 @@ const TutorialContent = () => {
 
     return (
         <div>
-            <SheetHeader className="p-6 border-b">
+            <SheetHeader className="p-6 border-b flex-row items-center justify-between">
                 <SheetTitle>{title}</SheetTitle>
+                <Button variant="outline" onClick={onBack}>Back</Button>
             </SheetHeader>
             <ScrollArea className="h-[calc(100vh-100px)]">
                 <div className="p-6">
@@ -114,7 +116,61 @@ const TutorialContent = () => {
             </ScrollArea>
         </div>
     );
-}
+};
+
+const TutorialSelection = ({ onSelect }: { onSelect: (mode: 'static' | 'spotlight' | 'interactive') => void }) => (
+    <div>
+        <SheetHeader className="p-6 border-b">
+            <SheetTitle>Choose Your Tutorial</SheetTitle>
+            <SheetDescription>How would you like to learn about this page?</SheetDescription>
+        </SheetHeader>
+        <div className="p-6 space-y-4">
+             <Card 
+                className="cursor-pointer hover:border-primary transition-colors"
+                onClick={() => onSelect('static')}
+            >
+                <CardHeader className="flex-row items-center gap-4">
+                    <BookOpen className="w-8 h-8 text-primary" />
+                    <div>
+                        <CardTitle>Static Guide</CardTitle>
+                        <CardDescription>Read a simple, text-based explanation of the page features.</CardDescription>
+                    </div>
+                </CardHeader>
+            </Card>
+            <Card className="cursor-not-allowed opacity-50 relative">
+                <CardHeader className="flex-row items-center gap-4">
+                     <Presentation className="w-8 h-8 text-muted-foreground" />
+                    <div>
+                        <CardTitle>Spotlight Tour</CardTitle>
+                        <CardDescription>A guided tour that highlights each feature on the page one by one.</CardDescription>
+                    </div>
+                </CardHeader>
+                <Badge variant="secondary" className="absolute top-2 right-2">Coming Soon</Badge>
+            </Card>
+            <Card className="cursor-not-allowed opacity-50 relative">
+                 <CardHeader className="flex-row items-center gap-4">
+                     <Pointer className="w-8 h-8 text-muted-foreground" />
+                    <div>
+                        <CardTitle>Interactive Walkthrough</CardTitle>
+                        <CardDescription>Learn by doing. We'll guide you as you click through the features yourself.</CardDescription>
+                    </div>
+                </CardHeader>
+                <Badge variant="secondary" className="absolute top-2 right-2">Coming Soon</Badge>
+            </Card>
+        </div>
+    </div>
+);
+
+
+const TutorialContent = () => {
+    const [mode, setMode] = useState<'selection' | 'static' | 'spotlight' | 'interactive'>('selection');
+
+    if (mode === 'static') {
+        return <StaticGuide onBack={() => setMode('selection')} />;
+    }
+
+    return <TutorialSelection onSelect={setMode} />;
+};
 
 
 export function Tutorial() {
