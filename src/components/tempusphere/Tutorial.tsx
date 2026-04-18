@@ -17,10 +17,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Moon, Sun, Atom } from 'lucide-react';
+import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Moon, Sun, Atom, Briefcase, ListChecks } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
+import { usePathname } from 'next/navigation';
 
-const guideSections = [
+const appGuideSections = [
     {
         title: "Header Bar",
         icon: <div className="w-5 h-5" />,
@@ -169,7 +170,92 @@ const guideSections = [
     }
 ];
 
+const landingPageGuide = [
+    {
+        title: "Header Bar",
+        icon: <div className="w-5 h-5" />,
+        content: (
+            <div className="space-y-2">
+                <p>The bar at the top of the page contains main navigation and universal controls:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li><strong>Tempusphere Logo</strong>: Click to return to the landing page.</li>
+                    <li><strong>Vibratom Studios Icon (<Atom className="inline h-4 w-4"/>)</strong>: Opens the main Vibratom Studios website in a new tab.</li>
+                    <li><strong>Theme Toggle (<Sun className="inline h-4 w-4"/>/<Moon className="inline h-4 w-4"/>)</strong>: Instantly switch between light and dark mode.</li>
+                    <li><strong>Clock Settings (<Settings className="inline h-4 w-4"/>)</strong>: Opens a panel to customize clock formats and timezones (this primarily affects the /app page).</li>
+                    <li><strong>Fullscreen Button (<Expand className="inline h-4 w-4"/>)</strong>: Toggles a distraction-free fullscreen view of the main app dashboard. Press 'F' on your keyboard as a shortcut.</li>
+                </ul>
+            </div>
+        )
+    },
+    {
+        title: "Main Application Tools",
+        icon: <Briefcase />,
+        content: (
+            <div className="space-y-2">
+                <p>These are the main applications within Tempusphere. Each one is a powerful tool designed to help with different aspects of your work and life.</p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li><strong>Clock</strong>: The core time-keeping features of Tempusphere.</li>
+                    <li><strong>Projects</strong>: Manage projects with Kanban boards, Gantt charts, and more.</li>
+                    <li><strong>Productivity</strong>: A suite of tools for business analysis and strategic planning.</li>
+                    <li><strong>Finance</strong>: Track expenses, create budgets, and generate financial reports.</li>
+                    <li><strong>Culinary</strong>: Organize recipes, manage inventory, and calculate food costs.</li>
+                </ul>
+            </div>
+        )
+    },
+     {
+        title: "Features at a Glance",
+        icon: <ListChecks />,
+        content: (
+            <p>Explore this accordion to get a quick overview of all the powerful features packed into Tempusphere, from basic time management to advanced project and financial planning.</p>
+        )
+    },
+    {
+        title: "Vibratom Studios Ecosystem",
+        icon: <Atom />,
+        content: (
+            <p>Tempusphere is part of a larger ecosystem of applications. Discover other tools from Vibratom Studios designed to boost your productivity and creativity, all linked in the footer.</p>
+        )
+    }
+]
+
+const pageGuides: Record<string, any[]> = {
+    '/': landingPageGuide,
+    '/app': appGuideSections
+}
+
 export function Tutorial() {
+    const pathname = usePathname();
+    const guideSections = pageGuides[pathname];
+
+    const content = guideSections ? (
+        <ScrollArea className="flex-1 px-6">
+            <Accordion type="single" collapsible className="w-full">
+                {guideSections.map((section, index) => (
+                    <AccordionItem key={index} value={`item-${index}`}>
+                        <AccordionTrigger className="text-md font-semibold hover:no-underline py-3">
+                            <div className="flex items-center gap-3">
+                                <div className="flex-shrink-0 p-1.5 bg-primary/10 rounded-full">
+                                    {React.cloneElement(section.icon, { className: 'w-5 h-5 text-primary' })}
+                                </div>
+                                <span>{section.title}</span>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="text-base text-muted-foreground pl-12">
+                            {section.content}
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
+        </ScrollArea>
+    ) : (
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+            <BookOpen className="w-16 h-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold">Guide Not Available</h3>
+            <p className="text-muted-foreground">A detailed guide for this page has not been created yet.</p>
+        </div>
+    );
+
     return (
         <Sheet>
             <SheetTrigger asChild>
@@ -181,28 +267,10 @@ export function Tutorial() {
                 <SheetHeader className="p-6 pb-4">
                     <SheetTitle>Static Guide</SheetTitle>
                     <SheetDescription>
-                        A complete reference for all features on this page.
+                        A reference for all features on the current page.
                     </SheetDescription>
                 </SheetHeader>
-                <ScrollArea className="flex-1 px-6">
-                    <Accordion type="single" collapsible className="w-full">
-                        {guideSections.map((section, index) => (
-                            <AccordionItem key={index} value={`item-${index}`}>
-                                <AccordionTrigger className="text-md font-semibold hover:no-underline py-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex-shrink-0 p-1.5 bg-primary/10 rounded-full">
-                                            {React.cloneElement(section.icon, { className: 'w-5 h-5 text-primary' })}
-                                        </div>
-                                        <span>{section.title}</span>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="text-base text-muted-foreground pl-12">
-                                    {section.content}
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))}
-                    </Accordion>
-                </ScrollArea>
+                {content}
             </SheetContent>
         </Sheet>
     );
