@@ -17,7 +17,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Moon, Sun, Atom, Briefcase, ListChecks, KanbanSquare, LayoutDashboard, BarChartHorizontal, DraftingCompass, Table, Calendar, GitCommit, Brain, Banknote } from 'lucide-react';
+import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Moon, Sun, Atom, Briefcase, ListChecks, KanbanSquare, LayoutDashboard, BarChartHorizontal, DraftingCompass, Table, Calendar, GitCommit, Brain, Banknote, FileText, BrainCircuit, IterationCw, Megaphone, TrendingUp } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { usePathname } from 'next/navigation';
 
@@ -308,26 +308,70 @@ const projectsGuide = [
     }
 ];
 
+const productivityGuide = [
+    {
+        title: "Productivity Navigation",
+        icon: <Briefcase />,
+        content: (
+            <div className="space-y-2">
+                <p>The top navigation bar allows you to switch between different tools within the Productivity section.</p>
+            </div>
+        )
+    },
+    {
+        title: "Dashboard",
+        icon: <LayoutDashboard />,
+        content: (
+            <p>The dashboard provides a high-level overview of your strategic planning and sales analysis activities, including key metrics on deals won/lost and progress on strategic frameworks.</p>
+        )
+    },
+    {
+        title: "Minutes of Meeting (MoM)",
+        icon: <FileText />,
+        content: (
+            <p>A structured tool to capture notes, action items, and key decisions from your meetings. You can choose from various templates like Board Meeting, Daily Scrum, or a flexible custom builder. Your data can be exported in multiple formats.</p>
+        )
+    },
+    {
+        title: "Strategic Analysis",
+        icon: <BrainCircuit />,
+        content: (
+            <p>A suite of classic strategic frameworks to analyze your business and market landscape. This includes SWOT, TOWS, SOAR, SCORE, PESTLE, Porter's Five Forces, VRIO, and the McKinsey 7-S model.</p>
+        )
+    },
+    {
+        title: "Customer Lifecycle Management (CLM)",
+        icon: <IterationCw />,
+        content: (
+            <p>Map and optimize every stage of the customer journey, from awareness and acquisition to retention and advocacy. Define key metrics, actions, and notes for each stage.</p>
+        )
+    },
+    {
+        title: "Marketing",
+        icon: <Megaphone />,
+        content: (
+            <p>Plan your content using the Hero, Hub, Help framework and define your overall marketing strategy with a comprehensive checklist. This section also includes a detailed Marketing Planning Template for different buyer personas.</p>
+        )
+    },
+    {
+        title: "Win/Loss Analysis",
+        icon: <TrendingUp />,
+        content: (
+            <p>Analyze your sales outcomes to identify trends, understand why you win or lose deals, and refine your sales strategy for better results.</p>
+        )
+    }
+];
+
 const pageGuides: Record<string, any[]> = {
     '/': landingPageGuide,
     '/app': appGuideSections,
     '/projects': projectsGuide,
-    '/projects/board': projectsGuide,
-    '/projects/list': projectsGuide,
-    '/projects/calendar': projectsGuide,
-    '/projects/gantt': projectsGuide,
-    '/projects/budget': projectsGuide,
-    '/projects/spreadsheet': projectsGuide,
-    '/projects/checklist': projectsGuide,
-    '/projects/canvas': projectsGuide,
-    '/projects/chart': projectsGuide,
-    '/projects/mindmap': projectsGuide,
+    '/productivity': productivityGuide,
 };
 
 export function Tutorial() {
     const pathname = usePathname();
-    // A simple way to group all project pages to use the same guide
-    const guideKey = pathname.startsWith('/projects') ? '/projects' : pathname;
+    const guideKey = pathname.startsWith('/projects') ? '/projects' : pathname.startsWith('/productivity') ? '/productivity' : pathname;
     const guideSections = pageGuides[guideKey];
 
     const content = guideSections ? (
