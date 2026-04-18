@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -16,6 +15,12 @@ interface TourStep {
 }
 
 const pageTours: Record<string, TourStep[]> = {
+    '/': [
+        { selector: '[data-spotlight="primary-clock"]', title: 'Live Primary Clock', content: 'This is a fully functional clock that displays the current time. You can customize its appearance in the settings.', position: 'bottom' },
+        { selector: '[data-spotlight="main-tools"]', title: 'Core Application Tools', content: 'These are the main sections of Tempusphere. Each one is a powerful application designed to help with different aspects of your work and life.', position: 'bottom' },
+        { selector: '[data-spotlight="features-accordion"]', title: 'Features at a Glance', content: 'Explore this list to get a quick overview of all the powerful features packed into Tempusphere.', position: 'top' },
+        { selector: '[data-spotlight="ecosystem-section"]', title: 'Vibratom Studios Ecosystem', content: 'Tempusphere is part of a larger suite of tools. Discover other apps designed to boost your productivity and creativity.', position: 'top' },
+    ],
     '/app': [
         { selector: '[data-spotlight="primary-clock"]', title: 'The Primary Clock', content: 'This is your main clock display. You can customize its style, timezone, and size from the Appearance settings.', position: 'bottom' },
         { selector: '[data-spotlight="tool-tabs"]', title: 'Tool Panels', content: 'Switch between different tools like World Clocks, Alarms, and a Stopwatch here. Use keyboard shortcuts (Alt+1 to Alt+8) for quick navigation!', position: 'bottom' },

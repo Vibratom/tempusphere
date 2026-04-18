@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Mail } from "lucide-react";
@@ -24,7 +23,7 @@ export function Footer({ showEcosystem = false }: { showEcosystem?: boolean }) {
 
                 {showEcosystem && (
                     <>
-                        <section className="mb-12 text-center">
+                        <section className="mb-12 text-center" data-spotlight="ecosystem-section">
                             <h2 className="text-3xl font-bold text-white mb-3">Explore the Vibratom Studios Ecosystem</h2>
                             <p className="max-w-3xl mx-auto text-lg text-gray-400 mb-8">
                                 Vibratom Studios is a comprehensive digital ecosystem designed to enhance every aspect of your creative and productive life.

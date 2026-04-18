@@ -1,4 +1,3 @@
-
 'use client';
 
 import { AlarmClock, CalendarDays, Clock, Combine, Expand, Globe, Hourglass, Scale, Settings, Timer, Users, Landmark, BrainCircuit, DraftingCompass, KanbanSquare, FileText, Table, UtensilsCrossed, ListChecks, Target, Briefcase } from "lucide-react";
@@ -106,13 +105,13 @@ export function LandingPage() {
                         <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
                             Your all-in-one solution for time management. From world clocks to a detailed personal calendar, Tempusphere provides the tools you need to stay organized and productive.
                         </p>
-                        <div className="flex flex-wrap justify-center items-center gap-4">
+                        <div className="flex flex-wrap justify-center items-center gap-4" data-spotlight="main-tools">
                             {mainTools.map(p => <PlatformLink key={p.name} {...p} />)}
                         </div>
                     </div>
                 </section>
 
-                <section className="py-12 md:py-16 bg-secondary/30">
+                <section className="py-12 md:py-16 bg-secondary/30" data-spotlight="features-accordion">
                     <div className="container mx-auto px-4">
                         <h2 className="text-3xl md:text-4xl font-bold text-center mb-8">Features at a Glance</h2>
                         <Accordion type="single" collapsible className="w-full max-w-2xl mx-auto">
