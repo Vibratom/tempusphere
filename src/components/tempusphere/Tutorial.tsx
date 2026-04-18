@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -16,7 +17,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Moon, Sun, Atom, Briefcase, ListChecks, KanbanSquare, LayoutDashboard, BarChartHorizontal, DraftingCompass, Table, Calendar, GitCommit, Brain, Banknote, FileText, BrainCircuit, IterationCw, Megaphone, TrendingUp, BookCopy, UtensilsCrossed, Calculator, Trash2, Workflow } from 'lucide-react';
+import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Atom, Sun, Moon, Briefcase, ListChecks, KanbanSquare, LayoutDashboard, BarChartHorizontal, DraftingCompass, Table, Calendar, GitCommit, Brain, Banknote, FileText, BrainCircuit, IterationCw, Megaphone, TrendingUp, BookCopy, UtensilsCrossed, Calculator, Trash2, Workflow } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { usePathname } from 'next/navigation';
 
@@ -31,7 +32,7 @@ const appGuideSections = [
                     <li><strong>Tempusphere Logo</strong>: Click to return to the landing page.</li>
                     <li><strong>Vibratom Studios Icon (<Atom className="inline h-4 w-4"/>)</strong>: Opens the main Vibratom Studios website in a new tab.</li>
                     <li><strong>Theme Toggle (<Sun className="inline h-4 w-4"/>/<Moon className="inline h-4 w-4"/>)</strong>: Instantly switch between light and dark mode.</li>
-                    <li><strong>Clock Settings (<Settings className="inline h-4 w-4"/>)</strong>: Opens a panel to customize clock formats, timezones, and display sizes.</li>
+                    <li><strong>Settings (<Settings className="inline h-4 w-4"/>)</strong>: Opens the main settings panel where you can control everything from clock formats to the application's appearance.</li>
                     <li><strong>Fullscreen Button (<Expand className="inline h-4 w-4"/>)</strong>: Toggles a distraction-free fullscreen view. Press 'F' on your keyboard as a shortcut.</li>
                 </ul>
             </div>
@@ -42,7 +43,7 @@ const appGuideSections = [
         icon: <Clock />,
         content: (
              <div className="space-y-2">
-                <p>This is your main clock display. You can customize its appearance from the <strong>Appearance</strong> tab (Alt+8). Options include:</p>
+                <p>This is your main clock display. You can customize its appearance from the Settings panel. Options include:</p>
                 <ul className="list-disc pl-5 space-y-1">
                     <li><strong>Style</strong>: Switch between a Digital and Analog display.</li>
                     <li><strong>Timezone</strong>: Set to your Local time or UTC.</li>
@@ -154,15 +155,15 @@ const appGuideSections = [
         )
     },
     {
-        title: "Appearance Panel (Alt+8)",
-        icon: <Palette />,
+        title: "Settings Panel",
+        icon: <Settings />,
         content: (
             <div className="space-y-2">
-                <p>Customize the look and feel of Tempusphere.</p>
-                <ul className="list-disc pl-5 space-y-1">
-                    <li><strong>Background Image</strong>: Choose from a list of presets or upload your own image. You can also remove the image to go back to a solid color.</li>
-                    <li><strong>Manual Colors</strong>: Use the color pickers to set your own Primary, Accent, and Background colors.</li>
-                    <li><strong>Fullscreen Layout</strong>: Toggle which panels you want to see when you enter Fullscreen mode.</li>
+                <p>The Settings panel, opened via the gear icon in the header, is the central hub for all application customizations.</p>
+                <ul className="list-disc pl-5 space-y-2">
+                    <li><strong>Clock Settings</strong>: Adjust the Primary Clock's mode (analog/digital), timezone (local/UTC), and size. You can also set the global time format (12-hour/24-hour) and toggle the second hand.</li>
+                    <li><strong>Appearance</strong>: Personalize the look of Tempusphere. Choose a preset background image, upload your own, or manually set the primary, accent, and background colors. If you upload an image, a color palette will be extracted from it for quick theming.</li>
+                    <li><strong>Fullscreen Mode Layout</strong>: Check or uncheck which tool panels (World Clocks, Alarms, etc.) you want to see when you enter the distraction-free fullscreen mode.</li>
                 </ul>
             </div>
         )
@@ -180,7 +181,7 @@ const landingPageGuide = [
                     <li><strong>Tempusphere Logo</strong>: Click to return to the landing page.</li>
                     <li><strong>Vibratom Studios Icon (<Atom className="inline h-4 w-4"/>)</strong>: Opens the main Vibratom Studios website in a new tab.</li>
                     <li><strong>Theme Toggle (<Sun className="inline h-4 w-4"/>/<Moon className="inline h-4 w-4"/>)</strong>: Instantly switch between light and dark mode.</li>
-                    <li><strong>Clock Settings (<Settings className="inline h-4 w-4"/>)</strong>: Opens a panel to customize clock formats and timezones (this primarily affects the /app page).</li>
+                    <li><strong>Settings (<Settings className="inline h-4 w-4"/>)</strong>: Opens a panel to customize clock formats and appearance (this primarily affects the /app page).</li>
                     <li><strong>Fullscreen Button (<Expand className="inline h-4 w-4"/>)</strong>: Toggles a distraction-free fullscreen view of the main app dashboard. Press 'F' on your keyboard as a shortcut.</li>
                 </ul>
             </div>
