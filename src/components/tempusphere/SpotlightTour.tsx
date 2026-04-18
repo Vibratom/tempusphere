@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from 'react';
@@ -41,12 +40,8 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     const [style, setStyle] = useState<React.CSSProperties>({});
     const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({ opacity: 0 });
     const popoverRef = useRef<HTMLDivElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const dragInfoRef = useRef<{ startX: number; startY: number; initialTop: number; initialLeft: number; } | null>(null);
-    const [isCentered, setIsCentered] = useState(true);
 
     const handleNext = () => {
-        setIsCentered(true);
         if (currentStep < tourSteps.length - 1) {
             setCurrentStep(currentStep + 1);
         } else {
@@ -55,7 +50,6 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     };
 
     const handlePrev = () => {
-        setIsCentered(true);
         if (currentStep > 0) {
             setCurrentStep(currentStep - 1);
         }
@@ -80,10 +74,11 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     }, [currentStep, tourSteps, onExit]);
 
     useLayoutEffect(() => {
-        if (highlightedElement) {
+        if (highlightedElement && popoverRef.current) {
             highlightedElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
             
             const rect = highlightedElement.getBoundingClientRect();
+            const popoverRect = popoverRef.current.getBoundingClientRect();
             const padding = 10;
             
             setStyle({
@@ -91,74 +86,60 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 height: `${rect.height + padding * 2}px`,
                 top: `${rect.top - padding}px`,
                 left: `${rect.left - padding}px`,
-                transition: 'all 0.3s ease-in-out',
             });
             
-            if (isCentered && !isDragging) {
-                setPopoverStyle({
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    opacity: 1,
-                    transition: 'opacity 0.3s ease-in-out',
-                });
-            } else if (!isDragging) {
-                // This part is for when it's not centered and not dragging (e.g., after a drag)
-                // We keep its last dragged position.
+            let preferredPosition = tourSteps[currentStep]?.position || 'bottom';
+            const margin = 16;
+            const viewportW = window.innerWidth;
+            const viewportH = window.innerHeight;
+
+            const fits = {
+                bottom: rect.bottom + padding + margin + popoverRect.height < viewportH,
+                top: rect.top - padding - margin - popoverRect.height > 0,
+                right: rect.right + padding + margin + popoverRect.width < viewportW,
+                left: rect.left - padding - margin - popoverRect.width > 0,
+            };
+
+            const fallbackOrder: ('bottom' | 'top' | 'right' | 'left')[] = ['bottom', 'top', 'right', 'left'];
+            if (!fits[preferredPosition]) {
+                const bestFit = fallbackOrder.find(pos => fits[pos]);
+                if (bestFit) preferredPosition = bestFit;
             }
+
+            let popoverTop = 0, popoverLeft = 0;
+            let transform = '';
+
+            switch (preferredPosition) {
+                case 'top':
+                    popoverTop = rect.top - padding - margin;
+                    popoverLeft = rect.left + rect.width / 2;
+                    transform = 'translate(-50%, -100%)';
+                    break;
+                case 'right':
+                    popoverTop = rect.top + rect.height / 2;
+                    popoverLeft = rect.right + padding + margin;
+                    transform = 'translate(0, -50%)';
+                    break;
+                case 'left':
+                    popoverTop = rect.top + rect.height / 2;
+                    popoverLeft = rect.left - padding - margin;
+                    transform = 'translate(-100%, -50%)';
+                    break;
+                default: // 'bottom'
+                    popoverTop = rect.bottom + padding + margin;
+                    popoverLeft = rect.left + rect.width / 2;
+                    transform = 'translate(-50%, 0)';
+                    break;
+            }
+
+            setPopoverStyle({
+                top: `${popoverTop}px`,
+                left: `${popoverLeft}px`,
+                transform: transform,
+                opacity: 1,
+            });
         }
-    }, [highlightedElement, isCentered, isDragging]);
-    
-    const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-        if (popoverRef.current) {
-            e.preventDefault();
-            const { top, left } = popoverRef.current.getBoundingClientRect();
-            dragInfoRef.current = { startX: e.clientX, startY: e.clientY, initialTop: top, initialLeft: left };
-            setIsDragging(true);
-            setIsCentered(false);
-            setPopoverStyle(prev => ({ ...prev, transition: 'none' }));
-        }
-    }, []);
-
-    const handleMouseMove = useCallback((e: MouseEvent) => {
-        if (!isDragging || !dragInfoRef.current || !popoverRef.current) return;
-        const dx = e.clientX - dragInfoRef.current.startX;
-        const dy = e.clientY - dragInfoRef.current.startY;
-        const popoverRect = popoverRef.current.getBoundingClientRect();
-        
-        const newLeft = dragInfoRef.current.initialLeft + dx;
-        const newTop = dragInfoRef.current.initialTop + dy;
-        
-        const constrainedLeft = Math.max(0, Math.min(newLeft, window.innerWidth - popoverRect.width));
-        const constrainedTop = Math.max(0, Math.min(newTop, window.innerHeight - popoverRect.height));
-        
-        setPopoverStyle({
-            top: `${constrainedTop}px`,
-            left: `${constrainedLeft}px`,
-            transform: 'none',
-            opacity: 1,
-            transition: 'none',
-        });
-    }, [isDragging]);
-
-    const handleMouseUp = useCallback(() => {
-        setIsDragging(false);
-    }, []);
-
-    useEffect(() => {
-        if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        } else {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isDragging, handleMouseMove, handleMouseUp]);
-
+    }, [highlightedElement, tourSteps, currentStep]);
 
     if (tourSteps.length === 0) {
         return (
@@ -182,15 +163,15 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
     return (
         <div className="fixed inset-0 z-50">
             <svg className="absolute inset-0 w-full h-full">
-                <defs><mask id="spotlight-mask"><rect x="0" y="0" width="100%" height="100%" fill="white" /><rect x={style.left as number} y={style.top as number} width={style.width} height={style.height} rx="12" fill="black" /></mask></defs>
+                <defs><mask id="spotlight-mask"><rect x="0" y="0" width="100%" height="100%" fill="white" /><rect x={style.left as number} y={style.top as number} width={style.width} height={style.height} rx="12" fill="black" className="transition-all duration-300" /></mask></defs>
                 <rect x="0" y="0" width="100%" height="100%" fill="black" opacity="0.8" mask="url(#spotlight-mask)" />
             </svg>
             
-            <div className="absolute border-2 border-primary border-dashed rounded-xl pointer-events-none" style={style} />
+            <div className="absolute border-2 border-primary border-dashed rounded-xl pointer-events-none transition-all duration-300" style={style} />
 
-            <div ref={popoverRef} className="absolute" style={popoverStyle}>
+            <div ref={popoverRef} className="absolute transition-all duration-300" style={popoverStyle}>
                 <Card className="w-72 shadow-2xl animation-fade-in">
-                    <CardHeader className="cursor-grab active:cursor-grabbing" onMouseDown={handleMouseDown}>
+                    <CardHeader>
                         <CardTitle>{tourSteps[currentStep].title}</CardTitle>
                     </CardHeader>
                     <CardContent><p>{tourSteps[currentStep].content}</p></CardContent>
