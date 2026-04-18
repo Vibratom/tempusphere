@@ -1,8 +1,9 @@
+
 "use client"
 
 import React, { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from 'react';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../ui/card';
 import { ArrowLeft, ArrowRight, X, Loader2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -90,16 +91,63 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
                 transition: 'all 0.3s ease-in-out',
             });
             
-            // Center the popover
-            setPopoverStyle({
-                top: `40%`,
-                left: `50%`,
-                transform: 'translate(-50%, -50%)',
-                opacity: 1,
-                transition: 'opacity 0.3s ease-in-out'
-            });
+            if (popoverRef.current) {
+                let preferredPosition = tourSteps[currentStep]?.position || 'bottom';
+                const popoverWidth = popoverRef.current.offsetWidth;
+                const popoverHeight = popoverRef.current.offsetHeight;
+                const margin = 16;
+                const viewportW = window.innerWidth;
+                const viewportH = window.innerHeight;
+
+                const fits = {
+                    bottom: rect.bottom + padding + margin + popoverHeight < viewportH,
+                    top: rect.top - padding - margin - popoverHeight > 0,
+                    right: rect.right + padding + margin + popoverWidth < viewportW,
+                    left: rect.left - padding - margin - popoverWidth > 0,
+                };
+
+                if (!fits[preferredPosition]) {
+                    const fallbackOrder: ('bottom' | 'top' | 'right' | 'left')[] = ['bottom', 'top', 'right', 'left'];
+                    const bestFit = fallbackOrder.find(pos => fits[pos]);
+                    if (bestFit) preferredPosition = bestFit;
+                }
+
+                let popoverTop = 0, popoverLeft = 0;
+                let transform = '';
+                
+                switch (preferredPosition) {
+                    case 'top':
+                        popoverTop = rect.top - padding - margin;
+                        popoverLeft = rect.left + rect.width / 2;
+                        transform = 'translate(-50%, -100%)';
+                        break;
+                    case 'right':
+                        popoverTop = rect.top + rect.height / 2;
+                        popoverLeft = rect.right + padding + margin;
+                        transform = 'translate(0, -50%)';
+                        break;
+                    case 'left':
+                        popoverTop = rect.top + rect.height / 2;
+                        popoverLeft = rect.left - padding - margin;
+                        transform = 'translate(-100%, -50%)';
+                        break;
+                    default: // bottom
+                        popoverTop = rect.bottom + padding + margin;
+                        popoverLeft = rect.left + rect.width / 2;
+                        transform = 'translate(-50%, 0)';
+                        break;
+                }
+
+                setPopoverStyle({
+                    top: `${popoverTop}px`,
+                    left: `${popoverLeft}px`,
+                    transform: transform,
+                    opacity: 1,
+                    transition: 'all 0.3s ease-in-out, opacity 0.3s ease-in-out'
+                });
+            }
         }
-    }, [highlightedElement, isDragging]);
+    }, [highlightedElement, tourSteps, currentStep, isDragging]);
     
     const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         if (popoverRef.current) {
@@ -107,9 +155,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
             const { top, left } = popoverRef.current.getBoundingClientRect();
             dragInfoRef.current = { startX: e.clientX, startY: e.clientY, initialTop: top, initialLeft: left, };
             setIsDragging(true);
-            
-            // Remove transitions during drag
-             setPopoverStyle(prev => ({ ...prev, transition: 'none' }));
+            setPopoverStyle(prev => ({ ...prev, transition: 'none' }));
         }
     }, []);
 
@@ -146,7 +192,8 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
         return (
             <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
                 <Card className="max-w-sm">
-                    <CardHeader><CardTitle>Tutorial Not Available</CardTitle><CardDescription>Sorry, a spotlight tour isn't available for this page yet.</CardDescription></CardHeader>
+                    <CardHeader><CardTitle>Tutorial Not Available</CardTitle></CardHeader>
+                    <CardContent><p>Sorry, a spotlight tour isn't available for this page yet.</p></CardContent>
                     <CardFooter><Button onClick={onExit} className="w-full">Close</Button></CardFooter>
                 </Card>
             </div>
@@ -169,7 +216,7 @@ export const SpotlightTour = ({ onExit }: { onExit: () => void }) => {
             
             <div className="absolute border-2 border-primary border-dashed rounded-xl pointer-events-none" style={style} />
 
-            <div ref={popoverRef} className={cn("absolute")} style={popoverStyle}>
+            <div ref={popoverRef} className="absolute" style={popoverStyle}>
                 <Card className="w-72 shadow-2xl animation-fade-in">
                     <CardHeader className="cursor-grab active:cursor-grabbing" onMouseDown={handleMouseDown}>
                         <CardTitle>{tourSteps[currentStep].title}</CardTitle>
