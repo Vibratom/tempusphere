@@ -5,9 +5,10 @@ import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '../ui/sheet';
 import { usePathname } from 'next/navigation';
 import { ScrollArea } from '../ui/scroll-area';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
+import { SpotlightTour } from './SpotlightTour';
 
 const StaticGuide = ({ onBack }: { onBack: () => void }) => {
     const pathname = usePathname();
@@ -137,15 +138,17 @@ const TutorialSelection = ({ onSelect }: { onSelect: (mode: 'static' | 'spotligh
                     </div>
                 </CardHeader>
             </Card>
-            <Card className="cursor-not-allowed opacity-50 relative">
+            <Card 
+                className="cursor-pointer hover:border-primary transition-colors"
+                onClick={() => onSelect('spotlight')}
+            >
                 <CardHeader className="flex-row items-center gap-4">
-                     <Presentation className="w-8 h-8 text-muted-foreground" />
+                     <Presentation className="w-8 h-8 text-primary" />
                     <div>
                         <CardTitle>Spotlight Tour</CardTitle>
                         <CardDescription>A guided tour that highlights each feature on the page one by one.</CardDescription>
                     </div>
                 </CardHeader>
-                <Badge variant="secondary" className="absolute top-2 right-2">Coming Soon</Badge>
             </Card>
             <Card className="cursor-not-allowed opacity-50 relative">
                  <CardHeader className="flex-row items-center gap-4">
@@ -162,29 +165,53 @@ const TutorialSelection = ({ onSelect }: { onSelect: (mode: 'static' | 'spotligh
 );
 
 
-const TutorialContent = () => {
-    const [mode, setMode] = useState<'selection' | 'static' | 'spotlight' | 'interactive'>('selection');
+export function Tutorial() {
+    const [sheetOpen, setSheetOpen] = useState(false);
+    const [spotlightActive, setSpotlightActive] = useState(false);
+    const [mode, setMode] = useState<'selection' | 'static'>('selection');
 
-    if (mode === 'static') {
-        return <StaticGuide onBack={() => setMode('selection')} />;
+    const handleSelect = (selectedMode: 'static' | 'spotlight' | 'interactive') => {
+        if (selectedMode === 'static') {
+            setMode('static');
+        } else if (selectedMode === 'spotlight') {
+            setSheetOpen(false);
+            setSpotlightActive(true);
+        }
+        // 'interactive' does nothing for now
+    };
+
+    const handleExitSpotlight = () => {
+        setSpotlightActive(false);
+        setMode('selection'); // Reset for next time sheet is opened
+    };
+    
+    const onSheetOpenChange = (open: boolean) => {
+        setSheetOpen(open);
+        if (!open) {
+            // Reset to selection screen when sheet is closed
+            setMode('selection');
+        }
     }
 
-    return <TutorialSelection onSelect={setMode} />;
-};
-
-
-export function Tutorial() {
     return (
-        <Sheet>
-            <SheetTrigger asChild>
-                <Button variant="outline" size="icon">
-                    <BookOpen className="h-5 w-5" />
-                    <span className="sr-only">Open Tutorial</span>
-                </Button>
-            </SheetTrigger>
-            <SheetContent className="p-0 w-full sm:max-w-md">
-                <TutorialContent />
-            </SheetContent>
-        </Sheet>
+        <>
+            <Sheet open={sheetOpen} onOpenChange={onSheetOpenChange}>
+                <SheetTrigger asChild>
+                    <Button variant="outline" size="icon">
+                        <BookOpen className="h-5 w-5" />
+                        <span className="sr-only">Open Tutorial</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent className="p-0 w-full sm:max-w-md">
+                   {mode === 'static' ? (
+                       <StaticGuide onBack={() => setMode('selection')} />
+                   ) : (
+                       <TutorialSelection onSelect={handleSelect} />
+                   )}
+                </SheetContent>
+            </Sheet>
+            
+            {spotlightActive && <SpotlightTour onExit={handleExitSpotlight} />}
+        </>
     );
 }

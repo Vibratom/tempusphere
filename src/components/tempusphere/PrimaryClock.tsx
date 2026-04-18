@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useSettings } from '@/contexts/SettingsContext';
@@ -51,10 +50,13 @@ export function PrimaryClock({ fullscreen = false, glass = false }: PrimaryClock
   const containerClass = fullscreen ? (glass ? 'bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg' : 'bg-transparent') : 'w-full';
 
   return (
-    <Container className={cn(
-      "overflow-hidden flex flex-col items-center justify-center transition-all duration-300 relative p-6", 
-      containerClass
-    )}>
+    <Container 
+        className={cn(
+          "overflow-hidden flex flex-col items-center justify-center transition-all duration-300 relative p-6", 
+          containerClass
+        )}
+        data-spotlight="primary-clock"
+    >
        { !fullscreen && backgroundImage && (
          <>
             <div className="absolute inset-0 bg-cover bg-center" style={{backgroundImage: `url(${backgroundImage})`}}></div>

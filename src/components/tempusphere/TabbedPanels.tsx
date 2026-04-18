@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -75,7 +74,10 @@ export function TabbedPanels({ activeTab, setActiveTab }: TabbedPanelsProps) {
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-5xl flex-1 flex flex-col">
           <TooltipProvider>
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 h-auto">
+          <TabsList 
+            className="grid w-full grid-cols-4 sm:grid-cols-8 h-auto"
+            data-spotlight="tool-tabs"
+          >
             <Tooltip>
               <TooltipTrigger asChild>
                 <TabsTrigger value="world-clocks" className="flex-col md:flex-row h-auto gap-2 py-2"><Globe/><span>World Clocks</span></TabsTrigger>
@@ -127,7 +129,7 @@ export function TabbedPanels({ activeTab, setActiveTab }: TabbedPanelsProps) {
           </TabsList>
           </TooltipProvider>
           <Separator className="w-full my-4"/>
-          <TabsContent value="world-clocks" className="animation-fade-in flex-1">
+          <TabsContent value="world-clocks" className="animation-fade-in flex-1" data-spotlight="world-clocks-panel">
             <WorldClocks />
           </TabsContent>
           <TabsContent value="alarms" className="animation-fade-in flex-1">

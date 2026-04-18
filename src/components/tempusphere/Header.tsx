@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, type ReactNode } from 'react';
@@ -42,7 +41,7 @@ export function Header({ tabs, className, centerContent }: { tabs?: ReactNode, c
     const SettingsSheet = () => (
         <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
             <SheetTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" data-spotlight="settings-button">
                     <Settings className="h-5 w-5" />
                 </Button>
             </SheetTrigger>
@@ -115,7 +114,7 @@ export function Header({ tabs, className, centerContent }: { tabs?: ReactNode, c
                     </Tooltip>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={toggleFullscreen}>
+                            <Button variant="outline" size="icon" onClick={toggleFullscreen} data-spotlight="fullscreen-button">
                                 <Expand className="h-5 w-5" />
                             </Button>
                         </TooltipTrigger>
