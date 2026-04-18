@@ -17,7 +17,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Moon, Sun, Atom, Briefcase, ListChecks } from 'lucide-react';
+import { BookOpen, Clock, Globe, AlarmClock, Hourglass, Timer, Scale, Users, CalendarDays, Palette, Expand, Settings, Moon, Sun, Atom, Briefcase, ListChecks, KanbanSquare, LayoutDashboard, BarChartHorizontal, DraftingCompass, Table, Calendar, GitCommit, Brain, Banknote } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { usePathname } from 'next/navigation';
 
@@ -217,16 +217,118 @@ const landingPageGuide = [
             <p>Tempusphere is part of a larger ecosystem of applications. Discover other tools from Vibratom Studios designed to boost your productivity and creativity, all linked in the footer.</p>
         )
     }
-]
+];
+
+const projectsGuide = [
+    {
+        title: "Project Navigation",
+        icon: <KanbanSquare />,
+        content: (
+            <div className="space-y-2">
+                <p>The top navigation bar allows you to switch between different views and tools within the Projects section.</p>
+            </div>
+        )
+    },
+    {
+        title: "Dashboard",
+        icon: <LayoutDashboard />,
+        content: (
+            <p>The dashboard provides a high-level overview of your projects, including key statistics, task progress, upcoming deadlines, and budget summaries.</p>
+        )
+    },
+    {
+        title: "Board View",
+        icon: <KanbanSquare />,
+        content: (
+            <p>A Kanban-style board to visualize your workflow. Drag and drop tasks between columns to update their status. You can add new columns and tasks, and import/export your entire board.</p>
+        )
+    },
+    {
+        title: "List View",
+        icon: <ListChecks />,
+        content: (
+            <p>A comprehensive table view of all your project tasks. You can sort by title, status, priority, or dates. Click on any task to open an editor with more details.</p>
+        )
+    },
+    {
+        title: "Calendar",
+        icon: <Calendar />,
+        content: (
+            <p>Project tasks with a start or due date are automatically displayed on this calendar, giving you a clear monthly view of your schedule.</p>
+        )
+    },
+    {
+        title: "Gantt Chart",
+        icon: <BarChartHorizontal />,
+        content: (
+            <p>A timeline view of your project schedule. It shows task durations, helping you manage deadlines and resource allocation effectively.</p>
+        )
+    },
+    {
+        title: "Bookkeeping",
+        icon: <Banknote />,
+        content: (
+            <p>Link financial transactions directly to your projects. This view provides a summary of income, expenses, and net balance for each project, helping you track financial health.</p>
+        )
+    },
+    {
+        title: "Spreadsheet",
+        icon: <Table />,
+        content: (
+            <p>A lightweight, integrated spreadsheet for quick calculations, data management, or tabular notes related to your projects.</p>
+        )
+    },
+    {
+        title: "Checklist",
+        icon: <ListChecks />,
+        content: (
+            <p>Create and manage detailed checklists for specific project tasks. Supports sub-tasks, priorities, and recurring items.</p>
+        )
+    },
+    {
+        title: "Canvas",
+        icon: <DraftingCompass />,
+        content: (
+            <p>A freeform design canvas for creating diagrams, mockups, or any visual aid your project requires. Supports text, drawing, and image uploads.</p>
+        )
+    },
+    {
+        title: "Chart Editor",
+        icon: <GitCommit />,
+        content: (
+            <p>Create various types of charts and diagrams using a simple visual editor or by writing Mermaid syntax for more complex visualizations.</p>
+        )
+    },
+    {
+        title: "Mind Map",
+        icon: <Brain />,
+        content: (
+            <p>A text-based mind mapping tool perfect for brainstorming sessions and structuring complex thoughts visually.</p>
+        )
+    }
+];
 
 const pageGuides: Record<string, any[]> = {
     '/': landingPageGuide,
-    '/app': appGuideSections
-}
+    '/app': appGuideSections,
+    '/projects': projectsGuide,
+    '/projects/board': projectsGuide,
+    '/projects/list': projectsGuide,
+    '/projects/calendar': projectsGuide,
+    '/projects/gantt': projectsGuide,
+    '/projects/budget': projectsGuide,
+    '/projects/spreadsheet': projectsGuide,
+    '/projects/checklist': projectsGuide,
+    '/projects/canvas': projectsGuide,
+    '/projects/chart': projectsGuide,
+    '/projects/mindmap': projectsGuide,
+};
 
 export function Tutorial() {
     const pathname = usePathname();
-    const guideSections = pageGuides[pathname];
+    // A simple way to group all project pages to use the same guide
+    const guideKey = pathname.startsWith('/projects') ? '/projects' : pathname;
+    const guideSections = pageGuides[guideKey];
 
     const content = guideSections ? (
         <ScrollArea className="flex-1 px-6">
